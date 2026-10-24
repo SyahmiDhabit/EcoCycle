@@ -1,6 +1,6 @@
 # Supabase PostgreSQL setup
 
-EcoCycle uses Laravel's PostgreSQL driver to connect to a Supabase database. PHP's `pdo_pgsql` extension is available in the current development environment, and the existing migrations use Laravel's schema builder.
+EcoCycle can use local MySQL and Supabase PostgreSQL as separate Laravel connections. PHP's `pdo_pgsql` extension is available in the current development environment, and the existing migrations use Laravel's schema builder.
 
 ## 1. Create a Supabase project
 
@@ -10,42 +10,54 @@ Use the session pooler on port `5432`. Do not use the transaction pooler on port
 
 ## 2. Configure Laravel
 
-Update the database values in the local `.env` file (never commit that file):
+Keep the local MySQL connection as the default if you want registration to continue writing to the phpMyAdmin `ecocycle` database:
 
 ```env
-DB_CONNECTION=pgsql
-DB_HOST=your-session-pooler-host-from-supabase
-DB_PORT=5432
-DB_DATABASE=postgres
-DB_USERNAME=postgres.your-project-ref
-DB_PASSWORD=your-supabase-database-password
-DB_SSLMODE=require
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ecocycle
+DB_USERNAME=root
+DB_PASSWORD=
 ```
 
-Replace every example value with the values from **Connect → Session pooler**. Leave `DB_URL` unset unless you choose to use a connection URL instead. Do not paste the password into source code or commit it.
+Add a separate Supabase connection to the local `.env` file (never commit that file):
 
-Then clear cached configuration and check the connection:
+```env
+SUPABASE_DB_HOST=your-session-pooler-host-from-supabase
+SUPABASE_DB_PORT=5432
+SUPABASE_DB_DATABASE=postgres
+SUPABASE_DB_USERNAME=postgres.your-project-ref
+SUPABASE_DB_PASSWORD=your-supabase-database-password
+SUPABASE_DB_SSLMODE=require
+```
+
+Replace every example value with the values from **Connect → Session pooler**. The application uses `mysql` by default; use the named `supabase` connection when you intentionally run queries or migrations against Supabase. Do not paste the password into source code or commit it.
+
+Then clear cached configuration and check the Supabase connection:
 
 ```sh
 php artisan config:clear
-php artisan migrate:status
+php artisan migrate:status --database=supabase
 ```
 
 For a new, empty Supabase database, create the EcoCycle tables with:
 
 ```sh
-php artisan migrate
+php artisan migrate --database=supabase
 ```
 
 Only run migrations against the intended project. Back up any database that already contains data before changing its schema.
 
 ## 3. View your data
 
-In the Supabase dashboard, open **Table Editor** and select the `public` schema. After registration and migration, the `users` table contains the account fields and the paths for the uploaded SSM files. The files themselves are currently saved on Laravel's local filesystem; a deployed app will need a persistent file store such as Supabase Storage for those uploads.
+In the Supabase dashboard, open **Table Editor** and select the `public` schema. The app tables are `business` and `administrator`; Laravel also keeps `migrations` there to record which schema changes ran. A cleanup migration removes the unused database-backed sessions, cache, queue, and password-reset tables because those drivers use local files, synchronous jobs, and no database password reset flow. Business registration stores SSM file paths in `business`; the files themselves are saved on Laravel's local filesystem, so a deployed app will need persistent file storage such as Supabase Storage.
 
 ## 4. Run tests
 
-The test configuration in `phpunit.xml` uses an in-memory SQLite database, so normal tests do not write to your Supabase project:
+Laravel migrations run against only one connection at a time. `php artisan migrate` uses the default connection (MySQL in this setup); the command above migrates Supabase separately. Registration writes to the default MySQL connection and is not automatically mirrored to Supabase.
+
+The test configuration in `phpunit.xml` uses an in-memory SQLite database, so normal tests do not write to either database:
 
 ```sh
 php artisan test

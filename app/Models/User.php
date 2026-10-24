@@ -33,6 +33,8 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected $table = 'business';
+
     /**
      * Get the attributes that should be cast.
      *

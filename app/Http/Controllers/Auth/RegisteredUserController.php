@@ -27,7 +27,7 @@ class RegisteredUserController extends Controller
 
         $validated = $request->validate([
             'business_name' => ['required', 'string', 'max:255'],
-            'business_registration_number' => ['required', 'string', 'max:60', 'unique:users,business_registration_number'],
+            'business_registration_number' => ['required', 'string', 'max:60', 'unique:business,business_registration_number'],
             'industry' => ['required', 'in:Agriculture & food,Construction & building materials,Furniture & wood products,Manufacturing,Packaging & paper,Textiles & apparel,Other'],
             'business_phone' => ['required', 'string', 'max:30'],
             'registered_address' => ['required', 'string', 'max:255'],
@@ -35,7 +35,7 @@ class RegisteredUserController extends Controller
             'postcode' => ['required', 'string', 'max:12'],
             'state' => ['required', 'in:Johor,Kedah,Kelantan,Kuala Lumpur,Labuan,Melaka,Negeri Sembilan,Pahang,Penang,Perak,Perlis,Putrajaya,Sabah,Sarawak,Selangor,Terengganu'],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:business,email'],
             'password' => ['required', 'confirmed', Password::min(8)->numbers()],
             'ssm_certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'ssm_profile' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],

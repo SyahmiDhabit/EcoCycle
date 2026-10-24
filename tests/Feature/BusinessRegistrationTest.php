@@ -57,7 +57,7 @@ class BusinessRegistrationTest extends TestCase
             ->assertSessionHas('status');
 
         $this->assertGuest();
-        $this->assertDatabaseHas('users', [
+        $this->assertDatabaseHas('business', [
             'business_name' => 'Kayu Kita',
             'business_registration_number' => '202101023456 (1425678-X)',
             'industry' => 'Furniture & wood products',
@@ -87,23 +87,23 @@ class BusinessRegistrationTest extends TestCase
         $this->from(route('register'))
             ->post(route('register.store'), [
                 'business_name' => '',
-            'business_registration_number' => '',
-            'industry' => '',
-            'business_phone' => '',
-            'registered_address' => '',
-            'city' => '',
-            'postcode' => '',
-            'state' => '',
+                'business_registration_number' => '',
+                'industry' => '',
+                'business_phone' => '',
+                'registered_address' => '',
+                'city' => '',
+                'postcode' => '',
+                'state' => '',
                 'name' => '',
                 'email' => 'not-an-email',
                 'password' => 'short',
                 'password_confirmation' => 'different',
-            'terms_accepted' => '',
+                'terms_accepted' => '',
             ])
             ->assertRedirect(route('register'))
             ->assertSessionHasErrors(['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'ssm_certificate', 'ssm_profile', 'terms_accepted']);
 
-        $this->assertDatabaseCount('users', 0);
+        $this->assertDatabaseCount('business', 0);
     }
 
     public function test_registration_rejects_an_existing_email_even_when_case_differs(): void
@@ -131,7 +131,7 @@ class BusinessRegistrationTest extends TestCase
             ->assertRedirect(route('register'))
             ->assertSessionHasErrors(['email']);
 
-        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('business', 1);
     }
 
     public function test_registration_requires_a_matching_password_confirmation(): void
@@ -157,6 +157,6 @@ class BusinessRegistrationTest extends TestCase
             ->assertRedirect(route('register'))
             ->assertSessionHasErrors(['password']);
 
-        $this->assertDatabaseCount('users', 0);
+        $this->assertDatabaseCount('business', 0);
     }
 }

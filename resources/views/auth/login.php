@@ -1,5 +1,103 @@
+<?php
+$errors = $errors ?? new \Illuminate\Support\MessageBag();
+$emailError = $errors->first('email');
+$passwordError = $errors->first('password');
+?>
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Log in — EcoCycle</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/css/auth/login.css"></head>
-<body class="auth-page"><header class="auth-header"><a class="brand" href="/"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a><a href="/">← Back to home</a></header>
-<main class="auth-layout"><section class="auth-aside"><p class="eyebrow">GOOD TO HAVE YOU BACK</p><h1>Make room for<br><em>better things.</em></h1><p>Pick up where you left off and keep useful resources moving.</p><div class="auth-aside-note"><span>↻</span> Better resources. Better business.</div></section><section class="auth-card"><p class="eyebrow">YOUR ECOCYCLE ACCOUNT</p><h2>Log in</h2><p class="auth-subtitle">Enter your details to continue.</p><div class="preview-notice">This login screen is a visual preview. Account sign-in will work once authentication is connected.</div><form onsubmit="event.preventDefault();document.getElementById('form-note').hidden=false"><label for="account-type">Account type</label><select id="account-type" name="account_type"><option>Business / SME</option><option>Administrator</option></select><label for="email">Email address</label><input id="email" name="email" type="email" placeholder="you@business.com" autocomplete="email" required><div class="password-label"><label for="password">Password</label><a href="#password">Forgot password?</a></div><input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required><button class="button button-dark auth-submit" type="submit">Log in <span>→</span></button><p id="form-note" class="form-note" hidden>Authentication is not connected yet. Your details were not submitted.</p></form><p class="auth-switch">New to EcoCycle? <a href="/register">Create a business account</a></p></section></main></body></html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Sign in to your EcoCycle business workspace.">
+    <title>Sign in - EcoCycle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/auth/login.css">
+</head>
+<body class="signin-page">
+    <main class="signin-shell">
+        <aside class="signin-story" aria-label="EcoCycle business tools">
+            <a class="signin-brand" href="/" aria-label="EcoCycle home">
+                <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+                <span>EcoCycle</span>
+            </a>
+
+            <div class="signin-promise">
+                <h1>Less waste. More possibility.</h1>
+                <p>Your everyday operations, connected to a more circular Malaysian business community.</p>
+            </div>
+
+            <div class="signin-workshop">
+                <img class="signin-workshop-photo" src="/images/figma/signup/verification-hero.jpg" alt="Reusable materials organized in a business warehouse">
+                <div class="signin-material-story">
+                    <img src="/images/figma/signup/recycle.svg" alt="">
+                    <span>A resource, not a leftover.<small>Better operations. More possibilities.</small></span>
+                </div>
+            </div>
+
+            <div class="signin-benefits">
+                <div><img src="/images/figma/signup/package.svg" alt=""><span>Track stock</span></div>
+                <div><img src="/images/figma/signup/waste.svg" alt=""><span>Record waste</span></div>
+                <div><img src="/images/figma/signup/exchange.svg" alt=""><span>Exchange surplus</span></div>
+            </div>
+            <p class="signin-tagline">SMART SME OPERATIONS &amp; WASTE-TO-VALUE EXCHANGE</p>
+        </aside>
+
+        <section class="signin-panel" aria-labelledby="signin-heading">
+            <p class="signin-language">English <span>/</span> Bahasa Melayu</p>
+
+            <div class="signin-content">
+                <header class="signin-welcome">
+                    <p class="signin-eyebrow">BUSINESS OWNER ACCESS</p>
+                    <h2 id="signin-heading">Welcome back.</h2>
+                    <p>Sign in to keep your materials and operations moving.</p>
+                </header>
+
+                <?php if ($errors->any()): ?>
+                    <div class="signin-error-summary" role="alert" aria-live="assertive">
+                        <strong>We couldn’t sign you in.</strong>
+                        <span><?= e($emailError ?: $passwordError) ?></span>
+                    </div>
+                <?php endif; ?>
+
+                <form class="signin-form" method="POST" action="/login">
+                    <?= csrf_field() ?>
+                    <div class="signin-field">
+                        <label for="email">Business email</label>
+                        <input id="email" name="email" type="email" value="<?= e(old('email')) ?>" placeholder="you@business.com" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="email-error"' : '' ?>>
+                        <?php if ($emailError): ?><small class="signin-field-error" id="email-error"><?= e($emailError) ?></small><?php endif; ?>
+                    </div>
+
+                    <div class="signin-field">
+                        <label for="password">Password</label>
+                        <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required aria-invalid="<?= $passwordError ? 'true' : 'false' ?>" <?= $passwordError ? 'aria-describedby="password-error"' : '' ?>>
+                        <?php if ($passwordError): ?><small class="signin-field-error" id="password-error"><?= e($passwordError) ?></small><?php endif; ?>
+                    </div>
+
+                    <div class="signin-options">
+                        <label class="remember-option" for="remember"><input id="remember" name="remember" type="checkbox" value="1" <?= old('remember') ? 'checked' : '' ?>><span>Keep me signed in</span></label>
+                        <a href="mailto:support@ecocycle.my?subject=EcoCycle%20password%20reset">Forgot password?</a>
+                    </div>
+
+                    <button class="signin-submit" type="submit">
+                        <img src="/images/figma/signup/arrow-right.svg" alt="">
+                        <span>Sign in to workspace</span>
+                    </button>
+                </form>
+
+                <p class="signin-register-link">New to EcoCycle? <a href="/register">Register your business <span aria-hidden="true">&#8594;</span></a></p>
+                <div class="signin-divider" role="separator"></div>
+
+                <a class="signin-admin-link" href="/admin">
+                    <img class="signin-admin-icon" src="/images/figma/signup/shield-check.svg" alt="">
+                    <span><strong>Administrator sign-in</strong><small>Restricted to authorised platform administrators.</small></span>
+                    <img class="signin-admin-arrow" src="/images/figma/signup/arrow-up-right.svg" alt="">
+                </a>
+
+                <p class="signin-access-note">Marketplace and transaction access are available only after your business is approved.</p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

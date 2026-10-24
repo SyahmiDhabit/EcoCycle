@@ -195,3 +195,29 @@ main{width:100%;max-width:none}
     body.menu-open .site-header .header-actions{position:static;display:flex;order:4;flex:0 0 100%;gap:8px;padding-top:12px}
     .hero.wrap{padding:35px 20px 40px}
 }
+
+/* Compact navigation for tablets before the desktop links become crowded. */
+@media(min-width:761px) and (max-width:980px){
+    .site-header{height:68px;padding:0 24px}
+    .site-header .brand{order:1}
+    .site-header .menu-toggle{display:block;order:2;margin-left:auto;min-width:44px;min-height:44px}
+    .site-header .main-nav,.site-header .header-actions{display:none}
+    body.menu-open .site-header{height:auto;min-height:68px;padding-bottom:14px;flex-wrap:wrap;justify-content:space-between}
+    body.menu-open .site-header .main-nav{position:static;display:flex;order:3;flex:0 0 100%;flex-direction:row;flex-wrap:wrap;align-items:center;gap:5px;padding:12px 0 0;background:transparent;border:0}
+    body.menu-open .site-header .main-nav a{font-size:12px;padding:8px 9px}
+    body.menu-open .site-header .header-actions{position:static;display:flex;order:4;flex:0 0 100%;gap:8px;padding-top:10px}
+}
+@media(max-width:380px){
+    .site-header{padding-right:14px;padding-left:14px}
+    .site-header .brand{font-size:21px}
+    .hero.wrap{padding-right:16px;padding-left:16px}
+    .hero-copy .eyebrow{font-size:8px;letter-spacing:.06em}
+    .hero h1{font-size:clamp(34px,10.8vw,42px);line-height:1.05;letter-spacing:-.045em}
+    .hero-actions .button{min-height:42px;padding-right:13px;padding-left:13px;font-size:11px}
+    .landing-section{padding-right:16px;padding-left:16px}
+    .section-title h2,.section-heading h2,.how-section h2{font-size:32px}
+    .cycle-panel{padding:14px}
+    .cycle-stage{width:90px;height:62px;font-size:10px}
+    .cycle-center{width:104px;height:88px;font-size:10px}
+    .site-footer{padding-right:16px;padding-left:16px}
+}

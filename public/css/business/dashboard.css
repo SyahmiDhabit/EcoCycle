@@ -11,3 +11,4 @@ body.dashboard-page{background:#f4f8ef}
 .status{background:#e2f3dc;color:#176b40}
 .quick-links a:hover{background:#e5f3e2;border-color:#73b282}
 .dashboard-page .preview-badge{background:#e8f2e9}
+.business-signout{margin:0}.business-signout button{min-height:38px;padding:0 13px;border:1px solid #78aa84;border-radius:6px;background:transparent;color:var(--green);font:600 11px var(--sans);cursor:pointer}.business-signout button:hover{background:#e8f2e9}.business-signout button:focus-visible{outline:3px solid #efa927;outline-offset:3px}@media(max-width:640px){.dashboard-header{gap:8px}.business-signout button{min-height:36px;padding:0 9px;font-size:10px}}

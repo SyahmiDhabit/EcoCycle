@@ -74,8 +74,8 @@ class BusinessRegistrationTest extends TestCase
         $user = User::where('email', 'amir@kayukita.com.my')->firstOrFail();
         $this->assertTrue(Hash::check('EcoCyclePass123', $user->password));
         $this->assertNotSame('EcoCyclePass123', $user->password);
-        Storage::disk('local')->assertExists($user->ssm_certificate_path);
-        Storage::disk('local')->assertExists($user->ssm_profile_path);
+        $this->assertTrue(Storage::disk('local')->exists($user->ssm_certificate_path));
+        $this->assertTrue(Storage::disk('local')->exists($user->ssm_profile_path));
 
         $this->get(route('register'))
             ->assertOk()

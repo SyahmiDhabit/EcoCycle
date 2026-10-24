@@ -1,0 +1,4 @@
+/* Registration page styling builds on the shared login UI styles. */
+@import url('/css/auth/login.css');
+.register-layout{grid-template-columns:1fr 460px}.register-layout .auth-card{padding:30px 35px}.register-layout .auth-card form label{margin-top:11px}.register-layout .auth-submit{margin-top:17px}
+@media(max-width:760px){.register-layout{grid-template-columns:1fr}.register-layout .auth-card{padding:25px}}

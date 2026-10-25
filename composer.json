@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "ecocycle/ecocycle",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "EcoCycle platform for Malaysian businesses to track inventory, reduce waste, and exchange reusable materials.",
+    "keywords": ["ecocycle", "laravel", "sustainability", "recycling"],
     "license": "MIT",
     "require": {
         "php": "^8.3",

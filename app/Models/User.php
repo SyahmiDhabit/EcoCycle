@@ -24,6 +24,7 @@ use Illuminate\Notifications\Notifiable;
     'ssm_profile_path',
     'terms_accepted_at',
     'account_status',
+    'review_note',
     'email',
     'password',
 ])]

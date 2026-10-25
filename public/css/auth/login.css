@@ -49,16 +49,8 @@ a{color:inherit}
 .signin-submit img{width:16px;height:16px;object-fit:contain}
 .signin-submit:hover{transform:translateY(-1px);background:#1e4d37;box-shadow:0 7px 16px rgba(23,62,44,.16)}
 .signin-submit:active{transform:translateY(0)}
-.signin-submit:focus-visible,.signin-brand:focus-visible,.signin-register-link a:focus-visible,.signin-admin-link:focus-visible,.signin-options>a:focus-visible{outline:3px solid #8da86f;outline-offset:3px}
+.signin-submit:focus-visible,.signin-brand:focus-visible,.signin-register-link a:focus-visible,.signin-options>a:focus-visible{outline:3px solid #8da86f;outline-offset:3px}
 .signin-register-link{margin:20px 0 0;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--signin-muted);font-size:12px;line-height:1.5}
-.signin-divider{width:100%;height:1px;margin:25px 0 18px;background:var(--signin-line)}
-.signin-admin-link{width:100%;min-height:72px;padding:15px 16px;display:flex;align-items:center;gap:12px;border-radius:10px;background:#fff;color:inherit;text-decoration:none;transition:transform .16s,box-shadow .16s}
-.signin-admin-link:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(23,62,44,.1)}
-.signin-admin-icon,.signin-admin-arrow{width:18px;height:18px;flex:0 0 18px;object-fit:contain}
-.signin-admin-link>span{flex:1;min-width:0}
-.signin-admin-link strong,.signin-admin-link small{display:block}
-.signin-admin-link strong{color:var(--signin-ink);font-size:12px;font-weight:600;line-height:1.5}
-.signin-admin-link small{margin-top:3px;color:var(--signin-muted);font-size:11px;line-height:1.45}
 .signin-access-note{margin:20px 0 0;color:var(--signin-muted);font-size:11px;line-height:1.5}
 @media(min-width:1450px){.signin-panel{padding-top:60px}.signin-content{margin-top:48px}}
 @media(max-width:900px){
@@ -92,7 +84,6 @@ a{color:inherit}
     .signin-welcome h2{font-size:29px}
     .signin-options{font-size:11px}
     .signin-register-link{flex-wrap:wrap}
-    .signin-admin-link{padding:13px 12px}
 }
 @media(max-width:360px){
     .signin-story{padding:18px}
@@ -101,6 +92,5 @@ a{color:inherit}
     .signin-benefits>div{font-size:9px}
     .signin-options{align-items:flex-start}
     .signin-options>a{text-align:right}
-    .signin-admin-link small{font-size:10px}
 }
-@media(prefers-reduced-motion:reduce){.signin-field input,.signin-submit,.signin-admin-link,.signin-options>a,.signin-register-link a{transition:none}}
+@media(prefers-reduced-motion:reduce){.signin-field input,.signin-submit,.signin-options>a,.signin-register-link a{transition:none}}

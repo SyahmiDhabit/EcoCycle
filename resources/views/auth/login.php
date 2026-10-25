@@ -1,6 +1,6 @@
 <?php
 $errors = $errors ?? new \Illuminate\Support\MessageBag();
-$emailError = $errors->first('email');
+$emailError = $errors->first('identifier');
 $passwordError = $errors->first('password');
 ?>
 <!doctype html>
@@ -49,7 +49,7 @@ $passwordError = $errors->first('password');
 
             <div class="signin-content">
                 <header class="signin-welcome">
-                    <p class="signin-eyebrow">BUSINESS OWNER ACCESS</p>
+                    <p class="signin-eyebrow">BUSINESS &amp; ADMIN ACCESS</p>
                     <h2 id="signin-heading">Welcome back.</h2>
                     <p>Sign in to keep your materials and operations moving.</p>
                 </header>
@@ -64,9 +64,9 @@ $passwordError = $errors->first('password');
                 <form class="signin-form" method="POST" action="/login">
                     <?= csrf_field() ?>
                     <div class="signin-field">
-                        <label for="email">Business email</label>
-                        <input id="email" name="email" type="email" value="<?= e(old('email')) ?>" placeholder="you@business.com" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="email-error"' : '' ?>>
-                        <?php if ($emailError): ?><small class="signin-field-error" id="email-error"><?= e($emailError) ?></small><?php endif; ?>
+                        <label for="identifier">Email</label>
+                        <input id="identifier" name="identifier" type="text" value="<?= e(old('identifier')) ?>" placeholder="you@business.com" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="identifier-error"' : '' ?>>
+                        <?php if ($emailError): ?><small class="signin-field-error" id="identifier-error"><?= e($emailError) ?></small><?php endif; ?>
                     </div>
 
                     <div class="signin-field">
@@ -87,15 +87,7 @@ $passwordError = $errors->first('password');
                 </form>
 
                 <p class="signin-register-link">New to EcoCycle? <a href="/register">Register your business <span aria-hidden="true">&#8594;</span></a></p>
-                <div class="signin-divider" role="separator"></div>
-
-                <a class="signin-admin-link" href="/admin">
-                    <img class="signin-admin-icon" src="/images/figma/signup/shield-check.svg" alt="">
-                    <span><strong>Administrator sign-in</strong><small>Restricted to authorised platform administrators.</small></span>
-                    <img class="signin-admin-arrow" src="/images/figma/signup/arrow-up-right.svg" alt="">
-                </a>
-
-                <p class="signin-access-note">Marketplace and transaction access are available only after your business is approved.</p>
+                <p class="signin-access-note">Sign in with your business email, or use your administrator username. Business access is available after approval.</p>
             </div>
         </section>
     </main>

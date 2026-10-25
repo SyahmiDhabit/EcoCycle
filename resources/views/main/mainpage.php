@@ -112,7 +112,7 @@
         <div class="cta-content"><img class="cta-sprout" src="/images/figma/cta-sprout.svg" alt=""><h2>Ready to Make Your Business More Resource-Efficient?</h2><p>Join EcoCycle to manage your resources, reduce unnecessary waste, and explore new opportunities for material reuse.</p><div class="cta-actions"><a class="button cta-primary" href="/register">Register Your Business <img src="/images/figma/cta-arrow.svg" alt=""></a><a class="button cta-secondary" href="/login">Login to EcoCycle</a></div></div>
     </section>
 </main>
-<footer class="site-footer"><a class="brand" href="/"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a><span>Better resources. Better business.</span><span class="footer-links"><a href="/business">Business portal</a><a href="/admin">Admin portal</a></span><span>© 2026 EcoCycle Malaysia</span></footer>
+<footer class="site-footer"><a class="brand" href="/"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a><span>Better resources. Better business.</span><span class="footer-links"><a href="/login">Sign in</a></span><span>© 2026 EcoCycle Malaysia</span></footer>
 <script src="/js/main-nav.js" defer></script>
 </body>
 </html>

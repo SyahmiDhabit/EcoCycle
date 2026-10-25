@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\BusinessMailNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
@@ -98,9 +100,16 @@ class RegisteredUserController extends Controller
             throw $exception;
         }
 
-        return redirect()->route('register')->with(
+        $business = User::query()->where('email', $validated['email'])->firstOrFail();
+        app(BusinessMailNotifier::class)->submitted($business);
+
+        Auth::guard('admin')->logout();
+        Auth::guard('web')->login($business);
+        $request->session()->regenerate();
+
+        return redirect()->route('business.dashboard')->with(
             'status',
-            'Your business application has been submitted and is pending administrator review.'
+            'Your business application has been submitted and is pending administrator review.',
         );
     }
 }

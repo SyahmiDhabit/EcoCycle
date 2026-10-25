@@ -29,7 +29,7 @@ $states = ['Johor', 'Kedah', 'Kelantan', 'Kuala Lumpur', 'Labuan', 'Melaka', 'Ne
 $industries = ['Agriculture & food', 'Construction & building materials', 'Furniture & wood products', 'Manufacturing', 'Packaging & paper', 'Textiles & apparel', 'Other'];
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -39,11 +39,13 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/auth/register.css">
+
 </head>
 <body class="signup-page">
     <header class="signup-header">
         <a class="signup-brand" href="/" aria-label="EcoCycle home"><img src="/images/figma/ecocycle-leaf.svg" alt=""><span>EcoCycle</span></a>
         <a class="header-signin" href="/login">Already registered? <span>Sign in <span aria-hidden="true">&#8594;</span></span></a>
+
     </header>
     <main class="signup-layout">
         <aside class="signup-guidance">
@@ -94,5 +96,6 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
         </section>
     </main>
     <script src="/js/auth/signup.js" defer></script>
+    <script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

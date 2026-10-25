@@ -1,3 +1,4 @@
+<?php /** @var \App\Models\User $business */ /** @var string $decision */ ?>
 <!doctype html>
 <html lang="en"><body style="margin:0;background:#f6f7f3;color:#22352c;font:14px/1.6 Arial,sans-serif;padding:32px">
 <main style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #dde4d9;border-radius:12px;padding:28px">

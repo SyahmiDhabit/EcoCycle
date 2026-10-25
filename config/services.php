@@ -39,6 +39,7 @@ return [
         'admin_email' => env('ECOCYCLE_ADMIN_EMAIL', 'ssyahmidhabit@gmail.com'),
         'admin_username' => env('ECOCYCLE_ADMIN_USERNAME'),
         'admin_password' => env('ECOCYCLE_ADMIN_PASSWORD'),
+        'admin_locale' => env('ECOCYCLE_ADMIN_LOCALE', 'en'),
     ],
 
 ];

@@ -24,6 +24,9 @@ class BusinessApplicationSubmitted extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.business-application-submitted');
+        return new Content(
+            view: 'emails.business-application-submitted',
+            with: ['business' => $this->business],
+        );
     }
 }

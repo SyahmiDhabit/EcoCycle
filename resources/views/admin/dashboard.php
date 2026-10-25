@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Business review - EcoCycle</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/css/admin/review.css"></head>
 <body class="admin-page">
 <header class="admin-header"><a class="admin-brand" href="/"><img src="/images/figma/verification/brand-mark.svg" alt=""><span>EcoCycle</span></a><div class="admin-header-actions"><span>Administrator · <?= e(auth('admin')->user()->name) ?></span><form method="POST" action="<?= e(route('logout')) ?>"><?= csrf_field() ?><button class="admin-outline" type="submit">Sign out</button></form></div></header>
@@ -23,5 +23,5 @@
         </article>
         <?php endforeach; ?>
     </section>
-</main>
+</main><script src="/js/language-switcher.js" defer></script>
 </body></html>

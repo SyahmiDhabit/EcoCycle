@@ -28,6 +28,9 @@ class BusinessApplicationDecision extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.business-application-decision');
+        return new Content(
+            view: 'emails.business-application-decision',
+            with: ['business' => $this->business, 'decision' => $this->decision],
+        );
     }
 }

@@ -3,7 +3,7 @@ $isRejected = $business->account_status === 'rejected';
 $submittedAt = $business->created_at?->timezone('Asia/Kuala_Lumpur');
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,13 +13,15 @@ $submittedAt = $business->created_at?->timezone('Asia/Kuala_Lumpur');
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/verification.css">
+
 </head>
 <body class="verification-page">
 <header class="verification-header">
     <a class="verification-brand" href="/" aria-label="EcoCycle home"><img src="/images/figma/verification/brand-mark.svg" alt=""><span>EcoCycle</span></a>
     <div class="verification-account">
         <span class="status-pill <?= $isRejected ? 'status-rejected' : 'status-pending' ?>"><?= $isRejected ? 'Changes required' : 'Verification pending' ?></span>
-        <span><?= e($business->name) ?> · Business Owner</span>
+        <span><?= e($business->name) ?></span><span> · Business Owner</span>
+
         <form method="POST" action="/logout"><?= csrf_field() ?><button class="outline-button" type="submit">Sign out</button></form>
     </div>
 </header>
@@ -72,5 +74,6 @@ $submittedAt = $business->created_at?->timezone('Asia/Kuala_Lumpur');
     <?php endif; ?>
     <p class="document-trust"><img src="/images/figma/verification/lock.svg" alt="">Business documents are visible only to authorised Administrators for verification.</p>
 </main>
+<script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

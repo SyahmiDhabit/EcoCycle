@@ -4,7 +4,7 @@ $emailError = $errors->first('identifier');
 $passwordError = $errors->first('password');
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,6 +14,7 @@ $passwordError = $errors->first('password');
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/auth/login.css">
+
 </head>
 <body class="signin-page">
     <main class="signin-shell">
@@ -45,7 +46,7 @@ $passwordError = $errors->first('password');
         </aside>
 
         <section class="signin-panel" aria-labelledby="signin-heading">
-            <p class="signin-language">English <span>/</span> Bahasa Melayu</p>
+
 
             <div class="signin-content">
                 <header class="signin-welcome">
@@ -64,8 +65,8 @@ $passwordError = $errors->first('password');
                 <form class="signin-form" method="POST" action="/login">
                     <?= csrf_field() ?>
                     <div class="signin-field">
-                        <label for="identifier">Email</label>
-                        <input id="identifier" name="identifier" type="text" value="<?= e(old('identifier')) ?>" placeholder="you@business.com" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="identifier-error"' : '' ?>>
+                        <label for="identifier">Business Email</label>
+                        <input id="identifier" name="identifier" type="text" value="<?= e(old('identifier')) ?>" placeholder="you@business.com or admin username" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="identifier-error"' : '' ?>>
                         <?php if ($emailError): ?><small class="signin-field-error" id="identifier-error"><?= e($emailError) ?></small><?php endif; ?>
                     </div>
 
@@ -77,7 +78,7 @@ $passwordError = $errors->first('password');
 
                     <div class="signin-options">
                         <label class="remember-option" for="remember"><input id="remember" name="remember" type="checkbox" value="1" <?= old('remember') ? 'checked' : '' ?>><span>Keep me signed in</span></label>
-                        <a href="mailto:support@ecocycle.my?subject=EcoCycle%20password%20reset">Forgot password?</a>
+                        <a href="<?= e(route('password.request')) ?>">Forgot password?</a>
                     </div>
 
                     <button class="signin-submit" type="submit">
@@ -91,5 +92,6 @@ $passwordError = $errors->first('password');
             </div>
         </section>
     </main>
+<script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

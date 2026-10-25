@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,8 +9,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/main/mainpage.css">
+    <link rel="stylesheet" href="/css/language-switcher.css">
 </head>
 <body>
+<div class="language-utility">
+    <div class="wrap">
+        <?php include resource_path('views/components/language-switcher.php'); ?>
+    </div>
+</div>
 <header class="site-header" id="top">
     <a class="brand" href="/" aria-label="EcoCycle home"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a>
     <nav class="main-nav" aria-label="Main navigation">
@@ -114,5 +120,6 @@
 </main>
 <footer class="site-footer"><a class="brand" href="/"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a><span>Better resources. Better business.</span><span class="footer-links"><a href="/login">Sign in</a></span><span>© 2026 EcoCycle Malaysia</span></footer>
 <script src="/js/main-nav.js" defer></script>
+<script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

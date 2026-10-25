@@ -52,6 +52,7 @@ a{color:inherit}
 .signin-submit:focus-visible,.signin-brand:focus-visible,.signin-register-link a:focus-visible,.signin-options>a:focus-visible{outline:3px solid #8da86f;outline-offset:3px}
 .signin-register-link{margin:20px 0 0;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--signin-muted);font-size:12px;line-height:1.5}
 .signin-access-note{margin:20px 0 0;color:var(--signin-muted);font-size:11px;line-height:1.5}
+.submission-notice{margin:0 0 16px;padding:11px 13px;border:1px solid #c7dbc5;border-radius:7px;background:#eaf3e8;color:var(--signin-action);font-size:12px;line-height:1.5}
 @media(min-width:1450px){.signin-panel{padding-top:60px}.signin-content{margin-top:48px}}
 @media(max-width:900px){
     .signin-shell{grid-template-columns:minmax(0,1fr);gap:18px;padding:18px}

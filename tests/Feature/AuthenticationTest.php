@@ -18,7 +18,9 @@ class AuthenticationTest extends TestCase
             ->assertSee('Welcome back.')
             ->assertSee('Keep me signed in')
             ->assertSee('Sign in to workspace')
-            ->assertSee('Administrator sign-in')
+            ->assertSee('Business email or admin username')
+            ->assertSee('name="identifier"', false)
+            ->assertSee('name="remember"', false)
             ->assertSee('/images/figma/ecocycle-leaf.svg')
             ->assertSee('name="_token"', false)
             ->assertDontSee('visual preview');
@@ -32,7 +34,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->post(route('login.store'), [
-            'email' => ' OWNER@EXAMPLE.COM ',
+            'identifier' => ' OWNER@EXAMPLE.COM ',
             'password' => 'Password123',
         ])
             ->assertRedirect(route('business.dashboard'));
@@ -47,12 +49,12 @@ class AuthenticationTest extends TestCase
 
         $this->from(route('login'))
             ->post(route('login.store'), [
-                'email' => 'owner@example.com',
+                'identifier' => 'owner@example.com',
                 'password' => 'not-the-password',
             ])
             ->assertRedirect(route('login'))
-            ->assertSessionHasErrors('email')
-            ->assertSessionHas('_old_input.email', 'owner@example.com')
+            ->assertSessionHasErrors('identifier')
+            ->assertSessionHas('_old_input.identifier', 'owner@example.com')
             ->assertSessionMissing('_old_input.password');
 
         $this->assertGuest();
@@ -67,7 +69,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->post(route('login.store'), [
-            'email' => 'owner@example.com',
+            'identifier' => 'owner@example.com',
             'password' => 'Password123',
             'remember' => '1',
         ])->assertRedirect(route('business.dashboard'));

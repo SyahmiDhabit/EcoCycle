@@ -16,42 +16,17 @@ $passwordError = $errors->first('password');
     <link rel="stylesheet" href="/css/auth/login.css">
 
 </head>
-<body class="signin-page">
+<body class="signin-page signin-login">
     <main class="signin-shell">
-        <aside class="signin-story" aria-label="EcoCycle business tools">
+        <section class="signin-content" aria-labelledby="signin-heading">
             <a class="signin-brand" href="/" aria-label="EcoCycle home">
                 <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                 <span>EcoCycle</span>
             </a>
 
-            <div class="signin-promise">
-                <h1>Less waste. More possibility.</h1>
-                <p>Your everyday operations, connected to a more circular Malaysian business community.</p>
-            </div>
-
-            <div class="signin-workshop">
-                <img class="signin-workshop-photo" src="/images/figma/signup/verification-hero.jpg" alt="Reusable materials organized in a business warehouse">
-                <div class="signin-material-story">
-                    <img src="/images/figma/signup/recycle.svg" alt="">
-                    <span>A resource, not a leftover.<small>Better operations. More possibilities.</small></span>
-                </div>
-            </div>
-
-            <div class="signin-benefits">
-                <div><img src="/images/figma/signup/package.svg" alt=""><span>Track stock</span></div>
-                <div><img src="/images/figma/signup/waste.svg" alt=""><span>Record waste</span></div>
-                <div><img src="/images/figma/signup/exchange.svg" alt=""><span>Exchange surplus</span></div>
-            </div>
-            <p class="signin-tagline">SMART SME OPERATIONS &amp; WASTE-TO-VALUE EXCHANGE</p>
-        </aside>
-
-        <section class="signin-panel" aria-labelledby="signin-heading">
-
-
-            <div class="signin-content">
                 <header class="signin-welcome">
                     <p class="signin-eyebrow">BUSINESS &amp; ADMIN ACCESS</p>
-                    <h2 id="signin-heading">Welcome back.</h2>
+                    <h1 id="signin-heading">Welcome back.</h1>
                     <p>Sign in to keep your materials and operations moving.</p>
                 </header>
 
@@ -65,7 +40,7 @@ $passwordError = $errors->first('password');
                 <form class="signin-form" method="POST" action="/login">
                     <?= csrf_field() ?>
                     <div class="signin-field">
-                        <label for="identifier">Business Email</label>
+                        <label for="identifier">Business email or admin username</label>
                         <input id="identifier" name="identifier" type="text" value="<?= e(old('identifier')) ?>" placeholder="you@business.com or admin username" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="identifier-error"' : '' ?>>
                         <?php if ($emailError): ?><small class="signin-field-error" id="identifier-error"><?= e($emailError) ?></small><?php endif; ?>
                     </div>
@@ -89,7 +64,6 @@ $passwordError = $errors->first('password');
 
                 <p class="signin-register-link">New to EcoCycle? <a href="/register">Register your business <span aria-hidden="true">&#8594;</span></a></p>
                 <p class="signin-access-note">Sign in with your business email, or use your administrator username. Business access is available after approval.</p>
-            </div>
         </section>
     </main>
 <script src="/js/language-switcher.js" defer></script>

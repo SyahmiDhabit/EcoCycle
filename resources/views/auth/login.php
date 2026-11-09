@@ -30,6 +30,19 @@ $passwordError = $errors->first('password');
                     <p>Sign in to keep your materials and operations moving.</p>
                 </header>
 
+                <?php if (session('status')): ?>
+                    <div style="padding:12px 16px;border-radius:7px;background:#eaf3e8;border:1px solid #c7dbc5;color:#285c44;font-size:12px;font-weight:600;margin-bottom:16px;" role="status">
+                        <?= e(session('status')) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (session('error')): ?>
+                    <div class="signin-error-summary" role="alert" aria-live="assertive" style="background:#f9eae6;border-color:#e0b2ac;margin-bottom:16px;">
+                        <strong style="color:#a0483e;">Account Not Approved</strong>
+                        <span style="color:#a0483e;"><?= e(session('error')) ?></span>
+                    </div>
+                <?php endif; ?>
+
                 <?php if ($errors->any()): ?>
                     <div class="signin-error-summary" role="alert" aria-live="assertive">
                         <strong>We couldn’t sign you in.</strong>

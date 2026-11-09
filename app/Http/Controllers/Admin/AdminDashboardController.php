@@ -56,6 +56,9 @@ class AdminDashboardController extends Controller
         $path = $document === 'certificate' ? $business->ssm_certificate_path : $business->ssm_profile_path;
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-        return Storage::disk('local')->download($path);
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('local');
+
+        return $disk->download($path);
     }
 }

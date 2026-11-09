@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Administrator;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -59,6 +60,28 @@ class AuthenticatedSessionController extends Controller
             ->first();
 
         if ($business && Hash::check($credentials['password'], $business->password)) {
+            if ($business->account_status === 'rejected') {
+                if ($business->ssm_certificate_path) {
+                    Storage::disk('local')->delete($business->ssm_certificate_path);
+                }
+
+                if ($business->ssm_profile_path) {
+                    Storage::disk('local')->delete($business->ssm_profile_path);
+                }
+
+                $business->delete();
+
+                Auth::guard('web')->logout();
+                Auth::guard('admin')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->with(
+                    'error',
+                    'Your business application was not approved by the administrator and has been disabled. All submitted application data has been removed. You may register again.'
+                );
+            }
+
             Auth::guard('web')->login($business, $remember);
             $request->session()->regenerate();
 

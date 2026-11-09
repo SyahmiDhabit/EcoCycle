@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\BusinessMailNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -14,14 +16,22 @@ class BusinessApplicationController extends Controller
 {
     public function show(Request $request): View
     {
+        /** @var User $business */
+        $business = Auth::user();
+
         return view('business.verification', [
-            'business' => $request->user(),
+            'business' => $business,
         ]);
     }
 
     public function update(Request $request, BusinessMailNotifier $mailer): RedirectResponse
     {
-        $business = $request->user();
+        /** @var User $business */
+        $business = Auth::user();
+
+        if ($business->account_status === 'rejected') {
+            abort(403, 'Your application was not approved by the administrator and cannot be modified.');
+        }
 
         $validated = $request->validate([
             'business_name' => ['required', 'string', 'max:255'],
@@ -135,17 +145,47 @@ class BusinessApplicationController extends Controller
     {
         abort_unless(in_array($document, ['certificate', 'profile'], true), 404);
 
-        $business = $request->user();
+        /** @var User $business */
+        $business = Auth::user();
         $path = $document === 'certificate' ? $business->ssm_certificate_path : $business->ssm_profile_path;
 
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-        return Storage::disk('local')->download($path);
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('local');
+
+        return $disk->download($path);
+    }
+
+    public function destroy(Request $request): RedirectResponse
+    {
+        /** @var User $business */
+        $business = Auth::user();
+
+        if ($business->ssm_certificate_path) {
+            Storage::disk('local')->delete($business->ssm_certificate_path);
+        }
+
+        if ($business->ssm_profile_path) {
+            Storage::disk('local')->delete($business->ssm_profile_path);
+        }
+
+        Auth::guard('web')->logout();
+        $business->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('register')->with(
+            'status',
+            'Your application data and uploaded documents have been completely removed. You can now register again.'
+        );
     }
 
     public function resubmit(Request $request, BusinessMailNotifier $mailer): RedirectResponse
     {
-        $business = $request->user();
+        /** @var User $business */
+        $business = Auth::user();
         abort_unless($business->account_status === 'rejected', 404);
 
         $validated = $request->validate([

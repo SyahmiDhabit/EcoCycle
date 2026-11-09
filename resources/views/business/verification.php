@@ -1,16 +1,18 @@
 <?php
-$isRejected = $business->account_status === 'rejected';
-$isApproved = $business->account_status === 'approved';
+/** @var \App\Models\User $business */
+$business = $business ?? auth()->user() ?? new \App\Models\User();
+$isRejected = ($business->account_status ?? 'pending') === 'rejected';
+$isApproved = ($business->account_status ?? 'pending') === 'approved';
 $submittedAt = $business->created_at?->timezone('Asia/Kuala_Lumpur');
 $updatedAt = $business->updated_at?->timezone('Asia/Kuala_Lumpur');
 $states = ['Johor', 'Kedah', 'Kelantan', 'Kuala Lumpur', 'Labuan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Penang', 'Perak', 'Perlis', 'Putrajaya', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu'];
 $industries = ['Agriculture & food', 'Construction & building materials', 'Furniture & wood products', 'Manufacturing', 'Packaging & paper', 'Textiles & apparel', 'Other'];
-$statusLabel = match ($business->account_status) {
+$statusLabel = match ($business->account_status ?? 'pending') {
     'approved' => 'Approved',
-    'rejected' => 'Changes required',
+    'rejected' => 'Not approved',
     default => 'Verification pending',
 };
-$statusClass = match ($business->account_status) {
+$statusClass = match ($business->account_status ?? 'pending') {
     'approved' => 'status-approved',
     'rejected' => 'status-rejected',
     default => 'status-pending',
@@ -51,12 +53,12 @@ $hasFormErrors = $errors->any();
 
 <main class="verification-content">
     <section class="verification-intro">
-        <p class="application-id">BUSINESS APPLICATION #<?= e(str_pad((string) $business->id, 6, '0', STR_PAD_LEFT)) ?></p>
+        <p class="application-id">@<?= e($business->name) ?></p>
         <h1>
             <?php if ($isApproved): ?>
                 Your business has been verified!
             <?php elseif ($isRejected): ?>
-                Your application needs changes.
+                Your application has been declined.
             <?php else: ?>
                 Your business application is under review.
             <?php endif; ?>
@@ -88,7 +90,7 @@ $hasFormErrors = $errors->any();
                 <?php if ($isApproved): ?>
                     Verification complete
                 <?php elseif ($isRejected): ?>
-                    Action required on your application
+                    Application not approved
                 <?php else: ?>
                     Marketplace &amp; transactions are locked until approval
                 <?php endif; ?>
@@ -97,7 +99,7 @@ $hasFormErrors = $errors->any();
                 <?php if ($isApproved): ?>
                     Your business has been approved by the platform administrator. You now have full access to the EcoCycle marketplace and inventory management.
                 <?php elseif ($isRejected): ?>
-                    <?= e($business->review_note ?: 'The administrator requested changes. Please review your information and documents below, make the necessary corrections, and click "Save & Resubmit Changes".') ?>
+                    <?= e($business->review_note ?: 'The administrator did not approve this application.') ?> This account has been disabled and modifications are locked.
                 <?php else: ?>
                     Your application is currently in the administrator review queue. You can review and modify your submitted details anytime below before final approval. We’ll notify you at <strong><?= e($business->email) ?></strong> when a decision is made.
                 <?php endif; ?>
@@ -131,7 +133,7 @@ $hasFormErrors = $errors->any();
                             <?php if ($isApproved): ?>
                                 Approved by administrator
                             <?php elseif ($isRejected): ?>
-                                Changes requested by reviewer
+                                Application declined by administrator
                             <?php else: ?>
                                 In queue · Currently under review
                             <?php endif; ?>
@@ -177,14 +179,13 @@ $hasFormErrors = $errors->any();
             </div>
 
             <p class="document-note">Documents are encrypted and stored privately. They are accessible only by you and EcoCycle administrators.</p>
-            <div class="document-actions">
-                <a class="outline-button inline-button" href="#modify-application" onclick="toggleEditForm(true)">
-                    <span>✎ Modify or replace documents</span>
-                </a>
-                <a class="outline-button inline-button" href="mailto:support@ecocycle.my">
-                    <img src="/images/figma/verification/mail.svg" alt=""> Contact support
-                </a>
-            </div>
+            <?php if (!$isRejected): ?>
+                <div class="document-actions">
+                    <a class="outline-button inline-button" href="#modify-application" onclick="toggleEditForm(true)">
+                        <span>✎ Modify or replace documents</span>
+                    </a>
+                </div>
+            <?php endif; ?>
         </section>
     </div>
 
@@ -195,9 +196,13 @@ $hasFormErrors = $errors->any();
                 <h2>Submitted application details</h2>
                 <p>The information submitted for your company profile and legitimacy check.</p>
             </div>
-            <button type="button" class="action-button-primary" onclick="toggleEditForm(true)">
-                <span>✎ Edit application</span>
-            </button>
+            <?php if (!$isRejected): ?>
+                <button type="button" class="action-button-primary" onclick="toggleEditForm(true)">
+                    <span>✎ Edit application</span>
+                </button>
+            <?php else: ?>
+                <span class="status-pill status-rejected" style="font-size:12px;padding:6px 12px;">Locked / Non-modifiable</span>
+            <?php endif; ?>
         </div>
 
         <dl class="business-info-grid">
@@ -232,29 +237,55 @@ $hasFormErrors = $errors->any();
         </dl>
     </section>
 
-    <!-- Application Modify Form Card -->
-    <section class="review-card modify-card <?= $hasFormErrors ? 'form-visible' : '' ?>" id="modify-application">
-        <div class="section-card-header">
-            <div>
-                <h2>Modify your application details</h2>
-                <p>Update any details or re-upload documents. Saving will update your record and notify the administrator for review.</p>
+    <?php if ($isRejected): ?>
+        <!-- Application Not Approved & Reset Card -->
+        <section class="review-card" style="border-left:4px solid var(--red);display:flex;flex-direction:column;gap:14px;">
+            <div class="section-card-header" style="margin-bottom:0;">
+                <div>
+                    <h2 style="color:var(--red);margin:0 0 4px;">Application Not Approved</h2>
+                    <p>Your business application was reviewed and declined by the administrator.</p>
+                </div>
+                <span class="status-pill status-rejected" style="font-size:12px;padding:6px 12px;">Account Disabled &amp; Locked</span>
             </div>
-            <button type="button" class="outline-button" onclick="toggleEditForm(false)">
-                <span>Cancel</span>
-            </button>
-        </div>
 
-        <?php if ($isRejected && $business->review_note): ?>
-            <div class="review-reason">
-                <img src="/images/figma/verification/circle-alert.svg" alt="">
-                <span>
-                    <strong>Reviewer’s note:</strong>
-                    <small><?= e($business->review_note) ?></small>
-                </span>
+            <?php if ($business->review_note): ?>
+                <div class="review-reason">
+                    <img src="/images/figma/verification/circle-alert.svg" alt="">
+                    <span>
+                        <strong>Reviewer remarks:</strong>
+                        <small><?= e($business->review_note) ?></small>
+                    </span>
+                </div>
+            <?php endif; ?>
+
+            <div style="padding:14px 16px;border-radius:7px;background:var(--paper);border:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.6;">
+                <strong style="color:var(--ink);">Modifications are disabled:</strong> Because this application was declined, details and documents cannot be modified. If you would like to start over with fresh documents, you can permanently delete all your application data below.
             </div>
-        <?php endif; ?>
 
-        <form class="edit-form" method="POST" action="<?= e(route('business.application.update')) ?>" enctype="multipart/form-data">
+            <div style="margin-top:4px;">
+                <form method="POST" action="<?= e(route('business.application.destroy')) ?>" onsubmit="return confirm('Are you sure you want to delete all your application data and uploaded documents? This will permanently remove your account so you can register fresh.');">
+                    <?= csrf_field() ?>
+                    <?= method_field('DELETE') ?>
+                    <button type="submit" class="outline-button" style="color:var(--red);border-color:#e0b2ac;background:#fff8f7;font-weight:600;">
+                        <span>🗑 Delete all application data &amp; restart registration</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+    <?php else: ?>
+        <!-- Application Modify Form Card -->
+        <section class="review-card modify-card <?= $hasFormErrors ? 'form-visible' : '' ?>" id="modify-application">
+            <div class="section-card-header">
+                <div>
+                    <h2>Modify your application details</h2>
+                    <p>Update any details or re-upload documents. Saving will update your record and notify the administrator for review.</p>
+                </div>
+                <button type="button" class="outline-button" onclick="toggleEditForm(false)">
+                    <span>Cancel</span>
+                </button>
+            </div>
+
+            <form class="edit-form" method="POST" action="<?= e(route('business.application.update')) ?>" enctype="multipart/form-data">
             <?= csrf_field() ?>
 
             <div class="field-grid">
@@ -374,6 +405,7 @@ $hasFormErrors = $errors->any();
             </div>
         </form>
     </section>
+    <?php endif; ?>
 
     <p class="document-trust">
         <img src="/images/figma/verification/lock.svg" alt="">

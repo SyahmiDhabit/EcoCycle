@@ -113,16 +113,27 @@ class BusinessApplicationTest extends TestCase
         });
     }
 
-    public function test_rejected_business_cannot_modify_application_and_gets_forbidden(): void
+    public function test_rejected_business_can_modify_application_and_resubmit(): void
     {
+        Mail::fake();
+
         $business = User::factory()->create([
+            'business_name' => 'Original Name',
+            'business_registration_number' => '202001011111 (999999-X)',
             'account_status' => 'rejected',
-            'review_note' => 'Invalid SSM document.',
+            'review_note' => 'Please provide clear SSM registration certificate.',
+            'industry' => 'Other',
+            'registered_address' => 'Old Address',
+            'city' => 'Klang',
+            'postcode' => '41000',
+            'state' => 'Selangor',
+            'name' => 'Old Contact',
+            'business_phone' => '+60 3-1234 5678',
         ]);
 
         $response = $this->actingAs($business)
             ->post(route('business.application.update'), [
-                'business_name' => 'Should Not Work',
+                'business_name' => 'Updated Name Sdn Bhd',
                 'business_registration_number' => '202001011111 (999999-X)',
                 'industry' => 'Packaging & paper',
                 'business_phone' => '+60 3-9876 5432',
@@ -130,36 +141,46 @@ class BusinessApplicationTest extends TestCase
                 'city' => 'Shah Alam',
                 'postcode' => '40000',
                 'state' => 'Selangor',
-                'name' => 'Should Not Work',
+                'name' => 'Updated Contact Person',
+                'ssm_certificate' => UploadedFile::fake()->create('new_cert.pdf', 200, 'application/pdf'),
             ]);
 
-        $response->assertForbidden();
+        $response->assertSessionHas('status');
+
+        $updated = $business->fresh();
+        $this->assertSame('Updated Name Sdn Bhd', $updated->business_name);
+        $this->assertSame('pending', $updated->account_status);
+        $this->assertNull($updated->review_note);
+        $this->assertNotNull($updated->ssm_certificate_path);
+
+        Mail::assertSent(BusinessApplicationSubmitted::class, function ($mail) use ($updated) {
+            return $mail->business->id === $updated->id && $mail->isUpdate === true;
+        });
     }
 
-    public function test_rejected_business_trying_to_sign_in_deletes_all_data_and_redirects(): void
+    public function test_rejected_business_signing_in_is_redirected_to_verification_to_fix_issues(): void
     {
         $business = User::factory()->create([
             'email' => 'rejected@example.com',
             'password' => \Illuminate\Support\Facades\Hash::make('Secret123'),
             'account_status' => 'rejected',
-            'ssm_certificate_path' => 'business-verification/rej_cert.pdf',
-            'ssm_profile_path' => 'business-verification/rej_profile.pdf',
+            'review_note' => 'The uploaded SSM was unreadable. Please re-upload.',
         ]);
-
-        Storage::disk('local')->put('business-verification/rej_cert.pdf', 'cert data');
-        Storage::disk('local')->put('business-verification/rej_profile.pdf', 'profile data');
 
         $response = $this->post(route('login.store'), [
             'identifier' => 'rejected@example.com',
             'password' => 'Secret123',
         ]);
 
-        $response->assertRedirect(route('login'));
-        $response->assertSessionHas('error');
+        $response->assertRedirect(route('business.dashboard'));
+        $this->assertAuthenticatedAs($business);
 
-        $this->assertFalse(Storage::disk('local')->exists('business-verification/rej_cert.pdf'));
-        $this->assertFalse(Storage::disk('local')->exists('business-verification/rej_profile.pdf'));
-        $this->assertDatabaseMissing('business', ['id' => $business->id]);
+        $this->actingAs($business)
+            ->get(route('business.dashboard'))
+            ->assertOk()
+            ->assertSee('Changes required')
+            ->assertSee('The uploaded SSM was unreadable. Please re-upload.')
+            ->assertSee('Update application details &amp; fix issues', false);
     }
 
     public function test_rejected_business_can_delete_application_data_and_restart(): void

@@ -29,10 +29,6 @@ class BusinessApplicationController extends Controller
         /** @var User $business */
         $business = Auth::user();
 
-        if ($business->account_status === 'rejected') {
-            abort(403, 'Your application was not approved by the administrator and cannot be modified.');
-        }
-
         $validated = $request->validate([
             'business_name' => ['required', 'string', 'max:255'],
             'business_registration_number' => [

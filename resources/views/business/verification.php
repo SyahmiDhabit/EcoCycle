@@ -9,7 +9,7 @@ $states = ['Johor', 'Kedah', 'Kelantan', 'Kuala Lumpur', 'Labuan', 'Melaka', 'Ne
 $industries = ['Agriculture & food', 'Construction & building materials', 'Furniture & wood products', 'Manufacturing', 'Packaging & paper', 'Textiles & apparel', 'Other'];
 $statusLabel = match ($business->account_status ?? 'pending') {
     'approved' => 'Approved',
-    'rejected' => 'Not approved',
+    'rejected' => 'Changes required',
     default => 'Verification pending',
 };
 $statusClass = match ($business->account_status ?? 'pending') {
@@ -58,7 +58,7 @@ $hasFormErrors = $errors->any();
             <?php if ($isApproved): ?>
                 Your business has been verified!
             <?php elseif ($isRejected): ?>
-                Your application has been declined.
+                Your application needs changes.
             <?php else: ?>
                 Your business application is under review.
             <?php endif; ?>
@@ -90,7 +90,7 @@ $hasFormErrors = $errors->any();
                 <?php if ($isApproved): ?>
                     Verification complete
                 <?php elseif ($isRejected): ?>
-                    Application not approved
+                    Action required on your application
                 <?php else: ?>
                     Marketplace &amp; transactions are locked until approval
                 <?php endif; ?>
@@ -99,13 +99,34 @@ $hasFormErrors = $errors->any();
                 <?php if ($isApproved): ?>
                     Your business has been approved by the platform administrator. You now have full access to the EcoCycle marketplace and inventory management.
                 <?php elseif ($isRejected): ?>
-                    <?= e($business->review_note ?: 'The administrator did not approve this application.') ?> This account has been disabled and modifications are locked.
+                    The administrator requested changes before approval. Please review the reviewer's feedback below, update your details or re-upload documents, and click "Save &amp; Resubmit Changes".
                 <?php else: ?>
                     Your application is currently in the administrator review queue. You can review and modify your submitted details anytime below before final approval. We’ll notify you at <strong><?= e($business->email) ?></strong> when a decision is made.
                 <?php endif; ?>
             </p>
         </div>
     </aside>
+
+    <?php if ($isRejected && $business->review_note): ?>
+        <section class="review-card" style="border-left:4px solid var(--red);background:#fef7f6;padding:20px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <img src="/images/figma/verification/circle-alert.svg" alt="" style="width:20px;height:20px;">
+                    <strong style="color:var(--red);font-size:15px;">Administrator Feedback — What you need to fix:</strong>
+                </div>
+                <span class="status-pill status-rejected" style="font-size:11px;padding:4px 10px;">Action Required</span>
+            </div>
+            <div style="background:#fff;padding:14px 16px;border-radius:8px;border:1px solid #f2cfca;color:var(--ink);font-size:13px;line-height:1.6;">
+                <?= nl2br(e($business->review_note)) ?>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:4px;">
+                <span style="color:var(--muted);font-size:12px;">Update your details or replace SSM files in the form below, then submit for re-review.</span>
+                <a href="#modify-application" class="action-button-primary" style="font-size:12px;padding:6px 14px;" onclick="toggleEditForm(true)">
+                    <span>✎ Go to Edit Form &darr;</span>
+                </a>
+            </div>
+        </section>
+    <?php endif; ?>
 
     <div class="review-grid">
         <section class="review-card progress-card">
@@ -179,13 +200,11 @@ $hasFormErrors = $errors->any();
             </div>
 
             <p class="document-note">Documents are encrypted and stored privately. They are accessible only by you and EcoCycle administrators.</p>
-            <?php if (!$isRejected): ?>
-                <div class="document-actions">
-                    <a class="outline-button inline-button" href="#modify-application" onclick="toggleEditForm(true)">
-                        <span>✎ Modify or replace documents</span>
-                    </a>
-                </div>
-            <?php endif; ?>
+            <div class="document-actions">
+                <a class="outline-button inline-button" href="#modify-application" onclick="toggleEditForm(true)">
+                    <span>✎ Modify or replace documents</span>
+                </a>
+            </div>
         </section>
     </div>
 
@@ -196,13 +215,9 @@ $hasFormErrors = $errors->any();
                 <h2>Submitted application details</h2>
                 <p>The information submitted for your company profile and legitimacy check.</p>
             </div>
-            <?php if (!$isRejected): ?>
-                <button type="button" class="action-button-primary" onclick="toggleEditForm(true)">
-                    <span>✎ Edit application</span>
-                </button>
-            <?php else: ?>
-                <span class="status-pill status-rejected" style="font-size:12px;padding:6px 12px;">Locked / Non-modifiable</span>
-            <?php endif; ?>
+            <button type="button" class="action-button-primary" onclick="toggleEditForm(true)">
+                <span>✎ Edit application</span>
+            </button>
         </div>
 
         <dl class="business-info-grid">
@@ -237,53 +252,17 @@ $hasFormErrors = $errors->any();
         </dl>
     </section>
 
-    <?php if ($isRejected): ?>
-        <!-- Application Not Approved & Reset Card -->
-        <section class="review-card" style="border-left:4px solid var(--red);display:flex;flex-direction:column;gap:14px;">
-            <div class="section-card-header" style="margin-bottom:0;">
-                <div>
-                    <h2 style="color:var(--red);margin:0 0 4px;">Application Not Approved</h2>
-                    <p>Your business application was reviewed and declined by the administrator.</p>
-                </div>
-                <span class="status-pill status-rejected" style="font-size:12px;padding:6px 12px;">Account Disabled &amp; Locked</span>
+    <!-- Application Modify Form Card -->
+    <section class="review-card modify-card <?= ($isRejected || $hasFormErrors) ? 'form-visible' : '' ?>" id="modify-application">
+        <div class="section-card-header">
+            <div>
+                <h2><?= $isRejected ? 'Update application details &amp; fix issues' : 'Modify your application details' ?></h2>
+                <p>Update any details or re-upload clear SSM documents. Saving will update your record and notify the administrator for review.</p>
             </div>
-
-            <?php if ($business->review_note): ?>
-                <div class="review-reason">
-                    <img src="/images/figma/verification/circle-alert.svg" alt="">
-                    <span>
-                        <strong>Reviewer remarks:</strong>
-                        <small><?= e($business->review_note) ?></small>
-                    </span>
-                </div>
-            <?php endif; ?>
-
-            <div style="padding:14px 16px;border-radius:7px;background:var(--paper);border:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.6;">
-                <strong style="color:var(--ink);">Modifications are disabled:</strong> Because this application was declined, details and documents cannot be modified. If you would like to start over with fresh documents, you can permanently delete all your application data below.
-            </div>
-
-            <div style="margin-top:4px;">
-                <form method="POST" action="<?= e(route('business.application.destroy')) ?>" onsubmit="return confirm('Are you sure you want to delete all your application data and uploaded documents? This will permanently remove your account so you can register fresh.');">
-                    <?= csrf_field() ?>
-                    <?= method_field('DELETE') ?>
-                    <button type="submit" class="outline-button" style="color:var(--red);border-color:#e0b2ac;background:#fff8f7;font-weight:600;">
-                        <span>🗑 Delete all application data &amp; restart registration</span>
-                    </button>
-                </form>
-            </div>
-        </section>
-    <?php else: ?>
-        <!-- Application Modify Form Card -->
-        <section class="review-card modify-card <?= $hasFormErrors ? 'form-visible' : '' ?>" id="modify-application">
-            <div class="section-card-header">
-                <div>
-                    <h2>Modify your application details</h2>
-                    <p>Update any details or re-upload documents. Saving will update your record and notify the administrator for review.</p>
-                </div>
-                <button type="button" class="outline-button" onclick="toggleEditForm(false)">
-                    <span>Cancel</span>
-                </button>
-            </div>
+            <button type="button" class="outline-button" onclick="toggleEditForm(false)">
+                <span>Cancel</span>
+            </button>
+        </div>
 
             <form class="edit-form" method="POST" action="<?= e(route('business.application.update')) ?>" enctype="multipart/form-data">
             <?= csrf_field() ?>
@@ -405,6 +384,21 @@ $hasFormErrors = $errors->any();
             </div>
         </form>
     </section>
+
+    <?php if ($isRejected): ?>
+        <section class="review-card" style="border-left:4px solid #d99;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;background:#fafafa;">
+            <div>
+                <strong style="color:var(--ink);font-size:13px;">Don’t want to fix and resubmit?</strong>
+                <p style="margin:2px 0 0;color:var(--muted);font-size:12px;">You can permanently delete your submitted application data and start over fresh.</p>
+            </div>
+            <form method="POST" action="<?= e(route('business.application.destroy')) ?>" onsubmit="return confirm('Are you sure you want to permanently delete all your application data and uploaded documents?');">
+                <?= csrf_field() ?>
+                <?= method_field('DELETE') ?>
+                <button type="submit" class="outline-button" style="color:var(--red);border-color:#e0b2ac;background:#fff8f7;font-weight:600;">
+                    <span>🗑 Delete all application data &amp; restart</span>
+                </button>
+            </form>
+        </section>
     <?php endif; ?>
 
     <p class="document-trust">

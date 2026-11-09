@@ -11,10 +11,18 @@ use Throwable;
 
 class BusinessMailNotifier
 {
-    public function submitted(User $business): void
+    public function submitted(User $business, bool $isUpdate = false): void
     {
-        $this->send('registration', $business->id, fn () => Mail::to(config('services.ecocycle.admin_email'))
-            ->send(new BusinessApplicationSubmitted($business)));
+        $adminEmail = config('services.ecocycle.admin_email') ?: 'ssyahmidhabit@gmail.com';
+        $adminRecipients = array_values(array_filter(array_unique(array_merge(
+            [$adminEmail],
+            \App\Models\Administrator::pluck('email')->all()
+        ))));
+
+        if (! empty($adminRecipients)) {
+            $this->send('registration', $business->id, fn () => Mail::to($adminRecipients)
+                ->send(new BusinessApplicationSubmitted($business, $isUpdate)));
+        }
     }
 
     public function decision(User $business): void
@@ -37,10 +45,11 @@ class BusinessMailNotifier
         try {
             $send();
         } catch (Throwable $exception) {
-            Log::error('EcoCycle email notification could not be sent.', [
+            Log::error('EcoCycle email notification could not be sent: '.$exception->getMessage(), [
                 'notification' => $type,
                 'business_id' => $businessId,
                 'exception' => $exception::class,
+                'message' => $exception->getMessage(),
             ]);
         }
     }

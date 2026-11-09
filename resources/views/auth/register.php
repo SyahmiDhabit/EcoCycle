@@ -1,6 +1,6 @@
 <?php
 $errors = $errors ?? new \Illuminate\Support\MessageBag();
-$fields = ['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'password_confirmation', 'ssm_certificate', 'ssm_profile', 'terms_accepted'];
+$fields = ['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'password_confirmation', 'ssm_certificate', 'ssm_profile'];
 $fieldErrors = [];
 foreach ($fields as $field) { $fieldErrors[$field] = $errors->first($field); }
 $passwordMismatch = $fieldErrors['password'] === 'The passwords do not match.';
@@ -17,13 +17,12 @@ $errorLabels = [
     'city' => 'City',
     'postcode' => 'Postcode',
     'state' => 'State',
-    'name' => 'Contact person',
+    'name' => 'Company username',
     'email' => 'Business email',
     'password' => 'Password',
     'password_confirmation' => 'Confirm password',
     'ssm_certificate' => 'SSM registration certificate',
     'ssm_profile' => 'SSM business profile',
-    'terms_accepted' => 'Business authorisation and terms',
 ];
 $states = ['Johor', 'Kedah', 'Kelantan', 'Kuala Lumpur', 'Labuan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Penang', 'Perak', 'Perlis', 'Putrajaya', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu'];
 $industries = ['Agriculture & food', 'Construction & building materials', 'Furniture & wood products', 'Manufacturing', 'Packaging & paper', 'Textiles & apparel', 'Other'];
@@ -59,42 +58,219 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                 <li><span class="step-icon pending">&#9711;</span><span><strong>Administrator review</strong><small>We will email you with the decision.</small></span></li>
             </ol>
             <div class="verification-note"><span class="note-check">&#10003;</span><span><strong>Verification comes first</strong><small>You can access the marketplace and transactions only after approval. There are no separate buyer or seller accounts.</small></span></div>
-            <p class="signup-support">Need help with your documents?<br><a href="mailto:support@ecocycle.my">support@ecocycle.my</a></p>
         </aside>
         <section class="signup-form-panel" aria-labelledby="signup-heading">
             <header class="form-heading"><h2 id="signup-heading">Register your business</h2><p>All fields marked * are required. Your documents are private.</p></header>
             <?php if (session('status')): ?><div class="success-notice" role="status" aria-live="polite"><?= e(session('status')) ?></div><?php endif; ?>
+            <?php if ($errors->has('name') || $errors->has('email')): ?>
+                <div class="cant-use-alert-banner" role="alert">
+                    <div class="alert-banner-header">
+                        <span class="alert-icon">⚠️</span>
+                        <strong>Cannot use specified details:</strong>
+                    </div>
+                    <ul class="alert-banner-list">
+                        <?php if ($errors->has('name')): ?>
+                            <li><?= e($errors->first('name')) ?></li>
+                        <?php endif; ?>
+                        <?php if ($errors->has('email')): ?>
+                            <li><?= e($errors->first('email')) ?></li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
             <?php if ($errors->any()): ?><div class="error-summary" id="signup-error-summary" role="alert" tabindex="-1"><strong>Please review these items:</strong><ul><?php foreach ($errors->getMessages() as $field => $messages): ?><li><a href="#<?= e($field) ?>"><?= e($errorLabels[$field] ?? ucfirst(str_replace('_', ' ', $field))) ?>:</a> <?= e($messages[0]) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
             <form id="business-registration-form" class="registration-form" method="POST" action="/register" enctype="multipart/form-data" novalidate>
                 <?= csrf_field() ?>
                 <section class="form-card">
                     <div class="card-heading"><h3>Company &amp; contact information</h3><p>Use the details shown on your SSM registration.</p></div>
                     <div class="field-grid">
-                        <div class="form-field"><label for="business_name">Registered business name *</label><input id="business_name" name="business_name" value="<?= e(old('business_name')) ?>" placeholder="KayuKita Manufacturing Sdn. Bhd." autocomplete="organization" maxlength="255" required aria-invalid="<?= $fieldErrors['business_name'] ? 'true' : 'false' ?>"><?php if ($fieldErrors['business_name']): ?><small class="field-error"><?= e($fieldErrors['business_name']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="business_registration_number">SSM registration number *</label><input id="business_registration_number" name="business_registration_number" value="<?= e(old('business_registration_number')) ?>" placeholder="202101023456 (1425678-X)" maxlength="60" required aria-invalid="<?= $fieldErrors['business_registration_number'] ? 'true' : 'false' ?>"><?php if ($fieldErrors['business_registration_number']): ?><small class="field-error"><?= e($fieldErrors['business_registration_number']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="industry">Industry *</label><select id="industry" name="industry" required aria-invalid="<?= $fieldErrors['industry'] ? 'true' : 'false' ?>"><option value="">Select your industry</option><?php foreach ($industries as $industry): ?><option value="<?= e($industry) ?>" <?= old('industry') === $industry ? 'selected' : '' ?>><?= e($industry) ?></option><?php endforeach; ?></select><?php if ($fieldErrors['industry']): ?><small class="field-error"><?= e($fieldErrors['industry']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="business_phone">Business phone *</label><input id="business_phone" name="business_phone" type="tel" value="<?= e(old('business_phone')) ?>" placeholder="+60 3-5510 2488" autocomplete="tel" maxlength="30" required aria-invalid="<?= $fieldErrors['business_phone'] ? 'true' : 'false' ?>"><?php if ($fieldErrors['business_phone']): ?><small class="field-error"><?= e($fieldErrors['business_phone']) ?></small><?php endif; ?></div>
-                        <div class="form-field full-field"><label for="registered_address">Registered address *</label><input id="registered_address" name="registered_address" value="<?= e(old('registered_address')) ?>" placeholder="18, Jalan Industri U6/8, Seksyen U6" autocomplete="street-address" maxlength="255" required aria-invalid="<?= $fieldErrors['registered_address'] ? 'true' : 'false' ?>"><?php if ($fieldErrors['registered_address']): ?><small class="field-error"><?= e($fieldErrors['registered_address']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="city">City *</label><input id="city" name="city" value="<?= e(old('city')) ?>" placeholder="Shah Alam" autocomplete="address-level2" maxlength="100" required aria-invalid="<?= $fieldErrors['city'] ? 'true' : 'false' ?>"><?php if ($fieldErrors['city']): ?><small class="field-error"><?= e($fieldErrors['city']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="postcode">Postcode *</label><input id="postcode" name="postcode" value="<?= e(old('postcode')) ?>" placeholder="40150" autocomplete="postal-code" inputmode="numeric" maxlength="12" required aria-invalid="<?= $fieldErrors['postcode'] ? 'true' : 'false' ?>"><?php if ($fieldErrors['postcode']): ?><small class="field-error"><?= e($fieldErrors['postcode']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="state">State *</label><select id="state" name="state" required aria-invalid="<?= $fieldErrors['state'] ? 'true' : 'false' ?>"><option value="">Select state</option><?php foreach ($states as $state): ?><option value="<?= e($state) ?>" <?= old('state') === $state ? 'selected' : '' ?>><?= e($state) ?></option><?php endforeach; ?></select><?php if ($fieldErrors['state']): ?><small class="field-error"><?= e($fieldErrors['state']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="name">Contact person *</label><input id="name" name="name" value="<?= e(old('name')) ?>" placeholder="Amir Lim" autocomplete="name" maxlength="255" required aria-invalid="<?= $fieldErrors['name'] ? 'true' : 'false' ?>"><?php if ($fieldErrors['name']): ?><small class="field-error"><?= e($fieldErrors['name']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="email">Business email *</label><input id="email" name="email" type="email" value="<?= e(old('email')) ?>" placeholder="amir@kayukita.com.my" autocomplete="email" maxlength="255" required aria-invalid="<?= $fieldErrors['email'] ? 'true' : 'false' ?>"><?php if ($fieldErrors['email']): ?><small class="field-error"><?= e($fieldErrors['email']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="password">Password *</label><div class="password-wrap"><input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required aria-invalid="<?= $fieldErrors['password'] ? 'true' : 'false' ?>"><button type="button" data-password-toggle="password" aria-label="Show password">Show</button></div><small class="field-hint">At least 8 characters, including a number.</small><?php if ($fieldErrors['password']): ?><small class="field-error"><?= e($fieldErrors['password']) ?></small><?php endif; ?></div>
-                        <div class="form-field"><label for="password_confirmation">Confirm password *</label><div class="password-wrap"><input id="password_confirmation" name="password_confirmation" type="password" minlength="8" autocomplete="new-password" required><button type="button" data-password-toggle="password_confirmation" aria-label="Show password confirmation">Show</button></div><?php if ($fieldErrors['password_confirmation']): ?><small class="field-error"><?= e($fieldErrors['password_confirmation']) ?></small><?php endif; ?></div>
+                        <div class="form-field">
+                            <label for="business_name">Registered business name *</label>
+                            <input id="business_name" name="business_name" value="<?= e(old('business_name')) ?>" placeholder="e.g. KayuKita Manufacturing Sdn. Bhd." autocomplete="organization" maxlength="255" required aria-invalid="<?= $fieldErrors['business_name'] ? 'true' : 'false' ?>">
+                            <?php if ($fieldErrors['business_name']): ?><small class="field-error"><?= e($fieldErrors['business_name']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field">
+                            <label for="business_registration_number">SSM registration number *</label>
+                            <input id="business_registration_number" name="business_registration_number" value="<?= e(old('business_registration_number')) ?>" placeholder="e.g. 202101023456 (1425678-X)" maxlength="60" required aria-invalid="<?= $fieldErrors['business_registration_number'] ? 'true' : 'false' ?>">
+                            <?php if ($fieldErrors['business_registration_number']): ?><small class="field-error"><?= e($fieldErrors['business_registration_number']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field">
+                            <label for="industry">Industry *</label>
+                            <select id="industry" name="industry" required aria-invalid="<?= $fieldErrors['industry'] ? 'true' : 'false' ?>">
+                                <option value="">e.g. Select your industry</option>
+                                <?php foreach ($industries as $industry): ?>
+                                    <option value="<?= e($industry) ?>" <?= old('industry') === $industry ? 'selected' : '' ?>><?= e($industry) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if ($fieldErrors['industry']): ?><small class="field-error"><?= e($fieldErrors['industry']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field">
+                            <label for="business_phone">Business phone *</label>
+                            <input id="business_phone" name="business_phone" type="tel" value="<?= e(old('business_phone')) ?>" placeholder="e.g. +60 12-345 6789" autocomplete="tel" maxlength="30" required aria-invalid="<?= $fieldErrors['business_phone'] ? 'true' : 'false' ?>">
+                            <?php if ($fieldErrors['business_phone']): ?><small class="field-error"><?= e($fieldErrors['business_phone']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field full-field">
+                            <label for="registered_address">Registered address *</label>
+                            <input id="registered_address" name="registered_address" value="<?= e(old('registered_address')) ?>" placeholder="e.g. No. 18, Jalan Industri U6/8, Seksyen U6" autocomplete="street-address" maxlength="255" required aria-invalid="<?= $fieldErrors['registered_address'] ? 'true' : 'false' ?>">
+                            <?php if ($fieldErrors['registered_address']): ?><small class="field-error"><?= e($fieldErrors['registered_address']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field">
+                            <label for="city">City *</label>
+                            <input id="city" name="city" value="<?= e(old('city')) ?>" placeholder="e.g. Shah Alam" autocomplete="address-level2" maxlength="100" required aria-invalid="<?= $fieldErrors['city'] ? 'true' : 'false' ?>">
+                            <?php if ($fieldErrors['city']): ?><small class="field-error"><?= e($fieldErrors['city']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field">
+                            <label for="postcode">Postcode *</label>
+                            <input id="postcode" name="postcode" value="<?= e(old('postcode')) ?>" placeholder="e.g. 40150" autocomplete="postal-code" inputmode="numeric" maxlength="12" required aria-invalid="<?= $fieldErrors['postcode'] ? 'true' : 'false' ?>">
+                            <?php if ($fieldErrors['postcode']): ?><small class="field-error"><?= e($fieldErrors['postcode']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field">
+                            <label for="state">State *</label>
+                            <select id="state" name="state" required aria-invalid="<?= $fieldErrors['state'] ? 'true' : 'false' ?>">
+                                <option value="">e.g. Select registered state</option>
+                                <?php foreach ($states as $state): ?>
+                                    <option value="<?= e($state) ?>" <?= old('state') === $state ? 'selected' : '' ?>><?= e($state) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if ($fieldErrors['state']): ?><small class="field-error"><?= e($fieldErrors['state']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field">
+                            <label for="name">Company username *</label>
+                            <input id="name" name="name" value="<?= e(old('name')) ?>" placeholder="e.g. kayukita_admin" autocomplete="username" maxlength="255" required aria-invalid="<?= $fieldErrors['name'] ? 'true' : 'false' ?>">
+                            <small class="field-hint">Your company login username</small>
+                            <div class="field-alert-slot" id="name-availability-alert">
+                                <?php if ($fieldErrors['name']): ?>
+                                    <div class="field-inline-alert" role="alert">
+                                        <span class="alert-badge">Cannot use</span> <?= e($fieldErrors['name']) ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label for="email">Business email *</label>
+                            <input id="email" name="email" type="email" value="<?= e(old('email')) ?>" placeholder="e.g. owner@kayukita.com.my" autocomplete="email" maxlength="255" required aria-invalid="<?= $fieldErrors['email'] ? 'true' : 'false' ?>">
+                            <div class="field-alert-slot" id="email-availability-alert">
+                                <?php if ($fieldErrors['email']): ?>
+                                    <div class="field-inline-alert" role="alert">
+                                        <span class="alert-badge">Cannot use</span> <?= e($fieldErrors['email']) ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label for="password">Password *</label>
+                            <div class="password-wrap">
+                                <input id="password" name="password" type="password" minlength="8" placeholder="e.g. Min. 8 characters with a number" autocomplete="new-password" required aria-invalid="<?= $fieldErrors['password'] ? 'true' : 'false' ?>">
+                                <button type="button" data-password-toggle="password" aria-label="Show password">Show</button>
+                            </div>
+                            <small class="field-hint" id="password-hint">At least 8 characters, including a number.</small>
+                            <?php if ($fieldErrors['password']): ?><small class="field-error"><?= e($fieldErrors['password']) ?></small><?php endif; ?>
+                        </div>
+                        <div class="form-field">
+                            <label for="password_confirmation">Confirm password *</label>
+                            <div class="password-wrap">
+                                <input id="password_confirmation" name="password_confirmation" type="password" minlength="8" placeholder="e.g. Re-enter password to match" autocomplete="new-password" required aria-invalid="<?= $fieldErrors['password_confirmation'] ? 'true' : 'false' ?>">
+                                <button type="button" data-password-toggle="password_confirmation" aria-label="Show password confirmation">Show</button>
+                            </div>
+                            <small class="field-hint" id="password_confirmation-hint">At least 8 characters, including a number.</small>
+                            <?php if ($fieldErrors['password_confirmation']): ?><small class="field-error"><?= e($fieldErrors['password_confirmation']) ?></small><?php endif; ?>
+                        </div>
                     </div>
                 </section>
                 <section class="form-card document-card">
-                    <div class="card-heading"><h3>Business legitimacy documents</h3><p>PDF, JPG or PNG - Maximum 10 MB per file. Ensure all text and SSM numbers are readable.</p></div>
-                    <div class="upload-field" <?= $fieldErrors['ssm_certificate'] ? 'data-invalid="true"' : '' ?>><img src="/images/figma/signup/verification-file.svg" alt=""><div><label for="ssm_certificate">SSM registration certificate *</label><small>Certificate of incorporation or business registration with full company name and registration number.</small><small class="selected-file" data-file-name="ssm_certificate">Choose a PDF, JPG or PNG file (up to 10 MB).</small><?php if ($fieldErrors['ssm_certificate']): ?><small class="field-error" id="ssm_certificate-error"><?= e($fieldErrors['ssm_certificate']) ?></small><?php endif; ?></div><input class="file-input" id="ssm_certificate" name="ssm_certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required aria-invalid="<?= $fieldErrors['ssm_certificate'] ? 'true' : 'false' ?>"></div>
-                    <div class="upload-field upload-dashed" <?= $fieldErrors['ssm_profile'] ? 'data-invalid="true"' : '' ?>><img src="/images/figma/signup/verification-upload.svg" alt=""><div><label for="ssm_profile">Current SSM company / business profile *</label><small>Include registration status, address, and proprietor or director information. Upload the complete document.</small><small class="selected-file" data-file-name="ssm_profile">Choose file or drag and drop (up to 10 MB).</small><?php if ($fieldErrors['ssm_profile']): ?><small class="field-error" id="ssm_profile-error"><?= e($fieldErrors['ssm_profile']) ?></small><?php endif; ?></div><input class="file-input" id="ssm_profile" name="ssm_profile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required aria-invalid="<?= $fieldErrors['ssm_profile'] ? 'true' : 'false' ?>"></div>
+                    <div class="card-heading">
+                        <h3>Business legitimacy documents</h3>
+                        <p>PDF, JPG or PNG — Maximum 10 MB per file. Upload and click <strong>View &amp; Confirm File</strong> to verify your certificate before submitting.</p>
+                    </div>
+
+                    <div class="upload-wrapper">
+                        <div class="upload-field" <?= $fieldErrors['ssm_certificate'] ? 'data-invalid="true"' : '' ?>>
+                            <img src="/images/figma/signup/verification-file.svg" alt="">
+                            <div>
+                                <label for="ssm_certificate">SSM registration certificate *</label>
+                                <small class="selected-file" data-file-name="ssm_certificate">Choose a PDF, JPG or PNG file (up to 10 MB).</small>
+                                <?php if ($fieldErrors['ssm_certificate']): ?><small class="field-error" id="ssm_certificate-error"><?= e($fieldErrors['ssm_certificate']) ?></small><?php endif; ?>
+                            </div>
+                            <input class="file-input" id="ssm_certificate" name="ssm_certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required aria-invalid="<?= $fieldErrors['ssm_certificate'] ? 'true' : 'false' ?>">
+                        </div>
+                        <div class="file-confirm-card" id="confirm-card-ssm_certificate" style="display:none;">
+                            <div class="confirm-card-main">
+                                <span class="confirm-badge">✓ Certificate Selected</span>
+                                <div class="confirm-card-meta">
+                                    <strong class="confirm-filename" id="filename-ssm_certificate"></strong>
+                                    <small class="confirm-filesize" id="filesize-ssm_certificate"></small>
+                                </div>
+                            </div>
+                            <div class="confirm-card-actions">
+                                <button type="button" class="view-file-btn" onclick="openDocumentPreview('ssm_certificate')">
+                                    <span>👁 View &amp; Confirm File</span>
+                                </button>
+                                <button type="button" class="change-file-btn" onclick="document.getElementById('ssm_certificate').click()">
+                                    <span>Change</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upload-wrapper" style="margin-top:12px;">
+                        <div class="upload-field upload-dashed" <?= $fieldErrors['ssm_profile'] ? 'data-invalid="true"' : '' ?>>
+                            <img src="/images/figma/signup/verification-upload.svg" alt="">
+                            <div>
+                                <label for="ssm_profile">Current SSM company / business profile *</label>
+                                <small class="selected-file" data-file-name="ssm_profile">Choose file or drag and drop (up to 10 MB).</small>
+                                <?php if ($fieldErrors['ssm_profile']): ?><small class="field-error" id="ssm_profile-error"><?= e($fieldErrors['ssm_profile']) ?></small><?php endif; ?>
+                            </div>
+                            <input class="file-input" id="ssm_profile" name="ssm_profile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required aria-invalid="<?= $fieldErrors['ssm_profile'] ? 'true' : 'false' ?>">
+                        </div>
+                        <div class="file-confirm-card" id="confirm-card-ssm_profile" style="display:none;">
+                            <div class="confirm-card-main">
+                                <span class="confirm-badge">✓ Profile Selected</span>
+                                <div class="confirm-card-meta">
+                                    <strong class="confirm-filename" id="filename-ssm_profile"></strong>
+                                    <small class="confirm-filesize" id="filesize-ssm_profile"></small>
+                                </div>
+                            </div>
+                            <div class="confirm-card-actions">
+                                <button type="button" class="view-file-btn" onclick="openDocumentPreview('ssm_profile')">
+                                    <span>👁 View &amp; Confirm File</span>
+                                </button>
+                                <button type="button" class="change-file-btn" onclick="document.getElementById('ssm_profile').click()">
+                                    <span>Change</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </section>
-                <div class="terms-field" <?= $fieldErrors['terms_accepted'] ? 'data-invalid="true"' : '' ?>><input id="terms_accepted" name="terms_accepted" type="checkbox" value="1" required <?= old('terms_accepted') ? 'checked' : '' ?> aria-invalid="<?= $fieldErrors['terms_accepted'] ? 'true' : 'false' ?>"><label for="terms_accepted">I confirm that I am authorised to represent this business and that the information is accurate. I agree to the <a href="#terms">Terms of Use</a> and <a href="#privacy">Privacy Notice</a>.</label></div>
-                <?php if ($fieldErrors['terms_accepted']): ?><small class="field-error terms-error" id="terms_accepted-error"><?= e($fieldErrors['terms_accepted']) ?></small><?php endif; ?>
-                <div class="form-actions"><span>Your account role will be Business Owner.</span><button type="submit" class="submit-button" data-submit-button><span aria-hidden="true">&#8594;</span><span data-submit-label>Submit for verification</span></button></div>
+                <div class="form-actions"><button type="submit" class="submit-button" data-submit-button><span aria-hidden="true">&#8594;</span><span data-submit-label>Submit for verification</span></button></div>
             </form>
         </section>
     </main>
+
+    <!-- File Confirmation Modal -->
+    <div class="preview-modal-backdrop" id="doc-preview-modal" style="display:none;" onclick="if(event.target === this) closeDocumentPreview()">
+        <div class="preview-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-doc-title">
+            <div class="preview-modal-header">
+                <div>
+                    <h3 id="modal-doc-title">Document Confirmation Preview</h3>
+                    <p id="modal-doc-subtitle">Confirm that all text, company name and SSM numbers are readable</p>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeDocumentPreview()" aria-label="Close preview">✕</button>
+            </div>
+            <div class="preview-modal-body" id="modal-doc-body">
+                <!-- Preview injected via JavaScript -->
+            </div>
+            <div class="preview-modal-footer">
+                <div class="modal-file-status">
+                    <span class="status-verified-pill">✓ Ready to submit</span>
+                    <span id="modal-file-info" style="font-size:11px;color:#526158;margin-left:6px;"></span>
+                </div>
+                <div class="modal-footer-actions">
+                    <a id="modal-open-newtab" href="#" target="_blank" rel="noopener" class="outline-button" style="display:none;">Open in new window ↗</a>
+                    <button type="button" class="action-confirm-btn" onclick="closeDocumentPreview()">Confirm file</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="/js/auth/signup.js" defer></script>
     <script src="/js/language-switcher.js" defer></script>
 </body>

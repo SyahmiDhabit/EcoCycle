@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'name',
@@ -25,6 +27,8 @@ use Illuminate\Notifications\Notifiable;
     'terms_accepted_at',
     'account_status',
     'review_note',
+    'reviewed_by',
+    'reviewed_at',
     'email',
     'password',
 ])]
@@ -44,8 +48,44 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'reviewed_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
         ];
+    }
+
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(Administrator::class, 'reviewed_by');
+    }
+
+    public function inventoryItems(): HasMany
+    {
+        return $this->hasMany(InventoryItem::class, 'business_id');
+    }
+
+    public function inventoryTransactions(): HasMany
+    {
+        return $this->hasMany(InventoryTransaction::class, 'business_id');
+    }
+
+    public function wasteRecords(): HasMany
+    {
+        return $this->hasMany(WasteRecord::class, 'business_id');
+    }
+
+    public function marketplaceListings(): HasMany
+    {
+        return $this->hasMany(MarketplaceListing::class, 'business_id');
+    }
+
+    public function materialExchangesAsProvider(): HasMany
+    {
+        return $this->hasMany(MaterialExchange::class, 'provider_business_id');
+    }
+
+    public function materialExchangesAsRequester(): HasMany
+    {
+        return $this->hasMany(MaterialExchange::class, 'requester_business_id');
     }
 }

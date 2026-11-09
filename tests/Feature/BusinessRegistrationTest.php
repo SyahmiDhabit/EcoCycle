@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Mail\BusinessApplicationSubmitted;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -25,7 +27,7 @@ class BusinessRegistrationTest extends TestCase
         $this->get(route('register'))
             ->assertOk()
             ->assertSee('Registered business name')
-            ->assertSee('Contact person')
+            ->assertSee('Company username')
             ->assertSee('Business email')
             ->assertSee('Confirm password')
             ->assertSee('SSM registration certificate')
@@ -48,15 +50,15 @@ class BusinessRegistrationTest extends TestCase
             'email' => 'AMIR@KAYUKITA.COM.MY',
             'password' => 'EcoCyclePass123',
             'password_confirmation' => 'EcoCyclePass123',
-            'terms_accepted' => '1',
             'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
             'ssm_profile' => UploadedFile::fake()->image('profile.png'),
         ]);
 
-        $response->assertRedirect(route('register'))
+        $response->assertRedirect(route('business.dashboard'))
             ->assertSessionHas('status');
 
-        $this->assertGuest();
+        $user = User::where('email', 'amir@kayukita.com.my')->firstOrFail();
+        $this->assertAuthenticatedAs($user);
         $this->assertDatabaseHas('business', [
             'business_name' => 'Kayu Kita',
             'business_registration_number' => '202101023456 (1425678-X)',
@@ -71,13 +73,12 @@ class BusinessRegistrationTest extends TestCase
             'account_status' => 'pending',
         ]);
 
-        $user = User::where('email', 'amir@kayukita.com.my')->firstOrFail();
         $this->assertTrue(Hash::check('EcoCyclePass123', $user->password));
         $this->assertNotSame('EcoCyclePass123', $user->password);
         $this->assertTrue(Storage::disk('local')->exists($user->ssm_certificate_path));
         $this->assertTrue(Storage::disk('local')->exists($user->ssm_profile_path));
 
-        $this->get(route('register'))
+        $this->get(route('business.dashboard'))
             ->assertOk()
             ->assertSee('Your business application has been submitted and is pending administrator review.');
     }
@@ -98,10 +99,9 @@ class BusinessRegistrationTest extends TestCase
                 'email' => 'not-an-email',
                 'password' => 'short',
                 'password_confirmation' => 'different',
-                'terms_accepted' => '',
             ])
             ->assertRedirect(route('register'))
-            ->assertSessionHasErrors(['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'ssm_certificate', 'ssm_profile', 'terms_accepted']);
+            ->assertSessionHasErrors(['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'ssm_certificate', 'ssm_profile']);
 
         $this->assertDatabaseCount('business', 0);
     }
@@ -124,7 +124,6 @@ class BusinessRegistrationTest extends TestCase
                 'email' => 'OWNER@EXAMPLE.COM',
                 'password' => 'EcoCyclePass123',
                 'password_confirmation' => 'EcoCyclePass123',
-                'terms_accepted' => '1',
                 'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
                 'ssm_profile' => UploadedFile::fake()->image('profile.png'),
             ])
@@ -150,7 +149,6 @@ class BusinessRegistrationTest extends TestCase
                 'email' => 'amir@example.com',
                 'password' => 'EcoCyclePass123',
                 'password_confirmation' => 'NotTheSame123',
-                'terms_accepted' => '1',
                 'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
                 'ssm_profile' => UploadedFile::fake()->image('profile.png'),
             ])
@@ -158,5 +156,148 @@ class BusinessRegistrationTest extends TestCase
             ->assertSessionHasErrors(['password']);
 
         $this->assertDatabaseCount('business', 0);
+    }
+
+    public function test_registration_sends_email_notification_to_admin(): void
+    {
+        Mail::fake();
+
+        $response = $this->post(route('register.store'), [
+            'business_name' => 'Eco Ventures',
+            'business_registration_number' => '202601009988 (1999999-Z)',
+            'industry' => 'Manufacturing',
+            'business_phone' => '+60 12-999 8888',
+            'registered_address' => '22 Jalan Hijau',
+            'city' => 'Kuala Lumpur',
+            'postcode' => '50000',
+            'state' => 'Kuala Lumpur',
+            'name' => 'ecoventures_user',
+            'email' => 'ventures@ecoventures.com',
+            'password' => 'SecurePass999',
+            'password_confirmation' => 'SecurePass999',
+            'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
+            'ssm_profile' => UploadedFile::fake()->image('profile.png'),
+        ]);
+
+        $response->assertRedirect(route('business.dashboard'));
+
+        Mail::assertSent(BusinessApplicationSubmitted::class, function ($mail) {
+            return $mail->hasTo(config('services.ecocycle.admin_email'));
+        });
+    }
+
+    public function test_registration_rejects_an_existing_username(): void
+    {
+        User::factory()->create(['name' => 'existing_username']);
+
+        $this->from(route('register'))
+            ->post(route('register.store'), [
+                'business_name' => 'Unique Business',
+                'business_registration_number' => '202101023999 (1425699-Y)',
+                'industry' => 'Packaging & paper',
+                'business_phone' => '+60 3-5510 2488',
+                'registered_address' => '12 Jalan Kertas',
+                'city' => 'Klang',
+                'postcode' => '41200',
+                'state' => 'Selangor',
+                'name' => 'existing_username',
+                'email' => 'different@email.com',
+                'password' => 'EcoCyclePass123',
+                'password_confirmation' => 'EcoCyclePass123',
+                'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
+                'ssm_profile' => UploadedFile::fake()->image('profile.png'),
+            ])
+            ->assertRedirect(route('register'))
+            ->assertSessionHasErrors(['name']);
+
+        $this->assertEquals(
+            'This company username is already in use. You cannot use this username.',
+            session('errors')->first('name')
+        );
+    }
+
+    public function test_password_and_confirmation_must_be_at_least_8_chars_and_include_a_number(): void
+    {
+        // Missing number
+        $this->from(route('register'))
+            ->post(route('register.store'), [
+                'business_name' => 'Alpha Corp',
+                'business_registration_number' => '202101023777 (1425677-B)',
+                'industry' => 'Packaging & paper',
+                'business_phone' => '+60 3-5510 2488',
+                'registered_address' => '12 Jalan Kertas',
+                'city' => 'Klang',
+                'postcode' => '41200',
+                'state' => 'Selangor',
+                'name' => 'alphacorp',
+                'email' => 'alpha@corp.com',
+                'password' => 'NoNumberPassword',
+                'password_confirmation' => 'NoNumberPassword',
+                'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
+                'ssm_profile' => UploadedFile::fake()->image('profile.png'),
+            ])
+            ->assertRedirect(route('register'))
+            ->assertSessionHasErrors(['password']);
+
+        // Less than 8 characters
+        $this->from(route('register'))
+            ->post(route('register.store'), [
+                'business_name' => 'Alpha Corp',
+                'business_registration_number' => '202101023777 (1425677-B)',
+                'industry' => 'Packaging & paper',
+                'business_phone' => '+60 3-5510 2488',
+                'registered_address' => '12 Jalan Kertas',
+                'city' => 'Klang',
+                'postcode' => '41200',
+                'state' => 'Selangor',
+                'name' => 'alphacorp',
+                'email' => 'alpha@corp.com',
+                'password' => 'Pass1',
+                'password_confirmation' => 'Pass1',
+                'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
+                'ssm_profile' => UploadedFile::fake()->image('profile.png'),
+            ])
+            ->assertRedirect(route('register'))
+            ->assertSessionHasErrors(['password']);
+    }
+
+    public function test_check_availability_endpoint(): void
+    {
+        User::factory()->create([
+            'name' => 'taken_username',
+            'email' => 'taken@business.com',
+        ]);
+
+        $this->getJson(route('register.check', ['field' => 'name', 'value' => 'taken_username']))
+            ->assertOk()
+            ->assertJson([
+                'available' => false,
+                'field' => 'name',
+                'message' => 'This company username is already in use. You cannot use this username.',
+            ]);
+
+        $this->getJson(route('register.check', ['field' => 'name', 'value' => 'free_username']))
+            ->assertOk()
+            ->assertJson([
+                'available' => true,
+                'field' => 'name',
+                'message' => null,
+            ]);
+
+        $this->getJson(route('register.check', ['field' => 'email', 'value' => 'TAKEN@BUSINESS.COM']))
+            ->assertOk()
+            ->assertJson([
+                'available' => false,
+                'field' => 'email',
+                'message' => 'This business email is already in use. You cannot use this email.',
+            ]);
+
+        $this->getJson(route('register.check', ['field' => 'email', 'value' => 'free@business.com']))
+            ->assertOk()
+            ->assertJson([
+                'available' => true,
+                'field' => 'email',
+                'message' => null,
+            ]);
     }
 }

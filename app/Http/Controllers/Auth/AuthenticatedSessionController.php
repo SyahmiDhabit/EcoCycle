@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Administrator;
+use App\Models\User;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -52,18 +53,21 @@ class AuthenticatedSessionController extends Controller
 
         Auth::guard('admin')->logout();
 
-        if (! Auth::guard('web')->attempt([
-            'email' => mb_strtolower($identifier),
-            'password' => $credentials['password'],
-        ], $remember)) {
-            return back()
-                ->withErrors(['identifier' => 'Those sign-in details do not match an EcoCycle account.'])
-                ->onlyInput('identifier');
+        $business = User::query()
+            ->where('email', mb_strtolower($identifier))
+            ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($identifier)])
+            ->first();
+
+        if ($business && Hash::check($credentials['password'], $business->password)) {
+            Auth::guard('web')->login($business, $remember);
+            $request->session()->regenerate();
+
+            return redirect()->intended(route('business.dashboard'));
         }
 
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('business.dashboard'));
+        return back()
+            ->withErrors(['identifier' => 'Those sign-in details do not match an EcoCycle account.'])
+            ->onlyInput('identifier');
     }
 
     public function destroy(Request $request): RedirectResponse

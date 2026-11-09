@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\BusinessMailNotifier;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,9 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $cert = $request->file('ssm_certificate');
+        $prof = $request->file('ssm_profile');
+
         $request->merge([
             'email' => mb_strtolower(trim((string) $request->input('email'))),
         ]);
@@ -36,12 +40,12 @@ class RegisteredUserController extends Controller
             'city' => ['required', 'string', 'max:100'],
             'postcode' => ['required', 'string', 'max:12'],
             'state' => ['required', 'in:Johor,Kedah,Kelantan,Kuala Lumpur,Labuan,Melaka,Negeri Sembilan,Pahang,Penang,Perak,Perlis,Putrajaya,Sabah,Sarawak,Selangor,Terengganu'],
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:business,name'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:business,email'],
             'password' => ['required', 'confirmed', Password::min(8)->numbers()],
+            'password_confirmation' => ['required', Password::min(8)->numbers()],
             'ssm_certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'ssm_profile' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-            'terms_accepted' => ['accepted'],
         ], [
             'business_name.required' => 'Enter your business name.',
             'business_registration_number.required' => 'Enter the SSM registration number shown on your documents.',
@@ -54,19 +58,26 @@ class RegisteredUserController extends Controller
             'postcode.required' => 'Enter the registered postcode.',
             'state.required' => 'Choose the registered state.',
             'state.in' => 'Choose a state from the list.',
-            'name.required' => 'Enter the business owner name.',
+            'name.required' => 'Enter your company username.',
+            'name.unique' => 'This company username is already in use. You cannot use this username.',
             'email.required' => 'Enter your business email address.',
             'email.email' => 'Enter a valid email address.',
-            'email.unique' => 'An account with this email already exists. Try signing in instead.',
+            'email.unique' => 'This business email is already in use. You cannot use this email.',
+            'password.required' => 'Enter a password.',
+            'password.min' => 'At least 8 characters, including a number.',
+            'password.numbers' => 'At least 8 characters, including a number.',
             'password.confirmed' => 'The passwords do not match.',
-            'password.numbers' => 'Include at least one number in your password.',
+            'password_confirmation.required' => 'Confirm your password.',
+            'password_confirmation.min' => 'At least 8 characters, including a number.',
+            'password_confirmation.numbers' => 'At least 8 characters, including a number.',
             'ssm_certificate.required' => 'Upload your SSM registration certificate.',
             'ssm_certificate.mimes' => 'The certificate must be a PDF, JPG, or PNG file.',
             'ssm_certificate.max' => 'The certificate must not exceed 10 MB.',
+            'ssm_certificate.uploaded' => $this->getUploadErrorMessage($cert, 'The SSM certificate failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, or PNG format.'),
             'ssm_profile.required' => 'Upload your current SSM company or business profile.',
             'ssm_profile.mimes' => 'The SSM profile must be a PDF, JPG, or PNG file.',
             'ssm_profile.max' => 'The SSM profile must not exceed 10 MB.',
-            'terms_accepted.accepted' => 'Confirm that you are authorised to represent this business.',
+            'ssm_profile.uploaded' => $this->getUploadErrorMessage($prof, 'The SSM profile failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, or PNG format.'),
         ]);
 
         $certificatePath = null;
@@ -111,5 +122,49 @@ class RegisteredUserController extends Controller
             'status',
             'Your business application has been submitted and is pending administrator review.',
         );
+    }
+
+    public function checkAvailability(Request $request): JsonResponse
+    {
+        $field = (string) $request->query('field');
+        $value = trim((string) $request->query('value'));
+
+        if (! in_array($field, ['name', 'email'], true) || $value === '') {
+            return response()->json(['available' => true]);
+        }
+
+        if ($field === 'email') {
+            $value = mb_strtolower($value);
+        }
+
+        $exists = User::query()->where($field, $value)->exists();
+
+        return response()->json([
+            'available' => ! $exists,
+            'field' => $field,
+            'message' => $exists
+                ? ($field === 'name'
+                    ? 'This company username is already in use. You cannot use this username.'
+                    : 'This business email is already in use. You cannot use this email.')
+                : null,
+        ]);
+    }
+
+    private function getUploadErrorMessage(?\Illuminate\Http\UploadedFile $file, string $defaultMessage): string
+    {
+        if (! $file) {
+            return $defaultMessage;
+        }
+
+        return match ($file->getError()) {
+            UPLOAD_ERR_INI_SIZE => 'The file exceeds the PHP server upload limit (upload_max_filesize). Please restart your php artisan serve terminal to apply the 32MB limit, or upload a file under 2 MB.',
+            UPLOAD_ERR_FORM_SIZE => 'The file exceeds the form upload limit.',
+            UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try submitting again.',
+            UPLOAD_ERR_NO_FILE => 'No file was received. Please re-select your document before submitting.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Server error: Temporary upload directory is missing on the server.',
+            UPLOAD_ERR_CANT_WRITE => 'Server error: Failed to write uploaded file to disk. Check permissions on temp folder.',
+            UPLOAD_ERR_EXTENSION => 'Server error: A PHP extension stopped the file upload.',
+            default => $defaultMessage,
+        };
     }
 }

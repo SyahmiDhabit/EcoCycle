@@ -1,0 +1,211 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\InventoryItem;
+use App\Models\InventoryTransaction;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
+
+class InventoryController extends Controller
+{
+    private function checkApproved(): void
+    {
+        abort_unless(Auth::user()->account_status === 'approved', 403, 'Your business application must be approved first.');
+    }
+
+    public function index(Request $request): View
+    {
+        $this->checkApproved();
+        $business = Auth::user();
+
+        $query = $business->inventoryItems()->latest();
+
+        if ($search = trim((string) $request->input('search'))) {
+            $query->where(function ($q) use ($search): void {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        if ($category = $request->input('category')) {
+            $query->where('category', $category);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        $items = $query->paginate(15)->withQueryString();
+        $categories = $business->inventoryItems()->distinct()->pluck('category')->filter()->values();
+
+        return view('business.inventory.index', [
+            'business' => $business,
+            'items' => $items,
+            'categories' => $categories,
+            'search' => $search,
+            'selectedCategory' => $category,
+            'selectedStatus' => $status,
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $this->checkApproved();
+        $business = Auth::user();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'sku' => ['nullable', 'string', 'max:100'],
+            'category' => ['required', 'string', 'max:60'],
+            'quantity' => ['required', 'numeric', 'min:0'],
+            'unit' => ['required', 'string', 'max:20'],
+            'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $quantity = (float) $validated['quantity'];
+        $threshold = isset($validated['minimum_threshold']) && $validated['minimum_threshold'] !== null && $validated['minimum_threshold'] !== ''
+            ? (float) $validated['minimum_threshold']
+            : null;
+
+        $status = 'in_stock';
+        if ($quantity <= 0) {
+            $status = 'out_of_stock';
+        } elseif ($threshold !== null && $quantity <= $threshold) {
+            $status = 'low_stock';
+        }
+
+        DB::transaction(function () use ($business, $validated, $quantity, $threshold, $status): void {
+            $item = InventoryItem::create([
+                'business_id' => $business->id,
+                'name' => $validated['name'],
+                'sku' => $validated['sku'] ?? null,
+                'category' => $validated['category'],
+                'quantity' => $quantity,
+                'unit' => $validated['unit'],
+                'minimum_threshold' => $threshold,
+                'status' => $status,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            if ($quantity > 0) {
+                InventoryTransaction::create([
+                    'business_id' => $business->id,
+                    'inventory_item_id' => $item->id,
+                    'transaction_type' => 'stock_in',
+                    'quantity_change' => $quantity,
+                    'quantity_after' => $quantity,
+                    'notes' => 'Initial stock on hand entry',
+                ]);
+            }
+        });
+
+        return back()->with('status', "Inventory item '{$validated['name']}' added successfully.");
+    }
+
+    public function update(Request $request, InventoryItem $item): RedirectResponse
+    {
+        $this->checkApproved();
+        abort_unless($item->business_id === Auth::id(), 403);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'sku' => ['nullable', 'string', 'max:100'],
+            'category' => ['required', 'string', 'max:60'],
+            'unit' => ['required', 'string', 'max:20'],
+            'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $threshold = isset($validated['minimum_threshold']) && $validated['minimum_threshold'] !== null && $validated['minimum_threshold'] !== ''
+            ? (float) $validated['minimum_threshold']
+            : null;
+
+        $quantity = (float) $item->quantity;
+        $status = 'in_stock';
+        if ($quantity <= 0) {
+            $status = 'out_of_stock';
+        } elseif ($threshold !== null && $quantity <= $threshold) {
+            $status = 'low_stock';
+        }
+
+        $item->update([
+            'name' => $validated['name'],
+            'sku' => $validated['sku'] ?? null,
+            'category' => $validated['category'],
+            'unit' => $validated['unit'],
+            'minimum_threshold' => $threshold,
+            'status' => $status,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return back()->with('status', "Item '{$item->name}' updated successfully.");
+    }
+
+    public function adjust(Request $request, InventoryItem $item): RedirectResponse
+    {
+        $this->checkApproved();
+        abort_unless($item->business_id === Auth::id(), 403);
+
+        $validated = $request->validate([
+            'type' => ['required', 'in:stock_in,stock_out'],
+            'quantity' => ['required', 'numeric', 'min:0.01'],
+            'notes' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $currentQty = (float) $item->quantity;
+        $adjQty = (float) $validated['quantity'];
+        $type = $validated['type'];
+
+        if ($type === 'stock_out' && $adjQty > $currentQty) {
+            return back()->withErrors([
+                'quantity' => "Cannot deduct {$adjQty} {$item->unit}. Only {$currentQty} {$item->unit} currently available in stock.",
+            ])->withInput();
+        }
+
+        $newQty = $type === 'stock_in' ? ($currentQty + $adjQty) : ($currentQty - $adjQty);
+        $change = $type === 'stock_in' ? $adjQty : -$adjQty;
+
+        $threshold = $item->minimum_threshold !== null ? (float) $item->minimum_threshold : null;
+        $status = 'in_stock';
+        if ($newQty <= 0) {
+            $status = 'out_of_stock';
+        } elseif ($threshold !== null && $newQty <= $threshold) {
+            $status = 'low_stock';
+        }
+
+        DB::transaction(function () use ($item, $newQty, $status, $type, $change, $validated): void {
+            $item->update([
+                'quantity' => $newQty,
+                'status' => $status,
+            ]);
+
+            InventoryTransaction::create([
+                'business_id' => $item->business_id,
+                'inventory_item_id' => $item->id,
+                'transaction_type' => $type,
+                'quantity_change' => $change,
+                'quantity_after' => $newQty,
+                'notes' => $validated['notes'] ?? ($type === 'stock_in' ? 'Stock replenished' : 'Stock dispatched / used'),
+            ]);
+        });
+
+        $actionWord = $type === 'stock_in' ? 'added to' : 'deducted from';
+        return back()->with('status', "{$adjQty} {$item->unit} {$actionWord} '{$item->name}'. New balance: {$newQty} {$item->unit}.");
+    }
+
+    public function destroy(InventoryItem $item): RedirectResponse
+    {
+        $this->checkApproved();
+        abort_unless($item->business_id === Auth::id(), 403);
+
+        $name = $item->name;
+        $item->delete();
+
+        return back()->with('status', "Inventory item '{$name}' deleted.");
+    }
+}

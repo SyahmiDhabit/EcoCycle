@@ -16,11 +16,9 @@ class AuthenticationTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('Welcome back.')
-            ->assertSee('Keep me signed in')
             ->assertSee('Sign in to workspace')
-            ->assertSee('Business email or admin username')
+            ->assertSee('Business email')
             ->assertSee('name="identifier"', false)
-            ->assertSee('name="remember"', false)
             ->assertSee('/images/figma/ecocycle-leaf.svg')
             ->assertSee('name="_token"', false)
             ->assertDontSee('visual preview');
@@ -41,6 +39,23 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $this->get(route('business.dashboard'))->assertOk();
+    }
+
+    public function test_business_can_sign_in_with_company_username(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'kayukita_enterprise',
+            'email' => 'owner@kayukita.com.my',
+            'password' => Hash::make('Password123'),
+        ]);
+
+        $this->post(route('login.store'), [
+            'identifier' => ' KAYUKITA_ENTERPRISE ',
+            'password' => 'Password123',
+        ])
+            ->assertRedirect(route('business.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_invalid_credentials_show_a_safe_error_without_preserving_the_password(): void

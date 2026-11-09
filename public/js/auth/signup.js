@@ -66,18 +66,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (password) {
             password.setCustomValidity('');
-            if (password.value && password.value.length < 8) {
-                password.setCustomValidity('Use at least 8 characters.');
-            } else if (password.value && !/\d/.test(password.value)) {
-                password.setCustomValidity('Include at least one number in your password.');
+            if (password.value && (password.value.length < 8 || !/\d/.test(password.value))) {
+                password.setCustomValidity('At least 8 characters, including a number.');
             }
         }
         if (confirmation) {
-            confirmation.setCustomValidity(
-                confirmation.value && password?.value !== confirmation.value
-                    ? 'The passwords do not match.'
-                    : '',
-            );
+            confirmation.setCustomValidity('');
+            if (confirmation.value && (confirmation.value.length < 8 || !/\d/.test(confirmation.value))) {
+                confirmation.setCustomValidity('At least 8 characters, including a number.');
+            } else if (confirmation.value && password?.value && password.value !== confirmation.value) {
+                confirmation.setCustomValidity('The passwords do not match.');
+            }
         }
 
         [certificate, profile].forEach((input) => {
@@ -152,14 +151,137 @@ document.addEventListener('DOMContentLoaded', () => {
         input.addEventListener('change', () => refreshControl(input));
     });
 
+    let availabilityDebounce;
+    const checkAvailability = async (input) => {
+        const field = input.id;
+        const val = input.value.trim();
+        const alertSlot = document.getElementById(`${field}-availability-alert`);
+        if (!alertSlot) return;
+
+        if (!val) {
+            alertSlot.replaceChildren();
+            return;
+        }
+
+        try {
+            const res = await fetch(`/register/check-availability?field=${encodeURIComponent(field)}&value=${encodeURIComponent(val)}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.available) {
+                input.setCustomValidity(data.message);
+                const alertEl = document.createElement('div');
+                alertEl.className = 'field-inline-alert';
+                alertEl.setAttribute('role', 'alert');
+                const badge = document.createElement('span');
+                badge.className = 'alert-badge';
+                badge.textContent = 'Cannot use';
+                alertEl.append(badge, document.createTextNode(` ${data.message}`));
+                alertSlot.replaceChildren(alertEl);
+                input.setAttribute('aria-invalid', 'true');
+            } else {
+                alertSlot.replaceChildren();
+                if (input.validationMessage && (input.validationMessage.includes('already in use') || input.validationMessage.includes('Cannot use'))) {
+                    input.setCustomValidity('');
+                }
+                syncDescription(input);
+            }
+        } catch (e) {
+            // Ignore offline fetch errors
+        }
+    };
+
+    ['name', 'email'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('blur', () => checkAvailability(el));
+        el.addEventListener('input', () => {
+            clearTimeout(availabilityDebounce);
+            availabilityDebounce = setTimeout(() => checkAvailability(el), 450);
+        });
+    });
+
+    const filePreviewUrls = {};
+
+    window.openDocumentPreview = (inputId) => {
+        const input = document.getElementById(inputId);
+        const file = input?.files?.[0];
+        const url = filePreviewUrls[inputId];
+        if (!file || !url) return;
+
+        const modal = document.getElementById('doc-preview-modal');
+        const modalTitle = document.getElementById('modal-doc-title');
+        const modalBody = document.getElementById('modal-doc-body');
+        const modalFileInfo = document.getElementById('modal-file-info');
+        const openNewTab = document.getElementById('modal-open-newtab');
+        if (!modal || !modalBody) return;
+
+        const isCert = inputId === 'ssm_certificate';
+        modalTitle.textContent = isCert ? 'SSM Registration Certificate — Preview' : 'SSM Company Profile — Preview';
+        if (modalFileInfo) {
+            modalFileInfo.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+        }
+
+        modalBody.replaceChildren();
+        if (openNewTab) {
+            openNewTab.href = url;
+            openNewTab.style.display = 'inline-flex';
+        }
+
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (isPdf) {
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+            iframe.className = 'modal-pdf-frame';
+            iframe.title = file.name;
+            modalBody.appendChild(iframe);
+        } else {
+            const img = document.createElement('img');
+            img.src = url;
+            img.className = 'modal-img-preview';
+            img.alt = file.name;
+            modalBody.appendChild(img);
+        }
+
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeDocumentPreview = () => {
+        const modal = document.getElementById('doc-preview-modal');
+        if (modal) modal.style.display = 'none';
+        document.body.style.overflow = '';
+    };
+
     form.querySelectorAll('input[type="file"]').forEach((input) => {
         input.addEventListener('change', () => {
             const output = form.querySelector(`[data-file-name="${input.id}"]`);
             const file = input.files?.[0];
-            if (output) {
-                output.textContent = file
-                    ? `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`
-                    : 'Choose a PDF, JPG or PNG file (up to 10 MB).';
+            const confirmCard = document.getElementById(`confirm-card-${input.id}`);
+            const filenameEl = document.getElementById(`filename-${input.id}`);
+            const filesizeEl = document.getElementById(`filesize-${input.id}`);
+
+            if (filePreviewUrls[input.id]) {
+                URL.revokeObjectURL(filePreviewUrls[input.id]);
+                delete filePreviewUrls[input.id];
+            }
+
+            if (file) {
+                filePreviewUrls[input.id] = URL.createObjectURL(file);
+                if (output) {
+                    output.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+                }
+                if (confirmCard && filenameEl && filesizeEl) {
+                    filenameEl.textContent = file.name;
+                    filesizeEl.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB · ${file.type || 'Document'}`;
+                    confirmCard.style.display = 'flex';
+                }
+            } else {
+                if (output) {
+                    output.textContent = 'Choose a PDF, JPG or PNG file (up to 10 MB).';
+                }
+                if (confirmCard) {
+                    confirmCard.style.display = 'none';
+                }
             }
             refreshControl(input);
         });

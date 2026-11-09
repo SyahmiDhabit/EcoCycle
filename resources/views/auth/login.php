@@ -25,7 +25,7 @@ $passwordError = $errors->first('password');
             </a>
 
                 <header class="signin-welcome">
-                    <p class="signin-eyebrow">BUSINESS &amp; ADMIN ACCESS</p>
+                    <p class="signin-eyebrow">BUSINESS</p>
                     <h1 id="signin-heading">Welcome back.</h1>
                     <p>Sign in to keep your materials and operations moving.</p>
                 </header>
@@ -40,19 +40,18 @@ $passwordError = $errors->first('password');
                 <form class="signin-form" method="POST" action="/login">
                     <?= csrf_field() ?>
                     <div class="signin-field">
-                        <label for="identifier">Business email or admin username</label>
-                        <input id="identifier" name="identifier" type="text" value="<?= e(old('identifier')) ?>" placeholder="you@business.com or admin username" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="identifier-error"' : '' ?>>
+                        <label for="identifier">Business email or company username</label>
+                        <input id="identifier" name="identifier" type="text" value="<?= e(old('identifier')) ?>" placeholder="e.g. owner@business.com or company username" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="identifier-error"' : '' ?>>
                         <?php if ($emailError): ?><small class="signin-field-error" id="identifier-error"><?= e($emailError) ?></small><?php endif; ?>
                     </div>
 
                     <div class="signin-field">
                         <label for="password">Password</label>
-                        <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required aria-invalid="<?= $passwordError ? 'true' : 'false' ?>" <?= $passwordError ? 'aria-describedby="password-error"' : '' ?>>
+                        <input id="password" name="password" type="password" placeholder="e.g. Enter your password" autocomplete="current-password" required aria-invalid="<?= $passwordError ? 'true' : 'false' ?>" <?= $passwordError ? 'aria-describedby="password-error"' : '' ?>>
                         <?php if ($passwordError): ?><small class="signin-field-error" id="password-error"><?= e($passwordError) ?></small><?php endif; ?>
                     </div>
 
                     <div class="signin-options">
-                        <label class="remember-option" for="remember"><input id="remember" name="remember" type="checkbox" value="1" <?= old('remember') ? 'checked' : '' ?>><span>Keep me signed in</span></label>
                         <a href="<?= e(route('password.request')) ?>">Forgot password?</a>
                     </div>
 

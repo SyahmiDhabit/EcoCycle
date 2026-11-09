@@ -42,7 +42,7 @@ class PasswordResetController extends Controller
                     ]);
 
                     Mail::to($email)->send(new PasswordResetLink(
-                        $user->name,
+                        $email,
                         $url,
                         app()->getLocale(),
                     ));

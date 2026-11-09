@@ -22,7 +22,20 @@
     <nav class="main-nav" aria-label="Main navigation">
         <a class="active" href="#home" aria-current="location">Home</a><a href="#about">About us</a><a href="#features">Features</a><a href="#how-it-works">How it works</a><a href="#marketplace">Marketplace</a><a href="#contact">Contact us</a>
     </nav>
-    <div class="header-actions"><a class="button button-quiet" href="/login">Log in</a><a class="button button-dark" href="/register">Register your business <span aria-hidden="true">↗</span></a></div>
+    <div class="header-actions">
+        <?php if (auth('admin')->check()): ?>
+            <a class="button button-quiet" href="<?= e(route('admin.dashboard')) ?>">Admin Dashboard</a>
+        <?php elseif (auth('web')->check()): ?>
+            <a class="button button-dark" href="<?= e(route('business.application')) ?>">Application Status</a>
+            <form method="POST" action="<?= e(route('logout')) ?>" style="display:inline;margin:0">
+                <?= csrf_field() ?>
+                <button type="submit" class="button button-quiet" style="cursor:pointer">Sign out</button>
+            </form>
+        <?php else: ?>
+            <a class="button button-quiet" href="/login">Log in</a>
+            <a class="button button-dark" href="/register">Register your business <span aria-hidden="true">↗</span></a>
+        <?php endif; ?>
+    </div>
     <button class="menu-toggle" aria-label="Open navigation" onclick="document.body.classList.toggle('menu-open')">☰</button>
 </header>
 

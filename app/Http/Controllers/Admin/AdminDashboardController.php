@@ -25,7 +25,11 @@ class AdminDashboardController extends Controller
 
     public function approve(User $business, BusinessMailNotifier $mailer): RedirectResponse
     {
-        $business->update(['account_status' => 'approved']);
+        $business->update([
+            'account_status' => 'approved',
+            'reviewed_by' => auth('admin')->id(),
+            'reviewed_at' => now(),
+        ]);
         $mailer->decision($business->fresh());
 
         return back()->with('status', "{$business->business_name} has been approved.");
@@ -34,7 +38,12 @@ class AdminDashboardController extends Controller
     public function reject(Request $request, User $business, BusinessMailNotifier $mailer): RedirectResponse
     {
         $validated = $request->validate(['review_note' => ['required', 'string', 'max:1000']]);
-        $business->update(['account_status' => 'rejected', 'review_note' => $validated['review_note']]);
+        $business->update([
+            'account_status' => 'rejected',
+            'review_note' => $validated['review_note'],
+            'reviewed_by' => auth('admin')->id(),
+            'reviewed_at' => now(),
+        ]);
         $mailer->decision($business->fresh());
 
         return back()->with('status', "{$business->business_name} needs changes before approval.");

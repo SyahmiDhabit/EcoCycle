@@ -6,11 +6,20 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\BusinessDashboardController;
 use App\Http\Controllers\BusinessApplicationController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\LanguageController;
 
 Route::view('/', 'main.mainpage')->name('home');
 Route::get('/business', BusinessDashboardController::class)->middleware('auth')->name('business.dashboard');
+Route::get('/business/inventory', [InventoryController::class, 'index'])->middleware('auth')->name('business.inventory');
+Route::post('/business/inventory', [InventoryController::class, 'store'])->middleware('auth')->name('business.inventory.store');
+Route::put('/business/inventory/{item}', [InventoryController::class, 'update'])->middleware('auth')->name('business.inventory.update');
+Route::post('/business/inventory/{item}/adjust', [InventoryController::class, 'adjust'])->middleware('auth')->name('business.inventory.adjust');
+Route::delete('/business/inventory/{item}', [InventoryController::class, 'destroy'])->middleware('auth')->name('business.inventory.destroy');
+Route::get('/business/application', [BusinessApplicationController::class, 'show'])->middleware('auth')->name('business.application');
+Route::post('/business/application', [BusinessApplicationController::class, 'update'])->middleware('auth')->name('business.application.update');
+Route::get('/business/application/documents/{document}', [BusinessApplicationController::class, 'document'])->middleware('auth')->name('business.application.document');
 Route::post('/business/resubmit', [BusinessApplicationController::class, 'resubmit'])->middleware('auth')->name('business.resubmit');
 Route::redirect('/admin', '/login')->name('admin.entry');
 Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->middleware('auth:admin')->name('admin.dashboard');
@@ -26,4 +35,5 @@ Route::post('/reset-password', [PasswordResetController::class, 'update'])->name
 Route::post('/language', [LanguageController::class, 'update'])->name('language.update');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+Route::get('/register/check-availability', [RegisteredUserController::class, 'checkAvailability'])->name('register.check');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');

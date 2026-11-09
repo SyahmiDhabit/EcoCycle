@@ -75,21 +75,19 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_remember_me_sets_a_persistent_remember_token(): void
+    public function test_sign_in_works_without_remember_token(): void
     {
         $user = User::factory()->create([
             'email' => 'owner@example.com',
             'password' => Hash::make('Password123'),
-            'remember_token' => null,
         ]);
 
         $this->post(route('login.store'), [
             'identifier' => 'owner@example.com',
             'password' => 'Password123',
-            'remember' => '1',
         ])->assertRedirect(route('business.dashboard'));
 
-        $this->assertNotNull($user->fresh()->remember_token);
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_sign_out_invalidates_the_authenticated_session(): void

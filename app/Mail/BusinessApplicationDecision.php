@@ -21,7 +21,7 @@ class BusinessApplicationDecision extends Mailable
     {
         $subject = $this->decision === 'approved'
             ? 'Your EcoCycle business application is approved'
-            : 'Update requested for your EcoCycle business application';
+            : 'Action required: Changes requested for your EcoCycle business registration';
 
         return new Envelope(subject: $subject);
     }

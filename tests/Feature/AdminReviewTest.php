@@ -41,7 +41,12 @@ class AdminReviewTest extends TestCase
         $this->assertNotNull($business->reviewed_at);
         $this->assertEquals($admin->id, $business->reviewedBy->id);
 
-        Mail::assertSent(BusinessApplicationDecision::class);
+        Mail::assertSent(BusinessApplicationDecision::class, function ($mail) use ($business, $admin) {
+            return $mail->hasTo($business->email)
+                && ! $mail->hasTo($admin->email)
+                && ! $mail->hasTo('ssyahmidhabit@gmail.com');
+        });
+        Mail::assertNotSent(\App\Mail\BusinessApplicationSubmitted::class);
     }
 
     public function test_admin_can_reject_business_with_note_and_foreign_key_is_saved(): void
@@ -72,6 +77,11 @@ class AdminReviewTest extends TestCase
         $this->assertEquals($admin->id, $business->reviewed_by);
         $this->assertNotNull($business->reviewed_at);
 
-        Mail::assertSent(BusinessApplicationDecision::class);
+        Mail::assertSent(BusinessApplicationDecision::class, function ($mail) use ($business, $admin) {
+            return $mail->hasTo($business->email)
+                && ! $mail->hasTo($admin->email)
+                && ! $mail->hasTo('ssyahmidhabit@gmail.com');
+        });
+        Mail::assertNotSent(\App\Mail\BusinessApplicationSubmitted::class);
     }
 }

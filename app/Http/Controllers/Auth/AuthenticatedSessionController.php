@@ -38,7 +38,6 @@ class AuthenticatedSessionController extends Controller
         ]);
 
         $identifier = trim($credentials['identifier']);
-        $remember = $request->boolean('remember');
         $administrator = Administrator::query()
             ->where('email', mb_strtolower($identifier))
             ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($identifier)])
@@ -46,7 +45,7 @@ class AuthenticatedSessionController extends Controller
 
         if ($administrator && Hash::check($credentials['password'], $administrator->password)) {
             Auth::guard('web')->logout();
-            Auth::guard('admin')->login($administrator, $remember);
+            Auth::guard('admin')->login($administrator);
             $request->session()->regenerate();
 
             return redirect()->intended(route('admin.dashboard'));
@@ -60,7 +59,7 @@ class AuthenticatedSessionController extends Controller
             ->first();
 
         if ($business && Hash::check($credentials['password'], $business->password)) {
-            Auth::guard('web')->login($business, $remember);
+            Auth::guard('web')->login($business);
             $request->session()->regenerate();
 
             return redirect()->intended(route('business.dashboard'));

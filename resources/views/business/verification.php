@@ -1,6 +1,6 @@
 <?php
 /** @var \App\Models\User $business */
-$business = $business ?? auth()->user() ?? new \App\Models\User();
+$business = $business ?? new \App\Models\User();
 $isRejected = ($business->account_status ?? 'pending') === 'rejected';
 $isApproved = ($business->account_status ?? 'pending') === 'approved';
 $submittedAt = $business->created_at?->timezone('Asia/Kuala_Lumpur');

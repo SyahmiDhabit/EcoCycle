@@ -32,13 +32,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'email',
     'password',
 ])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     protected $table = 'business';
+
+    public function getRememberToken(): ?string
+    {
+        return null;
+    }
+
+    public function setRememberToken($value): void
+    {
+    }
+
+    public function getRememberTokenName(): string
+    {
+        return '';
+    }
 
     /**
      * Get the attributes that should be cast.

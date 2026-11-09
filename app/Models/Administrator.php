@@ -9,12 +9,26 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password'])]
 class Administrator extends Authenticatable
 {
     use Notifiable;
 
     protected $table = 'administrator';
+
+    public function getRememberToken(): ?string
+    {
+        return null;
+    }
+
+    public function setRememberToken($value): void
+    {
+    }
+
+    public function getRememberTokenName(): string
+    {
+        return '';
+    }
 
     protected function casts(): array
     {

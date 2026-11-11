@@ -21,7 +21,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= $myListingsOnly ? 'My Listings' : 'Marketplace' ?> — EcoCycle</title>
+    <title><?= $myListingsOnly ? 'My Listings' : 'Surplus Materials Marketplace' ?> — EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -30,14 +30,17 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         .marketplace-tabs {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 18px;
+            gap: 10px;
+            margin-bottom: 22px;
             border-bottom: 1px solid #dce6db;
-            padding-bottom: 8px;
+            padding-bottom: 10px;
         }
         .mkt-tab-btn {
-            padding: 8px 16px;
-            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 8px;
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
@@ -49,42 +52,141 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             background: #eef6ec;
         }
         .mkt-tab-btn.active {
-            color: #123321;
-            background: #e3ede1;
+            color: #0e291b;
+            background: #e2ede0;
+            font-weight: 700;
         }
+        .mkt-tab-badge {
+            background: #ffffff;
+            color: #1a4d2e;
+            padding: 1px 7px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid #c4d9c0;
+        }
+
         .marketplace-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 22px;
         }
+
+        /* Professional Card Styling */
         .listing-card {
             background: #ffffff;
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
+            border: 1px solid #d8e5d6;
+            border-radius: 14px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-        .listing-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 24px rgba(18, 51, 33, 0.08);
-            border-color: var(--card-border-hover);
-        }
-        .listing-img-wrap {
-            height: 160px;
-            width: 100%;
-            overflow: hidden;
-            background: #eef3ec;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+            box-shadow: 0 2px 6px rgba(18, 51, 33, 0.04);
             position: relative;
         }
-        .listing-img-wrap img {
+        .listing-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 28px rgba(18, 51, 33, 0.09);
+            border-color: #a8cfab;
+        }
+
+        /* Multi-Image Gallery Wrap */
+        .listing-img-container {
+            position: relative;
+            height: 190px;
+            width: 100%;
+            background: linear-gradient(135deg, #eef4ed, #e3ece1);
+            overflow: hidden;
+        }
+        .listing-img-slide {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: opacity 0.2s ease;
         }
+        .listing-img-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            color: #123321;
+            font-size: 13px;
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            z-index: 4;
+            opacity: 0;
+            transition: opacity 0.15s ease, background 0.15s ease;
+        }
+        .listing-card:hover .listing-img-nav-btn {
+            opacity: 1;
+        }
+        .listing-img-nav-btn:hover {
+            background: #ffffff;
+            color: #0e291b;
+        }
+        .listing-img-nav-btn.prev { left: 8px; }
+        .listing-img-nav-btn.next { right: 8px; }
+
+        .listing-dots-indicator {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            z-index: 4;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 3px 6px;
+            border-radius: 10px;
+        }
+        .listing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transition: all 0.15s ease;
+        }
+        .listing-dot.active {
+            background: #ffffff;
+            width: 14px;
+            border-radius: 4px;
+        }
+
+        .img-count-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(14, 41, 27, 0.82);
+            backdrop-filter: blur(4px);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 3;
+            letter-spacing: 0.02em;
+        }
+
+        .reusability-corner-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 3;
+        }
+
+        /* Card Body */
         .listing-body {
-            padding: 16px;
+            padding: 16px 18px 18px;
             display: flex;
             flex-direction: column;
             flex: 1;
@@ -96,24 +198,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             gap: 6px;
             margin-bottom: 8px;
         }
-        .listing-price-tag {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--brand-green);
-            margin: 6px 0 4px;
-        }
-        .listing-borrow-tag {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0284c7;
-            margin: 6px 0 4px;
-        }
-        .listing-free-tag {
-            font-size: 15px;
-            font-weight: 700;
-            color: #15803d;
-            margin: 6px 0 4px;
-        }
+
         .offer-type-badge {
             display: inline-flex;
             align-items: center;
@@ -140,26 +225,186 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             color: #92400e;
             border: 1px solid #fde68a;
         }
-        .btn-create-listing {
-            background: var(--brand-green);
-            color: #ffffff;
-            border: none;
-            padding: 10px 18px;
+
+        .condition-pill {
+            font-size: 10px;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+
+        .listing-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            color: #123321;
+            margin: 4px 0 6px;
+            line-height: 1.35;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 42px;
+        }
+
+        .listing-company-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #556c5e;
+            margin-bottom: 10px;
+        }
+        .listing-company-row strong {
+            color: #1c3d2a;
+            font-weight: 600;
+        }
+
+        .listing-pricing-box {
+            background: #f8fbf7;
+            border: 1px solid #e3ede1;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        .price-main {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 800;
+            color: #15803d;
+        }
+        .price-main.borrow-price {
+            color: #0284c7;
+        }
+        .price-main.free-price {
+            color: #16a34a;
+        }
+        .price-unit {
+            font-size: 11px;
+            color: #617769;
+            font-weight: 500;
+            margin-left: 4px;
+        }
+        .qty-badge {
+            font-size: 11px;
+            font-weight: 600;
+            color: #2e573a;
+            background: #eaf3e8;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #cfe1cd;
+        }
+
+        .listing-desc-excerpt {
+            font-size: 12px;
+            color: #5b6f63;
+            line-height: 1.45;
+            margin: 0 0 14px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 35px;
+        }
+
+        .listing-card-footer {
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid #edf3eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .btn-view-quick {
+            background: #ffffff;
+            border: 1px solid #cadbc9;
+            color: #244b32;
+            padding: 7px 12px;
             border-radius: 6px;
-            font: 600 13px var(--font-main);
+            font: 600 12px var(--font-main);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-view-quick:hover {
+            background: #eef6ec;
+            border-color: #9ecc9f;
+        }
+
+        .btn-claim-action {
+            background: var(--brand-green);
+            border: 1px solid var(--brand-green);
+            color: #ffffff;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font: 600 12px var(--font-main);
+            cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            text-decoration: none;
+            gap: 6px;
             transition: background 0.15s ease;
         }
-        .btn-create-listing:hover {
-            background: #0e291b;
+        .btn-claim-action:hover {
+            background: #0d281a;
         }
+
+        /* Create Listing Modal Multi-Image Upload Area */
+        .image-upload-dropzone {
+            border: 2px dashed #b9d8ba;
+            background: #f7fbf6;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .image-upload-dropzone:hover {
+            border-color: var(--brand-green);
+            background: #edf6eb;
+        }
+        .preview-thumbs-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .thumb-preview-card {
+            position: relative;
+            height: 72px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #c2d8bf;
+            background: #ffffff;
+        }
+        .thumb-preview-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .thumb-cover-tag {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(14, 41, 27, 0.85);
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 700;
+            text-align: center;
+            padding: 2px 0;
+            text-transform: uppercase;
+        }
+
         .filter-row-top {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+            grid-template-columns: 2fr 1.2fr 1fr 1fr 1fr auto;
             gap: 12px;
             align-items: flex-end;
         }
@@ -171,6 +416,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         @media (max-width: 640px) {
             .filter-row-top {
                 grid-template-columns: 1fr;
+            }
+            .preview-thumbs-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
     </style>
@@ -195,10 +443,10 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <div class="page-header">
                 <div>
                     <h1><?= $myListingsOnly ? 'My marketplace listings' : 'Surplus materials marketplace' ?></h1>
-                    <p>Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. All listings support <strong>Buy</strong>, <strong>Borrow</strong>, or <strong>Take for Free</strong> with circular reusability tracking.</p>
+                    <p>Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. Listings support <strong>Buy</strong>, <strong>Borrow</strong>, or <strong>Take for Free</strong> with circular reusability tracking.</p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <button type="button" class="btn-create-listing" onclick="openCreateListingModal()">
+                    <button type="button" class="btn-create-listing" onclick="openCreateListingModal()" style="background:var(--brand-green);color:#fff;border:none;padding:10px 18px;border-radius:6px;font:600 13px var(--font-main);display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         <span>+ Create New Listing</span>
                     </button>
@@ -223,10 +471,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <!-- View Tabs: All vs My Listings -->
             <div class="marketplace-tabs">
                 <a href="/business/marketplace" class="mkt-tab-btn <?= !$myListingsOnly ? 'active' : '' ?>">
-                    🛒 All Marketplace Listings
+                    <span>🛒 All Marketplace Listings</span>
+                    <span class="mkt-tab-badge"><?= \App\Models\MarketplaceListing::where('status', 'active')->count() ?></span>
                 </a>
                 <a href="/business/marketplace?my_listings=1" class="mkt-tab-btn <?= $myListingsOnly ? 'active' : '' ?>">
-                    📋 My Listings (<?= $business->marketplaceListings()->where('status', 'active')->count() ?>)
+                    <span>📋 My Listings</span>
+                    <span class="mkt-tab-badge"><?= $business->marketplaceListings()->where('status', 'active')->count() ?></span>
                 </a>
             </div>
 
@@ -240,7 +490,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <div class="filter-row-top">
                         <div class="filter-field">
                             <label for="mkt-search">Search Materials</label>
-                            <input id="mkt-search" name="q" type="text" value="<?= e(request('q')) ?>" placeholder="Search material name or description...">
+                            <input id="mkt-search" name="q" type="text" value="<?= e(request('q')) ?>" placeholder="Search material name or keyword...">
                         </div>
 
                         <div class="filter-field">
@@ -300,8 +550,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 </form>
             </section>
 
-            <!-- Listings Header -->
-            <div class="section-header-row">
+            <!-- Section Title -->
+            <div class="section-header-row" style="margin-top:20px;">
                 <div class="section-header-title">
                     <h2><?= $myListingsOnly ? 'Your Published Listings' : 'Live Material Listings' ?></h2>
                     <p><?= $listings->count() ?> listing(s) available in this view</p>
@@ -310,54 +560,95 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
             <!-- Listings Grid -->
             <?php if ($listings->isEmpty()): ?>
-                <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:12px;padding:48px 24px;text-align:center;margin-bottom:32px;">
+                <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:14px;padding:52px 24px;text-align:center;margin-bottom:32px;">
                     <span class="signin-brand-mark" style="margin:0 auto 14px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
-                    <h3 style="margin:0 0 6px;font-size:16px;color:#123321;">No material listings found</h3>
-                    <p style="margin:0 0 16px;font-size:13px;color:var(--text-muted);max-width:480px;margin-inline:auto;line-height:1.5;">
-                        <?= $myListingsOnly ? 'You have not published any material listings yet. List surplus items from your inventory to share with other businesses.' : 'No surplus materials matched your filter criteria. Try clearing some filters or publish a new listing.' ?>
+                    <h3 style="margin:0 0 6px;font-size:17px;color:#123321;font-weight:700;">No material listings found</h3>
+                    <p style="margin:0 0 20px;font-size:13px;color:var(--text-muted);max-width:500px;margin-inline:auto;line-height:1.5;">
+                        <?= $myListingsOnly ? 'You have not published any material listings yet. List surplus items with 1 to 5 photos to share them with verified Malaysian SMEs.' : 'No surplus materials matched your filter criteria. Try clearing filters or create a new listing.' ?>
                     </p>
-                    <div style="display:flex;justify-content:center;gap:10px;">
-                        <button type="button" class="btn-create-listing" onclick="openCreateListingModal()">
+                    <div style="display:flex;justify-content:center;gap:12px;">
+                        <button type="button" class="btn-claim-action" onclick="openCreateListingModal()">
                             <span>+ Create New Listing</span>
                         </button>
-                        <a href="/business/inventory" class="btn-back-directory">
-                            <span>Go to Inventory &rarr;</span>
+                        <a href="/business/inventory" class="btn-view-quick" style="text-decoration:none;">
+                            <span>Manage Inventory &rarr;</span>
                         </a>
                     </div>
                 </div>
             <?php else: ?>
                 <div class="marketplace-grid">
-                    <?php foreach ($listings as $item): ?>
+                    <?php foreach ($listings as $idx => $item): ?>
                         <?php
                             $isOwner = $item->business_id === $business->id;
                             $listingType = $item->listing_type ?: ($item->is_free ? 'free' : 'buy');
                             $isReusable = ($item->reusability === 'reusable');
+                            $images = $item->getAllImages();
+                            $imgCount = count($images);
+                            $cardId = 'listing-card-' . $item->id;
                         ?>
-                        <article class="listing-card">
-                            <div class="listing-img-wrap">
-                                <?php if (!empty($item->image_path)): ?>
-                                    <img src="<?= e($item->image_path) ?>" alt="<?= e($item->title) ?>" loading="lazy">
+                        <article class="listing-card" id="<?= $cardId ?>"
+                            data-title="<?= e($item->title) ?>"
+                            data-category="<?= e($item->category) ?>"
+                            data-condition="<?= e($item->condition ?? 'Used - Good') ?>"
+                            data-type="<?= e($listingType) ?>"
+                            data-reusability="<?= e($item->reusability) ?>"
+                            data-price="<?= (float) $item->price ?>"
+                            data-qty="<?= (float) $item->quantity ?>"
+                            data-unit="<?= e($item->unit) ?>"
+                            data-city="<?= e($item->location_city) ?>"
+                            data-state="<?= e($item->location_state) ?>"
+                            data-company="<?= e($item->business?->business_name ?: ($item->business?->name ?? 'Partner')) ?>"
+                            data-desc="<?= e($item->description) ?>"
+                            data-images='<?= json_encode($images) ?>'
+                        >
+                            <!-- Multi-Image Carousel / Gallery Area -->
+                            <div class="listing-img-container" id="gallery-container-<?= $item->id ?>">
+                                <?php if ($imgCount > 0): ?>
+                                    <img src="<?= e($images[0]) ?>" alt="<?= e($item->title) ?>" class="listing-img-slide" id="img-display-<?= $item->id ?>" loading="lazy">
+                                    
+                                    <?php if ($imgCount > 1): ?>
+                                        <button type="button" class="listing-img-nav-btn prev" onclick="slideListingImage(<?= $item->id ?>, -1, event)" aria-label="Previous image">&lsaquo;</button>
+                                        <button type="button" class="listing-img-nav-btn next" onclick="slideListingImage(<?= $item->id ?>, 1, event)" aria-label="Next image">&rsaquo;</button>
+                                        
+                                        <div class="listing-dots-indicator" id="dots-container-<?= $item->id ?>">
+                                            <?php for ($i = 0; $i < $imgCount; $i++): ?>
+                                                <span class="listing-dot <?= $i === 0 ? 'active' : '' ?>"></span>
+                                            <?php endfor; ?>
+                                        </div>
+
+                                        <div class="img-count-badge">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                            <span id="img-counter-<?= $item->id ?>">1/<?= $imgCount ?></span>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="img-count-badge">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                            <span>1 photo</span>
+                                        </div>
+                                    <?php endif; ?>
                                 <?php else: ?>
-                                    <div style="width:100%;height:100%;display:grid;place-items:center;background:#f0f6ee;">
+                                    <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#eef4ed;gap:8px;">
                                         <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+                                        <span style="font-size:11px;font-weight:600;color:#617769;">Verified SME Material</span>
                                     </div>
                                 <?php endif; ?>
 
-                                <!-- Top-right reusability pill on image -->
-                                <div style="position:absolute;top:10px;right:10px;">
+                                <!-- Reusability Top-Right Pill -->
+                                <div class="reusability-corner-badge">
                                     <?php if ($isReusable): ?>
-                                        <span class="badge-reusable" style="box-shadow:0 2px 6px rgba(0,0,0,0.12);background:#ffffff;">↻ Reusable</span>
+                                        <span class="badge-reusable" style="box-shadow:0 2px 6px rgba(0,0,0,0.12);background:#ffffff;font-size:11px;">↻ Reusable</span>
                                     <?php else: ?>
-                                        <span class="badge-not-reusable" style="box-shadow:0 2px 6px rgba(0,0,0,0.12);background:#ffffff;">⊘ Not Reusable</span>
+                                        <span class="badge-not-reusable" style="box-shadow:0 2px 6px rgba(0,0,0,0.12);background:#ffffff;font-size:11px;">⊘ Not Reusable</span>
                                     <?php endif; ?>
                                 </div>
                             </div>
 
+                            <!-- Card Body -->
                             <div class="listing-body">
                                 <div class="card-badges-row">
                                     <!-- Offer type badge -->
                                     <?php if ($listingType === 'free'): ?>
-                                        <span class="offer-type-badge free">🎁 Take for Free</span>
+                                        <span class="offer-type-badge free">🎁 Free Surplus</span>
                                     <?php elseif ($listingType === 'borrow'): ?>
                                         <span class="offer-type-badge borrow">🤝 Borrow</span>
                                     <?php else: ?>
@@ -365,52 +656,56 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                     <?php endif; ?>
 
                                     <span class="category-tag"><?= e($item->category) ?></span>
-                                    <span class="verified-pill">Verified SME</span>
+                                    <span class="condition-pill"><?= e($item->condition ?? 'Used - Good') ?></span>
                                 </div>
 
-                                <h3 class="card-title" style="margin-top:4px;font-size:15px;"><?= e($item->title) ?></h3>
-                                <div class="card-location">
-                                    <?= e($item->location_city) ?>, <?= e($item->location_state) ?> &middot;
-                                    <strong><?= e($item->business?->business_name ?: ($item->business?->name ?? 'Partner')) ?></strong>
+                                <h3 class="listing-title" title="<?= e($item->title) ?>"><?= e($item->title) ?></h3>
+
+                                <div class="listing-company-row">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    <span><?= e($item->location_city) ?>, <?= e($item->location_state) ?> &middot; <strong><?= e($item->business?->business_name ?: ($item->business?->name ?? 'Partner')) ?></strong></span>
                                 </div>
 
-                                <!-- Pricing / Offer details -->
-                                <?php if ($listingType === 'free'): ?>
-                                    <div class="listing-free-tag">Free Surplus (RM 0.00)</div>
-                                <?php elseif ($listingType === 'borrow'): ?>
-                                    <div class="listing-borrow-tag">
-                                        <?= (float) $item->price > 0 ? 'Deposit RM ' . number_format((float) $item->price, 2) : 'Free Loan (No deposit)' ?>
+                                <!-- Pricing Box -->
+                                <div class="listing-pricing-box">
+                                    <div>
+                                        <?php if ($listingType === 'free'): ?>
+                                            <span class="price-main free-price">FREE</span>
+                                            <span class="price-unit">(RM 0.00)</span>
+                                        <?php elseif ($listingType === 'borrow'): ?>
+                                            <span class="price-main borrow-price">RM <?= number_format((float) $item->price, 2) ?></span>
+                                            <span class="price-unit"><?= (float) $item->price > 0 ? 'deposit / loan rate' : 'free loan' ?></span>
+                                        <?php else: ?>
+                                            <span class="price-main">RM <?= number_format((float) $item->price, 2) ?></span>
+                                            <span class="price-unit">/ <?= e($item->unit) ?></span>
+                                        <?php endif; ?>
                                     </div>
-                                <?php else: ?>
-                                    <div class="listing-price-tag">
-                                        RM <?= number_format((float) $item->price, 2) ?>
-                                        <span style="font-size:11px;font-weight:400;color:#6f7b72;">/ <?= e($item->unit) ?></span>
-                                    </div>
-                                <?php endif; ?>
+                                    <span class="qty-badge"><?= (float) $item->quantity ?> <?= e($item->unit) ?></span>
+                                </div>
 
                                 <?php if (!empty($item->description)): ?>
-                                    <p style="margin:4px 0 10px;font-size:12px;color:var(--text-secondary);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
-                                        <?= e($item->description) ?>
-                                    </p>
+                                    <p class="listing-desc-excerpt"><?= e($item->description) ?></p>
                                 <?php endif; ?>
 
-                                <div class="card-footer" style="padding-top:10px;margin-top:auto;">
-                                    <span class="available-listings-text">Qty: <?= (float) $item->quantity ?> <?= e($item->unit) ?></span>
+                                <div class="listing-card-footer">
+                                    <button type="button" class="btn-view-quick" onclick="openListingDetailModal(<?= $item->id ?>)">
+                                        Quick View
+                                    </button>
 
                                     <?php if ($isOwner): ?>
                                         <div style="display:flex;align-items:center;gap:6px;">
-                                            <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:3px 7px;border-radius:4px;border:1px solid #bbf7d0;">Your Listing</span>
-                                            <form method="POST" action="/business/marketplace/<?= $item->id ?>" onsubmit="return confirm('Are you sure you want to remove this listing from the marketplace?');" style="margin:0;">
+                                            <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:4px 8px;border-radius:4px;border:1px solid #bbf7d0;">Your Listing</span>
+                                            <form method="POST" action="/business/marketplace/<?= $item->id ?>" onsubmit="return confirm('Are you sure you want to remove this listing?');" style="margin:0;">
                                                 <input type="hidden" name="_token" value="<?= csrf_token() ?>">
                                                 <input type="hidden" name="_method" value="DELETE">
-                                                <button type="submit" style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;" title="Delete listing">
+                                                <button type="submit" style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:5px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;" title="Delete listing">
                                                     ✕ Delete
                                                 </button>
                                             </form>
                                         </div>
                                     <?php else: ?>
-                                        <button type="button" class="btn-view-profile" onclick="openClaimModal('<?= e(addslashes($item->title)) ?>', '<?= e(addslashes($item->business?->business_name ?: ($item->business?->name ?? 'Partner'))) ?>', '<?= e($listingType) ?>')">
-                                            <?= $listingType === 'free' ? 'Claim Free &rarr;' : ($listingType === 'borrow' ? 'Borrow &rarr;' : 'Inquire &rarr;') ?>
+                                        <button type="button" class="btn-claim-action" onclick="openClaimModal('<?= e(addslashes($item->title)) ?>', '<?= e(addslashes($item->business?->business_name ?: ($item->business?->name ?? 'Partner'))) ?>', '<?= e($listingType) ?>')">
+                                            <?= $listingType === 'free' ? '🎁 Claim Free' : ($listingType === 'borrow' ? '🤝 Borrow' : 'Inquire &rarr;') ?>
                                         </button>
                                     <?php endif; ?>
                                 </div>
@@ -422,14 +717,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         </main>
     </div>
 
-    <!-- Create Listing Modal -->
+    <!-- Create Listing Modal (Supports 1 to 5 Images) -->
     <div class="modal-overlay" id="create-listing-modal" style="display:none;" onclick="if(event.target===this)closeCreateListingModal()">
-        <div class="modal-card" style="max-width:560px;">
+        <div class="modal-card" style="max-width:580px;">
             <div class="modal-header">
                 <h3>List Material on Marketplace</h3>
                 <button type="button" class="modal-close-btn" onclick="closeCreateListingModal()">&times;</button>
             </div>
-            <form method="POST" action="/business/marketplace">
+            <form method="POST" action="/business/marketplace" enctype="multipart/form-data">
                 <input type="hidden" name="_token" value="<?= csrf_token() ?>">
                 <div class="modal-body">
                     <!-- Optional Pre-fill from Inventory -->
@@ -456,9 +751,26 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         </div>
                     <?php endif; ?>
 
+                    <!-- 1 to 5 Images Upload Section -->
+                    <div class="form-group">
+                        <label style="display:flex;justify-content:space-between;align-items:center;">
+                            <span>Material Photos (1 to 5 Images)</span>
+                            <small style="color:#617769;font-weight:500;" id="image-count-notice">0 of 5 selected</small>
+                        </label>
+                        <div class="image-upload-dropzone" onclick="document.getElementById('listing_images_input').click()">
+                            <input type="file" id="listing_images_input" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleImageSelection(this)">
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22543d" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <span style="font-size:13px;font-weight:700;color:#18422d;">Click to upload 1 to 5 photos</span>
+                                <small style="font-size:11px;color:#617769;">PNG, JPG, or WEBP up to 5MB each. First image becomes the cover photo.</small>
+                            </div>
+                        </div>
+                        <div class="preview-thumbs-grid" id="image-previews-container" style="display:none;"></div>
+                    </div>
+
                     <div class="form-group">
                         <label for="create_title">Material Title *</label>
-                        <input type="text" id="create_title" name="title" required placeholder="e.g. Surplus Clean Pallets (Grade A)">
+                        <input type="text" id="create_title" name="title" required placeholder="e.g. Surplus Clean Euro Pallets (Grade A)">
                     </div>
 
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -524,7 +836,17 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         </div>
                     </div>
 
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label for="create_condition">Condition</label>
+                            <select id="create_condition" name="condition">
+                                <option value="Used - Good">Used - Good</option>
+                                <option value="New / Surplus">New / Surplus</option>
+                                <option value="Like New">Like New</option>
+                                <option value="Used - Fair">Used - Fair</option>
+                                <option value="Recyclable Scrap">Recyclable Scrap</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label for="create_city">City</label>
                             <input type="text" id="create_city" name="location_city" value="<?= e($business->city ?? '') ?>" placeholder="e.g. Shah Alam">
@@ -548,6 +870,66 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         </div>
     </div>
 
+    <!-- Quick View / Detail Modal with Photo Gallery -->
+    <div class="modal-overlay" id="listing-detail-modal" style="display:none;" onclick="if(event.target===this)closeListingDetailModal()">
+        <div class="modal-card" style="max-width:680px;">
+            <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span id="modal-detail-offer-badge" class="offer-type-badge buy">Buy</span>
+                    <span id="modal-detail-reusable-badge" class="badge-reusable">↻ Reusable</span>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeListingDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Large Image Viewer + Thumbnails -->
+                <div style="background:#f1f5f0;border-radius:10px;overflow:hidden;position:relative;height:280px;display:flex;align-items:center;justify-content:center;">
+                    <img id="modal-detail-main-img" src="" alt="Material photo" style="width:100%;height:100%;object-fit:cover;display:none;">
+                    <div id="modal-detail-no-img" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                        <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+                        <span style="font-size:12px;color:#617769;font-weight:600;">No photo uploaded</span>
+                    </div>
+                </div>
+                <!-- Gallery Thumbnails Row -->
+                <div class="preview-thumbs-grid" id="modal-detail-thumbs" style="display:none;margin-top:0;"></div>
+
+                <div>
+                    <h2 id="modal-detail-title" style="margin:0 0 6px;font-size:20px;font-weight:800;color:#123321;font-family:var(--font-display);"></h2>
+                    <p id="modal-detail-company-loc" style="margin:0;font-size:13px;color:#556c5e;font-weight:600;"></p>
+                </div>
+
+                <div class="modal-detail-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="modal-detail-item">
+                        <small>Price / Terms</small>
+                        <span id="modal-detail-price" style="color:#15803d;font-weight:700;"></span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <small>Available Qty</small>
+                        <span id="modal-detail-qty"></span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <small>Condition</small>
+                        <span id="modal-detail-condition"></span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <small>Category</small>
+                        <span id="modal-detail-category"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="margin:0 0 6px;font-size:12px;text-transform:uppercase;color:#556c5e;letter-spacing:0.04em;">Description & Exchange Terms</h4>
+                    <p id="modal-detail-desc" style="margin:0;font-size:13px;color:#2e4436;line-height:1.6;background:#fbfdfa;border:1px solid #e1e9df;padding:12px;border-radius:8px;"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeListingDetailModal()">Close</button>
+                <button type="button" class="btn-claim-action" id="modal-detail-action-btn" onclick="executeClaimFromModal()">
+                    Inquire Now &rarr;
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
     function toggleSidebar() {
         document.getElementById('dashboard-sidebar').classList.toggle('open');
@@ -561,6 +943,76 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         var menu = document.getElementById('notification-dropdown');
         if (menu) menu.style.display = 'none';
     });
+
+    // Carousel state tracking for cards
+    var listingCarousels = {};
+
+    function slideListingImage(listingId, direction, e) {
+        if (e) e.stopPropagation();
+        var card = document.getElementById('listing-card-' + listingId);
+        if (!card) return;
+        var images = JSON.parse(card.dataset.images || '[]');
+        if (images.length <= 1) return;
+
+        if (typeof listingCarousels[listingId] === 'undefined') {
+            listingCarousels[listingId] = 0;
+        }
+
+        listingCarousels[listingId] += direction;
+        if (listingCarousels[listingId] < 0) listingCarousels[listingId] = images.length - 1;
+        if (listingCarousels[listingId] >= images.length) listingCarousels[listingId] = 0;
+
+        var curIdx = listingCarousels[listingId];
+        var imgEl = document.getElementById('img-display-' + listingId);
+        if (imgEl) imgEl.src = images[curIdx];
+
+        var counterEl = document.getElementById('img-counter-' + listingId);
+        if (counterEl) counterEl.textContent = (curIdx + 1) + '/' + images.length;
+
+        var dotsContainer = document.getElementById('dots-container-' + listingId);
+        if (dotsContainer) {
+            var dots = dotsContainer.children;
+            for (var i = 0; i < dots.length; i++) {
+                dots[i].className = 'listing-dot' + (i === curIdx ? ' active' : '');
+            }
+        }
+    }
+
+    // Multi-Image Upload Preview for Create Listing Modal
+    function handleImageSelection(input) {
+        var previewContainer = document.getElementById('image-previews-container');
+        var notice = document.getElementById('image-count-notice');
+        previewContainer.innerHTML = '';
+
+        if (!input.files || input.files.length === 0) {
+            previewContainer.style.display = 'none';
+            notice.textContent = '0 of 5 selected';
+            return;
+        }
+
+        if (input.files.length > 5) {
+            alert('You can upload a maximum of 5 images per listing. Only the first 5 will be kept.');
+        }
+
+        var count = Math.min(input.files.length, 5);
+        notice.textContent = count + ' of 5 selected';
+        previewContainer.style.display = 'grid';
+
+        for (var i = 0; i < count; i++) {
+            (function(idx) {
+                var file = input.files[idx];
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var card = document.createElement('div');
+                    card.className = 'thumb-preview-card';
+                    card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
+                        (idx === 0 ? '<div class="thumb-cover-tag">Cover</div>' : '');
+                    previewContainer.appendChild(card);
+                };
+                reader.readAsDataURL(file);
+            })(i);
+        }
+    }
 
     function openCreateListingModal() {
         document.getElementById('create-listing-modal').style.display = 'flex';
@@ -601,6 +1053,94 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         if (opt.dataset.qty) document.getElementById('create_quantity').value = opt.dataset.qty;
         if (opt.dataset.unit) document.getElementById('create_unit').value = opt.dataset.unit;
         if (opt.dataset.reusability) document.getElementById('create_reusability').value = opt.dataset.reusability;
+    }
+
+    // Quick View Modal
+    var currentActiveModalListing = null;
+
+    function openListingDetailModal(listingId) {
+        var card = document.getElementById('listing-card-' + listingId);
+        if (!card) return;
+
+        currentActiveModalListing = {
+            id: listingId,
+            title: card.dataset.title,
+            company: card.dataset.company,
+            type: card.dataset.type,
+        };
+
+        var images = JSON.parse(card.dataset.images || '[]');
+        var mainImg = document.getElementById('modal-detail-main-img');
+        var noImg = document.getElementById('modal-detail-no-img');
+        var thumbs = document.getElementById('modal-detail-thumbs');
+        thumbs.innerHTML = '';
+
+        if (images.length > 0) {
+            mainImg.src = images[0];
+            mainImg.style.display = 'block';
+            noImg.style.display = 'none';
+
+            if (images.length > 1) {
+                thumbs.style.display = 'grid';
+                images.forEach(function(src, i) {
+                    var t = document.createElement('div');
+                    t.className = 'thumb-preview-card';
+                    t.style.cursor = 'pointer';
+                    t.innerHTML = '<img src="' + src + '" alt="thumb">';
+                    t.onclick = function() {
+                        mainImg.src = src;
+                    };
+                    thumbs.appendChild(t);
+                });
+            } else {
+                thumbs.style.display = 'none';
+            }
+        } else {
+            mainImg.style.display = 'none';
+            noImg.style.display = 'flex';
+            thumbs.style.display = 'none';
+        }
+
+        // Badges
+        var offerBadge = document.getElementById('modal-detail-offer-badge');
+        var type = card.dataset.type;
+        offerBadge.className = 'offer-type-badge ' + type;
+        offerBadge.textContent = type === 'free' ? '🎁 Free Surplus' : (type === 'borrow' ? '🤝 Available to Borrow' : '🛒 For Sale');
+
+        var reusableBadge = document.getElementById('modal-detail-reusable-badge');
+        if (card.dataset.reusability === 'reusable') {
+            reusableBadge.className = 'badge-reusable';
+            reusableBadge.textContent = '↻ Reusable';
+        } else {
+            reusableBadge.className = 'badge-not-reusable';
+            reusableBadge.textContent = '⊘ Not Reusable';
+        }
+
+        document.getElementById('modal-detail-title').textContent = card.dataset.title;
+        document.getElementById('modal-detail-company-loc').textContent = card.dataset.company + ' · ' + card.dataset.city + ', ' + card.dataset.state;
+        
+        var price = parseFloat(card.dataset.price || 0);
+        var priceText = type === 'free' ? 'FREE (RM 0.00)' : (type === 'borrow' ? (price > 0 ? 'RM ' + price.toFixed(2) + ' deposit' : 'Free Loan') : 'RM ' + price.toFixed(2) + ' / ' + card.dataset.unit);
+        document.getElementById('modal-detail-price').textContent = priceText;
+        document.getElementById('modal-detail-qty').textContent = card.dataset.qty + ' ' + card.dataset.unit;
+        document.getElementById('modal-detail-condition').textContent = card.dataset.condition;
+        document.getElementById('modal-detail-category').textContent = card.dataset.category;
+        document.getElementById('modal-detail-desc').textContent = card.dataset.desc || 'No additional terms specified.';
+
+        var actionBtn = document.getElementById('modal-detail-action-btn');
+        actionBtn.textContent = type === 'free' ? '🎁 Claim Free Material' : (type === 'borrow' ? '🤝 Request to Borrow' : 'Inquire to Buy &rarr;');
+
+        document.getElementById('listing-detail-modal').style.display = 'flex';
+    }
+
+    function closeListingDetailModal() {
+        document.getElementById('listing-detail-modal').style.display = 'none';
+    }
+
+    function executeClaimFromModal() {
+        if (!currentActiveModalListing) return;
+        closeListingDetailModal();
+        openClaimModal(currentActiveModalListing.title, currentActiveModalListing.company, currentActiveModalListing.type);
     }
 
     function openClaimModal(title, bizName, offerType) {

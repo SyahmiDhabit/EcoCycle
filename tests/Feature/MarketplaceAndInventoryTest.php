@@ -6,11 +6,20 @@ use App\Models\InventoryItem;
 use App\Models\MarketplaceListing;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MarketplaceAndInventoryTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Storage::fake('public');
+        Storage::fake('local');
+    }
 
     private function createApprovedBusiness(string $name = 'Eco Alpha Sdn Bhd'): User
     {
@@ -112,6 +121,44 @@ class MarketplaceAndInventoryTest extends TestCase
             'is_free' => true,
             'price' => 0.00,
         ]);
+    }
+
+    public function test_business_can_upload_one_to_five_images_for_marketplace_listing(): void
+    {
+        Storage::fake('public');
+        $business = $this->createApprovedBusiness();
+
+        $images = [
+            UploadedFile::fake()->image('pallet1.jpg', 600, 400),
+            UploadedFile::fake()->image('pallet2.jpg', 600, 400),
+            UploadedFile::fake()->image('pallet3.jpg', 600, 400),
+        ];
+
+        $response = $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'title' => 'Grade A Wooden Pallets 120x100',
+            'category' => 'Packaging & paper',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 22.50,
+            'quantity' => 120,
+            'unit' => 'pallets',
+            'images' => $images,
+        ]);
+
+        $response->assertRedirect();
+        
+        $listing = MarketplaceListing::where('title', 'Grade A Wooden Pallets 120x100')->firstOrFail();
+        $this->assertNotNull($listing->image_path);
+        $this->assertCount(3, $listing->getAllImages());
+        $this->assertSame($listing->image_path, $listing->getAllImages()[0]);
+
+        // Test image route returns 200
+        $firstFilename = basename($listing->image_path);
+        $this->get('/listing-images/' . $firstFilename)->assertOk();
+
+        // Test delete cleans up stored files
+        $this->actingAs($business)->delete(route('business.marketplace.destroy', $listing));
+        $this->assertFalse(Storage::disk('public')->exists('listing-images/' . $firstFilename));
     }
 
     public function test_marketplace_filters_by_listing_type_and_reusability(): void

@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class MarketplaceController extends Controller
@@ -131,6 +133,8 @@ class MarketplaceController extends Controller
             'reusability' => ['required', 'in:reusable,not_reusable'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'condition' => ['nullable', 'string', 'max:40'],
+            'images' => ['nullable', 'array', 'max:5'],
+            'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ]);
 
         $listingType = $validated['listing_type'];
@@ -138,6 +142,23 @@ class MarketplaceController extends Controller
         $price = $isFree ? 0 : (isset($validated['price']) ? (float) $validated['price'] : null);
         $description = !empty($validated['description']) ? $validated['description'] : 'Surplus material available for circular exchange on EcoCycle.';
         $condition = !empty($validated['condition']) ? $validated['condition'] : 'Used - Good';
+
+        // Handle 1 to 5 uploaded images
+        $uploadedImages = [];
+        if ($request->hasFile('images')) {
+            $files = $request->file('images');
+            if (is_array($files)) {
+                $disk = Storage::disk('public');
+                foreach (array_slice($files, 0, 5) as $file) {
+                    if ($file && $file->isValid()) {
+                        $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                        $filename = 'listing_' . Str::random(24) . '.' . $ext;
+                        $disk->putFileAs('listing-images', $file, $filename);
+                        $uploadedImages[] = '/listing-images/' . $filename;
+                    }
+                }
+            }
+        }
 
         // If inventory item is specified, ensure it belongs to the user
         $inventoryItemId = $validated['inventory_item_id'] ?? null;
@@ -159,6 +180,8 @@ class MarketplaceController extends Controller
             'price' => $price,
             'is_free' => $isFree,
             'condition' => $condition,
+            'image_path' => $uploadedImages[0] ?? null,
+            'images' => $uploadedImages,
             'location_city' => $business->city ?: 'Kuala Lumpur',
             'location_state' => $business->state ?: 'Selangor',
             'status' => 'active',
@@ -186,6 +209,14 @@ class MarketplaceController extends Controller
     {
         $this->checkApproved();
         abort_unless($listing->business_id === Auth::id(), 403);
+
+        $disk = Storage::disk('public');
+        foreach ($listing->getAllImages() as $img) {
+            if (str_starts_with($img, '/listing-images/')) {
+                $filename = basename($img);
+                $disk->delete('listing-images/' . $filename);
+            }
+        }
 
         $title = $listing->title;
         $listing->delete();

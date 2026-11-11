@@ -484,13 +484,24 @@ $activeNav = 'inventory';
             <h3>List Material on Marketplace</h3>
             <button type="button" class="modal-close-btn" onclick="closeListMarketModal()">✕</button>
         </div>
-        <form method="POST" action="<?= route('business.marketplace.store') ?>">
+        <form method="POST" action="<?= route('business.marketplace.store') ?>" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" id="lm_inventory_item_id" name="inventory_item_id" value="">
             <div class="modal-body">
                 <p style="margin:0 0 14px;padding:10px 12px;border-radius:6px;background:#f0f6ee;border:1px solid #cce5c8;font-size:12px;color:#173e2c;">
                     From Inventory: <strong id="lm_source_name"></strong> &middot; Available Stock: <span id="lm_source_stock" style="color:#176b40;font-weight:700;"></span>
                 </p>
+
+                <!-- 1 to 5 Images Upload -->
+                <div class="form-group">
+                    <label style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>Material Photos (1 to 5 Images)</span>
+                        <small style="color:#6f7b72;" id="lm-img-notice">0 of 5 selected</small>
+                    </label>
+                    <input type="file" id="lm_images" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" onchange="previewInventoryListImages(this)">
+                    <small style="color:#6f7b72;font-size:11px;display:block;margin-top:4px;">Upload 1 to 5 photos. First image will be used as the cover photo.</small>
+                    <div id="lm-img-previews" style="display:none;grid-template-columns:repeat(5, 1fr);gap:6px;margin-top:8px;"></div>
+                </div>
 
                 <div class="form-group">
                     <label for="lm_title">Listing Title *</label>
@@ -632,6 +643,42 @@ function openListMarketModal(id, name, category, unit, quantity, reusability) {
 function closeListMarketModal() {
     document.getElementById('list-market-modal').style.display = 'none';
     document.body.style.overflow = '';
+}
+function previewInventoryListImages(input) {
+    var preview = document.getElementById('lm-img-previews');
+    var notice = document.getElementById('lm-img-notice');
+    preview.innerHTML = '';
+
+    if (!input.files || input.files.length === 0) {
+        preview.style.display = 'none';
+        notice.textContent = '0 of 5 selected';
+        return;
+    }
+
+    if (input.files.length > 5) {
+        alert('You can select a maximum of 5 images. Only the first 5 will be uploaded.');
+    }
+
+    var count = Math.min(input.files.length, 5);
+    notice.textContent = count + ' of 5 selected';
+    preview.style.display = 'grid';
+
+    for (var i = 0; i < count; i++) {
+        (function(idx) {
+            var file = input.files[idx];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var d = document.createElement('div');
+                d.style.height = '50px';
+                d.style.borderRadius = '4px';
+                d.style.overflow = 'hidden';
+                d.style.border = '1px solid #cadbc9';
+                d.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
+                preview.appendChild(d);
+            };
+            reader.readAsDataURL(file);
+        })(i);
+    }
 }
 function handleListingTypeChange(type, prefix) {
     var priceGroup = document.getElementById(prefix + '_price_group');

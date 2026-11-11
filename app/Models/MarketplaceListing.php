@@ -101,4 +101,9 @@ class MarketplaceListing extends Model
     {
         return $this->hasMany(MaterialExchange::class, 'listing_id');
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(MarketplaceReview::class, 'listing_id');
+    }
 }

@@ -468,7 +468,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             flex-direction: column !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            max-height: calc(100vh - 110px) !important;
+            height: 100% !important;
             overflow: hidden !important;
             margin: 0 !important;
         }
@@ -476,6 +476,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         .modal-card .modal-header,
         .modal-header {
             flex-shrink: 0 !important;
+            background: #ffffff !important;
+            border-bottom: 1px solid #e5ede3 !important;
         }
         .modal-dialog .modal-body,
         .modal-card .modal-body,
@@ -484,7 +486,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             overflow-x: hidden !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            max-height: calc(100vh - 180px) !important;
+            max-height: none !important;
             padding: 22px 24px !important;
             display: flex !important;
             flex-direction: column !important;

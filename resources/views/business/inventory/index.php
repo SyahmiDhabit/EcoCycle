@@ -266,6 +266,23 @@ $activeNav = 'inventory';
             gap: 4px;
             cursor: default;
         }
+        .btn-ai-advisor {
+            padding: 4px 8px;
+            border: 1px solid #93c5fd;
+            border-radius: 4px;
+            background: #eff6ff;
+            color: #1e40af;
+            font: 700 11px var(--font-main);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+        }
+        .btn-ai-advisor:hover {
+            background: #dbeafe;
+            border-color: #60a5fa;
+        }
         .modal-backdrop,
         .modal-overlay {
             position: fixed !important;
@@ -312,7 +329,7 @@ $activeNav = 'inventory';
             flex-direction: column !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            max-height: calc(100vh - 110px) !important;
+            height: 100% !important;
             overflow: hidden !important;
             margin: 0 !important;
         }
@@ -320,6 +337,8 @@ $activeNav = 'inventory';
         .modal-card .modal-header,
         .modal-header {
             flex-shrink: 0 !important;
+            background: #ffffff !important;
+            border-bottom: 1px solid #e5ede3 !important;
         }
         .modal-dialog .modal-body,
         .modal-card .modal-body,
@@ -328,7 +347,7 @@ $activeNav = 'inventory';
             overflow-x: hidden !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            max-height: calc(100vh - 180px) !important;
+            max-height: none !important;
             padding: 22px 24px !important;
             display: flex !important;
             flex-direction: column !important;
@@ -511,7 +530,10 @@ $activeNav = 'inventory';
                                                     🛒 List
                                                 </button>
                                             <?php else: ?>
-                                                <span class="btn-owner-only" title="Non-reusable material is kept in your account only and cannot be listed on the marketplace">🔒 Owner only</span>
+                                                <span class="btn-owner-only" title="Non-reusable material is kept in your account only and cannot be listed on the marketplace">🔒 Scrap</span>
+                                                <button type="button" class="btn-ai-advisor" title="EcoCycle AI Scrap Advisor: View circular recovery options & send to Wastage Monitoring" onclick='openAiAdvisorModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= (float)$item->quantity ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>)'>
+                                                    💡 AI Advisor
+                                                </button>
                                             <?php endif; ?>
                                             <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>)'>
                                                 Edit
@@ -961,6 +983,89 @@ $activeNav = 'inventory';
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeListMarketModal()">Cancel</button>
                 <button type="submit" class="btn-save">Publish to Marketplace</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- AI Circular Scrap Advisor Modal (Smart AI Recommendations for Not-Reusable Materials) -->
+<div class="modal-backdrop" id="ai-scrap-advisor-modal" style="display:none;" onclick="if(event.target === this) closeAiAdvisorModal()">
+    <div class="modal-dialog modal-dialog-large" style="max-width:640px;">
+        <div class="modal-header" style="background:#f0f7ff;border-bottom:1px solid #bfdbfe;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:#2563eb;color:#fff;display:grid;place-items:center;font-size:18px;">💡</div>
+                <div>
+                    <h3 style="color:#1e3a8a;margin:0;">EcoCycle AI Scrap Advisor</h3>
+                    <small style="color:#3b82f6;font-size:11.5px;font-weight:600;">Circular Valorization & Licensed Facility Matcher</small>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeAiAdvisorModal()">✕</button>
+        </div>
+        <form id="ai-advisor-form" method="POST" action="">
+            <?= csrf_field() ?>
+            <div class="modal-body" style="gap:14px;">
+                <!-- Target Material Header -->
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+                    <div>
+                        <strong id="ai_scrap_item_name" style="font-size:14px;color:#0f172a;display:block;">Scrap Material</strong>
+                        <span id="ai_scrap_meta" style="font-size:12px;color:#64748b;">Category · 0 kg in inventory</span>
+                    </div>
+                    <span style="font-size:11px;font-weight:700;background:#fef2f2;color:#b91c1c;padding:3px 8px;border-radius:4px;border:1px solid #fecaca;">⊘ Not Reusable Scrap</span>
+                </div>
+
+                <!-- AI Analysis Card -->
+                <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:14px 16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <span style="font-size:16px;">⚡</span>
+                        <h4 style="margin:0;font-size:13px;color:#1e40af;">AI Circular Recommendation Engine</h4>
+                    </div>
+                    <p id="ai_treatment_strategy" style="margin:0 0 10px;font-size:12.5px;color:#1e3a8a;line-height:1.5;">
+                        Analyzing material composition and industrial recovery paths...
+                    </p>
+                    <div style="background:#ffffff;border-radius:6px;padding:10px 12px;border:1px solid #bfdbfe;font-size:12px;">
+                        <strong style="color:#1d4ed8;display:block;margin-bottom:4px;">📜 Recommended Action & Circular Process:</strong>
+                        <span id="ai_compliance_note" style="color:#334155;">Compliant with Malaysian Environmental Quality Act 1974. Scheduled for licensed secondary recovery.</span>
+                    </div>
+                </div>
+
+                <!-- Recommended Destination Recyclers -->
+                <div>
+                    <label style="font-weight:700;color:#1e293b;margin-bottom:6px;display:block;font-size:12.5px;">
+                        📍 Recommended Licensed Recovery Destinations in Malaysia:
+                    </label>
+                    <div id="ai_destinations_container" style="display:flex;flex-direction:column;gap:8px;">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Action: Log to Wastage Monitoring -->
+                <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 14px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <span style="font-size:16px;">📊</span>
+                        <strong style="font-size:12.5px;color:#15803d;">Track in Wastage Monitoring Module</strong>
+                    </div>
+                    <p style="margin:0 0 10px;font-size:11.5px;color:#33533e;line-height:1.4;">
+                        Log this scrap directly into your official <strong>Wastage Monitoring</strong> tracker so you can monitor quantities, scheduled collection, and ESG diversion analytics.
+                    </p>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label style="font-size:11.5px;color:#166534;">Quantity to Log *</label>
+                            <input type="number" step="0.01" min="0.01" id="ai_log_qty" name="quantity" required style="font-size:12px;padding:6px 10px;">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size:11.5px;color:#166534;">Selected Destination Facility</label>
+                            <input type="text" id="ai_facility_name" name="facility_name" placeholder="e.g. Alam Flora Recovery Hub" style="font-size:12px;padding:6px 10px;">
+                        </div>
+                    </div>
+                    <input type="hidden" id="ai_facility_location" name="facility_location" value="">
+                    <input type="hidden" id="ai_recommendation_text" name="ai_recommendation" value="">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeAiAdvisorModal()">Close</button>
+                <button type="submit" class="btn-save" style="background:#16a34a;border-color:#15803d;">
+                    📊 Log to Wastage Monitoring &rarr;
+                </button>
             </div>
         </form>
     </div>
@@ -1490,6 +1595,118 @@ function removeLmPhoto(indexToRemove) {
     }
     lmPhotosTransfer = newTransfer;
     renderLmSlots();
+}
+
+function openAiAdvisorModal(id, name, category, quantity, unit, notes) {
+    document.getElementById('ai-advisor-form').action = '/business/waste-monitoring/from-inventory/' + id;
+    document.getElementById('ai_scrap_item_name').textContent = name;
+    document.getElementById('ai_scrap_meta').textContent = (category || 'Scrap') + ' · ' + quantity + ' ' + unit + ' in inventory';
+    document.getElementById('ai_log_qty').value = quantity;
+
+    var cat = (category || '').toLowerCase();
+    var n = (name || '').toLowerCase();
+    
+    var strategy = '';
+    var compliance = '';
+    var destinations = [];
+
+    if (cat.includes('metal') || n.includes('steel') || n.includes('iron') || n.includes('alum') || n.includes('copper')) {
+        strategy = 'Material identified as industrial metallic scrap. Recommended circular path: Magnetic/eddy-current separation followed by secondary smelting and ingot billet casting. 100% recyclable with minimal carbon loss.';
+        compliance = 'Scheduled Waste / Scrap Metal Control: Comply with Malaysian Environmental Quality (Clean Air) Regulations and licensed scrap recovery guidelines.';
+        destinations = [
+            { name: 'Shan Poornam Metals Sdn Bhd', loc: 'Bukit Minyak, Penang', type: 'Precious & Industrial Metal Smelting Hub', badge: 'DOE Licensed' },
+            { name: 'Southern Steel Circular Recovery', loc: 'Klang, Selangor', type: 'Ferrous Scrap Smelting & Rebar Casting', badge: 'Certified Recycler' },
+            { name: 'Daikkin Metal Recovery Plant', loc: 'Pasir Gudang, Johor', type: 'Non-ferrous & Aluminum Extrusion', badge: 'Green Vendor' }
+        ];
+    } else if (cat.includes('plastic') || cat.includes('rubber') || n.includes('poly') || n.includes('pet') || n.includes('pvc') || n.includes('hdpe')) {
+        strategy = 'Material identified as synthetic polymer / scrap plastics. Recommended circular path: Mechanical shredding, optical flake sorting, and hot melt extrusion into post-industrial recycled resin pellets (rPET / rHDPE).';
+        compliance = 'National Plastics Pact & SIRIM Eco-Label Standard 023. Divert from incineration to certified mechanical pelletizing.';
+        destinations = [
+            { name: 'Heng Hiap Industries Circular Polymer', loc: 'Johor Bahru, Johor', type: 'Ocean & Industrial Plastic Pelletizer', badge: 'FDA/SIRIM Eco-Label' },
+            { name: 'Daikkin Recycling Sdn Bhd', loc: 'Shah Alam, Selangor', type: 'Rigid & Film Plastic Reprocessing', badge: 'DOE Licensed' },
+            { name: 'Thong Guan Green Recovery', loc: 'Sungai Petani, Kedah', type: 'Stretch Film & Polyolefin Reclaiming', badge: 'Certified Recycler' }
+        ];
+    } else if (cat.includes('wood') || cat.includes('furniture') || n.includes('timber') || n.includes('sawdust') || n.includes('pallet')) {
+        strategy = 'Material identified as cellulose/timber cutoffs. Recommended circular path: High-pressure chipper granulation for engineered composite particleboards, biomass heating fuel pellets, or biochar agricultural soil enhancer.';
+        compliance = 'Malaysian Timber Industry Board (MTIB) Zero-Burning Directive. 100% biomass valorization compliant.';
+        destinations = [
+            { name: 'Merces Bio-Pelletizing Facility', loc: 'Rawang, Selangor', type: 'Industrial Biomass Wood Pellets', badge: 'Carbon Neutral' },
+            { name: 'HeveaBoard Circular Wood Recovery', loc: 'Gemas, Negeri Sembilan', type: 'Particleboard & Bio-composite Core', badge: 'PEFC Certified' },
+            { name: 'Eco Wood Resource Hub', loc: 'Kulai, Johor', type: 'Pallet Remanufacturing & Mulching', badge: 'Green Vendor' }
+        ];
+    } else if (cat.includes('electronic') || cat.includes('electrical') || n.includes('pcb') || n.includes('cable') || n.includes('wire')) {
+        strategy = 'Material identified as electrical / electronic scrap (E-Waste). Recommended circular path: De-soldering, hydro-metallurgical extraction of copper, silver, and gold, plus automated plastics casing segregation.';
+        compliance = 'Mandatory DOE Code SW110 (Scheduled Waste) Regulations. Must only be handled by licensed e-waste recovery centers.';
+        destinations = [
+            { name: 'Cenviro Scheduled Waste Centre', loc: 'Bukit Pelandok, N. Sembilan', type: 'Comprehensive SW110 E-Waste Refining', badge: 'DOE Tier-1 Facility' },
+            { name: 'Shan Poornam E-Waste Refining', loc: 'Prai, Penang', type: 'Precious Metals & PCB Pyrolysis', badge: 'Full DOE License' },
+            { name: 'Greenish E-Waste Solutions', loc: 'Shah Alam, Selangor', type: 'Component Recovery & Solder Extract', badge: 'Licensed Collector' }
+        ];
+    } else if (cat.includes('food') || cat.includes('organic') || n.includes('bio') || n.includes('sludge')) {
+        strategy = 'Material identified as organic / biodegradable byproduct. Recommended circular path: Automated continuous thermophilic composting, Black Soldier Fly (BSFL) protein feed bio-conversion, or anaerobic biogas digestion.';
+        compliance = 'National Solid Waste Management Policy (JPSPN) Circular Bio-Economy Framework.';
+        destinations = [
+            { name: 'EntoGenex Insect Bio-Refinery', loc: 'Sepang, Selangor', type: 'BSFL Larvae Protein & Frass Biofertilizer', badge: 'Certified Circular' },
+            { name: 'Alam Flora Environmental Solutions Organics', loc: 'Putrajaya', type: 'Commercial In-Vessel Composting', badge: 'Government Partner' },
+            { name: 'Biogas Green Grid Recovery', loc: 'Banting, Selangor', type: 'Anaerobic Digester & Methane Capture', badge: 'Clean Energy' }
+        ];
+    } else {
+        strategy = 'Material identified for general industrial circular recovery. Recommended path: Physical classification, separation of recyclable components, and transfer to a specialized Materials Recovery Facility (MRF).';
+        compliance = 'Solid Waste and Public Cleansing Management Act 2007 (Act 672). Scheduled diversion away from general landfills.';
+        destinations = [
+            { name: 'Alam Flora Environmental Solutions MRF', loc: 'Shah Alam, Selangor', type: 'Integrated Industrial Materials Recovery', badge: 'Licensed MRF' },
+            { name: 'SWM Environment Circular Hub', loc: 'Senai, Johor', type: 'Multi-stream Resource Sorting & Baling', badge: 'State Licensed' },
+            { name: 'E-Idaman Resource Recovery Complex', loc: 'Alor Setar, Kedah', type: 'Industrial Scrap Valorization Centre', badge: 'Certified Operator' }
+        ];
+    }
+
+    document.getElementById('ai_treatment_strategy').textContent = strategy;
+    document.getElementById('ai_compliance_note').textContent = compliance;
+    document.getElementById('ai_recommendation_text').value = strategy + ' | ' + compliance;
+
+    var container = document.getElementById('ai_destinations_container');
+    container.innerHTML = '';
+
+    destinations.forEach(function(dest, i) {
+        var card = document.createElement('div');
+        card.style.cssText = 'border:1.5px solid #cbd5e1;background:#ffffff;border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color 0.15s;';
+        card.innerHTML = '<div>' +
+            '<div style="display:flex;align-items:center;gap:6px;">' +
+                '<strong style="font-size:12.5px;color:#0f172a;">' + dest.name + '</strong>' +
+                '<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">' + dest.badge + '</span>' +
+            '</div>' +
+            '<span style="font-size:11.5px;color:#64748b;">📍 ' + dest.loc + ' · ' + dest.type + '</span>' +
+        '</div>' +
+        '<button type="button" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#1e293b;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Select</button>';
+        
+        card.onclick = function() {
+            document.getElementById('ai_facility_name').value = dest.name;
+            document.getElementById('ai_facility_location').value = dest.loc;
+            container.querySelectorAll('div').forEach(function(el) {
+                el.style.borderColor = '#cbd5e1';
+                el.style.background = '#ffffff';
+            });
+            card.style.borderColor = '#2563eb';
+            card.style.background = '#eff6ff';
+        };
+
+        if (i === 0) {
+            card.click();
+        }
+
+        container.appendChild(card);
+    });
+
+    var modal = document.getElementById('ai-scrap-advisor-modal');
+    modal.style.display = 'flex';
+    var body = modal.querySelector('.modal-body');
+    if (body) body.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAiAdvisorModal() {
+    document.getElementById('ai-scrap-advisor-modal').style.display = 'none';
+    document.body.style.overflow = '';
 }
 
 // Initial slot render

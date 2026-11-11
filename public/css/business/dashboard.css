@@ -1268,7 +1268,7 @@ h1, h2, h3, h4,
     flex-direction: column !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    max-height: calc(100vh - 110px) !important;
+    height: 100% !important;
     overflow: hidden !important;
     margin: 0 !important;
 }
@@ -1290,7 +1290,7 @@ h1, h2, h3, h4,
     align-items: center !important;
     justify-content: space-between !important;
     border-bottom: 1px solid #e5ede3 !important;
-    background: #fbfdfa !important;
+    background: #ffffff !important;
     flex-shrink: 0 !important;
 }
 
@@ -1328,7 +1328,7 @@ h1, h2, h3, h4,
     overflow-x: hidden !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    max-height: calc(100vh - 180px) !important;
+    max-height: none !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 16px !important;

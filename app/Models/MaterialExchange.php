@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
+    'invoice_number',
     'listing_id',
     'provider_business_id',
     'requester_business_id',
@@ -15,6 +16,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'unit',
     'total_price',
     'status',
+    'payment_status',
+    'payment_reference',
+    'payment_requested_at',
+    'paid_at',
     'notes',
     'completed_at',
 ])]
@@ -29,6 +34,8 @@ class MaterialExchange extends Model
         return [
             'quantity' => 'decimal:2',
             'total_price' => 'decimal:2',
+            'payment_requested_at' => 'datetime',
+            'paid_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
     }

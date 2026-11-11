@@ -13,6 +13,11 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\WastageMonitoringController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\MyListingController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\BusinessProfileController;
 
 Route::view('/', 'main.mainpage')->name('home');
 Route::get('/business', BusinessDashboardController::class)->middleware('auth')->name('business.dashboard');
@@ -25,6 +30,31 @@ Route::post('/business/inventory', [InventoryController::class, 'store'])->middl
 Route::put('/business/inventory/{item}', [InventoryController::class, 'update'])->middleware('auth')->name('business.inventory.update');
 Route::post('/business/inventory/{item}/adjust', [InventoryController::class, 'adjust'])->middleware('auth')->name('business.inventory.adjust');
 Route::delete('/business/inventory/{item}', [InventoryController::class, 'destroy'])->middleware('auth')->name('business.inventory.destroy');
+
+// Waste Monitoring Routes
+Route::get('/business/waste-monitoring', [WastageMonitoringController::class, 'index'])->middleware('auth')->name('business.waste.index');
+Route::post('/business/waste-monitoring', [WastageMonitoringController::class, 'store'])->middleware('auth')->name('business.waste.store');
+Route::put('/business/waste-monitoring/{record}', [WastageMonitoringController::class, 'updateStatus'])->middleware('auth')->name('business.waste.update');
+Route::post('/business/waste-monitoring/from-inventory/{item}', [WastageMonitoringController::class, 'logFromInventory'])->middleware('auth')->name('business.waste.from-inventory');
+Route::delete('/business/waste-monitoring/{record}', [WastageMonitoringController::class, 'destroy'])->middleware('auth')->name('business.waste.destroy');
+
+// Transactions & Invoicing Routes
+Route::get('/business/transactions', [TransactionController::class, 'index'])->middleware('auth')->name('business.transactions');
+Route::post('/business/transactions/{exchange}/request-payment', [TransactionController::class, 'requestPayment'])->middleware('auth')->name('business.transactions.request-payment');
+Route::post('/business/transactions/{exchange}/mark-paid', [TransactionController::class, 'markPaid'])->middleware('auth')->name('business.transactions.mark-paid');
+
+// My Listings & Reviews
+Route::get('/business/my-listings', [MyListingController::class, 'index'])->middleware('auth')->name('business.listings');
+Route::post('/business/my-listings/{listing}/status', [MyListingController::class, 'updateStatus'])->middleware('auth')->name('business.listings.status');
+Route::post('/business/my-listings/{listing}/reviews', [MyListingController::class, 'storeReview'])->middleware('auth')->name('business.listings.reviews');
+
+// Reports & Financial Analytics
+Route::get('/business/reports', [ReportController::class, 'index'])->middleware('auth')->name('business.reports');
+
+// Business Profile & Account Security
+Route::get('/business/profile', [BusinessProfileController::class, 'show'])->middleware('auth')->name('business.profile');
+Route::put('/business/profile', [BusinessProfileController::class, 'updateProfile'])->middleware('auth')->name('business.profile.update');
+Route::put('/business/profile/password', [BusinessProfileController::class, 'updatePassword'])->middleware('auth')->name('business.profile.password');
 Route::get('/business/application', [BusinessApplicationController::class, 'show'])->middleware('auth')->name('business.application');
 Route::post('/business/application', [BusinessApplicationController::class, 'update'])->middleware('auth')->name('business.application.update');
 Route::delete('/business/application', [BusinessApplicationController::class, 'destroy'])->middleware('auth')->name('business.application.destroy');

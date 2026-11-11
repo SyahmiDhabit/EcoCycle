@@ -28,7 +28,7 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             <span>Inventory</span>
         </a>
 
-        <a href="#waste-monitoring" class="sidebar-link <?= $activeNav === 'waste' ? 'active' : '' ?>" onclick="handleNavNotice(event, 'Waste Monitoring')">
+        <a href="/business/waste-monitoring" class="sidebar-link <?= $activeNav === 'waste' ? 'active' : '' ?>" title="Monitor non-reusable materials and scrap">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7"></path>
                 <polyline points="10 9 9 9 8 9"></polyline>
@@ -45,7 +45,7 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             <span>Marketplace</span>
         </a>
 
-        <a href="/business/marketplace?my_listings=1" class="sidebar-link <?= $activeNav === 'listings' ? 'active' : '' ?>" title="View and manage your marketplace listings">
+        <a href="/business/my-listings" class="sidebar-link <?= $activeNav === 'listings' ? 'active' : '' ?>" title="View your listings, item status, and buyer feedback">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="8" y1="6" x2="21" y2="6"></line>
                 <line x1="8" y1="12" x2="21" y2="12"></line>
@@ -57,7 +57,7 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             <span>My Listings</span>
         </a>
 
-        <a href="#transactions" class="sidebar-link <?= $activeNav === 'transactions' ? 'active' : '' ?>" onclick="handleNavNotice(event, 'Transactions')">
+        <a href="/business/transactions" class="sidebar-link <?= $activeNav === 'transactions' ? 'active' : '' ?>" title="Track sales, purchases, and payment requests">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="17 1 21 5 17 9"></polyline>
                 <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
@@ -67,7 +67,7 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             <span>Transactions</span>
         </a>
 
-        <a href="#reports" class="sidebar-link <?= $activeNav === 'reports' ? 'active' : '' ?>" onclick="handleNavNotice(event, 'Reports')">
+        <a href="/business/reports" class="sidebar-link <?= $activeNav === 'reports' ? 'active' : '' ?>" title="Financial profit, expenditure, and wastage reports">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="20" x2="18" y2="10"></line>
                 <line x1="12" y1="20" x2="12" y2="4"></line>
@@ -76,7 +76,7 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             <span>Reports</span>
         </a>
 
-        <a href="<?= route('business.application') ?>" class="sidebar-link <?= $activeNav === 'profile' ? 'active' : '' ?>" title="Business Profile & SSM Information">
+        <a href="/business/profile" class="sidebar-link <?= $activeNav === 'profile' ? 'active' : '' ?>" title="Business Profile, Logo & Password Settings">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>

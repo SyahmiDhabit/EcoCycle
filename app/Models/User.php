@@ -103,6 +103,11 @@ class User extends Authenticatable
         return $this->hasMany(MaterialExchange::class, 'requester_business_id');
     }
 
+    public function marketplaceReviews(): HasMany
+    {
+        return $this->hasMany(MarketplaceReview::class, 'seller_business_id');
+    }
+
     public function notifications(): HasMany
     {
         return $this->hasMany(BusinessNotification::class, 'business_id')->latest();

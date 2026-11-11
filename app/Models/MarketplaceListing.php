@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'unit',
     'price',
     'is_free',
+    'listing_type',
+    'reusability',
     'condition',
     'location_city',
     'location_state',

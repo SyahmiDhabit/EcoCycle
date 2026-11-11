@@ -40,6 +40,10 @@ class InventoryController extends Controller
             $query->where('status', $status);
         }
 
+        if ($reusability = $request->input('reusability')) {
+            $query->where('reusability', $reusability);
+        }
+
         $items = $query->paginate(15)->withQueryString();
         $categories = $business->inventoryItems()->distinct()->pluck('category')->filter()->values();
 
@@ -50,6 +54,7 @@ class InventoryController extends Controller
             'search' => $search,
             'selectedCategory' => $category,
             'selectedStatus' => $status,
+            'selectedReusability' => $reusability,
         ]);
     }
 
@@ -64,6 +69,7 @@ class InventoryController extends Controller
             'category' => ['required', 'string', 'max:60'],
             'quantity' => ['required', 'numeric', 'min:0'],
             'unit' => ['required', 'string', 'max:20'],
+            'reusability' => ['nullable', 'in:reusable,not_reusable'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -88,6 +94,7 @@ class InventoryController extends Controller
                 'category' => $validated['category'],
                 'quantity' => $quantity,
                 'unit' => $validated['unit'],
+                'reusability' => $validated['reusability'] ?? 'reusable',
                 'minimum_threshold' => $threshold,
                 'status' => $status,
                 'notes' => $validated['notes'] ?? null,
@@ -127,6 +134,7 @@ class InventoryController extends Controller
             'sku' => ['nullable', 'string', 'max:100'],
             'category' => ['required', 'string', 'max:60'],
             'unit' => ['required', 'string', 'max:20'],
+            'reusability' => ['nullable', 'in:reusable,not_reusable'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -148,6 +156,7 @@ class InventoryController extends Controller
             'sku' => $validated['sku'] ?? null,
             'category' => $validated['category'],
             'unit' => $validated['unit'],
+            'reusability' => $validated['reusability'] ?? $item->reusability ?? 'reusable',
             'minimum_threshold' => $threshold,
             'status' => $status,
             'notes' => $validated['notes'] ?? null,

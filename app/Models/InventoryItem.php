@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'unit',
     'minimum_threshold',
     'status',
+    'reusability',
     'notes',
 ])]
 class InventoryItem extends Model

@@ -45,7 +45,7 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             <span>Marketplace</span>
         </a>
 
-        <a href="#my-listings" class="sidebar-link <?= $activeNav === 'listings' ? 'active' : '' ?>" onclick="handleNavNotice(event, 'My Listings')">
+        <a href="/business/marketplace?my_listings=1" class="sidebar-link <?= $activeNav === 'listings' ? 'active' : '' ?>" title="View and manage your marketplace listings">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="8" y1="6" x2="21" y2="6"></line>
                 <line x1="8" y1="12" x2="21" y2="12"></line>

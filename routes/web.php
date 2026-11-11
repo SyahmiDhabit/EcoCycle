@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Admin\AdminDashboardController;
@@ -16,6 +18,8 @@ Route::view('/', 'main.mainpage')->name('home');
 Route::get('/business', BusinessDashboardController::class)->middleware('auth')->name('business.dashboard');
 Route::get('/business/directory/{company}', [BusinessDashboardController::class, 'show'])->middleware('auth')->name('business.directory.show');
 Route::get('/business/marketplace', [MarketplaceController::class, 'index'])->middleware('auth')->name('business.marketplace');
+Route::post('/business/marketplace', [MarketplaceController::class, 'store'])->middleware('auth')->name('business.marketplace.store');
+Route::delete('/business/marketplace/{listing}', [MarketplaceController::class, 'destroy'])->middleware('auth')->name('business.marketplace.destroy');
 Route::get('/business/inventory', [InventoryController::class, 'index'])->middleware('auth')->name('business.inventory');
 Route::post('/business/inventory', [InventoryController::class, 'store'])->middleware('auth')->name('business.inventory.store');
 Route::put('/business/inventory/{item}', [InventoryController::class, 'update'])->middleware('auth')->name('business.inventory.update');
@@ -43,9 +47,9 @@ Route::post('/language', [LanguageController::class, 'update'])->name('language.
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 Route::get('/profile-images/{filename}', function (string $filename) {
     $path = 'profile-images/' . $filename;
-    $disk = \Illuminate\Support\Facades\Storage::disk('public');
+    $disk = Storage::disk('public');
     abort_unless($disk->exists($path), 404);
-    return response($disk->get($path), 200, [
+    return Response::make($disk->get($path), 200, [
         'Content-Type' => $disk->mimeType($path) ?: 'image/png',
         'Cache-Control' => 'public, max-age=86400',
     ]);

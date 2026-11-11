@@ -71,7 +71,7 @@ $activeNav = 'inventory';
             background: #eef5eb;
         }
         .btn-add-primary {
-            padding: 8px 16px;
+            padding: 9px 18px;
             border: 1px solid var(--brand-green);
             border-radius: 6px;
             background: var(--brand-green);
@@ -80,7 +80,7 @@ $activeNav = 'inventory';
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             transition: background 0.15s ease;
         }
         .btn-add-primary:hover {
@@ -93,7 +93,7 @@ $activeNav = 'inventory';
             flex-wrap: wrap;
         }
         .btn-stock-in {
-            padding: 3px 8px;
+            padding: 4px 8px;
             border: 1px solid #a3cfbb;
             border-radius: 4px;
             background: #e8f5e9;
@@ -105,7 +105,7 @@ $activeNav = 'inventory';
             background: #c8e6c9;
         }
         .btn-stock-out {
-            padding: 3px 8px;
+            padding: 4px 8px;
             border: 1px solid #f5c6cb;
             border-radius: 4px;
             background: #fff5f5;
@@ -117,7 +117,7 @@ $activeNav = 'inventory';
             background: #f8d7da;
         }
         .btn-edit {
-            padding: 3px 8px;
+            padding: 4px 8px;
             border: 1px solid #cadbc9;
             border-radius: 4px;
             background: #fff;
@@ -129,7 +129,7 @@ $activeNav = 'inventory';
             background: #f4f8ef;
         }
         .btn-delete {
-            padding: 3px 8px;
+            padding: 4px 8px;
             border: 1px solid #fecaca;
             border-radius: 4px;
             background: #fff;
@@ -144,6 +144,56 @@ $activeNav = 'inventory';
             margin-top: 20px;
             display: flex;
             justify-content: center;
+        }
+
+        /* Image Dropzone & Preview Styles */
+        .inv-image-dropzone {
+            border: 2px dashed #b7d6b8;
+            background: #f7fbf6;
+            border-radius: 10px;
+            padding: 18px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .inv-image-dropzone:hover {
+            border-color: var(--brand-green);
+            background: #eef6ec;
+        }
+        .inv-thumbs-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .inv-thumb-card {
+            position: relative;
+            height: 68px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #c2d8bf;
+            background: #ffffff;
+        }
+        .inv-thumb-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .inv-thumb-cover-tag {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(14, 41, 27, 0.85);
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 700;
+            text-align: center;
+            padding: 2px 0;
+            text-transform: uppercase;
+        }
+        .modal-dialog-large {
+            width: min(640px, 96vw) !important;
         }
     </style>
 </head>
@@ -175,13 +225,16 @@ $activeNav = 'inventory';
                 </div>
             <?php endif; ?>
 
-            <!-- Page Title Header matching Standard Design -->
+            <!-- Page Title Header -->
             <div class="page-header">
                 <div>
                     <h1>Inventory management</h1>
-                    <p>Track materials, maintain safety thresholds, and record stock movements.</p>
+                    <p>Track materials, maintain safety thresholds, upload photos, and seamlessly list surplus to the marketplace.</p>
                 </div>
-                <button type="button" class="btn-add-primary" onclick="openAddModal()">+ Add New Item</button>
+                <button type="button" class="btn-add-primary" onclick="openAddModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>+ Add New Item</span>
+                </button>
             </div>
 
             <section class="panel" style="margin-top:20px;">
@@ -220,30 +273,41 @@ $activeNav = 'inventory';
                     <table class="table">
                         <thead>
                             <tr>
-                                <th style="width:24%;">Material / Item</th>
-                                <th style="width:13%;">Category</th>
-                                <th style="width:13%;">Reusability</th>
-                                <th style="width:14%;">Stock Level</th>
-                                <th style="width:12%;">Low Alert</th>
+                                <th style="width:28%;">Material / Item</th>
+                                <th style="width:14%;">Category</th>
+                                <th style="width:12%;">Reusability</th>
+                                <th style="width:13%;">Stock Level</th>
+                                <th style="width:11%;">Low Alert</th>
                                 <th style="width:10%;">Status</th>
-                                <th style="width:14%;">Actions</th>
+                                <th style="width:12%;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($items as $item): ?>
                                 <tr>
                                     <td data-label="Item">
-                                        <strong><?= e($item->name) ?></strong>
-                                        <?php if ($item->sku): ?>
-                                            <small style="display:block;color:#6f7b72;font-size:10px;">SKU: <?= e($item->sku) ?></small>
-                                        <?php endif; ?>
+                                        <div style="display:flex;align-items:center;gap:12px;">
+                                            <?php if ($item->image_path): ?>
+                                                <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.06);" loading="lazy">
+                                            <?php else: ?>
+                                                <div style="width:44px;height:44px;border-radius:8px;background:#eef6ec;border:1px solid #cce5c8;display:grid;place-items:center;flex-shrink:0;color:#235839;font-weight:700;font-size:16px;">
+                                                    📦
+                                                </div>
+                                            <?php endif; ?>
+                                            <div>
+                                                <strong style="color:#123321;font-size:14px;"><?= e($item->name) ?></strong>
+                                                <?php if ($item->sku): ?>
+                                                    <small style="display:block;color:#6f7b72;font-size:11px;">SKU: <?= e($item->sku) ?></small>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td data-label="Category"><?= e($item->category) ?></td>
                                     <td data-label="Reusability">
                                         <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                            <span class="badge-reusable" title="Reusable material">↻ Reusable</span>
+                                            <span class="badge-reusable" title="Reusable circular material">↻ Reusable</span>
                                         <?php else: ?>
-                                            <span class="badge-not-reusable" title="Single-use / non-reusable material">⊘ Not Reusable</span>
+                                            <span class="badge-not-reusable" title="Single-use / non-reusable scrap">⊘ Not Reusable</span>
                                         <?php endif; ?>
                                     </td>
                                     <td data-label="Stock Level">
@@ -291,8 +355,10 @@ $activeNav = 'inventory';
                         <?= $items->links()?->toHtml() ?>
                     </div>
                 <?php else: ?>
-                    <div class="empty-state-card" style="padding:40px;text-align:center;">
-                        <p style="margin:0 0 12px;color:var(--text-muted);">No materials found matching your criteria.</p>
+                    <div class="empty-state-card" style="padding:48px 24px;text-align:center;">
+                        <span class="signin-brand-mark" style="margin:0 auto 12px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+                        <h3 style="margin:0 0 6px;font-size:16px;color:#123321;">No materials found in inventory</h3>
+                        <p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;">Add your secondary materials, production cutoffs, or durable assets with photos to manage stock and share with partners.</p>
                         <button type="button" class="btn-add-primary" onclick="openAddModal()">+ Add New Item</button>
                     </div>
                 <?php endif; ?>
@@ -300,20 +366,38 @@ $activeNav = 'inventory';
         </main>
     </div>
 
-<!-- Add Inventory Modal -->
+<!-- Add Inventory Modal (Upgraded with 1 to 5 Images Support & Polished Design) -->
 <div class="modal-backdrop" id="add-modal" style="display:none;" onclick="if(event.target === this) closeAddModal()">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-large">
         <div class="modal-header">
             <h3>Add New Inventory Item</h3>
             <button type="button" class="modal-close-btn" onclick="closeAddModal()">✕</button>
         </div>
-        <form method="POST" action="<?= route('business.inventory.store') ?>">
+        <form method="POST" action="<?= route('business.inventory.store') ?>" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <div class="modal-body">
+                <!-- 1 to 5 Images Upload Section -->
+                <div class="form-group">
+                    <label style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;color:#18422d;">Material Photos (1 to 5 Images)</span>
+                        <small style="color:#617769;font-weight:500;" id="add_img_notice">0 of 5 selected</small>
+                    </label>
+                    <div class="inv-image-dropzone" onclick="document.getElementById('add_images_input').click()">
+                        <input type="file" id="add_images_input" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="previewAddInventoryImages(this)">
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22543d" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <span style="font-size:13px;font-weight:700;color:#18422d;">Click to upload 1 to 5 photos</span>
+                            <small style="font-size:11px;color:#617769;">PNG, JPG, or WEBP up to 5MB each. First image becomes the cover photo.</small>
+                        </div>
+                    </div>
+                    <div class="inv-thumbs-grid" id="add_thumbs_preview" style="display:none;"></div>
+                </div>
+
                 <div class="form-group">
                     <label for="add_name">Item / Material Name *</label>
                     <input id="add_name" name="name" type="text" required placeholder="e.g. Reclaimed Timber Planks, Heavy Duty Pallets">
                 </div>
+
                 <div class="form-row-2">
                     <div class="form-group">
                         <label for="add_sku">SKU / Code (optional)</label>
@@ -323,42 +407,45 @@ $activeNav = 'inventory';
                         <label for="add_category">Category *</label>
                         <select id="add_category" name="category" required>
                             <option value="">Select category</option>
-                            <option value="Packaging">Packaging</option>
-                            <option value="Textiles">Textiles &amp; Fabrics</option>
-                            <option value="Wood & Timber">Wood &amp; Timber</option>
-                            <option value="Plastics">Plastics &amp; Polymers</option>
-                            <option value="Metals">Metals &amp; Scrap</option>
-                            <option value="Glass & Containers">Glass &amp; Containers</option>
-                            <option value="Organic & Food Byproducts">Organic &amp; Food Byproducts</option>
-                            <option value="Paper & Cardboard">Paper &amp; Cardboard</option>
-                            <option value="Other">Other</option>
+                            <option value="Packaging & paper">Packaging & paper</option>
+                            <option value="Furniture & wood products">Furniture & wood products</option>
+                            <option value="Textiles & apparel">Textiles & apparel</option>
+                            <option value="Electronics & electrical">Electronics & electrical</option>
+                            <option value="Metal & fabrication">Metal & fabrication</option>
+                            <option value="Plastics & rubber">Plastics & rubber</option>
+                            <option value="Chemicals & lubricants">Chemicals & lubricants</option>
+                            <option value="Food & beverage organic">Food & beverage organic</option>
+                            <option value="Other">Other surplus material</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="add_reusability">Reusability Classification *</label>
-                    <select id="add_reusability" name="reusability" required>
-                        <option value="reusable" selected>↻ Reusable (Multi-use / circular / exchangeable)</option>
-                        <option value="not_reusable">⊘ Not Reusable (Single-use / non-reusable scrap)</option>
-                    </select>
-                    <small style="color:#6f7b72;font-size:11px;">Indicate whether this material can be reused or is single-use / non-reusable waste.</small>
-                </div>
-
                 <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="add_reusability">Reusability Classification *</label>
+                        <select id="add_reusability" name="reusability" required>
+                            <option value="reusable" selected>↻ Reusable (Multi-use / circular / exchangeable)</option>
+                            <option value="not_reusable">⊘ Not Reusable (Single-use / non-reusable scrap)</option>
+                        </select>
+                        <small style="color:#6f7b72;font-size:11px;">Indicate whether this material can be reused or is single-use scrap.</small>
+                    </div>
                     <div class="form-group">
                         <label for="add_quantity">Initial Quantity *</label>
                         <input id="add_quantity" name="quantity" type="number" step="0.01" min="0" required placeholder="e.g. 50">
                     </div>
+                </div>
+
+                <div class="form-row-2">
                     <div class="form-group">
                         <label for="add_unit">Unit of Measure *</label>
                         <input id="add_unit" name="unit" type="text" required placeholder="e.g. kg, pcs, meters, boxes">
                     </div>
+                    <div class="form-group">
+                        <label for="add_threshold">Low Stock Alert Threshold (optional)</label>
+                        <input id="add_threshold" name="minimum_threshold" type="number" step="0.01" min="0" placeholder="e.g. 10">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="add_threshold">Low Stock Alert Threshold (optional)</label>
-                    <input id="add_threshold" name="minimum_threshold" type="number" step="0.01" min="0" placeholder="e.g. 10 (Alert when stock falls to or below this level)">
-                </div>
+
                 <div class="form-group">
                     <label for="add_notes">Notes / Storage Specifications (optional)</label>
                     <textarea id="add_notes" name="notes" rows="2" placeholder="e.g. Stored in dry warehouse, ready for exchange"></textarea>
@@ -366,23 +453,40 @@ $activeNav = 'inventory';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
-                <button type="submit" class="btn-save">+ Save Item</button>
+                <button type="submit" class="btn-save">+ Save Material</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Edit Inventory Modal -->
+<!-- Edit Inventory Modal (Supports Adding/Updating Photos) -->
 <div class="modal-backdrop" id="edit-modal" style="display:none;" onclick="if(event.target === this) closeEditModal()">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-large">
         <div class="modal-header">
             <h3>Edit Item Details</h3>
             <button type="button" class="modal-close-btn" onclick="closeEditModal()">✕</button>
         </div>
-        <form id="edit-form" method="POST" action="">
+        <form id="edit-form" method="POST" action="" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <?= method_field('PUT') ?>
             <div class="modal-body">
+                <!-- Update Photos -->
+                <div class="form-group">
+                    <label style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;color:#18422d;">Update Photos (1 to 5 Images - Optional)</span>
+                        <small style="color:#617769;font-weight:500;" id="edit_img_notice">Leave empty to keep current photos</small>
+                    </label>
+                    <div class="inv-image-dropzone" onclick="document.getElementById('edit_images_input').click()">
+                        <input type="file" id="edit_images_input" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="previewEditInventoryImages(this)">
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22543d" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <span style="font-size:12px;font-weight:700;color:#18422d;">Click to upload new photos</span>
+                            <small style="font-size:10px;color:#617769;">Replacing uploads will update your primary cover image.</small>
+                        </div>
+                    </div>
+                    <div class="inv-thumbs-grid" id="edit_thumbs_preview" style="display:none;"></div>
+                </div>
+
                 <div class="form-group">
                     <label for="edit_name">Item / Material Name *</label>
                     <input id="edit_name" name="name" type="text" required>
@@ -395,14 +499,14 @@ $activeNav = 'inventory';
                     <div class="form-group">
                         <label for="edit_category">Category *</label>
                         <select id="edit_category" name="category" required>
-                            <option value="Packaging">Packaging</option>
-                            <option value="Textiles">Textiles &amp; Fabrics</option>
-                            <option value="Wood & Timber">Wood &amp; Timber</option>
-                            <option value="Plastics">Plastics &amp; Polymers</option>
-                            <option value="Metals">Metals &amp; Scrap</option>
-                            <option value="Glass & Containers">Glass &amp; Containers</option>
-                            <option value="Organic & Food Byproducts">Organic &amp; Food Byproducts</option>
-                            <option value="Paper & Cardboard">Paper &amp; Cardboard</option>
+                            <option value="Packaging & paper">Packaging & paper</option>
+                            <option value="Furniture & wood products">Furniture & wood products</option>
+                            <option value="Textiles & apparel">Textiles & apparel</option>
+                            <option value="Electronics & electrical">Electronics & electrical</option>
+                            <option value="Metal & fabrication">Metal & fabrication</option>
+                            <option value="Plastics & rubber">Plastics & rubber</option>
+                            <option value="Chemicals & lubricants">Chemicals & lubricants</option>
+                            <option value="Food & beverage organic">Food & beverage organic</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -479,7 +583,7 @@ $activeNav = 'inventory';
 
 <!-- List on Marketplace Modal -->
 <div class="modal-backdrop" id="list-market-modal" style="display:none;" onclick="if(event.target === this) closeListMarketModal()">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-large">
         <div class="modal-header">
             <h3>List Material on Marketplace</h3>
             <button type="button" class="modal-close-btn" onclick="closeListMarketModal()">✕</button>
@@ -492,15 +596,21 @@ $activeNav = 'inventory';
                     From Inventory: <strong id="lm_source_name"></strong> &middot; Available Stock: <span id="lm_source_stock" style="color:#176b40;font-weight:700;"></span>
                 </p>
 
-                <!-- 1 to 5 Images Upload -->
+                <!-- Photos Upload for Marketplace Listing -->
                 <div class="form-group">
                     <label style="display:flex;justify-content:space-between;align-items:center;">
-                        <span>Material Photos (1 to 5 Images)</span>
-                        <small style="color:#6f7b72;" id="lm-img-notice">0 of 5 selected</small>
+                        <span style="font-weight:700;color:#18422d;">Material Photos (1 to 5 Images - Optional)</span>
+                        <small style="color:#6f7b72;" id="lm-img-notice">0 of 5 selected (Inherits inventory photos by default)</small>
                     </label>
-                    <input type="file" id="lm_images" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" onchange="previewInventoryListImages(this)">
-                    <small style="color:#6f7b72;font-size:11px;display:block;margin-top:4px;">Upload 1 to 5 photos. First image will be used as the cover photo.</small>
-                    <div id="lm-img-previews" style="display:none;grid-template-columns:repeat(5, 1fr);gap:6px;margin-top:8px;"></div>
+                    <div class="inv-image-dropzone" onclick="document.getElementById('lm_images').click()">
+                        <input type="file" id="lm_images" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="previewInventoryListImages(this)">
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22543d" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <span style="font-size:12px;font-weight:700;color:#18422d;">Click to upload or override photos</span>
+                            <small style="font-size:11px;color:#617769;">If left blank, existing photos from this inventory item will be used.</small>
+                        </div>
+                    </div>
+                    <div class="inv-thumbs-grid" id="lm-img-previews" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
@@ -512,14 +622,14 @@ $activeNav = 'inventory';
                     <div class="form-group">
                         <label for="lm_category">Category *</label>
                         <select id="lm_category" name="category" required>
-                            <option value="Packaging">Packaging</option>
-                            <option value="Textiles">Textiles &amp; Fabrics</option>
-                            <option value="Wood & Timber">Wood &amp; Timber</option>
-                            <option value="Plastics">Plastics &amp; Polymers</option>
-                            <option value="Metals">Metals &amp; Scrap</option>
-                            <option value="Glass & Containers">Glass &amp; Containers</option>
-                            <option value="Organic & Food Byproducts">Organic &amp; Food Byproducts</option>
-                            <option value="Paper & Cardboard">Paper &amp; Cardboard</option>
+                            <option value="Packaging & paper">Packaging & paper</option>
+                            <option value="Furniture & wood products">Furniture & wood products</option>
+                            <option value="Textiles & apparel">Textiles & apparel</option>
+                            <option value="Electronics & electrical">Electronics & electrical</option>
+                            <option value="Metal & fabrication">Metal & fabrication</option>
+                            <option value="Plastics & rubber">Plastics & rubber</option>
+                            <option value="Chemicals & lubricants">Chemicals & lubricants</option>
+                            <option value="Food & beverage organic">Food & beverage organic</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -527,9 +637,9 @@ $activeNav = 'inventory';
                     <div class="form-group">
                         <label for="lm_condition">Material Condition *</label>
                         <select id="lm_condition" name="condition" required>
+                            <option value="Used - Good" selected>Used - Good</option>
                             <option value="Brand New">Brand New</option>
                             <option value="Like New">Like New</option>
-                            <option value="Used - Good" selected>Used - Good</option>
                             <option value="Surplus Material">Surplus Material</option>
                             <option value="Scrap / Recyclable">Scrap / Recyclable</option>
                         </select>
@@ -575,7 +685,7 @@ $activeNav = 'inventory';
 
                 <div class="form-group">
                     <label for="lm_description">Description &amp; Terms *</label>
-                    <textarea id="lm_description" name="description" rows="3" required placeholder="Describe material condition, specifications, minimum lot size, and pickup/logistics instructions..."></textarea>
+                    <textarea id="lm_description" name="description" rows="3" required placeholder="Describe material condition, specifications, and pickup/logistics instructions..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -644,9 +754,35 @@ function closeListMarketModal() {
     document.getElementById('list-market-modal').style.display = 'none';
     document.body.style.overflow = '';
 }
-function previewInventoryListImages(input) {
-    var preview = document.getElementById('lm-img-previews');
-    var notice = document.getElementById('lm-img-notice');
+function handleListingTypeChange(type, prefix) {
+    var priceGroup = document.getElementById(prefix + '_price_group');
+    var priceInput = document.getElementById(prefix + '_price');
+    var priceLabel = document.getElementById(prefix + '_price_label');
+    var priceHint = document.getElementById(prefix + '_price_hint');
+    if (!priceGroup || !priceInput) return;
+
+    if (type === 'free') {
+        priceGroup.style.display = 'none';
+        priceInput.required = false;
+        priceInput.value = '0';
+    } else if (type === 'borrow') {
+        priceGroup.style.display = 'block';
+        priceInput.required = false;
+        priceInput.value = '0';
+        if (priceLabel) priceLabel.textContent = 'Security Deposit / Fee (RM)';
+        if (priceHint) priceHint.textContent = 'Optional security deposit or loan fee (leave 0 for free borrow).';
+    } else {
+        priceGroup.style.display = 'block';
+        priceInput.required = true;
+        if (priceLabel) priceLabel.textContent = 'Unit Price (RM) *';
+        if (priceHint) priceHint.textContent = 'Specify price in RM per unit.';
+    }
+}
+
+// Image Preview Helper for Add Modal
+function previewAddInventoryImages(input) {
+    var preview = document.getElementById('add_thumbs_preview');
+    var notice = document.getElementById('add_img_notice');
     preview.innerHTML = '';
 
     if (!input.files || input.files.length === 0) {
@@ -668,42 +804,80 @@ function previewInventoryListImages(input) {
             var file = input.files[idx];
             var reader = new FileReader();
             reader.onload = function(e) {
-                var d = document.createElement('div');
-                d.style.height = '50px';
-                d.style.borderRadius = '4px';
-                d.style.overflow = 'hidden';
-                d.style.border = '1px solid #cadbc9';
-                d.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
-                preview.appendChild(d);
+                var card = document.createElement('div');
+                card.className = 'inv-thumb-card';
+                card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
+                    (idx === 0 ? '<div class="inv-thumb-cover-tag">Cover</div>' : '');
+                preview.appendChild(card);
             };
             reader.readAsDataURL(file);
         })(i);
     }
 }
-function handleListingTypeChange(type, prefix) {
-    var priceGroup = document.getElementById(prefix + '_price_group');
-    var priceInput = document.getElementById(prefix + '_price');
-    var priceLabel = document.getElementById(prefix + '_price_label');
-    var priceHint = document.getElementById(prefix + '_price_hint');
-    if (!priceGroup || !priceInput) return;
 
-    if (type === 'free') {
-        priceGroup.style.display = 'none';
-        priceInput.required = false;
-        priceInput.value = '0';
-    } else if (type === 'borrow') {
-        priceGroup.style.display = 'block';
-        priceInput.required = false;
-        if (priceLabel) priceLabel.textContent = 'Borrow Fee / Security Deposit (RM, optional)';
-        if (priceHint) priceHint.textContent = 'Specify rental rate or deposit amount (if free loan, enter 0).';
-    } else {
-        priceGroup.style.display = 'block';
-        priceInput.required = true;
-        if (priceLabel) priceLabel.textContent = 'Unit Price (RM) *';
-        if (priceHint) priceHint.textContent = 'Specify unit price in RM for buyers.';
+// Image Preview Helper for Edit Modal
+function previewEditInventoryImages(input) {
+    var preview = document.getElementById('edit_thumbs_preview');
+    var notice = document.getElementById('edit_img_notice');
+    preview.innerHTML = '';
+
+    if (!input.files || input.files.length === 0) {
+        preview.style.display = 'none';
+        notice.textContent = 'Leave empty to keep current photos';
+        return;
+    }
+
+    var count = Math.min(input.files.length, 5);
+    notice.textContent = count + ' of 5 new images selected';
+    preview.style.display = 'grid';
+
+    for (var i = 0; i < count; i++) {
+        (function(idx) {
+            var file = input.files[idx];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var card = document.createElement('div');
+                card.className = 'inv-thumb-card';
+                card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
+                    (idx === 0 ? '<div class="inv-thumb-cover-tag">Cover</div>' : '');
+                preview.appendChild(card);
+            };
+            reader.readAsDataURL(file);
+        })(i);
+    }
+}
+
+// Image Preview Helper for List on Marketplace Modal
+function previewInventoryListImages(input) {
+    var preview = document.getElementById('lm-img-previews');
+    var notice = document.getElementById('lm-img-notice');
+    preview.innerHTML = '';
+
+    if (!input.files || input.files.length === 0) {
+        preview.style.display = 'none';
+        notice.textContent = '0 of 5 selected (Inherits inventory photos by default)';
+        return;
+    }
+
+    var count = Math.min(input.files.length, 5);
+    notice.textContent = count + ' of 5 images selected';
+    preview.style.display = 'grid';
+
+    for (var i = 0; i < count; i++) {
+        (function(idx) {
+            var file = input.files[idx];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var card = document.createElement('div');
+                card.className = 'inv-thumb-card';
+                card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
+                    (idx === 0 ? '<div class="inv-thumb-cover-tag">Cover</div>' : '');
+                preview.appendChild(card);
+            };
+            reader.readAsDataURL(file);
+        })(i);
     }
 }
 </script>
-<script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

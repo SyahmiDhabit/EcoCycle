@@ -9,6 +9,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class InventoryController extends Controller
@@ -72,7 +74,26 @@ class InventoryController extends Controller
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'images' => ['nullable', 'array', 'max:5'],
+            'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ]);
+
+        // Process up to 5 uploaded images
+        $uploadedImages = [];
+        if ($request->hasFile('images')) {
+            $files = $request->file('images');
+            if (is_array($files)) {
+                $disk = Storage::disk('public');
+                foreach (array_slice($files, 0, 5) as $file) {
+                    if ($file && $file->isValid()) {
+                        $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                        $filename = 'inv_' . Str::random(24) . '.' . $ext;
+                        $disk->putFileAs('inventory-images', $file, $filename);
+                        $uploadedImages[] = '/inventory-images/' . $filename;
+                    }
+                }
+            }
+        }
 
         $quantity = (float) $validated['quantity'];
         $threshold = isset($validated['minimum_threshold']) && $validated['minimum_threshold'] !== null && $validated['minimum_threshold'] !== ''
@@ -86,7 +107,7 @@ class InventoryController extends Controller
             $status = 'low_stock';
         }
 
-        DB::transaction(function () use ($business, $validated, $quantity, $threshold, $status): void {
+        DB::transaction(function () use ($business, $validated, $quantity, $threshold, $status, $uploadedImages): void {
             $item = InventoryItem::create([
                 'business_id' => $business->id,
                 'name' => $validated['name'],
@@ -95,6 +116,8 @@ class InventoryController extends Controller
                 'quantity' => $quantity,
                 'unit' => $validated['unit'],
                 'reusability' => $validated['reusability'] ?? 'reusable',
+                'image_path' => $uploadedImages[0] ?? null,
+                'images' => $uploadedImages,
                 'minimum_threshold' => $threshold,
                 'status' => $status,
                 'notes' => $validated['notes'] ?? null,
@@ -137,7 +160,29 @@ class InventoryController extends Controller
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'images' => ['nullable', 'array', 'max:5'],
+            'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ]);
+
+        $uploadedImages = $item->getAllImages();
+        if ($request->hasFile('images')) {
+            $files = $request->file('images');
+            if (is_array($files)) {
+                $disk = Storage::disk('public');
+                $newImages = [];
+                foreach (array_slice($files, 0, 5) as $file) {
+                    if ($file && $file->isValid()) {
+                        $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                        $filename = 'inv_' . Str::random(24) . '.' . $ext;
+                        $disk->putFileAs('inventory-images', $file, $filename);
+                        $newImages[] = '/inventory-images/' . $filename;
+                    }
+                }
+                if (!empty($newImages)) {
+                    $uploadedImages = $newImages;
+                }
+            }
+        }
 
         $threshold = isset($validated['minimum_threshold']) && $validated['minimum_threshold'] !== null && $validated['minimum_threshold'] !== ''
             ? (float) $validated['minimum_threshold']
@@ -157,6 +202,8 @@ class InventoryController extends Controller
             'category' => $validated['category'],
             'unit' => $validated['unit'],
             'reusability' => $validated['reusability'] ?? $item->reusability ?? 'reusable',
+            'image_path' => $uploadedImages[0] ?? null,
+            'images' => $uploadedImages,
             'minimum_threshold' => $threshold,
             'status' => $status,
             'notes' => $validated['notes'] ?? null,
@@ -221,6 +268,13 @@ class InventoryController extends Controller
     {
         $this->checkApproved();
         abort_unless($item->business_id === Auth::id(), 403);
+
+        $disk = Storage::disk('public');
+        foreach ($item->getAllImages() as $img) {
+            if (str_starts_with($img, '/inventory-images/')) {
+                $disk->delete('inventory-images/' . basename($img));
+            }
+        }
 
         $name = $item->name;
         $item->delete();

@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'minimum_threshold',
     'status',
     'reusability',
+    'image_path',
+    'images',
     'notes',
 ])]
 class InventoryItem extends Model
@@ -31,7 +33,35 @@ class InventoryItem extends Model
         return [
             'quantity' => 'decimal:2',
             'minimum_threshold' => 'decimal:2',
+            'images' => 'array',
         ];
+    }
+
+    /**
+     * Return all image URLs/paths for this inventory item.
+     *
+     * @return array<int, string>
+     */
+    public function getAllImages(): array
+    {
+        if (!empty($this->images) && is_array($this->images)) {
+            return array_values(array_filter($this->images));
+        }
+
+        if (!empty($this->image_path)) {
+            return [$this->image_path];
+        }
+
+        return [];
+    }
+
+    /**
+     * Return the primary cover image URL/path.
+     */
+    public function getPrimaryImage(): ?string
+    {
+        $all = $this->getAllImages();
+        return $all[0] ?? null;
     }
 
     public function business(): BelongsTo

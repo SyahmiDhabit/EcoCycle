@@ -35,6 +35,11 @@ class MarketplaceAndInventoryTest extends TestCase
     {
         $business = $this->createApprovedBusiness();
 
+        $images = [
+            UploadedFile::fake()->image('inv1.jpg', 600, 400),
+            UploadedFile::fake()->image('inv2.jpg', 600, 400),
+        ];
+
         $response = $this->actingAs($business)
             ->from(route('business.inventory'))
             ->post(route('business.inventory.store'), [
@@ -44,15 +49,35 @@ class MarketplaceAndInventoryTest extends TestCase
                 'unit' => 'units',
                 'minimum_threshold' => 20,
                 'reusability' => 'reusable',
+                'images' => $images,
             ]);
 
         $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('business.inventory'));
-        $this->assertDatabaseHas('inventory_items', [
-            'business_id' => $business->id,
-            'name' => 'Industrial Plastic Pallets',
+        $item = InventoryItem::where('name', 'Industrial Plastic Pallets')->firstOrFail();
+        $this->assertSame('reusable', $item->reusability);
+        $this->assertNotNull($item->image_path);
+        $this->assertCount(2, $item->getAllImages());
+
+        // Test inventory image route returns 200
+        $firstFilename = basename($item->image_path);
+        $this->get('/inventory-images/' . $firstFilename)->assertOk();
+
+        // Test listing from this inventory item inherits the images automatically!
+        $listResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'inventory_item_id' => $item->id,
+            'title' => 'Listed Pallets',
+            'category' => 'Packaging & paper',
             'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'quantity' => 50,
+            'unit' => 'units',
+            'price' => 18.00,
         ]);
+        $listResponse->assertRedirect();
+        $listing = MarketplaceListing::where('title', 'Listed Pallets')->firstOrFail();
+        $this->assertCount(2, $listing->getAllImages());
+        $this->assertSame($item->image_path, $listing->image_path);
     }
 
     public function test_business_can_create_marketplace_listing_with_buy_borrow_or_free(): void

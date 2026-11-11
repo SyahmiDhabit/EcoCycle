@@ -65,6 +65,16 @@ Route::get('/listing-images/{filename}', function (string $filename) {
     ]);
 })->name('listing.image');
 
+Route::get('/inventory-images/{filename}', function (string $filename) {
+    $path = 'inventory-images/' . $filename;
+    $disk = Storage::disk('public');
+    abort_unless($disk->exists($path), 404);
+    return Response::make($disk->get($path), 200, [
+        'Content-Type' => $disk->mimeType($path) ?: 'image/jpeg',
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->name('inventory.image');
+
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::get('/register/check-availability', [RegisteredUserController::class, 'checkAvailability'])->name('register.check');
 Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');

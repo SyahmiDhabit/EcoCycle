@@ -165,6 +165,9 @@ class MarketplaceController extends Controller
         if ($inventoryItemId) {
             $item = InventoryItem::find($inventoryItemId);
             abort_unless($item && $item->business_id === $business->id, 403);
+            if (empty($uploadedImages) && !empty($item->images)) {
+                $uploadedImages = $item->images;
+            }
         }
 
         $listing = MarketplaceListing::create([

@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const controls = Array.from(form.querySelectorAll('input:not([type="hidden"]), select, textarea'));
-    const getContainer = (input) => input.closest('.form-field, .upload-field, .terms-field') || input.parentElement;
+    const getContainer = (input) => input.closest('.form-field, .upload-field, .profile-upload-row, .terms-field') || input.parentElement;
 
     const syncDescription = (input) => {
         const container = getContainer(input);
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const setInlineError = (input, message) => {
         const container = getContainer(input);
         if (!container) return;
-        const messageHost = input.type === 'file' ? container.querySelector('div') : container;
+        const messageHost = input.type === 'file' ? (container.querySelector('.profile-upload-meta') || container.querySelector('div') || container) : container;
         let error = messageHost.querySelector('.client-field-error');
 
         if (message) {
@@ -92,6 +92,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.setCustomValidity('Choose a PDF, JPG, or PNG file.');
             }
         });
+
+        const profileImage = form.querySelector('#profile_image');
+        if (profileImage) {
+            profileImage.setCustomValidity('');
+            const imgFile = profileImage.files?.[0];
+            if (!imgFile) {
+                profileImage.setCustomValidity('Upload your company profile image or business logo.');
+            } else if (imgFile.size > 5 * 1024 * 1024) {
+                profileImage.setCustomValidity('Choose an image smaller than 5 MB.');
+            } else if (!/\.(jpe?g|png|webp)$/i.test(imgFile.name)) {
+                profileImage.setCustomValidity('Choose a JPG, PNG, or WEBP image.');
+            }
+        }
     };
 
     const collectInvalid = () => {

@@ -1,0 +1,93 @@
+<?php
+/** @var string|null $activeNav */
+/** @var \App\Models\User|null $business */
+$activeNav = $activeNav ?? 'overview';
+$business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
+$companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
+?>
+<aside class="dashboard-sidebar" id="dashboard-sidebar">
+    <nav class="sidebar-nav" aria-label="Business Navigation Menu">
+        <p class="sidebar-section-title">Navigation Menu</p>
+
+        <a href="/business" class="sidebar-link <?= $activeNav === 'overview' ? 'active' : '' ?>" title="Overview & Directory">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Overview</span>
+        </a>
+
+        <a href="/business/inventory" class="sidebar-link <?= $activeNav === 'inventory' ? 'active' : '' ?>" title="Manage internal materials & stock">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            <span>Inventory</span>
+        </a>
+
+        <a href="#waste-monitoring" class="sidebar-link <?= $activeNav === 'waste' ? 'active' : '' ?>" onclick="handleNavNotice(event, 'Waste Monitoring')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7"></path>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Waste monitoring</span>
+        </a>
+
+        <a href="/business/marketplace" class="sidebar-link <?= $activeNav === 'marketplace' ? 'active' : '' ?>" title="Surplus Materials Marketplace">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <span>Marketplace</span>
+        </a>
+
+        <a href="#my-listings" class="sidebar-link <?= $activeNav === 'listings' ? 'active' : '' ?>" onclick="handleNavNotice(event, 'My Listings')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            <span>My Listings</span>
+        </a>
+
+        <a href="#transactions" class="sidebar-link <?= $activeNav === 'transactions' ? 'active' : '' ?>" onclick="handleNavNotice(event, 'Transactions')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+            </svg>
+            <span>Transactions</span>
+        </a>
+
+        <a href="#reports" class="sidebar-link <?= $activeNav === 'reports' ? 'active' : '' ?>" onclick="handleNavNotice(event, 'Reports')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            <span>Reports</span>
+        </a>
+
+        <a href="<?= route('business.application') ?>" class="sidebar-link <?= $activeNav === 'profile' ? 'active' : '' ?>" title="Business Profile & SSM Information">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Business Profile</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer-card">
+        <span>Verified SME</span>
+        <p><?= e($companyName) ?> is approved for nationwide circular exchange.</p>
+        <a href="/business/marketplace">Browse marketplace &rarr;</a>
+    </div>
+</aside>

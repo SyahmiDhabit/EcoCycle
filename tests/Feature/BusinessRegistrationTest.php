@@ -20,6 +20,7 @@ class BusinessRegistrationTest extends TestCase
         parent::setUp();
 
         Storage::fake('local');
+        Storage::fake('public');
     }
 
     public function test_registration_page_shows_the_business_signup_form_and_login_link(): void
@@ -50,6 +51,7 @@ class BusinessRegistrationTest extends TestCase
             'email' => 'AMIR@KAYUKITA.COM.MY',
             'password' => 'EcoCyclePass123',
             'password_confirmation' => 'EcoCyclePass123',
+            'profile_image' => UploadedFile::fake()->image('logo.png'),
             'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
             'ssm_profile' => UploadedFile::fake()->image('profile.png'),
         ]);
@@ -78,6 +80,12 @@ class BusinessRegistrationTest extends TestCase
         $this->assertTrue(Storage::disk('local')->exists($user->ssm_certificate_path));
         $this->assertTrue(Storage::disk('local')->exists($user->ssm_profile_path));
 
+        $this->assertDatabaseHas('admin_notifications', [
+            'type' => 'new_registration',
+            'business_id' => $user->id,
+            'is_read' => false,
+        ]);
+
         $this->get(route('business.dashboard'))
             ->assertOk()
             ->assertSee('Your business application has been submitted and is pending administrator review.');
@@ -101,7 +109,7 @@ class BusinessRegistrationTest extends TestCase
                 'password_confirmation' => 'different',
             ])
             ->assertRedirect(route('register'))
-            ->assertSessionHasErrors(['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'ssm_certificate', 'ssm_profile']);
+            ->assertSessionHasErrors(['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'profile_image', 'ssm_certificate', 'ssm_profile']);
 
         $this->assertDatabaseCount('business', 0);
     }
@@ -124,6 +132,7 @@ class BusinessRegistrationTest extends TestCase
                 'email' => 'OWNER@EXAMPLE.COM',
                 'password' => 'EcoCyclePass123',
                 'password_confirmation' => 'EcoCyclePass123',
+                'profile_image' => UploadedFile::fake()->image('logo.png'),
                 'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
                 'ssm_profile' => UploadedFile::fake()->image('profile.png'),
             ])
@@ -175,6 +184,7 @@ class BusinessRegistrationTest extends TestCase
             'email' => 'ventures@ecoventures.com',
             'password' => 'SecurePass999',
             'password_confirmation' => 'SecurePass999',
+            'profile_image' => UploadedFile::fake()->image('logo.png'),
             'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
             'ssm_profile' => UploadedFile::fake()->image('profile.png'),
         ]);
@@ -204,6 +214,7 @@ class BusinessRegistrationTest extends TestCase
                 'email' => 'different@email.com',
                 'password' => 'EcoCyclePass123',
                 'password_confirmation' => 'EcoCyclePass123',
+                'profile_image' => UploadedFile::fake()->image('logo.png'),
                 'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
                 'ssm_profile' => UploadedFile::fake()->image('profile.png'),
             ])
@@ -233,6 +244,7 @@ class BusinessRegistrationTest extends TestCase
                 'email' => 'alpha@corp.com',
                 'password' => 'NoNumberPassword',
                 'password_confirmation' => 'NoNumberPassword',
+                'profile_image' => UploadedFile::fake()->image('logo.png'),
                 'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
                 'ssm_profile' => UploadedFile::fake()->image('profile.png'),
             ])
@@ -254,6 +266,7 @@ class BusinessRegistrationTest extends TestCase
                 'email' => 'alpha@corp.com',
                 'password' => 'Pass1',
                 'password_confirmation' => 'Pass1',
+                'profile_image' => UploadedFile::fake()->image('logo.png'),
                 'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
                 'ssm_profile' => UploadedFile::fake()->image('profile.png'),
             ])
@@ -299,5 +312,63 @@ class BusinessRegistrationTest extends TestCase
                 'field' => 'email',
                 'message' => null,
             ]);
+    }
+
+    public function test_business_registration_with_profile_image(): void
+    {
+        $response = $this->post(route('register.store'), [
+            'business_name' => 'Eco Timber Sdn Bhd',
+            'business_registration_number' => '202201099887 (1499999-T)',
+            'industry' => 'Furniture & wood products',
+            'business_phone' => '+60 12-998 8776',
+            'registered_address' => '22 Jalan Perindustrian 4',
+            'city' => 'Klang',
+            'postcode' => '41050',
+            'state' => 'Selangor',
+            'name' => 'ecotimber_admin',
+            'email' => 'admin@ecotimber.com.my',
+            'password' => 'EcoCyclePass123',
+            'password_confirmation' => 'EcoCyclePass123',
+            'profile_image' => UploadedFile::fake()->image('company_logo.png', 200, 200),
+            'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
+            'ssm_profile' => UploadedFile::fake()->image('profile.png'),
+        ]);
+
+        $response->assertRedirect(route('business.dashboard'));
+
+        $user = User::where('email', 'admin@ecotimber.com.my')->firstOrFail();
+        $this->assertNotNull($user->profile_image);
+        $this->assertStringContainsString('profile-images/', $user->profile_image);
+        $this->assertTrue(Storage::disk('public')->exists($user->profile_image));
+        $this->assertNotNull($user->profile_image_url);
+    }
+
+    public function test_profile_image_is_required_for_registration(): void
+    {
+        $response = $this->from(route('register'))
+            ->post(route('register.store'), [
+                'business_name' => 'Eco Timber Sdn Bhd',
+                'business_registration_number' => '202201099887 (1499999-T)',
+                'industry' => 'Furniture & wood products',
+                'business_phone' => '+60 12-998 8776',
+                'registered_address' => '22 Jalan Perindustrian 4',
+                'city' => 'Klang',
+                'postcode' => '41050',
+                'state' => 'Selangor',
+                'name' => 'ecotimber_admin',
+                'email' => 'admin@ecotimber.com.my',
+                'password' => 'EcoCyclePass123',
+                'password_confirmation' => 'EcoCyclePass123',
+                'ssm_certificate' => UploadedFile::fake()->create('certificate.pdf', 100, 'application/pdf'),
+                'ssm_profile' => UploadedFile::fake()->image('profile.png'),
+            ]);
+
+        $response->assertRedirect(route('register'))
+            ->assertSessionHasErrors(['profile_image']);
+
+        $this->assertEquals(
+            'Upload your company profile image or business logo.',
+            session('errors')->first('profile_image')
+        );
     }
 }

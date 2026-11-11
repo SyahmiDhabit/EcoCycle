@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'city',
     'postcode',
     'state',
+    'profile_image',
     'ssm_certificate_path',
     'ssm_profile_path',
     'terms_accepted_at',
@@ -40,6 +41,36 @@ class User extends Authenticatable
 
     protected $table = 'business';
 
+<<<<<<< Updated upstream
+=======
+    public function getRememberToken(): ?string
+    {
+        return null;
+    }
+
+    public function setRememberToken($value): void
+    {
+    }
+
+    public function getRememberTokenName(): string
+    {
+        return '';
+    }
+
+    public function getProfileImageUrlAttribute(): ?string
+    {
+        if (empty($this->profile_image)) {
+            return null;
+        }
+
+        if (str_starts_with($this->profile_image, 'http://') || str_starts_with($this->profile_image, 'https://')) {
+            return $this->profile_image;
+        }
+
+        return route('profile.image', ['filename' => basename($this->profile_image)]);
+    }
+
+>>>>>>> Stashed changes
     /**
      * Get the attributes that should be cast.
      *
@@ -87,5 +118,15 @@ class User extends Authenticatable
     public function materialExchangesAsRequester(): HasMany
     {
         return $this->hasMany(MaterialExchange::class, 'requester_business_id');
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(BusinessNotification::class, 'business_id')->latest();
+    }
+
+    public function unreadNotifications(): HasMany
+    {
+        return $this->hasMany(BusinessNotification::class, 'business_id')->where('is_read', false)->latest();
     }
 }

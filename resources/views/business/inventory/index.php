@@ -1,3 +1,21 @@
+<?php
+/** @var \App\Models\User|null $business */
+/** @var \Illuminate\Pagination\LengthAwarePaginator<\App\Models\InventoryItem> $items */
+/** @var \Illuminate\Support\Collection<int, string> $categories */
+/** @var string|null $search */
+/** @var string|null $selectedCategory */
+/** @var string|null $selectedStatus */
+/** @var \Illuminate\Support\ViewErrorBag $errors */
+
+$business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
+$items = $items ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+$categories = $categories ?? collect();
+$search = $search ?? '';
+$selectedCategory = $selectedCategory ?? '';
+$selectedStatus = $selectedStatus ?? '';
+$errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
+$activeNav = 'inventory';
+?>
 <!doctype html>
 <html lang="<?= e(app()->getLocale()) ?>">
 <head>
@@ -6,7 +24,7 @@
     <title>Inventory Management — EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css">
     <style>
         .inventory-toolbar {
@@ -125,20 +143,22 @@
         }
     </style>
 </head>
-<body class="dashboard-page">
-<header class="dashboard-header">
-    <a class="brand" href="/" aria-label="EcoCycle home"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a>
-    
-    <nav class="header-nav">
-        <a class="nav-link" href="/business">Workspace</a>
-        <a class="nav-link active" href="/business/inventory">Inventory</a>
-        <a class="nav-link" href="/business/application">Account Status</a>
-    </nav>
+<body class="business-dashboard-page">
 
-    <form class="business-signout" method="POST" action="/logout"><?= csrf_field() ?><button type="submit">Sign out</button></form>
-</header>
+    <!-- Reusable Professional Top Navigation Bar -->
+    <?php include resource_path('views/business/partials/topbar.php'); ?>
 
-<main class="dashboard-wrap">
+    <div class="dashboard-layout">
+        <!-- Reusable Left Navigation Sidebar -->
+        <?php include resource_path('views/business/partials/sidebar.php'); ?>
+
+        <main class="dashboard-main">
+            <!-- Breadcrumbs -->
+            <div class="breadcrumb-row">
+                <a href="/business">Overview</a>
+                <span class="sep">/</span>
+                <span class="current">Inventory</span>
+            </div>
     <?php if (session('status')): ?>
         <div class="dashboard-alert success" role="status"><?= e(session('status')) ?></div>
     <?php endif; ?>
@@ -242,7 +262,7 @@
             </table>
 
             <div class="pagination-wrap">
-                <?= $items->links() ?>
+                <?= $items->links()?->toHtml() ?>
             </div>
         <?php else: ?>
             <div class="empty-state-card">
@@ -251,7 +271,8 @@
             </div>
         <?php endif; ?>
     </section>
-</main>
+        </main>
+    </div>
 
 <!-- Add Inventory Modal -->
 <div class="modal-backdrop" id="add-modal" style="display:none;" onclick="if(event.target === this) closeAddModal()">
@@ -447,6 +468,23 @@ function openAdjustModal(id, name, unit, currentQty, defaultType) {
 function closeAdjustModal() {
     document.getElementById('adjust-modal').style.display = 'none';
     document.body.style.overflow = '';
+}
+function toggleSidebar() {
+    var sidebar = document.getElementById('dashboard-sidebar');
+    if (sidebar) sidebar.classList.toggle('open');
+}
+function toggleNotificationMenu(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('notification-dropdown');
+    if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function() {
+    var menu = document.getElementById('notification-dropdown');
+    if (menu) menu.style.display = 'none';
+});
+function handleNavNotice(e, name) {
+    e.preventDefault();
+    alert('The ' + name + ' module is active for your business account.');
 }
 </script>
 <script src="/js/language-switcher.js" defer></script>

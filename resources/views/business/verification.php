@@ -15,7 +15,8 @@ $statusClass = match ($business->account_status) {
     'rejected' => 'status-rejected',
     default => 'status-pending',
 };
-$errors = $errors ?? new \Illuminate\Support\MessageBag();
+/** @var \Illuminate\Support\ViewErrorBag $errors */
+$errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
 $hasFormErrors = $errors->any();
 ?>
 <!doctype html>
@@ -200,6 +201,25 @@ $hasFormErrors = $errors->any();
             </button>
         </div>
 
+        <!-- Company Profile Avatar & Identity Header -->
+        <div class="company-profile-header-banner" style="display:flex;align-items:center;gap:18px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid #e2ede0;">
+            <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#eef6ec;border:2.5px solid #285c44;display:grid;place-items:center;flex-shrink:0;box-shadow:0 2px 8px rgba(40,92,68,0.15);">
+                <?php if ($business->profile_image): ?>
+                    <img src="<?= e($business->profile_image_url) ?>" alt="<?= e($business->business_name) ?>" style="width:100%;height:100%;object-fit:cover;">
+                <?php else: ?>
+                    <span style="font-size:22px;font-weight:700;color:#185a36;letter-spacing:0.02em;"><?= strtoupper(substr($business->business_name ?: $business->name, 0, 2)) ?></span>
+                <?php endif; ?>
+            </div>
+            <div>
+                <h3 style="margin:0 0 4px;font-size:18px;font-weight:700;color:#123321;"><?= e($business->business_name) ?></h3>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#176b40;font-weight:600;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Verified Malaysian SME &middot; <?= e($business->industry) ?>
+                </span>
+                <span style="display:block;font-size:11px;color:#556c5d;margin-top:2px;">SSM: <?= e($business->business_registration_number) ?></span>
+            </div>
+        </div>
+
         <dl class="business-info-grid">
             <div>
                 <dt>Registered business name</dt>
@@ -256,6 +276,29 @@ $hasFormErrors = $errors->any();
 
         <form class="edit-form" method="POST" action="<?= e(route('business.application.update')) ?>" enctype="multipart/form-data">
             <?= csrf_field() ?>
+
+            <!-- Edit Company Profile Photo / Logo -->
+            <div style="margin-bottom:20px;background:#fbfdfa;border:1px dashed #cadbc9;padding:16px;border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+                    <div id="edit-avatar-preview-box" style="width:68px;height:68px;border-radius:50%;overflow:hidden;background:#eef6ec;border:2.5px solid #285c44;display:grid;place-items:center;flex-shrink:0;">
+                        <?php if ($business->profile_image): ?>
+                            <img src="<?= e($business->profile_image_url) ?>" alt="<?= e($business->business_name) ?>" style="width:100%;height:100%;object-fit:cover;">
+                        <?php else: ?>
+                            <span style="font-size:20px;font-weight:700;color:#185a36;"><?= strtoupper(substr($business->business_name ?: $business->name, 0, 2)) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div style="flex:1;min-width:240px;">
+                        <label for="edit_profile_image" style="cursor:pointer;display:block;">
+                            <strong style="display:block;font-size:13px;color:#123321;margin-bottom:3px;">Business profile photo / company logo</strong>
+                            <small style="display:block;font-size:11px;color:#556c5d;margin-bottom:8px;line-height:1.4;">Upload a new image (JPG, PNG, or WEBP up to 5 MB) to update your company avatar across the portal, directory cards, and marketplace.</small>
+                        </label>
+                        <input id="edit_profile_image" name="profile_image" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewEditAvatar(this)">
+                        <?php if ($errors->has('profile_image')): ?>
+                            <small class="field-error" style="display:block;margin-top:4px;"><?= e($errors->first('profile_image')) ?></small>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
 
             <div class="field-grid">
                 <div class="form-field">
@@ -382,6 +425,19 @@ $hasFormErrors = $errors->any();
 </main>
 
 <script>
+function previewEditAvatar(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var box = document.getElementById('edit-avatar-preview-box');
+            if (box) {
+                box.innerHTML = '<img src="' + e.target.result + '" alt="New Logo Preview" style="width:100%;height:100%;object-fit:cover;">';
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
 function toggleEditForm(show) {
     const formCard = document.getElementById('modify-application');
     if (!formCard) return;

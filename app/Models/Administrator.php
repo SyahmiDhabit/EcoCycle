@@ -27,4 +27,14 @@ class Administrator extends Authenticatable
     {
         return $this->hasMany(User::class, 'reviewed_by');
     }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(AdminNotification::class, 'admin_id');
+    }
+
+    public function unreadNotifications(): HasMany
+    {
+        return $this->hasMany(AdminNotification::class, 'admin_id')->where('is_read', false);
+    }
 }

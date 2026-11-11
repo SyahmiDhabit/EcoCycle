@@ -1,9 +1,9 @@
 <?php
-/** @var \App\Models\User $business */
+/** @var \App\Models\User|null $business */
 /** @var \App\Models\User $company */
 /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\MarketplaceListing> $listings */
 
-$business = $business ?? \Illuminate\Support\Facades\Auth::user();
+$business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
 $companyName = $company->business_name ?: $company->name;
 $companyLocation = trim(($company->city ?: '') . ($company->city && $company->state ? ', ' : '') . ($company->state ?: 'Malaysia'));
 $avatarInitials = strtoupper(substr($companyName, 0, 2));

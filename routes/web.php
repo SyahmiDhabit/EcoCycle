@@ -43,10 +43,12 @@ Route::post('/language', [LanguageController::class, 'update'])->name('language.
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 Route::get('/profile-images/{filename}', function (string $filename) {
     $path = 'profile-images/' . $filename;
-    /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
     $disk = \Illuminate\Support\Facades\Storage::disk('public');
     abort_unless($disk->exists($path), 404);
-    return $disk->response($path);
+    return response($disk->get($path), 200, [
+        'Content-Type' => $disk->mimeType($path) ?: 'image/png',
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
 })->name('profile.image');
 
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');

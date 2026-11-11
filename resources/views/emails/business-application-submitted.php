@@ -10,7 +10,7 @@
         <tr><th align="left" style="padding:7px 0">Contact</th><td><?= e($business->name) ?></td></tr>
         <tr><th align="left" style="padding:7px 0">Email</th><td><?= e($business->email) ?></td></tr>
         <tr><th align="left" style="padding:7px 0">SSM number</th><td><?= e($business->business_registration_number) ?></td></tr>
-        <tr><th align="left" style="padding:7px 0">Submitted</th><td><?= e($business->created_at?->format('j M Y, g:i A')) ?></td></tr>
+        <tr><th align="left" style="padding:7px 0">Submitted</th><td><?= e($business->created_at?->timezone('Asia/Kuala_Lumpur')->format('j M Y, g:i A') . ' MYT') ?></td></tr>
     </tbody></table>
     <p><a href="<?= e(route('admin.dashboard')) ?>" style="display:inline-block;margin-top:16px;padding:11px 16px;border-radius:7px;background:#285c44;color:#fff;text-decoration:none">Open administrator review</a></p>
 </main></body></html>

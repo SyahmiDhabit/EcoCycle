@@ -266,11 +266,20 @@ $activeNav = 'inventory';
             gap: 4px;
             cursor: default;
         }
+        .modal-backdrop {
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            padding: 24px 16px !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
         .modal-dialog-large {
             width: min(640px, 96vw) !important;
-            max-height: calc(100vh - 40px) !important;
+            max-height: calc(100vh - 48px) !important;
             display: flex !important;
             flex-direction: column !important;
+            margin: auto !important;
         }
         .modal-dialog > form {
             display: flex !important;
@@ -284,7 +293,7 @@ $activeNav = 'inventory';
             overflow-x: hidden !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            max-height: 100% !important;
+            max-height: calc(100vh - 190px) !important;
             -webkit-overflow-scrolling: touch;
         }
         .modal-dialog .modal-body::-webkit-scrollbar {

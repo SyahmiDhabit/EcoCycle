@@ -45,8 +45,8 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->numbers()],
             'password_confirmation' => ['required', Password::min(8)->numbers()],
             'profile_image' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'ssm_certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-            'ssm_profile' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'ssm_certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+            'ssm_profile' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
         ], [
             'business_name.required' => 'Enter your business name.',
             'business_registration_number.required' => 'Enter the SSM registration number shown on your documents.',

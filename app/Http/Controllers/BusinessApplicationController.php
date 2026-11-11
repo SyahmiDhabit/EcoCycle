@@ -65,8 +65,8 @@ class BusinessApplicationController extends Controller
                 Rule::unique('business', 'name')->ignore($business->id),
             ],
             'profile_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'ssm_certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-            'ssm_profile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'ssm_certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+            'ssm_profile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
         ], [
             'business_name.required' => 'Enter your business name.',
             'business_registration_number.required' => 'Enter the SSM registration number shown on your documents.',
@@ -81,12 +81,12 @@ class BusinessApplicationController extends Controller
             'profile_image.image' => 'The profile image must be a valid image file.',
             'profile_image.mimes' => 'The profile image must be a JPG, JPEG, PNG, or WEBP file.',
             'profile_image.max' => 'The profile image must not exceed 5 MB.',
-            'ssm_certificate.mimes' => 'The certificate must be a PDF, JPG, or PNG file.',
+            'ssm_certificate.mimes' => 'The certificate must be a PDF, JPG, PNG, or WEBP file.',
             'ssm_certificate.max' => 'The certificate must not exceed 10 MB.',
-            'ssm_certificate.uploaded' => $this->getUploadErrorMessage($request->file('ssm_certificate'), 'The SSM certificate failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, or PNG format.'),
-            'ssm_profile.mimes' => 'The SSM profile must be a PDF, JPG, or PNG file.',
+            'ssm_certificate.uploaded' => $this->getUploadErrorMessage($request->file('ssm_certificate'), 'The SSM certificate failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, PNG, or WEBP format.'),
+            'ssm_profile.mimes' => 'The SSM profile must be a PDF, JPG, PNG, or WEBP file.',
             'ssm_profile.max' => 'The SSM profile must not exceed 10 MB.',
-            'ssm_profile.uploaded' => $this->getUploadErrorMessage($request->file('ssm_profile'), 'The SSM profile failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, or PNG format.'),
+            'ssm_profile.uploaded' => $this->getUploadErrorMessage($request->file('ssm_profile'), 'The SSM profile failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, PNG, or WEBP format.'),
         ]);
 
         $newCertificatePath = null;
@@ -237,12 +237,12 @@ class BusinessApplicationController extends Controller
         }
 
         $validated = $request->validate([
-            'ssm_profile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-            'ssm_certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'ssm_profile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+            'ssm_certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
         ], [
-            'ssm_profile.mimes' => 'The SSM profile must be a PDF, JPG, or PNG file.',
+            'ssm_profile.mimes' => 'The SSM profile must be a PDF, JPG, PNG, or WEBP file.',
             'ssm_profile.max' => 'The SSM profile must not exceed 10 MB.',
-            'ssm_certificate.mimes' => 'The SSM certificate must be a PDF, JPG, or PNG file.',
+            'ssm_certificate.mimes' => 'The SSM certificate must be a PDF, JPG, PNG, or WEBP file.',
             'ssm_certificate.max' => 'The SSM certificate must not exceed 10 MB.',
         ]);
 

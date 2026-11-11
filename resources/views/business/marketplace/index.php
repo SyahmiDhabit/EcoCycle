@@ -422,12 +422,21 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             }
         }
 
+        .modal-overlay {
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            padding: 24px 16px !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
         .modal-card {
             width: min(640px, 96vw) !important;
-            max-height: calc(100vh - 40px) !important;
+            max-height: calc(100vh - 48px) !important;
             display: flex !important;
             flex-direction: column !important;
             overflow: hidden !important;
+            margin: auto !important;
         }
         .modal-card > form {
             display: flex !important;
@@ -441,7 +450,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             overflow-x: hidden !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            max-height: 100% !important;
+            max-height: calc(100vh - 190px) !important;
             -webkit-overflow-scrolling: touch;
         }
         .modal-card .modal-body::-webkit-scrollbar {

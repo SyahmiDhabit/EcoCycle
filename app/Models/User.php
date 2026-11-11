@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'city',
     'postcode',
     'state',
+    'profile_image',
     'ssm_certificate_path',
     'ssm_profile_path',
     'terms_accepted_at',
@@ -32,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'email',
     'password',
 ])]
-#[Hidden(['password'])]
+#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -40,18 +41,17 @@ class User extends Authenticatable
 
     protected $table = 'business';
 
-    public function getRememberToken(): ?string
+    public function getProfileImageUrlAttribute(): ?string
     {
-        return null;
-    }
+        if (empty($this->profile_image)) {
+            return null;
+        }
 
-    public function setRememberToken($value): void
-    {
-    }
+        if (str_starts_with($this->profile_image, 'http://') || str_starts_with($this->profile_image, 'https://')) {
+            return $this->profile_image;
+        }
 
-    public function getRememberTokenName(): string
-    {
-        return '';
+        return route('profile.image', ['filename' => basename($this->profile_image)]);
     }
 
     /**
@@ -101,5 +101,15 @@ class User extends Authenticatable
     public function materialExchangesAsRequester(): HasMany
     {
         return $this->hasMany(MaterialExchange::class, 'requester_business_id');
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(BusinessNotification::class, 'business_id')->latest();
+    }
+
+    public function unreadNotifications(): HasMany
+    {
+        return $this->hasMany(BusinessNotification::class, 'business_id')->where('is_read', false)->latest();
     }
 }

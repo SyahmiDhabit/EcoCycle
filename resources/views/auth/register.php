@@ -1,6 +1,7 @@
 <?php
-$errors = $errors ?? new \Illuminate\Support\MessageBag();
-$fields = ['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'password_confirmation', 'ssm_certificate', 'ssm_profile'];
+/** @var \Illuminate\Support\ViewErrorBag $errors */
+$errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
+$fields = ['business_name', 'business_registration_number', 'industry', 'business_phone', 'registered_address', 'city', 'postcode', 'state', 'name', 'email', 'password', 'password_confirmation', 'profile_image', 'ssm_certificate', 'ssm_profile'];
 $fieldErrors = [];
 foreach ($fields as $field) { $fieldErrors[$field] = $errors->first($field); }
 $passwordMismatch = $fieldErrors['password'] === 'The passwords do not match.';
@@ -21,6 +22,7 @@ $errorLabels = [
     'email' => 'Business email',
     'password' => 'Password',
     'password_confirmation' => 'Confirm password',
+    'profile_image' => 'Business logo or profile photo',
     'ssm_certificate' => 'SSM registration certificate',
     'ssm_profile' => 'SSM business profile',
 ];
@@ -83,6 +85,33 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                 <?= csrf_field() ?>
                 <section class="form-card">
                     <div class="card-heading"><h3>Company &amp; contact information</h3><p>Use the details shown on your SSM registration.</p></div>
+
+                    <!-- Business Profile Image / Company Logo -->
+                    <div class="profile-upload-row" <?= $fieldErrors['profile_image'] ? 'data-invalid="true"' : '' ?>>
+                        <div class="profile-avatar-preview" id="avatar-preview-box">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#285c44" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="profile-upload-meta">
+                            <label for="profile_image">Company profile image or logo *</label>
+                            <small>Upload your business logo or profile photo (PNG, JPG, or WEBP up to 5 MB) *. Required for your verified SME directory profile.</small>
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;">
+                                <input type="file" id="profile_image" name="profile_image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required class="accessible-file-input" onchange="previewBusinessAvatar(this)" aria-invalid="<?= $fieldErrors['profile_image'] ? 'true' : 'false' ?>">
+                                <button type="button" class="btn-select-avatar" onclick="document.getElementById('profile_image').click()">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                        <circle cx="12" cy="13" r="4"></circle>
+                                    </svg>
+                                    <span>Choose company image</span>
+                                </button>
+                                <span id="profile_image-filename" style="font-size:11px;color:#285c44;font-weight:600;"></span>
+                            </div>
+                            <?php if (!empty($fieldErrors['profile_image'])): ?><small class="field-error" id="profile_image-server-error" style="display:block;margin-top:4px;"><?= e($fieldErrors['profile_image']) ?></small><?php endif; ?>
+                        </div>
+                    </div>
+
                     <div class="field-grid">
                         <div class="form-field">
                             <label for="business_name">Registered business name *</label>
@@ -271,6 +300,33 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
             </div>
         </div>
     </div>
+    <script>
+    function previewBusinessAvatar(input) {
+        if (input.files && input.files[0]) {
+            var file = input.files[0];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var box = document.getElementById('avatar-preview-box');
+                if (box) {
+                    box.innerHTML = '<img src="' + e.target.result + '" alt="Company Logo Preview" style="width:100%;height:100%;object-fit:cover;">';
+                }
+                var nameSpan = document.getElementById('profile_image-filename');
+                if (nameSpan) {
+                    nameSpan.textContent = '✓ ' + file.name;
+                }
+            };
+            reader.readAsDataURL(file);
+            input.setCustomValidity('');
+            var clientError = document.getElementById('profile_image-client-error');
+            if (clientError) clientError.remove();
+            var serverError = document.getElementById('profile_image-server-error');
+            if (serverError) serverError.remove();
+            input.setAttribute('aria-invalid', 'false');
+            var container = input.closest('.profile-upload-row');
+            if (container) delete container.dataset.invalid;
+        }
+    }
+    </script>
     <script src="/js/auth/signup.js" defer></script>
     <script src="/js/language-switcher.js" defer></script>
 </body>

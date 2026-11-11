@@ -23,9 +23,9 @@
         <a class="active" href="#home" aria-current="location">Home</a><a href="#about">About us</a><a href="#features">Features</a><a href="#how-it-works">How it works</a><a href="#marketplace">Marketplace</a><a href="#contact">Contact us</a>
     </nav>
     <div class="header-actions">
-        <?php if (auth('admin')->check()): ?>
+        <?php if (\Illuminate\Support\Facades\Auth::guard('admin')->check()): ?>
             <a class="button button-quiet" href="<?= e(route('admin.dashboard')) ?>">Admin Dashboard</a>
-        <?php elseif (auth('web')->check()): ?>
+        <?php elseif (\Illuminate\Support\Facades\Auth::guard('web')->check()): ?>
             <a class="button button-dark" href="<?= e(route('business.application')) ?>">Application Status</a>
             <form method="POST" action="<?= e(route('logout')) ?>" style="display:inline;margin:0">
                 <?= csrf_field() ?>

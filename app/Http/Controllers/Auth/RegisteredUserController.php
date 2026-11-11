@@ -44,6 +44,7 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:business,email'],
             'password' => ['required', 'confirmed', Password::min(8)->numbers()],
             'password_confirmation' => ['required', Password::min(8)->numbers()],
+            'profile_image' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'ssm_certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'ssm_profile' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
         ], [
@@ -78,16 +79,25 @@ class RegisteredUserController extends Controller
             'ssm_profile.mimes' => 'The SSM profile must be a PDF, JPG, or PNG file.',
             'ssm_profile.max' => 'The SSM profile must not exceed 10 MB.',
             'ssm_profile.uploaded' => $this->getUploadErrorMessage($prof, 'The SSM profile failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, or PNG format.'),
+            'profile_image.required' => 'Upload your company profile image or business logo.',
+            'profile_image.image' => 'The profile image must be a valid image file.',
+            'profile_image.mimes' => 'The profile image must be a JPG, JPEG, PNG, or WEBP file.',
+            'profile_image.max' => 'The profile image must not exceed 5 MB.',
         ]);
 
         $certificatePath = null;
         $profilePath = null;
+        $profileImagePath = null;
 
         try {
             $certificatePath = $request->file('ssm_certificate')->store('business-verification', 'local');
             $profilePath = $request->file('ssm_profile')->store('business-verification', 'local');
 
-            DB::transaction(function () use ($validated, $certificatePath, $profilePath): void {
+            if ($request->hasFile('profile_image')) {
+                $profileImagePath = $request->file('profile_image')->store('profile-images', 'public');
+            }
+
+            DB::transaction(function () use ($validated, $certificatePath, $profilePath, $profileImagePath): void {
                 User::create([
                     'business_name' => $validated['business_name'],
                     'business_registration_number' => $validated['business_registration_number'],
@@ -97,6 +107,7 @@ class RegisteredUserController extends Controller
                     'city' => $validated['city'],
                     'postcode' => $validated['postcode'],
                     'state' => $validated['state'],
+                    'profile_image' => $profileImagePath,
                     'ssm_certificate_path' => $certificatePath,
                     'ssm_profile_path' => $profilePath,
                     'terms_accepted_at' => now(),
@@ -108,11 +119,22 @@ class RegisteredUserController extends Controller
             });
         } catch (\Throwable $exception) {
             Storage::disk('local')->delete(array_filter([$certificatePath, $profilePath]));
+            if ($profileImagePath) {
+                Storage::disk('public')->delete($profileImagePath);
+            }
             throw $exception;
         }
 
         $business = User::query()->where('email', $validated['email'])->firstOrFail();
         app(BusinessMailNotifier::class)->submitted($business);
+
+        \App\Models\AdminNotification::send(
+            'new_registration',
+            'New Business Registration',
+            "{$business->business_name} ({$business->business_registration_number}) has submitted registration documents for review.",
+            '/admin',
+            $business->id
+        );
 
         Auth::guard('admin')->logout();
         Auth::guard('web')->login($business);

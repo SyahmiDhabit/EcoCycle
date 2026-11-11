@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BusinessNotification;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use Illuminate\Http\RedirectResponse;
@@ -102,6 +103,15 @@ class InventoryController extends Controller
                     'notes' => 'Initial stock on hand entry',
                 ]);
             }
+
+            BusinessNotification::send(
+                $business->id,
+                'Inventory Stock Logged',
+                "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$validated['category']}) to your internal inventory.",
+                'inventory_added',
+                '/business/inventory',
+                'blue'
+            );
         });
 
         return back()->with('status', "Inventory item '{$validated['name']}' added successfully.");

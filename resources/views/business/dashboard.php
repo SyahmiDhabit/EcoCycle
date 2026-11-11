@@ -1,271 +1,505 @@
+<?php
+/** @var \App\Models\User|null $business */
+/** @var int $trackedItemsCount */
+/** @var int $materialsListedCount */
+/** @var float $wasteDivertedKg */
+/** @var float $exchangeImpactRm */
+/** @var int $approvedCount */
+/** @var array<int, array<string, mixed>> $businesses */
+/** @var array<int, string> $availableIndustries */
+/** @var array<int, string> $availableLocations */
+/** @var array<int, string> $availableMaterials */
+
+$business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
+$companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
+$companyLocation = trim(($business?->city ?: '') . ($business?->city && $business?->state ? ', ' : '') . ($business?->state ?: 'Malaysia'));
+$activeNav = 'overview';
+?>
 <!doctype html>
 <html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Business workspace — EcoCycle</title>
+    <title>Overview &middot; Business Directory &mdash; EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css">
 </head>
-<body class="dashboard-page">
-<header class="dashboard-header">
-    <a class="brand" href="/" aria-label="EcoCycle home"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a>
-    
-    <nav class="header-nav" style="display:flex;gap:18px;align-items:center;">
-        <a class="nav-link active" href="/business">Workspace</a>
-        <a class="nav-link" href="/business/inventory">Inventory</a>
-        <a class="nav-link" href="/business/application">Account Status</a>
-    </nav>
+<body class="business-dashboard-page">
 
-    <form class="business-signout" method="POST" action="/logout"><?= csrf_field() ?><button type="submit">Sign out</button></form>
-</header>
-<main class="dashboard-wrap">
-    <?php if (session('status')): ?>
-        <div class="dashboard-alert success" role="status"><?= e(session('status')) ?></div>
-    <?php endif; ?>
-    <?php if ($errors->any()): ?>
-        <div class="dashboard-alert error" role="alert"><?= e($errors->first()) ?></div>
-    <?php endif; ?>
+    <!-- Reusable Professional Top Navigation Bar -->
+    <?php include resource_path('views/business/partials/topbar.php'); ?>
 
-    <div class="dashboard-title">
-        <div>
-            <p class="eyebrow">BUSINESS WORKSPACE</p>
-            <h1>Good morning, <?= e($business->business_name ?: $business->name) ?></h1>
-            <p>A snapshot of your inventory and circular activity.</p>
-        </div>
-        <span class="preview-badge" style="background:#e8f4ec;color:#186538;font-weight:600;">✓ Verified SME</span>
-    </div>
+    <div class="dashboard-layout">
+        <!-- Reusable Left Navigation Sidebar -->
+        <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
-    <section class="stat-grid" aria-label="Business summary">
-        <article class="stat-card">
-            <span>Tracked items</span>
-            <strong><?= number_format($trackedItemsCount) ?></strong>
-            <small><?= $trackedItemsCount === 1 ? '1 active item' : "{$trackedItemsCount} items on record" ?></small>
-        </article>
-        <article class="stat-card">
-            <span>Materials listed</span>
-            <strong><?= number_format($materialsListedCount) ?></strong>
-            <small><?= $materialsListedCount === 1 ? '1 live listing' : "{$materialsListedCount} active in marketplace" ?></small>
-        </article>
-        <article class="stat-card">
-            <span>Waste diverted</span>
-            <strong><?= number_format($wasteDivertedKg, 1) ?> kg</strong>
-            <small>Diverted from landfill</small>
-        </article>
-        <article class="stat-card">
-            <span>Exchange impact</span>
-            <strong>RM <?= number_format($exchangeImpactRm, 2) ?></strong>
-            <small>Estimated circular value</small>
-        </article>
-    </section>
-
-    <div class="dashboard-grid">
-        <section class="panel">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                <h2 style="margin:0;">Recent inventory</h2>
-                <a href="<?= route('business.inventory') ?>" style="font-size:12px;color:#176b40;font-weight:600;text-decoration:none;">View all inventory →</a>
+        <!-- MAIN DASHBOARD CONTENT -->
+        <main class="dashboard-main">
+            <!-- Breadcrumbs matching navigation: Overview -->
+            <div class="breadcrumb-row">
+                <a href="/business">Overview</a>
+                <span class="sep">/</span>
+                <span class="current">Business Directory</span>
             </div>
 
-            <?php if ($recentInventory->isNotEmpty()): ?>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Category</th>
-                            <th>Quantity</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recentInventory as $item): ?>
-                            <tr>
-                                <td data-label="Item">
-                                    <strong><?= e($item->name) ?></strong>
-                                    <?php if ($item->sku): ?>
-                                        <small style="display:block;color:#6f7b72;font-size:10px;">SKU: <?= e($item->sku) ?></small>
-                                    <?php endif; ?>
-                                </td>
-                                <td data-label="Category"><?= e($item->category) ?></td>
-                                <td data-label="Quantity"><?= (float) $item->quantity ?> <?= e($item->unit) ?></td>
-                                <td data-label="Status">
-                                    <?php if ($item->status === 'out_of_stock'): ?>
-                                        <span class="status status-out-of-stock">Out of stock</span>
-                                    <?php elseif ($item->status === 'low_stock'): ?>
-                                        <span class="status status-low-stock">Low stock</span>
-                                    <?php else: ?>
-                                        <span class="status status-in-stock">In stock</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td data-label="Actions">
-                                    <button type="button" class="action-pill-btn" onclick="openStockAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>)">
-                                        Adjust
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <div class="empty-state-card">
-                    <p>No inventory items tracked yet. Start managing your materials and stock levels.</p>
-                    <button type="button" class="btn-primary-inline" onclick="openAddInventoryModal()">+ Add first item</button>
+            <!-- Page Title -->
+            <div class="directory-header">
+                <div>
+                    <h1>Business directory</h1>
+                    <p>Discover approved Malaysian SMEs from the database, explore their materials and exchange with confidence.</p>
                 </div>
-            <?php endif; ?>
-
-            <div class="quick-links">
-                <button type="button" class="quick-link-action" onclick="openAddInventoryModal()">+ Add inventory</button>
-                <a href="<?= route('business.inventory') ?>">📦 Manage catalog</a>
-                <a href="#marketplace">Browse marketplace</a>
             </div>
-        </section>
 
-        <section class="panel">
-            <h2>Recent activity</h2>
-            <?php if ($recentActivity->isNotEmpty()): ?>
-                <div class="activity">
-                    <?php foreach ($recentActivity as $tx): ?>
-                        <div class="activity-row">
-                            <span class="activity-icon"><?= $tx->transaction_type === 'stock_in' ? '↗' : ($tx->transaction_type === 'stock_out' ? '↘' : '▣') ?></span>
-                            <span>
-                                <b><?= e(ucwords(str_replace('_', ' ', $tx->transaction_type))) ?>: <?= e($tx->inventoryItem?->name ?? 'Inventory Item') ?></b>
-                                <small><?= ($tx->quantity_change > 0 ? '+' : '') . (float)$tx->quantity_change ?> <?= e($tx->inventoryItem?->unit ?? '') ?> · <?= e($tx->created_at?->diffForHumans() ?? 'Just now') ?></small>
-                            </span>
+            <!-- Search & Filter Card (Referencing Database Attributes strictly) -->
+            <section class="filter-card" aria-label="Filter businesses">
+                <form id="filter-form" onsubmit="event.preventDefault(); applyFilters();">
+                    <div class="filter-grid">
+                        <div class="filter-field">
+                            <label for="filter-search">Search approved businesses</label>
+                            <input id="filter-search" type="text" placeholder="Search company name, username, or location..." oninput="applyFilters()">
                         </div>
-                    <?php endforeach; ?>
+                        <div class="filter-field">
+                            <label for="filter-industry">Industry</label>
+                            <select id="filter-industry" onchange="applyFilters()">
+                                <option value="">All industries</option>
+                                <?php foreach ($availableIndustries as $ind): ?>
+                                    <option value="<?= e($ind) ?>"><?= e($ind) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="filter-field">
+                            <label for="filter-location">Location</label>
+                            <select id="filter-location" onchange="applyFilters()">
+                                <option value="">All locations</option>
+                                <?php foreach ($availableLocations as $loc): ?>
+                                    <option value="<?= e($loc) ?>"><?= e($loc) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="filter-field">
+                            <label for="filter-material">Material</label>
+                            <select id="filter-material" onchange="applyFilters()">
+                                <option value="">All materials</option>
+                                <?php foreach ($availableMaterials as $mat): ?>
+                                    <option value="<?= e($mat) ?>"><?= e($mat) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-footer">
+                        <div class="filter-tags">
+                            <span class="tag-pill" id="location-tag" style="display:none;" onclick="clearLocationFilter()" title="Click to clear location filter">
+                                <span id="location-tag-text">All locations</span>
+                                <span aria-hidden="true">&times;</span>
+                            </span>
+                            <span class="tag-helper-text">Displaying verified businesses directly from the database.</span>
+                        </div>
+                        <div class="filter-actions">
+                            <button type="button" class="btn-reset" onclick="resetFilters()">Reset filters</button>
+                            <button type="submit" class="btn-search">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <span>Search businesses</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- SECTION 1: Verified Businesses in Database -->
+            <section aria-labelledby="featured-heading">
+                <div class="section-header-row">
+                    <div class="section-header-title">
+                        <h2 id="featured-heading">Verified Businesses</h2>
+                        <p id="featured-count-text"><?= count($businesses) ?> <?= count($businesses) === 1 ? 'business' : 'businesses' ?> on record</p>
+                    </div>
+                    <?php if (!empty($businesses)): ?>
+                        <div class="sort-select-wrap">
+                            <select id="featured-sort" onchange="sortCards(this.value)" aria-label="Sort businesses">
+                                <option value="featured">Sort: Default &darr;</option>
+                                <option value="name">Sort: Company Name (A-Z)</option>
+                                <option value="listings">Sort: Most listings</option>
+                            </select>
+                        </div>
+                    <?php endif; ?>
                 </div>
-            <?php else: ?>
-                <div class="empty-state-card" style="padding:24px 0;">
-                    <p style="color:#6f7b72;font-size:12px;margin:0;">No recent activity yet. Log your first inventory movement to see history here.</p>
-                </div>
+
+                <?php if (empty($businesses)): ?>
+                    <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:12px;padding:48px 24px;text-align:center;margin-bottom:32px;">
+                        <span class="signin-brand-mark" style="margin:0 auto 14px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+                        <h3 style="margin:0 0 6px;font-size:16px;color:#123321;">No other approved businesses found yet</h3>
+                        <p style="margin:0;font-size:13px;color:var(--text-muted);max-width:480px;margin-inline:auto;line-height:1.5;">
+                            When other businesses register and are approved by the administrator, they will appear here automatically.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <div class="featured-grid" id="featured-grid">
+                        <?php foreach ($businesses as $biz): ?>
+                            <article class="business-card"
+                                     data-name="<?= e(strtolower($biz['business_name'])) ?>"
+                                     data-industry="<?= e(strtolower($biz['industry'])) ?>"
+                                     data-location="<?= e(strtolower($biz['location'])) ?>"
+                                     data-materials="<?= e(strtolower($biz['materials'])) ?>"
+                                     data-listings="<?= (int) $biz['listings_count'] ?>">
+                                <div class="card-image-wrap">
+                                    <?php if (!empty($biz['image'])): ?>
+                                        <img src="<?= e($biz['image']) ?>" alt="<?= e($biz['business_name']) ?>" loading="lazy">
+                                    <?php else: ?>
+                                        <div style="width:100%;height:100%;display:grid;place-items:center;background:#f0f6ee;">
+                                            <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="card-body">
+                                    <div class="card-badges">
+                                        <span class="verified-pill">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                            <span>Verified SME</span>
+                                        </span>
+                                        <span class="category-tag"><?= e($biz['industry']) ?></span>
+                                    </div>
+                                    <h3 class="card-title"><?= e($biz['business_name']) ?></h3>
+                                    <div class="card-location"><?= e($biz['location']) ?></div>
+                                    <p class="card-description"><?= e($biz['description']) ?></p>
+                                    <div class="card-materials"><?= e($biz['materials']) ?></div>
+                                    <div class="card-footer">
+                                        <span class="available-listings-text"><?= $biz['listings_count'] ?> active listing(s)</span>
+                                        <button type="button"
+                                                class="btn-view-profile"
+                                                onclick='openProfileModal(<?= json_encode($biz, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
+                                            View profile &rarr;
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </section>
+
+            <!-- SECTION 2: Businesses Directory Table (Pure Database) -->
+            <?php if (!empty($businesses)): ?>
+                <section class="table-section-card" aria-labelledby="table-heading">
+                    <div class="table-header-title">
+                        <h2 id="table-heading">Company directory</h2>
+                        <p>All verified businesses and materials currently active in the database.</p>
+                    </div>
+
+                    <div style="overflow-x:auto;">
+                        <table class="directory-table" id="directory-table">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Industry / Location</th>
+                                    <th>Materials</th>
+                                    <th style="text-align:right;">Profile</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($businesses as $biz): ?>
+                                    <tr class="table-biz-row"
+                                        data-name="<?= e(strtolower($biz['business_name'])) ?>"
+                                        data-industry="<?= e(strtolower($biz['industry'])) ?>"
+                                        data-location="<?= e(strtolower($biz['location'])) ?>"
+                                        data-materials="<?= e(strtolower($biz['materials'])) ?>">
+                                        <td class="company-cell">
+                                            <strong><?= e($biz['business_name']) ?></strong>
+                                            <small>
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                                Verified business
+                                            </small>
+                                        </td>
+                                        <td><?= e($biz['industry']) ?> &middot; <?= e($biz['location']) ?></td>
+                                        <td class="materials-cell">
+                                            <span><?= e($biz['materials']) ?></span>
+                                            <small><?= $biz['listings_count'] ?> active listing(s)</small>
+                                        </td>
+                                        <td style="text-align:right;">
+                                            <button type="button"
+                                                    class="btn-view-profile"
+                                                    onclick='openProfileModal(<?= json_encode($biz, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
+                                                View profile &rarr;
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="table-pagination-row">
+                        <span id="pagination-text">Showing <?= count($businesses) ?> <?= count($businesses) === 1 ? 'business' : 'businesses' ?></span>
+                        <div class="pagination-controls">
+                            <button type="button" class="pagination-btn" disabled>Previous</button>
+                            <button type="button" class="pagination-btn active">1</button>
+                            <button type="button" class="pagination-btn" disabled>Next</button>
+                        </div>
+                    </div>
+                </section>
             <?php endif; ?>
-        </section>
+        </main>
     </div>
-</main>
 
-<!-- Add Inventory Modal -->
-<div class="modal-backdrop" id="add-inventory-modal" style="display:none;" onclick="if(event.target === this) closeAddInventoryModal()">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h3>Add New Inventory Item</h3>
-            <button type="button" class="modal-close-btn" onclick="closeAddInventoryModal()">✕</button>
-        </div>
-        <form method="POST" action="<?= route('business.inventory.store') ?>">
-            <?= csrf_field() ?>
+    <!-- BUSINESS PROFILE DETAILS MODAL -->
+    <div class="modal-backdrop" id="profile-modal" style="display:none;" onclick="if(event.target === this) closeProfileModal()">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div id="modal-biz-avatar" style="width:46px;height:46px;border-radius:50%;overflow:hidden;background:#eef6ec;border:2px solid #285c44;display:grid;place-items:center;flex-shrink:0;">
+                        <span style="font-size:15px;font-weight:700;color:#185a36;">EC</span>
+                    </div>
+                    <div>
+                        <h3 id="modal-biz-name" style="margin:0;">Company Name</h3>
+                        <span class="verified-pill" style="margin-top:4px;">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <span>Verified EcoCycle SME</span>
+                        </span>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeProfileModal()">&times;</button>
+            </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="item_name">Item / Material name *</label>
-                    <input id="item_name" name="name" type="text" required placeholder="e.g. Recycled Kraft Packaging Boxes">
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label for="item_sku">SKU / Code (optional)</label>
-                        <input id="item_sku" name="sku" type="text" placeholder="e.g. PKG-BOX-01">
+                <p id="modal-biz-desc" style="color:#33503f;margin:0;"></p>
+
+                <div class="modal-detail-grid">
+                    <div class="modal-detail-item">
+                        <small>Industry</small>
+                        <span id="modal-biz-industry">-</span>
                     </div>
-                    <div class="form-group">
-                        <label for="item_category">Category *</label>
-                        <select id="item_category" name="category" required>
-                            <option value="">Select category</option>
-                            <option value="Packaging">Packaging</option>
-                            <option value="Textiles">Textiles & Fabrics</option>
-                            <option value="Wood & Timber">Wood & Timber</option>
-                            <option value="Plastics">Plastics & Polymers</option>
-                            <option value="Metals">Metals & Scrap</option>
-                            <option value="Glass & Containers">Glass & Containers</option>
-                            <option value="Organic & Food Byproducts">Organic & Food Byproducts</option>
-                            <option value="Paper & Cardboard">Paper & Cardboard</option>
-                            <option value="Other">Other Materials</option>
-                        </select>
+                    <div class="modal-detail-item">
+                        <small>Location</small>
+                        <span id="modal-biz-location">-</span>
                     </div>
-                </div>
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label for="item_quantity">Initial Quantity *</label>
-                        <input id="item_quantity" name="quantity" type="number" step="0.01" min="0" required placeholder="e.g. 100">
+                    <div class="modal-detail-item">
+                        <small>SSM Registration No.</small>
+                        <span id="modal-biz-reg">-</span>
                     </div>
-                    <div class="form-group">
-                        <label for="item_unit">Unit of Measure *</label>
-                        <input id="item_unit" name="unit" type="text" required placeholder="e.g. pcs, kg, boxes, rolls">
+                    <div class="modal-detail-item">
+                        <small>Available Listings</small>
+                        <span id="modal-biz-listings">-</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <small>Business Phone</small>
+                        <span id="modal-biz-phone">-</span>
+                    </div>
+                    <div class="modal-detail-item">
+                        <small>Email</small>
+                        <span id="modal-biz-email">-</span>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="item_threshold">Low Stock Alert Threshold (optional)</label>
-                    <input id="item_threshold" name="minimum_threshold" type="number" step="0.01" min="0" placeholder="e.g. 20 (alert when stock drops to or below this level)">
+
+                <div style="background:#edf6ec;border:1px solid #cce5c8;border-radius:8px;padding:12px 14px;">
+                    <strong style="display:block;font-size:12px;color:#185e35;margin-bottom:4px;">Surplus &amp; Exchange Materials</strong>
+                    <span id="modal-biz-materials" style="font-size:12px;color:#284f37;">-</span>
                 </div>
-                <div class="form-group">
-                    <label for="item_notes">Storage notes / specifications (optional)</label>
-                    <textarea id="item_notes" name="notes" rows="2" placeholder="e.g. Stored in Warehouse Bay B, dry section"></textarea>
+
+                <div style="margin-top:4px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <strong style="font-size:12px;color:#123321;">Active Surplus Listings (<span id="modal-listings-count-badge">0</span>)</strong>
+                    </div>
+                    <div id="modal-listings-container" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;">
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeAddInventoryModal()">Cancel</button>
-                <button type="submit" class="btn-save">+ Save Item</button>
+                <button type="button" class="btn-reset" onclick="closeProfileModal()">Close</button>
+                <a id="modal-contact-link" href="#" class="btn-reset" style="border:1px solid #cadbc9;border-radius:6px;text-decoration:none;padding:8px 14px;">
+                    <span>Contact Email</span>
+                </a>
+                <a id="modal-full-page-link" href="#" class="btn-search" style="text-decoration:none;">
+                    <span>View Full Profile &rarr;</span>
+                </a>
             </div>
-        </form>
-    </div>
-</div>
-
-<!-- Stock Adjust Modal -->
-<div class="modal-backdrop" id="stock-adjust-modal" style="display:none;" onclick="if(event.target === this) closeStockAdjustModal()">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h3>Adjust Stock Level</h3>
-            <button type="button" class="modal-close-btn" onclick="closeStockAdjustModal()">✕</button>
         </div>
-        <form id="stock-adjust-form" method="POST" action="">
-            <?= csrf_field() ?>
-            <div class="modal-body">
-                <p style="margin:0 0 12px;font-size:12px;color:#526158;">
-                    Item: <strong id="adjust-item-name" style="color:#173e2c;"></strong><br>
-                    Current Stock: <span id="adjust-current-stock" style="font-weight:600;color:#176b40;"></span>
-                </p>
-                <div class="form-group">
-                    <label for="adjust_type">Adjustment Type *</label>
-                    <select id="adjust_type" name="type" required>
-                        <option value="stock_in">+ Stock In (Receive / replenish)</option>
-                        <option value="stock_out">- Stock Out (Dispatch / consume / sell)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="adjust_quantity">Quantity *</label>
-                    <input id="adjust_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 25">
-                </div>
-                <div class="form-group">
-                    <label for="adjust_notes">Reason / Notes (optional)</label>
-                    <input id="adjust_notes" name="notes" type="text" placeholder="e.g. Purchase order #104, Production run batch A">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeStockAdjustModal()">Cancel</button>
-                <button type="submit" class="btn-save">Apply Adjustment</button>
-            </div>
-        </form>
     </div>
-</div>
 
-<script>
-function openAddInventoryModal() {
-    document.getElementById('add-inventory-modal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-function closeAddInventoryModal() {
-    document.getElementById('add-inventory-modal').style.display = 'none';
-    document.body.style.overflow = '';
-}
-function openStockAdjustModal(itemId, itemName, itemUnit, currentQty) {
-    document.getElementById('adjust-item-name').textContent = itemName;
-    document.getElementById('adjust-current-stock').textContent = currentQty + ' ' + itemUnit;
-    document.getElementById('stock-adjust-form').action = '/business/inventory/' + itemId + '/adjust';
-    document.getElementById('stock-adjust-modal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-function closeStockAdjustModal() {
-    document.getElementById('stock-adjust-modal').style.display = 'none';
-    document.body.style.overflow = '';
-}
-</script>
-<script src="/js/language-switcher.js" defer></script>
+    <script>
+    function toggleSidebar() {
+        var sidebar = document.getElementById('dashboard-sidebar');
+        if (sidebar) sidebar.classList.toggle('open');
+    }
+
+    function handleNavNotice(e, sectionName) {
+        e.preventDefault();
+        alert('The ' + sectionName + ' module is active for your business workspace.');
+    }
+
+    function openProfileModal(biz) {
+        var avatarBox = document.getElementById('modal-biz-avatar');
+        if (avatarBox) {
+            if (biz.image) {
+                avatarBox.innerHTML = '<img src="' + biz.image + '" alt="' + (biz.business_name || '') + '" style="width:100%;height:100%;object-fit:cover;">';
+            } else {
+                var initials = (biz.business_name || biz.name || 'EC').substring(0, 2).toUpperCase();
+                avatarBox.innerHTML = '<span style="font-size:15px;font-weight:700;color:#185a36;">' + initials + '</span>';
+            }
+        }
+
+        document.getElementById('modal-biz-name').textContent = biz.business_name || 'Business Profile';
+        document.getElementById('modal-biz-desc').textContent = biz.description || 'Verified Malaysian SME in the circular exchange network.';
+        document.getElementById('modal-biz-industry').textContent = biz.industry || '-';
+        document.getElementById('modal-biz-location').textContent = biz.location || '-';
+        document.getElementById('modal-biz-reg').textContent = biz.registration_no || 'Verified on SSM';
+        document.getElementById('modal-biz-listings').textContent = (biz.listings_count || 0) + ' active listing(s)';
+        document.getElementById('modal-biz-phone').textContent = biz.phone || 'Not provided';
+        document.getElementById('modal-biz-email').textContent = biz.email || '-';
+        document.getElementById('modal-biz-materials').textContent = biz.materials || 'Circular materials on request.';
+
+        var contactLink = document.getElementById('modal-contact-link');
+        contactLink.href = 'mailto:' + encodeURIComponent(biz.email || '') + '?subject=' + encodeURIComponent('EcoCycle Material Exchange Inquiry: ' + (biz.business_name || ''));
+
+        var fullPageLink = document.getElementById('modal-full-page-link');
+        if (fullPageLink) {
+            fullPageLink.href = '/business/directory/' + (biz.id || '');
+        }
+
+        var listingsContainer = document.getElementById('modal-listings-container');
+        var countBadge = document.getElementById('modal-listings-count-badge');
+        listingsContainer.innerHTML = '';
+
+        if (biz.listings && biz.listings.length > 0) {
+            countBadge.textContent = biz.listings.length;
+            biz.listings.forEach(function(item) {
+                var card = document.createElement('div');
+                card.style.cssText = 'border:1px solid #e1e9df;border-radius:8px;padding:10px 12px;background:#fbfdfa;display:flex;justify-content:space-between;align-items:center;gap:12px;';
+                card.innerHTML = '<div>' +
+                    '<strong style="display:block;font-size:12px;color:#143324;">' + (item.title || 'Surplus Item') + '</strong>' +
+                    '<span style="font-size:11px;color:#526658;">' + (item.quantity || '') + ' ' + (item.unit || '') + ' &middot; ' + (item.category || '') + ' &middot; ' + (item.condition || '') + '</span>' +
+                    '</div>' +
+                    '<div style="text-align:right;flex-shrink:0;">' +
+                    (item.is_free ? '<span style="font-size:11px;font-weight:700;color:#15803d;">Free Surplus</span>' : '<span style="font-size:11px;font-weight:700;color:#176b40;">RM ' + (item.price || '0.00') + '</span>') +
+                    '<br><a href="mailto:' + encodeURIComponent(biz.email || '') + '?subject=' + encodeURIComponent('Inquiry for ' + item.title) + '" style="font-size:10px;color:#176b40;font-weight:600;text-decoration:none;">Inquire &rarr;</a>' +
+                    '</div>';
+                listingsContainer.appendChild(card);
+            });
+        } else {
+            countBadge.textContent = '0';
+            listingsContainer.innerHTML = '<div style="padding:14px;background:#f7faf5;border-radius:6px;border:1px dashed #cadbc9;text-align:center;font-size:11px;color:#758a7b;">This business has no active marketplace listings published yet.</div>';
+        }
+
+        document.getElementById('profile-modal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profile-modal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    function clearLocationFilter() {
+        var locSelect = document.getElementById('filter-location');
+        locSelect.value = '';
+        var locTag = document.getElementById('location-tag');
+        if (locTag) locTag.style.display = 'none';
+        applyFilters();
+    }
+
+    function resetFilters() {
+        document.getElementById('filter-search').value = '';
+        document.getElementById('filter-industry').value = '';
+        document.getElementById('filter-location').value = '';
+        document.getElementById('filter-material').value = '';
+        var locTag = document.getElementById('location-tag');
+        if (locTag) locTag.style.display = 'none';
+        applyFilters();
+    }
+
+    function applyFilters() {
+        var query = (document.getElementById('filter-search').value || '').toLowerCase().trim();
+        var industry = (document.getElementById('filter-industry').value || '').toLowerCase().trim();
+        var location = (document.getElementById('filter-location').value || '').toLowerCase().trim();
+        var material = (document.getElementById('filter-material').value || '').toLowerCase().trim();
+
+        var locTag = document.getElementById('location-tag');
+        var locTagText = document.getElementById('location-tag-text');
+        var heading = document.getElementById('featured-heading');
+
+        if (location) {
+            locTag.style.display = 'inline-flex';
+            locTagText.textContent = location.charAt(0).toUpperCase() + location.slice(1);
+            if (heading) heading.textContent = 'Businesses in ' + location.charAt(0).toUpperCase() + location.slice(1);
+        } else {
+            locTag.style.display = 'none';
+            if (heading) heading.textContent = 'Verified Businesses';
+        }
+
+        // Filter cards
+        var cards = document.querySelectorAll('.business-card');
+        var visibleCards = 0;
+        cards.forEach(function(card) {
+            var name = card.dataset.name || '';
+            var ind = card.dataset.industry || '';
+            var loc = card.dataset.location || '';
+            var mat = card.dataset.materials || '';
+
+            var matchesQuery = !query || name.includes(query) || ind.includes(query) || loc.includes(query) || mat.includes(query);
+            var matchesInd = !industry || ind.includes(industry);
+            var matchesLoc = !location || loc.includes(location);
+            var matchesMat = !material || mat.includes(material);
+
+            if (matchesQuery && matchesInd && matchesLoc && matchesMat) {
+                card.style.display = '';
+                visibleCards++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Filter table rows
+        var rows = document.querySelectorAll('.table-biz-row');
+        var visibleRows = 0;
+        rows.forEach(function(row) {
+            var name = row.dataset.name || '';
+            var ind = row.dataset.industry || '';
+            var loc = row.dataset.location || '';
+            var mat = row.dataset.materials || '';
+
+            var matchesQuery = !query || name.includes(query) || ind.includes(query) || loc.includes(query) || mat.includes(query);
+            var matchesInd = !industry || ind.includes(industry);
+            var matchesLoc = !location || loc.includes(location);
+            var matchesMat = !material || mat.includes(material);
+
+            if (matchesQuery && matchesInd && matchesLoc && matchesMat) {
+                row.style.display = '';
+                visibleRows++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        var countText = document.getElementById('featured-count-text');
+        if (countText) {
+            countText.textContent = visibleCards + ' ' + (visibleCards === 1 ? 'business' : 'businesses') + ' found';
+        }
+    }
+
+    function sortCards(type) {
+        var grid = document.getElementById('featured-grid');
+        if (!grid) return;
+        var cards = Array.from(grid.querySelectorAll('.business-card'));
+
+        cards.sort(function(a, b) {
+            if (type === 'name') {
+                return (a.dataset.name || '').localeCompare(b.dataset.name || '');
+            } else if (type === 'listings') {
+                return parseInt(b.dataset.listings || 0, 10) - parseInt(a.dataset.listings || 0, 10);
+            }
+            return 0;
+        });
+
+        cards.forEach(function(c) { grid.appendChild(c); });
+    }
+    </script>
 </body>
 </html>

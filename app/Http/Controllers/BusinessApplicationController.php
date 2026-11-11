@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminNotification;
 use App\Models\User;
 use App\Services\BusinessMailNotifier;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,7 @@ class BusinessApplicationController extends Controller
     public function show(Request $request): View
     {
         /** @var User $business */
-        $business = Auth::user();
+        $business = $request->user() ?: Auth::guard('web')->user();
 
         return view('business.verification', [
             'business' => $business,
@@ -27,7 +28,7 @@ class BusinessApplicationController extends Controller
     public function update(Request $request, BusinessMailNotifier $mailer): RedirectResponse
     {
         /** @var User $business */
-        $business = Auth::user();
+        $business = $request->user() ?: Auth::guard('web')->user();
 
         $validated = $request->validate([
             'business_name' => ['required', 'string', 'max:255'],
@@ -50,6 +51,7 @@ class BusinessApplicationController extends Controller
                 'in:Johor,Kedah,Kelantan,Kuala Lumpur,Labuan,Melaka,Negeri Sembilan,Pahang,Penang,Perak,Perlis,Putrajaya,Sabah,Sarawak,Selangor,Terengganu',
             ],
             'name' => ['required', 'string', 'max:255'],
+            'profile_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'ssm_certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'ssm_profile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
         ], [
@@ -63,6 +65,9 @@ class BusinessApplicationController extends Controller
             'postcode.required' => 'Enter the registered postcode.',
             'state.required' => 'Choose your registered state.',
             'name.required' => 'Enter the contact person name.',
+            'profile_image.image' => 'The profile image must be a valid image file.',
+            'profile_image.mimes' => 'The profile image must be a JPG, JPEG, PNG, or WEBP file.',
+            'profile_image.max' => 'The profile image must not exceed 5 MB.',
             'ssm_certificate.mimes' => 'The certificate must be a PDF, JPG, or PNG file.',
             'ssm_certificate.max' => 'The certificate must not exceed 10 MB.',
             'ssm_certificate.uploaded' => $this->getUploadErrorMessage($request->file('ssm_certificate'), 'The SSM certificate failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, or PNG format.'),
@@ -73,10 +78,16 @@ class BusinessApplicationController extends Controller
 
         $newCertificatePath = null;
         $newProfilePath = null;
+        $newProfileImagePath = null;
         $oldCertificatePath = $business->ssm_certificate_path;
         $oldProfilePath = $business->ssm_profile_path;
+        $oldProfileImagePath = $business->profile_image;
 
         try {
+            if ($request->hasFile('profile_image')) {
+                $newProfileImagePath = $request->file('profile_image')->store('profile-images', 'public');
+            }
+
             if ($request->hasFile('ssm_certificate')) {
                 $newCertificatePath = $request->file('ssm_certificate')->store('business-verification', 'local');
             }
@@ -97,6 +108,10 @@ class BusinessApplicationController extends Controller
                 'name' => $validated['name'],
             ];
 
+            if ($newProfileImagePath) {
+                $updateData['profile_image'] = $newProfileImagePath;
+            }
+
             if ($newCertificatePath) {
                 $updateData['ssm_certificate_path'] = $newCertificatePath;
             }
@@ -112,6 +127,10 @@ class BusinessApplicationController extends Controller
 
             $business->update($updateData);
 
+            if ($newProfileImagePath && $oldProfileImagePath) {
+                Storage::disk('public')->delete($oldProfileImagePath);
+            }
+
             if ($newCertificatePath && $oldCertificatePath) {
                 Storage::disk('local')->delete($oldCertificatePath);
             }
@@ -120,6 +139,9 @@ class BusinessApplicationController extends Controller
                 Storage::disk('local')->delete($oldProfilePath);
             }
         } catch (\Throwable $exception) {
+            if ($newProfileImagePath) {
+                Storage::disk('public')->delete($newProfileImagePath);
+            }
             if ($newCertificatePath) {
                 Storage::disk('local')->delete($newCertificatePath);
             }
@@ -130,6 +152,14 @@ class BusinessApplicationController extends Controller
         }
 
         $mailer->submitted($business->fresh(), isUpdate: true);
+
+        AdminNotification::send(
+            'application_resubmitted',
+            'Application Resubmitted',
+            "{$business->business_name} has updated their registration information and documents for administrator review.",
+            '/admin',
+            $business->id
+        );
 
         return back()->with(
             'status',
@@ -142,7 +172,7 @@ class BusinessApplicationController extends Controller
         abort_unless(in_array($document, ['certificate', 'profile'], true), 404);
 
         /** @var User $business */
-        $business = Auth::user();
+        $business = $request->user() ?: Auth::guard('web')->user();
         $path = $document === 'certificate' ? $business->ssm_certificate_path : $business->ssm_profile_path;
 
         abort_unless($path && Storage::disk('local')->exists($path), 404);
@@ -156,7 +186,7 @@ class BusinessApplicationController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         /** @var User $business */
-        $business = Auth::user();
+        $business = Auth::guard('web')->user();
 
         if ($business->ssm_certificate_path) {
             Storage::disk('local')->delete($business->ssm_certificate_path);
@@ -164,6 +194,10 @@ class BusinessApplicationController extends Controller
 
         if ($business->ssm_profile_path) {
             Storage::disk('local')->delete($business->ssm_profile_path);
+        }
+
+        if ($business->profile_image) {
+            Storage::disk('public')->delete($business->profile_image);
         }
 
         Auth::guard('web')->logout();
@@ -180,8 +214,7 @@ class BusinessApplicationController extends Controller
 
     public function resubmit(Request $request, BusinessMailNotifier $mailer): RedirectResponse
     {
-        /** @var User $business */
-        $business = Auth::user();
+        $business = $request->user();
         abort_unless($business->account_status === 'rejected', 404);
 
         $validated = $request->validate([

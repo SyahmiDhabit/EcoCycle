@@ -18,6 +18,7 @@ class BusinessApplicationTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
+        Storage::fake('public');
     }
 
     public function test_guest_cannot_view_application_page(): void
@@ -65,8 +66,8 @@ class BusinessApplicationTest extends TestCase
         $business = User::factory()->create([
             'business_name' => 'Old Business Name',
             'business_registration_number' => '202001011111 (999999-X)',
-            'account_status' => 'pending',
-            'review_note' => null,
+            'account_status' => 'rejected',
+            'review_note' => 'Please provide updated company address.',
             'industry' => 'Other',
             'registered_address' => 'Old Address',
             'city' => 'Klang',
@@ -111,6 +112,12 @@ class BusinessApplicationTest extends TestCase
         Mail::assertSent(BusinessApplicationSubmitted::class, function ($mail) use ($updated) {
             return $mail->business->id === $updated->id && $mail->isUpdate === true;
         });
+
+        $this->assertDatabaseHas('admin_notifications', [
+            'type' => 'application_resubmitted',
+            'business_id' => $updated->id,
+            'is_read' => false,
+        ]);
     }
 
     public function test_rejected_business_can_modify_application_and_resubmit(): void
@@ -156,6 +163,12 @@ class BusinessApplicationTest extends TestCase
         Mail::assertSent(BusinessApplicationSubmitted::class, function ($mail) use ($updated) {
             return $mail->business->id === $updated->id && $mail->isUpdate === true;
         });
+
+        $this->assertDatabaseHas('admin_notifications', [
+            'type' => 'application_resubmitted',
+            'business_id' => $updated->id,
+            'is_read' => false,
+        ]);
     }
 
     public function test_rejected_business_signing_in_is_redirected_to_verification_to_fix_issues(): void
@@ -187,10 +200,12 @@ class BusinessApplicationTest extends TestCase
     {
         $business = User::factory()->create([
             'account_status' => 'rejected',
+            'profile_image' => 'profile-images/del_avatar.png',
             'ssm_certificate_path' => 'business-verification/del_cert.pdf',
             'ssm_profile_path' => 'business-verification/del_profile.pdf',
         ]);
 
+        Storage::disk('public')->put('profile-images/del_avatar.png', 'avatar data');
         Storage::disk('local')->put('business-verification/del_cert.pdf', 'cert data');
         Storage::disk('local')->put('business-verification/del_profile.pdf', 'profile data');
 
@@ -200,6 +215,7 @@ class BusinessApplicationTest extends TestCase
         $response->assertRedirect(route('register'));
         $response->assertSessionHas('status');
 
+        $this->assertFalse(Storage::disk('public')->exists('profile-images/del_avatar.png'));
         $this->assertFalse(Storage::disk('local')->exists('business-verification/del_cert.pdf'));
         $this->assertFalse(Storage::disk('local')->exists('business-verification/del_profile.pdf'));
         $this->assertDatabaseMissing('business', ['id' => $business->id]);
@@ -224,5 +240,47 @@ class BusinessApplicationTest extends TestCase
             ->get(route('business.application.document', 'profile'))
             ->assertOk()
             ->assertDownload('my_profile.pdf');
+    }
+
+    public function test_business_can_update_profile_image(): void
+    {
+        $business = User::factory()->create([
+            'business_name' => 'Original Biz',
+            'business_registration_number' => '202301011111 (1000000-A)',
+            'account_status' => 'pending',
+            'industry' => 'Manufacturing',
+            'business_phone' => '+60 12-345 6789',
+            'registered_address' => '10 Jalan Hijau',
+            'city' => 'Petaling Jaya',
+            'postcode' => '47300',
+            'state' => 'Selangor',
+            'name' => 'Original Contact',
+        ]);
+
+        $response = $this->actingAs($business)
+            ->from(route('business.application'))
+            ->post(route('business.application.update'), [
+                'business_name' => 'Updated Biz Name',
+                'business_registration_number' => '202301011111 (1000000-A)',
+                'industry' => 'Packaging & paper',
+                'business_phone' => '+60 12-999 8888',
+                'registered_address' => '50 Jalan Baru',
+                'city' => 'Klang',
+                'postcode' => '41000',
+                'state' => 'Selangor',
+                'name' => 'New Contact',
+                'profile_image' => UploadedFile::fake()->image('new_logo.png', 150, 150),
+            ]);
+
+        $response->assertRedirect(route('business.application'))
+            ->assertSessionHas('status');
+
+        $business->refresh();
+        $this->assertNotNull($business->profile_image);
+        $this->assertStringContainsString('profile-images/', $business->profile_image);
+        $this->assertTrue(Storage::disk('public')->exists($business->profile_image));
+
+        $imageUrl = route('profile.image', ['filename' => basename($business->profile_image)]);
+        $this->get($imageUrl)->assertOk();
     }
 }

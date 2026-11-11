@@ -1,5 +1,6 @@
 <?php
-$errors = $errors ?? new \Illuminate\Support\MessageBag();
+/** @var \Illuminate\Support\ViewErrorBag $errors */
+$errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
 $emailError = $errors->first('identifier');
 $passwordError = $errors->first('password');
 ?>

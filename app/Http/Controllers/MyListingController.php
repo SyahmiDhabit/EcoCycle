@@ -18,11 +18,13 @@ class MyListingController extends Controller
         abort_unless(Auth::user()->account_status === 'approved', 403, 'Your business application must be approved first.');
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        $this->checkApproved();
         /** @var User $business */
         $business = Auth::user();
+        if ($business->account_status !== 'approved') {
+            return redirect()->route('business.dashboard');
+        }
 
         $statusTab = $request->input('status', 'all'); // all, active, sold, borrowed
 

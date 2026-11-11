@@ -47,7 +47,7 @@ $passwordError = $errors->first('password');
                 <?php if ($errors->any()): ?>
                     <div class="signin-error-summary" role="alert" aria-live="assertive">
                         <strong>We couldn’t sign you in.</strong>
-                        <span><?= e($emailError ?: $passwordError) ?></span>
+                        <span><?= e($emailError ?: ($passwordError ?: $errors->first())) ?></span>
                     </div>
                 <?php endif; ?>
 

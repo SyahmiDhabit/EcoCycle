@@ -88,8 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.setCustomValidity('Choose a file smaller than 10 MB.');
                 return;
             }
-            if (!/\.(pdf|jpe?g|png)$/i.test(file.name)) {
-                input.setCustomValidity('Choose a PDF, JPG, or PNG file.');
+            if (!/\.(pdf|jpe?g|png|webp)$/i.test(file.name)) {
+                input.setCustomValidity('Choose a PDF, JPG, PNG, or WEBP file.');
             }
         });
 
@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 if (output) {
-                    output.textContent = 'Choose a PDF, JPG or PNG file (up to 10 MB).';
+                    output.textContent = 'Choose a PDF, JPG, PNG, or WEBP file (up to 10 MB).';
                 }
                 if (confirmCard) {
                     confirmCard.style.display = 'none';

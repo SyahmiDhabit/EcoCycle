@@ -217,10 +217,10 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             <img src="/images/figma/signup/verification-file.svg" alt="">
                             <div>
                                 <label for="ssm_certificate">SSM registration certificate *</label>
-                                <small class="selected-file" data-file-name="ssm_certificate">Choose a PDF, JPG or PNG file (up to 10 MB).</small>
+                                <small class="selected-file" data-file-name="ssm_certificate">Choose a PDF, JPG, PNG, or WEBP file (up to 10 MB).</small>
                                 <?php if ($fieldErrors['ssm_certificate']): ?><small class="field-error" id="ssm_certificate-error"><?= e($fieldErrors['ssm_certificate']) ?></small><?php endif; ?>
                             </div>
-                            <input class="file-input" id="ssm_certificate" name="ssm_certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required aria-invalid="<?= $fieldErrors['ssm_certificate'] ? 'true' : 'false' ?>">
+                            <input class="file-input" id="ssm_certificate" name="ssm_certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" required aria-invalid="<?= $fieldErrors['ssm_certificate'] ? 'true' : 'false' ?>">
                         </div>
                         <div class="file-confirm-card" id="confirm-card-ssm_certificate" style="display:none;">
                             <div class="confirm-card-main">
@@ -246,10 +246,10 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             <img src="/images/figma/signup/verification-upload.svg" alt="">
                             <div>
                                 <label for="ssm_profile">Current SSM company / business profile *</label>
-                                <small class="selected-file" data-file-name="ssm_profile">Choose file or drag and drop (up to 10 MB).</small>
+                                <small class="selected-file" data-file-name="ssm_profile">Choose a PDF, JPG, PNG, or WEBP file (up to 10 MB).</small>
                                 <?php if ($fieldErrors['ssm_profile']): ?><small class="field-error" id="ssm_profile-error"><?= e($fieldErrors['ssm_profile']) ?></small><?php endif; ?>
                             </div>
-                            <input class="file-input" id="ssm_profile" name="ssm_profile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required aria-invalid="<?= $fieldErrors['ssm_profile'] ? 'true' : 'false' ?>">
+                            <input class="file-input" id="ssm_profile" name="ssm_profile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" required aria-invalid="<?= $fieldErrors['ssm_profile'] ? 'true' : 'false' ?>">
                         </div>
                         <div class="file-confirm-card" id="confirm-card-ssm_profile" style="display:none;">
                             <div class="confirm-card-main">

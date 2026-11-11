@@ -393,9 +393,9 @@ $hasFormErrors = $errors->any();
                 <div class="doc-upload-box">
                     <label for="edit_ssm_certificate">
                         <strong>Replace SSM registration certificate</strong>
-                        <small>Optional — upload a new PDF, JPG, or PNG (up to 10 MB) to replace current file.</small>
+                        <small>Optional — upload a new PDF, JPG, PNG, or WEBP (up to 10 MB) to replace current file.</small>
                     </label>
-                    <input id="edit_ssm_certificate" name="ssm_certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+                    <input id="edit_ssm_certificate" name="ssm_certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp">
                     <?php if ($errors->has('ssm_certificate')): ?>
                         <small class="field-error"><?= e($errors->first('ssm_certificate')) ?></small>
                     <?php endif; ?>
@@ -404,9 +404,9 @@ $hasFormErrors = $errors->any();
                 <div class="doc-upload-box">
                     <label for="edit_ssm_profile">
                         <strong>Replace SSM company / business profile</strong>
-                        <small>Optional — upload a new PDF, JPG, or PNG (up to 10 MB) to replace current file.</small>
+                        <small>Optional — upload a new PDF, JPG, PNG, or WEBP (up to 10 MB) to replace current file.</small>
                     </label>
-                    <input id="edit_ssm_profile" name="ssm_profile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+                    <input id="edit_ssm_profile" name="ssm_profile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp">
                     <?php if ($errors->has('ssm_profile')): ?>
                         <small class="field-error"><?= e($errors->first('ssm_profile')) ?></small>
                     <?php endif; ?>

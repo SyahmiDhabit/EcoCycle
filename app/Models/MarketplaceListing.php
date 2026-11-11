@@ -24,6 +24,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'location_city',
     'location_state',
     'image_path',
+    'image_1',
+    'image_2',
+    'image_3',
+    'image_4',
+    'image_5',
     'images',
     'status',
 ])]
@@ -44,12 +49,24 @@ class MarketplaceListing extends Model
     }
 
     /**
-     * Return all image paths for this listing (up to 5).
+     * Return all image paths for this listing (referencing image_1 to image_5 columns).
      *
      * @return array<int, string>
      */
     public function getAllImages(): array
     {
+        $explicit = array_filter([
+            $this->image_1,
+            $this->image_2,
+            $this->image_3,
+            $this->image_4,
+            $this->image_5,
+        ]);
+
+        if (!empty($explicit)) {
+            return array_values($explicit);
+        }
+
         if (!empty($this->images) && is_array($this->images)) {
             return array_values(array_filter($this->images));
         }

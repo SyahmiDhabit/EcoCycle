@@ -57,6 +57,11 @@ class MarketplaceAndInventoryTest extends TestCase
         $item = InventoryItem::where('name', 'Industrial Plastic Pallets')->firstOrFail();
         $this->assertSame('reusable', $item->reusability);
         $this->assertNotNull($item->image_path);
+        $this->assertNotNull($item->image_1);
+        $this->assertNotNull($item->image_2);
+        $this->assertNull($item->image_3);
+        $this->assertNull($item->image_4);
+        $this->assertNull($item->image_5);
         $this->assertCount(2, $item->getAllImages());
 
         // Test inventory image route returns 200
@@ -78,6 +83,9 @@ class MarketplaceAndInventoryTest extends TestCase
         $listing = MarketplaceListing::where('title', 'Listed Pallets')->firstOrFail();
         $this->assertCount(2, $listing->getAllImages());
         $this->assertSame($item->image_path, $listing->image_path);
+        $this->assertSame($item->image_1, $listing->image_1);
+        $this->assertSame($item->image_2, $listing->image_2);
+        $this->assertNull($listing->image_3);
     }
 
     public function test_business_can_create_marketplace_listing_with_buy_borrow_or_free(): void
@@ -174,16 +182,77 @@ class MarketplaceAndInventoryTest extends TestCase
         
         $listing = MarketplaceListing::where('title', 'Grade A Wooden Pallets 120x100')->firstOrFail();
         $this->assertNotNull($listing->image_path);
+        $this->assertNotNull($listing->image_1);
+        $this->assertNotNull($listing->image_2);
+        $this->assertNotNull($listing->image_3);
+        $this->assertNull($listing->image_4);
+        $this->assertNull($listing->image_5);
         $this->assertCount(3, $listing->getAllImages());
         $this->assertSame($listing->image_path, $listing->getAllImages()[0]);
 
         // Test image route returns 200
         $firstFilename = basename($listing->image_path);
         $this->get('/listing-images/' . $firstFilename)->assertOk();
+    }
+
+    public function test_can_upload_all_five_images_for_product_and_inventory(): void
+    {
+        $business = $this->createApprovedBusiness();
+
+        $fiveImages = [
+            UploadedFile::fake()->image('img1.jpg', 600, 400),
+            UploadedFile::fake()->image('img2.jpg', 600, 400),
+            UploadedFile::fake()->image('img3.jpg', 600, 400),
+            UploadedFile::fake()->image('img4.jpg', 600, 400),
+            UploadedFile::fake()->image('img5.jpg', 600, 400),
+        ];
+
+        // 1. Inventory with 5 images
+        $invResponse = $this->actingAs($business)
+            ->from(route('business.inventory'))
+            ->post(route('business.inventory.store'), [
+            'name' => 'Complete 5-Image Inventory Item',
+            'category' => 'Metal & fabrication',
+            'quantity' => 100,
+            'unit' => 'kg',
+            'reusability' => 'reusable',
+            'images' => $fiveImages,
+        ]);
+        $invResponse->assertRedirect(route('business.inventory'));
+
+        $item = InventoryItem::where('name', 'Complete 5-Image Inventory Item')->firstOrFail();
+        $this->assertNotNull($item->image_1);
+        $this->assertNotNull($item->image_2);
+        $this->assertNotNull($item->image_3);
+        $this->assertNotNull($item->image_4);
+        $this->assertNotNull($item->image_5);
+        $this->assertCount(5, $item->getAllImages());
+
+        // 2. Marketplace listing with 5 images
+        $mktResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'title' => 'Complete 5-Image Listing',
+            'category' => 'Metal & fabrication',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'quantity' => 20,
+            'unit' => 'kg',
+            'price' => 50.00,
+            'images' => $fiveImages,
+        ]);
+        $mktResponse->assertRedirect();
+
+        $listing = MarketplaceListing::where('title', 'Complete 5-Image Listing')->firstOrFail();
+        $this->assertNotNull($listing->image_1);
+        $this->assertNotNull($listing->image_2);
+        $this->assertNotNull($listing->image_3);
+        $this->assertNotNull($listing->image_4);
+        $this->assertNotNull($listing->image_5);
+        $this->assertCount(5, $listing->getAllImages());
 
         // Test delete cleans up stored files
+        $firstListingImage = basename($listing->image_1);
         $this->actingAs($business)->delete(route('business.marketplace.destroy', $listing));
-        $this->assertFalse(Storage::disk('public')->exists('listing-images/' . $firstFilename));
+        $this->assertFalse(Storage::disk('public')->exists('listing-images/' . $firstListingImage));
     }
 
     public function test_marketplace_filters_by_listing_type_and_reusability(): void

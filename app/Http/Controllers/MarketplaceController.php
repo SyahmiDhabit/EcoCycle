@@ -165,8 +165,8 @@ class MarketplaceController extends Controller
         if ($inventoryItemId) {
             $item = InventoryItem::find($inventoryItemId);
             abort_unless($item && $item->business_id === $business->id, 403);
-            if (empty($uploadedImages) && !empty($item->images)) {
-                $uploadedImages = $item->images;
+            if (empty($uploadedImages)) {
+                $uploadedImages = $item->getAllImages();
             }
         }
 
@@ -184,6 +184,11 @@ class MarketplaceController extends Controller
             'is_free' => $isFree,
             'condition' => $condition,
             'image_path' => $uploadedImages[0] ?? null,
+            'image_1' => $uploadedImages[0] ?? null,
+            'image_2' => $uploadedImages[1] ?? null,
+            'image_3' => $uploadedImages[2] ?? null,
+            'image_4' => $uploadedImages[3] ?? null,
+            'image_5' => $uploadedImages[4] ?? null,
             'images' => $uploadedImages,
             'location_city' => $business->city ?: 'Kuala Lumpur',
             'location_state' => $business->state ?: 'Selangor',

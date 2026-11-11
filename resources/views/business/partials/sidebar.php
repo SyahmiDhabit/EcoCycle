@@ -86,8 +86,27 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
     </nav>
 
     <div class="sidebar-footer-card">
-        <span>Verified SME</span>
-        <p><?= e($companyName) ?> is approved for nationwide circular exchange.</p>
-        <a href="/business/marketplace">Browse marketplace &rarr;</a>
+        <?php if ($business?->account_status === 'approved'): ?>
+            <span>Verified SME</span>
+            <p><?= e($companyName) ?> is approved for nationwide circular exchange.</p>
+            <a href="/business/marketplace">Browse marketplace &rarr;</a>
+        <?php elseif ($business?->account_status === 'rejected'): ?>
+            <span style="color:#dc2626;">Changes Required</span>
+            <p>Your verification requires corrections before approval.</p>
+            <a href="<?= route('business.application') ?>" style="color:#b91c1c;">Update application &rarr;</a>
+        <?php else: ?>
+            <span style="color:#d97706;">Verification Pending</span>
+            <p>Your registration is in review by administrator.</p>
+            <a href="<?= route('business.application') ?>" style="color:#b45309;">Check status &rarr;</a>
+        <?php endif; ?>
     </div>
 </aside>
+
+<script>
+if (!window.handleNavNotice) {
+    window.handleNavNotice = function(e, name) {
+        if (e) e.preventDefault();
+        alert(name + ' feature is coming soon in the next release.');
+    };
+}
+</script>

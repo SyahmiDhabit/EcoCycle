@@ -27,50 +27,57 @@ $hasFormErrors = $errors->any();
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Track and modify your EcoCycle business verification application.">
-    <title>Application Status — EcoCycle</title>
+    <title><?= e($business->business_name ?: 'Business Profile') ?> &mdash; EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/business/dashboard.css">
     <link rel="stylesheet" href="/css/business/verification.css">
 </head>
-<body class="verification-page">
-<header class="verification-header">
-    <a class="verification-brand" href="/" aria-label="EcoCycle home">
-        <img src="/images/figma/verification/brand-mark.svg" alt="">
-        <span>EcoCycle</span>
-    </a>
-    <div class="verification-account">
-        <?php if ($isApproved): ?>
-            <a class="outline-button" href="<?= e(route('business.dashboard')) ?>">Workspace Preview</a>
-        <?php endif; ?>
-        <span class="status-pill <?= e($statusClass) ?>"><?= e($statusLabel) ?></span>
-        <span><?= e($business->name) ?> · <strong><?= e($business->business_name) ?></strong></span>
-        <form method="POST" action="<?= e(route('logout')) ?>">
-            <?= csrf_field() ?>
-            <button class="outline-button" type="submit">Sign out</button>
-        </form>
-    </div>
-</header>
+<body class="business-dashboard-page verification-page">
 
-<main class="verification-content">
-    <section class="verification-intro">
-        <p class="application-id">@<?= e($business->name) ?></p>
-        <h1>
-            <?php if ($isApproved): ?>
-                Your business has been verified!
-            <?php elseif ($isRejected): ?>
-                Your application needs changes.
-            <?php else: ?>
-                Your business application is under review.
-            <?php endif; ?>
-        </h1>
-        <p>
-            Submitted on <?= $submittedAt ? $submittedAt->format('j M Y \a\t g:i A').' MYT' : 'N/A' ?>.
-            <?php if ($updatedAt && $submittedAt && $updatedAt->gt($submittedAt->addSeconds(60))): ?>
-                Last modified on <?= $updatedAt->format('j M Y \a\t g:i A').' MYT' ?>.
-            <?php endif; ?>
-        </p>
-    </section>
+    <!-- Reusable Professional Top Navigation Bar -->
+    <?php include resource_path('views/business/partials/topbar.php'); ?>
+
+    <div class="dashboard-layout">
+        <!-- Reusable Left Navigation Sidebar -->
+        <?php
+        $activeNav = 'profile';
+        include resource_path('views/business/partials/sidebar.php');
+        ?>
+
+        <main class="dashboard-main verification-content-main">
+            <!-- Breadcrumbs matching navigation -->
+            <div class="breadcrumb-row">
+                <a href="/business">Overview</a>
+                <span class="sep">/</span>
+                <span class="current">Business Profile &amp; Verification</span>
+            </div>
+
+            <div class="verification-content-wrapper">
+                <section class="verification-intro">
+                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                        <div>
+                            <p class="application-id">@<?= e($business->name) ?></p>
+                            <h1>
+                                <?php if ($isApproved): ?>
+                                    Business Profile &amp; Verification
+                                <?php elseif ($isRejected): ?>
+                                    Your application needs changes.
+                                <?php else: ?>
+                                    Your business application is under review.
+                                <?php endif; ?>
+                            </h1>
+                        </div>
+                        <span class="status-pill <?= e($statusClass) ?>" style="font-size:12px;padding:6px 14px;"><?= e($statusLabel) ?></span>
+                    </div>
+                    <p>
+                        Submitted on <?= $submittedAt ? $submittedAt->format('j M Y \a\t g:i A').' MYT' : 'N/A' ?>.
+                        <?php if ($updatedAt && $submittedAt && $updatedAt->gt($submittedAt->addSeconds(60))): ?>
+                            Last modified on <?= $updatedAt->format('j M Y \a\t g:i A').' MYT' ?>.
+                        <?php endif; ?>
+                    </p>
+                </section>
 
     <?php if (session('status')): ?>
         <div class="submission-notice" role="status" aria-live="polite">
@@ -448,7 +455,9 @@ $hasFormErrors = $errors->any();
         <img src="/images/figma/verification/lock.svg" alt="">
         Business documents and data are securely handled and visible only to authorised EcoCycle administrators.
     </p>
-</main>
+            </div>
+        </main>
+    </div>
 
 <script>
 function previewEditAvatar(input) {

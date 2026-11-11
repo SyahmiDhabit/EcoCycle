@@ -19,7 +19,7 @@ $unreadNotificationsCount = $realNotifications->where('is_read', false)->count()
         </button>
 
         <a class="dashboard-brand" href="/business" aria-label="EcoCycle home">
-            <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+            <span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
             <span class="dashboard-brand-name">EcoCycle</span>
         </a>
     </div>
@@ -107,7 +107,11 @@ $unreadNotificationsCount = $realNotifications->where('is_read', false)->count()
             </span>
             <span class="topbar-profile-info">
                 <span class="topbar-name"><?= e($companyName) ?></span>
-                <span class="topbar-role">Verified SME</span>
+                <span class="topbar-role"><?= e(match ($business?->account_status) {
+                    'approved' => 'Verified SME',
+                    'rejected' => 'Changes Required',
+                    default => 'Verification Pending',
+                }) ?></span>
             </span>
         </a>
 
@@ -127,6 +131,14 @@ $unreadNotificationsCount = $realNotifications->where('is_read', false)->count()
 </header>
 
 <script>
+if (!window.toggleSidebar) {
+    window.toggleSidebar = function() {
+        var sidebar = document.getElementById('dashboard-sidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('open');
+        }
+    };
+}
 function toggleNotificationMenu(e) {
     if (e) {
         e.preventDefault();

@@ -19,13 +19,13 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
     <title>Business review - EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/admin/review.css">
 </head>
 <body class="admin-page">
 <header class="admin-header">
     <a class="admin-brand" href="/" aria-label="EcoCycle home">
-        <img src="/images/figma/verification/brand-mark.svg" alt="">
+        <span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
         <span>EcoCycle</span>
     </a>
     <div class="admin-header-actions">

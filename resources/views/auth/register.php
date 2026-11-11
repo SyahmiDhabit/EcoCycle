@@ -38,13 +38,13 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
     <title>Register your business - EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/auth/register.css">
 
 </head>
 <body class="signup-page">
     <header class="signup-header">
-        <a class="signup-brand" href="/" aria-label="EcoCycle home"><img src="/images/figma/ecocycle-leaf.svg" alt=""><span>EcoCycle</span></a>
+        <a class="signup-brand" href="/" aria-label="EcoCycle home"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a>
         <a class="header-signin" href="/login">Already registered? <span>Sign in <span aria-hidden="true">&#8594;</span></span></a>
 
     </header>

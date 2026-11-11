@@ -161,7 +161,11 @@ class BusinessApplicationController extends Controller
             if ($newProfilePath) {
                 Storage::disk('local')->delete($newProfilePath);
             }
-            throw $exception;
+            report($exception);
+
+            return back()->withInput()->withErrors([
+                'business_name' => 'We could not save your application updates. Please try again.',
+            ]);
         }
 
         $mailer->submitted($business->fresh(), isUpdate: true);
@@ -242,8 +246,10 @@ class BusinessApplicationController extends Controller
         ], [
             'ssm_profile.mimes' => 'The SSM profile must be a PDF, JPG, PNG, or WEBP file.',
             'ssm_profile.max' => 'The SSM profile must not exceed 10 MB.',
+            'ssm_profile.uploaded' => $this->getUploadErrorMessage($request->file('ssm_profile'), 'The SSM profile failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, PNG, or WEBP format.'),
             'ssm_certificate.mimes' => 'The SSM certificate must be a PDF, JPG, PNG, or WEBP file.',
             'ssm_certificate.max' => 'The SSM certificate must not exceed 10 MB.',
+            'ssm_certificate.uploaded' => $this->getUploadErrorMessage($request->file('ssm_certificate'), 'The SSM certificate failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, PNG, or WEBP format.'),
         ]);
 
         $updateData = [
@@ -282,7 +288,11 @@ class BusinessApplicationController extends Controller
             if ($newCertPath) {
                 Storage::disk('local')->delete($newCertPath);
             }
-            throw $exception;
+            report($exception);
+
+            return back()->withInput()->withErrors([
+                'ssm_certificate' => 'We could not save your replacement documents. Please try again.',
+            ]);
         }
 
         $mailer->submitted($business->fresh(), isUpdate: true);

@@ -122,7 +122,11 @@ class RegisteredUserController extends Controller
             if ($profileImagePath) {
                 Storage::disk('public')->delete($profileImagePath);
             }
-            throw $exception;
+            report($exception);
+
+            return back()->withInput()->withErrors([
+                'business_name' => 'An error occurred while creating your account. Please try again.',
+            ]);
         }
 
         $business = User::query()->where('email', $validated['email'])->firstOrFail();

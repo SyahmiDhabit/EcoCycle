@@ -5,21 +5,29 @@ namespace App\Http\Controllers;
 use App\Models\InventoryItem;
 use App\Models\MarketplaceListing;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class BusinessDashboardController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): View|RedirectResponse
     {
         return $this->index($request);
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        /** @var User $business */
-        $business = Auth::user();
+        /** @var User|null $business */
+        $business = Auth::guard('web')->user() ?: Auth::user();
+
+        if (! $business) {
+            if (Auth::guard('admin')->check()) {
+                return redirect()->route('admin.dashboard');
+            }
+            return redirect()->route('login');
+        }
 
         if ($business->account_status !== 'approved') {
             return view('business.verification', ['business' => $business]);

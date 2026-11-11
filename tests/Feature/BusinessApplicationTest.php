@@ -171,6 +171,37 @@ class BusinessApplicationTest extends TestCase
         ]);
     }
 
+    public function test_business_can_use_resubmit_route(): void
+    {
+        Mail::fake();
+
+        $business = User::factory()->create([
+            'business_name' => 'Resubmit Test Sdn Bhd',
+            'account_status' => 'rejected',
+            'review_note' => 'Please update SSM profile',
+            'ssm_profile_path' => 'business-verification/old_resubmit_prof.pdf',
+        ]);
+        Storage::disk('local')->put('business-verification/old_resubmit_prof.pdf', 'old profile');
+
+        $response = $this->actingAs($business)
+            ->post(route('business.resubmit'), [
+                'ssm_profile' => UploadedFile::fake()->create('fresh_profile.pdf', 200, 'application/pdf'),
+            ]);
+
+        $response->assertRedirect(route('business.dashboard'));
+        $response->assertSessionHas('status');
+
+        $updated = $business->fresh();
+        $this->assertSame('pending', $updated->account_status);
+        $this->assertNull($updated->review_note);
+        $this->assertTrue(Storage::disk('local')->exists($updated->ssm_profile_path));
+
+        $this->assertDatabaseHas('admin_notifications', [
+            'type' => 'application_resubmitted',
+            'business_id' => $updated->id,
+        ]);
+    }
+
     public function test_rejected_business_signing_in_is_redirected_to_verification_to_fix_issues(): void
     {
         $business = User::factory()->create([

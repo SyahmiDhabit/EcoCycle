@@ -15,10 +15,17 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BusinessApplicationController extends Controller
 {
-    public function show(Request $request): View
+    public function show(Request $request): View|RedirectResponse
     {
-        /** @var User $business */
+        /** @var User|null $business */
         $business = $request->user() ?: Auth::guard('web')->user();
+
+        if (! $business) {
+            if (Auth::guard('admin')->check()) {
+                return redirect()->route('admin.dashboard');
+            }
+            return redirect()->route('login');
+        }
 
         return view('business.verification', [
             'business' => $business,
@@ -27,8 +34,9 @@ class BusinessApplicationController extends Controller
 
     public function update(Request $request, BusinessMailNotifier $mailer): RedirectResponse
     {
-        /** @var User $business */
+        /** @var User|null $business */
         $business = $request->user() ?: Auth::guard('web')->user();
+        abort_unless($business, 401);
 
         $validated = $request->validate([
             'business_name' => ['required', 'string', 'max:255'],
@@ -50,7 +58,12 @@ class BusinessApplicationController extends Controller
                 'required',
                 'in:Johor,Kedah,Kelantan,Kuala Lumpur,Labuan,Melaka,Negeri Sembilan,Pahang,Penang,Perak,Perlis,Putrajaya,Sabah,Sarawak,Selangor,Terengganu',
             ],
-            'name' => ['required', 'string', 'max:255'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('business', 'name')->ignore($business->id),
+            ],
             'profile_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'ssm_certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             'ssm_profile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
@@ -185,8 +198,9 @@ class BusinessApplicationController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        /** @var User $business */
-        $business = Auth::guard('web')->user();
+        /** @var User|null $business */
+        $business = $request->user() ?: Auth::guard('web')->user();
+        abort_unless($business, 401);
 
         if ($business->ssm_certificate_path) {
             Storage::disk('local')->delete($business->ssm_certificate_path);
@@ -214,38 +228,74 @@ class BusinessApplicationController extends Controller
 
     public function resubmit(Request $request, BusinessMailNotifier $mailer): RedirectResponse
     {
-        $business = $request->user();
-        abort_unless($business->account_status === 'rejected', 404);
+        /** @var User|null $business */
+        $business = $request->user() ?: Auth::guard('web')->user();
+        abort_unless($business, 401);
 
-        $validated = $request->validate([
-            'ssm_profile' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-        ], [
-            'ssm_profile.required' => 'Choose the updated SSM company profile.',
-            'ssm_profile.mimes' => 'The profile must be a PDF, JPG, or PNG file.',
-            'ssm_profile.max' => 'The profile must not exceed 10 MB.',
-        ]);
-
-        $oldPath = $business->ssm_profile_path;
-        $newPath = $validated['ssm_profile']->store('business-verification', 'local');
-
-        try {
-            $business->update([
-                'ssm_profile_path' => $newPath,
-                'account_status' => 'pending',
-                'review_note' => null,
-            ]);
-        } catch (\Throwable $exception) {
-            Storage::disk('local')->delete($newPath);
-            throw $exception;
+        if ($business->account_status === 'approved') {
+            return redirect()->route('business.dashboard')->with('status', 'Your business account is already verified and approved.');
         }
 
-        if ($oldPath) {
-            Storage::disk('local')->delete($oldPath);
+        $validated = $request->validate([
+            'ssm_profile' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'ssm_certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+        ], [
+            'ssm_profile.mimes' => 'The SSM profile must be a PDF, JPG, or PNG file.',
+            'ssm_profile.max' => 'The SSM profile must not exceed 10 MB.',
+            'ssm_certificate.mimes' => 'The SSM certificate must be a PDF, JPG, or PNG file.',
+            'ssm_certificate.max' => 'The SSM certificate must not exceed 10 MB.',
+        ]);
+
+        $updateData = [
+            'account_status' => 'pending',
+            'review_note' => null,
+        ];
+
+        $oldProfilePath = $business->ssm_profile_path;
+        $oldCertPath = $business->ssm_certificate_path;
+        $newProfilePath = null;
+        $newCertPath = null;
+
+        try {
+            if ($request->hasFile('ssm_profile')) {
+                $newProfilePath = $request->file('ssm_profile')->store('business-verification', 'local');
+                $updateData['ssm_profile_path'] = $newProfilePath;
+            }
+
+            if ($request->hasFile('ssm_certificate')) {
+                $newCertPath = $request->file('ssm_certificate')->store('business-verification', 'local');
+                $updateData['ssm_certificate_path'] = $newCertPath;
+            }
+
+            $business->update($updateData);
+
+            if ($newProfilePath && $oldProfilePath) {
+                Storage::disk('local')->delete($oldProfilePath);
+            }
+            if ($newCertPath && $oldCertPath) {
+                Storage::disk('local')->delete($oldCertPath);
+            }
+        } catch (\Throwable $exception) {
+            if ($newProfilePath) {
+                Storage::disk('local')->delete($newProfilePath);
+            }
+            if ($newCertPath) {
+                Storage::disk('local')->delete($newCertPath);
+            }
+            throw $exception;
         }
 
         $mailer->submitted($business->fresh(), isUpdate: true);
 
-        return redirect()->route('business.dashboard')->with('status', 'Your updated SSM profile has been resubmitted for administrator review.');
+        AdminNotification::send(
+            'application_resubmitted',
+            'Application Resubmitted',
+            "{$business->business_name} has resubmitted their application documents for administrator review.",
+            '/admin',
+            $business->id
+        );
+
+        return redirect()->route('business.dashboard')->with('status', 'Your updated application has been resubmitted for administrator review.');
     }
 
     private function getUploadErrorMessage(?\Illuminate\Http\UploadedFile $file, string $defaultMessage): string

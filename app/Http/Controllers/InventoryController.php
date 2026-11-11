@@ -22,8 +22,12 @@ class InventoryController extends Controller
 
     public function index(Request $request): View
     {
-        $this->checkApproved();
+        /** @var \App\Models\User $business */
         $business = Auth::user();
+
+        if ($business->account_status !== 'approved') {
+            return view('business.verification', ['business' => $business]);
+        }
 
         $query = $business->inventoryItems()->latest();
 

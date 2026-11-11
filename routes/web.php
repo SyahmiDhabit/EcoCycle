@@ -23,6 +23,7 @@ Route::post('/business/inventory/{item}/adjust', [InventoryController::class, 'a
 Route::delete('/business/inventory/{item}', [InventoryController::class, 'destroy'])->middleware('auth')->name('business.inventory.destroy');
 Route::get('/business/application', [BusinessApplicationController::class, 'show'])->middleware('auth')->name('business.application');
 Route::post('/business/application', [BusinessApplicationController::class, 'update'])->middleware('auth')->name('business.application.update');
+Route::delete('/business/application', [BusinessApplicationController::class, 'destroy'])->middleware('auth')->name('business.application.destroy');
 Route::get('/business/application/documents/{document}', [BusinessApplicationController::class, 'document'])->middleware('auth')->name('business.application.document');
 Route::post('/business/resubmit', [BusinessApplicationController::class, 'resubmit'])->middleware('auth')->name('business.resubmit');
 Route::post('/business/notifications/mark-read', [BusinessNotificationController::class, 'markAllAsRead'])->middleware('auth')->name('business.notifications.mark-read');

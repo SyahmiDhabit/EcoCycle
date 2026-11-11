@@ -72,9 +72,6 @@ class AdminReviewTest extends TestCase
         $this->assertEquals($admin->id, $business->reviewed_by);
         $this->assertNotNull($business->reviewed_at);
 
-<<<<<<< Updated upstream
-        Mail::assertSent(BusinessApplicationDecision::class);
-=======
         Mail::assertSent(BusinessApplicationDecision::class, function ($mail) use ($business, $admin) {
             return $mail->hasTo($business->email)
                 && ! $mail->hasTo($admin->email)
@@ -185,6 +182,5 @@ class AdminReviewTest extends TestCase
             'business_id' => $business->id,
             'is_read' => true,
         ]);
->>>>>>> Stashed changes
     }
 }

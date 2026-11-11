@@ -120,8 +120,6 @@ class BusinessApplicationTest extends TestCase
         ]);
     }
 
-<<<<<<< Updated upstream
-=======
     public function test_rejected_business_can_modify_application_and_resubmit(): void
     {
         Mail::fake();
@@ -195,7 +193,7 @@ class BusinessApplicationTest extends TestCase
             ->assertOk()
             ->assertSee('Changes required')
             ->assertSee('The uploaded SSM was unreadable. Please re-upload.')
-            ->assertSee('Update application details &amp; fix issues', false);
+            ->assertSee('Modify your application details');
     }
 
     public function test_rejected_business_can_delete_application_data_and_restart(): void
@@ -223,7 +221,6 @@ class BusinessApplicationTest extends TestCase
         $this->assertDatabaseMissing('business', ['id' => $business->id]);
     }
 
->>>>>>> Stashed changes
     public function test_business_can_download_their_own_documents(): void
     {
         $business = User::factory()->create([

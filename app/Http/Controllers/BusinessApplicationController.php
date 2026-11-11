@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-<<<<<<< Updated upstream
-=======
 use App\Models\AdminNotification;
 use App\Models\User;
->>>>>>> Stashed changes
 use App\Services\BusinessMailNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -19,25 +17,18 @@ class BusinessApplicationController extends Controller
 {
     public function show(Request $request): View
     {
-<<<<<<< Updated upstream
-=======
         /** @var User $business */
-        $business = Auth::guard('web')->user();
+        $business = $request->user() ?: Auth::guard('web')->user();
 
->>>>>>> Stashed changes
         return view('business.verification', [
-            'business' => $request->user(),
+            'business' => $business,
         ]);
     }
 
     public function update(Request $request, BusinessMailNotifier $mailer): RedirectResponse
     {
-<<<<<<< Updated upstream
-        $business = $request->user();
-=======
         /** @var User $business */
-        $business = Auth::guard('web')->user();
->>>>>>> Stashed changes
+        $business = $request->user() ?: Auth::guard('web')->user();
 
         $validated = $request->validate([
             'business_name' => ['required', 'string', 'max:255'],
@@ -180,19 +171,12 @@ class BusinessApplicationController extends Controller
     {
         abort_unless(in_array($document, ['certificate', 'profile'], true), 404);
 
-<<<<<<< Updated upstream
-        $business = $request->user();
-=======
         /** @var User $business */
-        $business = Auth::guard('web')->user();
->>>>>>> Stashed changes
+        $business = $request->user() ?: Auth::guard('web')->user();
         $path = $document === 'certificate' ? $business->ssm_certificate_path : $business->ssm_profile_path;
 
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-<<<<<<< Updated upstream
-        return Storage::disk('local')->download($path);
-=======
         /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $disk = Storage::disk('local');
 
@@ -226,7 +210,6 @@ class BusinessApplicationController extends Controller
             'status',
             'Your application data and uploaded documents have been completely removed. You can now register again.'
         );
->>>>>>> Stashed changes
     }
 
     public function resubmit(Request $request, BusinessMailNotifier $mailer): RedirectResponse

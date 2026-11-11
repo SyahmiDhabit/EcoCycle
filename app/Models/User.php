@@ -41,22 +41,6 @@ class User extends Authenticatable
 
     protected $table = 'business';
 
-<<<<<<< Updated upstream
-=======
-    public function getRememberToken(): ?string
-    {
-        return null;
-    }
-
-    public function setRememberToken($value): void
-    {
-    }
-
-    public function getRememberTokenName(): string
-    {
-        return '';
-    }
-
     public function getProfileImageUrlAttribute(): ?string
     {
         if (empty($this->profile_image)) {
@@ -70,7 +54,6 @@ class User extends Authenticatable
         return route('profile.image', ['filename' => basename($this->profile_image)]);
     }
 
->>>>>>> Stashed changes
     /**
      * Get the attributes that should be cast.
      *

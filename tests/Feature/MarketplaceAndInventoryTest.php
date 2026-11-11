@@ -44,6 +44,7 @@ class MarketplaceAndInventoryTest extends TestCase
             ->from(route('business.inventory'))
             ->post(route('business.inventory.store'), [
                 'name' => 'Industrial Plastic Pallets',
+                'description' => 'Industrial grade heavy duty pallets with reinforced corners.',
                 'category' => 'Packaging & paper',
                 'quantity' => 150,
                 'unit' => 'units',
@@ -56,6 +57,7 @@ class MarketplaceAndInventoryTest extends TestCase
         $response->assertRedirect(route('business.inventory'));
         $item = InventoryItem::where('name', 'Industrial Plastic Pallets')->firstOrFail();
         $this->assertSame('reusable', $item->reusability);
+        $this->assertSame('Industrial grade heavy duty pallets with reinforced corners.', $item->description);
         $this->assertNotNull($item->image_path);
         $this->assertNotNull($item->image_1);
         $this->assertNotNull($item->image_2);
@@ -96,7 +98,7 @@ class MarketplaceAndInventoryTest extends TestCase
         $buyResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
             'title' => 'Treated Timber Offcuts',
             'category' => 'Furniture & wood products',
-            'reusability' => 'not_reusable',
+            'reusability' => 'reusable',
             'listing_type' => 'buy',
             'price' => 45.00,
             'quantity' => 50,
@@ -109,7 +111,7 @@ class MarketplaceAndInventoryTest extends TestCase
             'business_id' => $business->id,
             'title' => 'Treated Timber Offcuts',
             'listing_type' => 'buy',
-            'reusability' => 'not_reusable',
+            'reusability' => 'reusable',
             'is_free' => false,
             'price' => 45.00,
         ]);
@@ -257,7 +259,8 @@ class MarketplaceAndInventoryTest extends TestCase
 
     public function test_marketplace_filters_by_listing_type_and_reusability(): void
     {
-        $business = $this->createApprovedBusiness();
+        $business = $this->createApprovedBusiness('Owner Business');
+        $otherBusiness = $this->createApprovedBusiness('Other Business');
 
         MarketplaceListing::create([
             'business_id' => $business->id,
@@ -291,19 +294,99 @@ class MarketplaceAndInventoryTest extends TestCase
             'status' => 'active',
         ]);
 
-        // Filter by borrow
-        $this->actingAs($business)
+        // Filter by borrow for other business
+        $this->actingAs($otherBusiness)
             ->get(route('business.marketplace', ['listing_type' => 'borrow']))
             ->assertOk()
             ->assertSee('Item Reusable Borrow')
             ->assertDontSee('Item Not Reusable Free');
 
-        // Filter by reusability: not_reusable
-        $this->actingAs($business)
-            ->get(route('business.marketplace', ['reusability' => 'not_reusable']))
+        // Other business on marketplace should ONLY see reusable items, not_reusable is hidden
+        $this->actingAs($otherBusiness)
+            ->get(route('business.marketplace'))
             ->assertOk()
-            ->assertSee('Item Not Reusable Free')
-            ->assertDontSee('Item Reusable Borrow');
+            ->assertSee('Item Reusable Borrow')
+            ->assertDontSee('Item Not Reusable Free');
+
+        // Owner viewing their own listings can view their internal listings
+        $this->actingAs($business)
+            ->get(route('business.marketplace', ['my_listings' => '1', 'reusability' => 'not_reusable']))
+            ->assertOk()
+            ->assertSee('Item Not Reusable Free');
+    }
+
+    public function test_cannot_list_not_reusable_inventory_item_on_marketplace(): void
+    {
+        $business = $this->createApprovedBusiness();
+
+        $images = [
+            UploadedFile::fake()->image('scrap.jpg', 600, 400),
+        ];
+
+        // Create a not_reusable inventory item
+        $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Internal Scrap Materials',
+            'description' => 'Plastic cutoffs strictly for internal tracking',
+            'category' => 'Plastics & rubber',
+            'quantity' => 100,
+            'unit' => 'kg',
+            'reusability' => 'not_reusable',
+            'images' => $images,
+        ]);
+
+        $item = InventoryItem::where('name', 'Internal Scrap Materials')->firstOrFail();
+        $this->assertSame('not_reusable', $item->reusability);
+        $this->assertSame('Plastic cutoffs strictly for internal tracking', $item->description);
+
+        // Attempting to list on marketplace should fail validation
+        $response = $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'inventory_item_id' => $item->id,
+            'title' => 'Scrap listing attempt',
+            'category' => 'Plastics & rubber',
+            'reusability' => 'not_reusable',
+            'listing_type' => 'buy',
+            'quantity' => 20,
+            'unit' => 'kg',
+            'price' => 10,
+        ]);
+
+        $response->assertSessionHasErrors(['reusability']);
+        $this->assertDatabaseMissing('marketplace_listings', ['title' => 'Scrap listing attempt']);
+    }
+
+    public function test_inventory_creation_requires_at_least_one_image_and_max_five(): void
+    {
+        $business = $this->createApprovedBusiness();
+
+        // 1. Zero images should fail
+        $responseZero = $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'No Image Material',
+            'category' => 'Plastics & rubber',
+            'quantity' => 100,
+            'unit' => 'kg',
+            'reusability' => 'reusable',
+            'images' => [],
+        ]);
+        $responseZero->assertSessionHasErrors(['images']);
+
+        // 2. Six images (more than 5) should fail
+        $sixImages = [
+            UploadedFile::fake()->image('img1.jpg'),
+            UploadedFile::fake()->image('img2.jpg'),
+            UploadedFile::fake()->image('img3.jpg'),
+            UploadedFile::fake()->image('img4.jpg'),
+            UploadedFile::fake()->image('img5.jpg'),
+            UploadedFile::fake()->image('img6.jpg'),
+        ];
+        $responseSix = $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Too Many Images Material',
+            'category' => 'Plastics & rubber',
+            'quantity' => 100,
+            'unit' => 'kg',
+            'reusability' => 'reusable',
+            'images' => $sixImages,
+        ]);
+        $responseSix->assertSessionHasErrors(['images']);
     }
 
     public function test_owner_can_delete_marketplace_listing_and_others_cannot(): void

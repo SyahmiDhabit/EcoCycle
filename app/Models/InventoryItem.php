@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'business_id',
     'name',
+    'description',
     'sku',
     'category',
     'quantity',

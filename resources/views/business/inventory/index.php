@@ -146,51 +146,125 @@ $activeNav = 'inventory';
             justify-content: center;
         }
 
-        /* Image Dropzone & Preview Styles */
-        .inv-image-dropzone {
-            border: 2px dashed #b7d6b8;
-            background: #f7fbf6;
+        /* Image Upload & Slots Preview */
+        .inv-photo-uploader-box {
+            border: 1.5px solid #c2d8bf;
+            background: #fbfdfa;
             border-radius: 10px;
-            padding: 18px 16px;
-            text-align: center;
+            padding: 16px;
+            transition: border-color 0.15s ease;
+        }
+        .inv-photo-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .btn-choose-photos {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #18422d;
+            color: #ffffff;
+            font: 700 12px var(--font-main);
+            border: none;
             cursor: pointer;
-            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s ease;
         }
-        .inv-image-dropzone:hover {
-            border-color: var(--brand-green);
-            background: #eef6ec;
+        .btn-choose-photos:hover {
+            background: #103322;
         }
-        .inv-thumbs-grid {
+        .inv-photo-hint {
+            font-size: 11px;
+            color: #556c5e;
+        }
+        .inv-slots-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-top: 10px;
+            gap: 10px;
         }
-        .inv-thumb-card {
+        .inv-slot-card {
             position: relative;
-            height: 68px;
-            border-radius: 6px;
+            height: 80px;
+            border-radius: 8px;
             overflow: hidden;
-            border: 1px solid #c2d8bf;
+            border: 1.5px solid #c2d8bf;
             background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .inv-thumb-card img {
+        .inv-slot-card.empty-slot {
+            border: 1.5px dashed #cbd5e1;
+            background: #f8fafc;
+            cursor: pointer;
+            flex-direction: column;
+            gap: 4px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+        .inv-slot-card.empty-slot:hover {
+            border-color: #18422d;
+            background: #eef6ec;
+            color: #18422d;
+        }
+        .inv-slot-card img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        .inv-thumb-cover-tag {
+        .inv-slot-remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            border: none;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease;
+            z-index: 5;
+        }
+        .inv-slot-remove-btn:hover {
+            background: #dc2626;
+        }
+        .inv-slot-cover-badge {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(14, 41, 27, 0.85);
+            background: rgba(14, 41, 27, 0.9);
             color: #ffffff;
             font-size: 9px;
             font-weight: 700;
             text-align: center;
-            padding: 2px 0;
+            padding: 3px 0;
             text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .btn-owner-only {
+            padding: 4px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background: #f8fafc;
+            color: #64748b;
+            font: 600 11px var(--font-main);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: default;
         }
         .modal-dialog-large {
             width: min(640px, 96vw) !important;
@@ -333,10 +407,14 @@ $activeNav = 'inventory';
                                             <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
                                                 - Out
                                             </button>
-                                            <button type="button" class="btn-list-market" title="List on Marketplace (Buy, Borrow, or Free)" onclick="openListMarketModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e(addslashes($item->category)) ?>', '<?= e(addslashes($item->unit)) ?>', <?= (float)$item->quantity ?>, '<?= e($item->reusability ?? 'reusable') ?>')">
-                                                🛒 List
-                                            </button>
-                                            <button type="button" class="btn-edit" title="Edit details" onclick="openEditModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e(addslashes($item->sku ?? '')) ?>', '<?= e(addslashes($item->category)) ?>', '<?= e(addslashes($item->unit)) ?>', '<?= $item->minimum_threshold ?? '' ?>', '<?= e(addslashes($item->notes ?? '')) ?>', '<?= e($item->reusability ?? 'reusable') ?>')">
+                                            <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
+                                                <button type="button" class="btn-list-market" title="List on Marketplace (Buy, Borrow, or Free)" onclick="openListMarketModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e(addslashes($item->category)) ?>', '<?= e(addslashes($item->unit)) ?>', <?= (float)$item->quantity ?>, 'reusable')">
+                                                    🛒 List
+                                                </button>
+                                            <?php else: ?>
+                                                <span class="btn-owner-only" title="Non-reusable material is kept in your account only and cannot be listed on the marketplace">🔒 Owner only</span>
+                                            <?php endif; ?>
+                                            <button type="button" class="btn-edit" title="Edit details" onclick="openEditModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e(addslashes($item->sku ?? '')) ?>', '<?= e(addslashes($item->category)) ?>', '<?= e(addslashes($item->unit)) ?>', '<?= $item->minimum_threshold ?? '' ?>', '<?= e(addslashes($item->notes ?? '')) ?>', '<?= e($item->reusability ?? 'reusable') ?>', '<?= e(addslashes($item->description ?? '')) ?>')">
                                                 Edit
                                             </button>
                                             <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
@@ -373,29 +451,51 @@ $activeNav = 'inventory';
             <h3>Add New Inventory Item</h3>
             <button type="button" class="modal-close-btn" onclick="closeAddModal()">✕</button>
         </div>
-        <form method="POST" action="<?= route('business.inventory.store') ?>" enctype="multipart/form-data">
+        <form method="POST" action="<?= route('business.inventory.store') ?>" enctype="multipart/form-data" onsubmit="return validateInventoryAddForm(this)">
             <?= csrf_field() ?>
             <div class="modal-body">
-                <!-- 1 to 5 Images Upload Section -->
+                <!-- 1 to 5 Photos Upload Section with Explicit Add Button & Slots -->
                 <div class="form-group">
-                    <label style="display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;color:#18422d;">Material Photos (1 to 5 Images)</span>
-                        <small style="color:#617769;font-weight:500;" id="add_img_notice">0 of 5 selected</small>
-                    </label>
-                    <div class="inv-image-dropzone" onclick="document.getElementById('add_images_input').click()">
-                        <input type="file" id="add_images_input" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="previewAddInventoryImages(this)">
-                        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22543d" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <span style="font-size:13px;font-weight:700;color:#18422d;">Click to upload 1 to 5 photos</span>
-                            <small style="font-size:11px;color:#617769;">PNG, JPG, or WEBP up to 5MB each. First image becomes the cover photo.</small>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <label style="margin:0;font-weight:700;color:#18422d;">
+                            Material Photos * <small style="font-weight:500;color:#556c5e;">(Minimum 1, Maximum 5 photos)</small>
+                        </label>
+                        <span id="add_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">0 of 5 selected (Min 1 required)</span>
+                    </div>
+
+                    <div class="inv-photo-uploader-box" id="add_photo_uploader_box">
+                        <!-- Hidden Real Form File Input (synchronized via DataTransfer) -->
+                        <input type="file" id="add_images_form_input" name="images[]" multiple style="display:none;">
+                        <!-- Hidden Picker File Input (resets each time so user can click + Add repeatedly) -->
+                        <input type="file" id="add_images_picker" accept="image/png,image/jpeg,image/webp,image/jpg" multiple style="display:none;" onchange="handleNewAddImages(this)">
+
+                        <div class="inv-photo-top-bar">
+                            <button type="button" class="btn-choose-photos" id="btn_add_photos" onclick="document.getElementById('add_images_picker').click()">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <span>+ Add Photos</span>
+                            </button>
+                            <span class="inv-photo-hint">Click "+ Add Photos" or any empty slot to add 1 to 5 images. Slot 1 is the cover photo.</span>
+                        </div>
+
+                        <!-- 5 Visual Slots Grid -->
+                        <div class="inv-slots-grid" id="add_slots_grid">
+                            <!-- Slots rendered dynamically via renderAddSlots() -->
+                        </div>
+
+                        <div id="add_img_error" style="display:none;margin-top:10px;padding:8px 12px;border-radius:6px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:600;">
+                            ⚠️ Please add at least 1 photo for this material (minimum 1, maximum 5 photos required).
                         </div>
                     </div>
-                    <div class="inv-thumbs-grid" id="add_thumbs_preview" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="add_name">Item / Material Name *</label>
                     <input id="add_name" name="name" type="text" required placeholder="e.g. Reclaimed Timber Planks, Heavy Duty Pallets">
+                </div>
+
+                <div class="form-group">
+                    <label for="add_description">Description / Material Specifications *</label>
+                    <textarea id="add_description" name="description" rows="2" required placeholder="e.g. Clean reclaimed timber planks, kiln-dried, free of nails, suitable for secondary manufacturing or carpentry."></textarea>
                 </div>
 
                 <div class="form-row-2">
@@ -427,19 +527,22 @@ $activeNav = 'inventory';
                     </label>
                     <div class="reusability-toggle-grid">
                         <label class="reusability-toggle-card">
-                            <input type="radio" name="reusability" value="reusable" checked>
+                            <input type="radio" name="reusability" value="reusable" checked onchange="toggleReusabilityNotice('add', this.value)">
                             <div class="toggle-card-content">
                                 <span class="toggle-title" style="color:#15803d;">↻ Reusable Material</span>
-                                <span class="toggle-desc">Durable, multi-use, exchangeable (pallets, crates, timber, containers)</span>
+                                <span class="toggle-desc">Durable, multi-use. Can be listed on the public marketplace for other businesses to buy, borrow, or take.</span>
                             </div>
                         </label>
                         <label class="reusability-toggle-card">
-                            <input type="radio" name="reusability" value="not_reusable">
+                            <input type="radio" name="reusability" value="not_reusable" onchange="toggleReusabilityNotice('add', this.value)">
                             <div class="toggle-card-content">
                                 <span class="toggle-title" style="color:#475569;">⊘ Not Reusable (Scrap)</span>
-                                <span class="toggle-desc">Single-use cutoffs, trimmings, non-reusable recyclable byproduct</span>
+                                <span class="toggle-desc">Single-use cutoffs / scrap. Saved in your owner account only (will NOT appear or be listed on the marketplace).</span>
                             </div>
                         </label>
+                    </div>
+                    <div id="add_reusability_scrap_notice" style="display:none;margin-top:8px;padding:9px 12px;border-radius:6px;background:#fef7f6;border:1px solid #fecaca;color:#991b1b;font-size:12px;line-height:1.4;">
+                        🔒 <strong>Owner Account Only:</strong> Not-reusable materials remain saved in your account for internal tracking. They cannot be listed on the public marketplace for other businesses.
                     </div>
                 </div>
 
@@ -482,26 +585,41 @@ $activeNav = 'inventory';
             <?= csrf_field() ?>
             <?= method_field('PUT') ?>
             <div class="modal-body">
-                <!-- Update Photos -->
+                <!-- Update Photos with Explicit Add Button & Slots -->
                 <div class="form-group">
-                    <label style="display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;color:#18422d;">Update Photos (1 to 5 Images - Optional)</span>
-                        <small style="color:#617769;font-weight:500;" id="edit_img_notice">Leave empty to keep current photos</small>
-                    </label>
-                    <div class="inv-image-dropzone" onclick="document.getElementById('edit_images_input').click()">
-                        <input type="file" id="edit_images_input" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="previewEditInventoryImages(this)">
-                        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22543d" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <span style="font-size:12px;font-weight:700;color:#18422d;">Click to upload new photos</span>
-                            <small style="font-size:10px;color:#617769;">Replacing uploads will update your primary cover image.</small>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <label style="margin:0;font-weight:700;color:#18422d;">
+                            Update Material Photos <small style="font-weight:500;color:#556c5e;">(1 to 5 images - Optional)</small>
+                        </label>
+                        <span id="edit_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">Leave empty to keep current photos</span>
+                    </div>
+
+                    <div class="inv-photo-uploader-box" id="edit_photo_uploader_box">
+                        <input type="file" id="edit_images_form_input" name="images[]" multiple style="display:none;">
+                        <input type="file" id="edit_images_picker" accept="image/png,image/jpeg,image/webp,image/jpg" multiple style="display:none;" onchange="handleNewEditImages(this)">
+
+                        <div class="inv-photo-top-bar">
+                            <button type="button" class="btn-choose-photos" id="btn_edit_photos" onclick="document.getElementById('edit_images_picker').click()">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <span>+ Add / Replace Photos</span>
+                            </button>
+                            <span class="inv-photo-hint">Upload new photos (up to 5) to replace current photos. Slot 1 is cover photo.</span>
+                        </div>
+
+                        <div class="inv-slots-grid" id="edit_slots_grid">
+                            <!-- Slots rendered dynamically -->
                         </div>
                     </div>
-                    <div class="inv-thumbs-grid" id="edit_thumbs_preview" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="edit_name">Item / Material Name *</label>
                     <input id="edit_name" name="name" type="text" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_description">Description / Material Specifications</label>
+                    <textarea id="edit_description" name="description" rows="2" placeholder="e.g. Detailed material specifications, condition, and handling notes."></textarea>
                 </div>
                 <div class="form-row-2">
                     <div class="form-group">
@@ -695,24 +813,16 @@ $activeNav = 'inventory';
                     </div>
                 </div>
 
-                <!-- Reusability Classification -->
+                <!-- Reusability Classification: Strictly Reusable for Marketplace -->
+                <input type="hidden" name="reusability" value="reusable">
                 <div class="form-group">
-                    <label>Reusability Classification *</label>
-                    <div class="reusability-toggle-grid">
-                        <label class="reusability-toggle-card">
-                            <input type="radio" name="reusability" id="lm_reusability_reusable" value="reusable" checked>
-                            <div class="toggle-card-content">
-                                <span class="toggle-title" style="color:#15803d;">↻ Reusable</span>
-                                <span class="toggle-desc">Circular, multi-use, durable</span>
-                            </div>
-                        </label>
-                        <label class="reusability-toggle-card">
-                            <input type="radio" name="reusability" id="lm_reusability_not_reusable" value="not_reusable">
-                            <div class="toggle-card-content">
-                                <span class="toggle-title" style="color:#475569;">⊘ Not Reusable</span>
-                                <span class="toggle-desc">Single-use scrap / offcut</span>
-                            </div>
-                        </label>
+                    <label>Reusability Classification</label>
+                    <div style="padding:10px 14px;border-radius:8px;background:#f0f7ef;border:1.5px solid #b8dab4;display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:18px;color:#15803d;">↻</span>
+                        <div>
+                            <strong style="display:block;font-size:13px;color:#15803d;">Reusable Circular Material</strong>
+                            <small style="color:#526b5a;font-size:11px;">Only reusable materials can be listed on the public marketplace for other businesses.</small>
+                        </div>
                     </div>
                 </div>
 
@@ -748,15 +858,153 @@ $activeNav = 'inventory';
 </div>
 
 <script>
+// DataTransfer stores for Add and Edit Modals
+var addPhotosTransfer = new DataTransfer();
+var editPhotosTransfer = new DataTransfer();
+
+function toggleReusabilityNotice(prefix, val) {
+    var notice = document.getElementById(prefix + '_reusability_scrap_notice');
+    if (notice) {
+        notice.style.display = val === 'not_reusable' ? 'block' : 'none';
+    }
+}
+
 function openAddModal() {
+    addPhotosTransfer = new DataTransfer();
+    renderAddSlots();
     document.getElementById('add-modal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
+
 function closeAddModal() {
     document.getElementById('add-modal').style.display = 'none';
     document.body.style.overflow = '';
 }
-function openEditModal(id, name, sku, category, unit, threshold, notes, reusability) {
+
+function renderAddSlots() {
+    var grid = document.getElementById('add_slots_grid');
+    var counter = document.getElementById('add_img_counter');
+    var btn = document.getElementById('btn_add_photos');
+    var err = document.getElementById('add_img_error');
+    if (err) err.style.display = 'none';
+
+    var files = addPhotosTransfer.files;
+    var count = files.length;
+    if (counter) {
+        counter.textContent = count + ' of 5 selected' + (count === 0 ? ' (At least 1 required)' : '');
+        counter.style.color = count >= 1 ? '#18422d' : '#b91c1c';
+    }
+
+    var formInput = document.getElementById('add_images_form_input');
+    if (formInput) {
+        formInput.files = addPhotosTransfer.files;
+    }
+
+    if (btn) {
+        btn.disabled = count >= 5;
+        btn.style.opacity = count >= 5 ? '0.5' : '1';
+        btn.style.cursor = count >= 5 ? 'not-allowed' : 'pointer';
+    }
+
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    for (var i = 0; i < count; i++) {
+        (function(index) {
+            var file = files[index];
+            var card = document.createElement('div');
+            card.className = 'inv-slot-card';
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
+                    (index === 0 ? '<span class="inv-slot-cover-badge">Cover Photo</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (index + 1) + '</span>') +
+                    '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeAddPhoto(' + index + ')">✕</button>';
+            };
+            reader.readAsDataURL(file);
+            grid.appendChild(card);
+        })(i);
+    }
+
+    if (count < 5) {
+        var addSlot = document.createElement('div');
+        addSlot.className = 'inv-slot-card empty-slot';
+        addSlot.title = 'Click to add more photos';
+        addSlot.onclick = function() {
+            document.getElementById('add_images_picker').click();
+        };
+        addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
+        grid.appendChild(addSlot);
+
+        for (var j = count + 1; j < 5; j++) {
+            var emptySlot = document.createElement('div');
+            emptySlot.className = 'inv-slot-card empty-slot';
+            emptySlot.style.opacity = '0.45';
+            emptySlot.style.cursor = 'pointer';
+            emptySlot.title = 'Empty slot ' + (j + 1) + ' (click to add)';
+            emptySlot.onclick = function() {
+                document.getElementById('add_images_picker').click();
+            };
+            emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (j + 1) + '</span>';
+            grid.appendChild(emptySlot);
+        }
+    }
+}
+
+function handleNewAddImages(picker) {
+    if (!picker.files || picker.files.length === 0) return;
+
+    var newFiles = picker.files;
+    for (var i = 0; i < newFiles.length; i++) {
+        if (addPhotosTransfer.files.length >= 5) {
+            alert('Maximum 5 photos allowed for 1 item. Additional photos were not added.');
+            break;
+        }
+        var file = newFiles[i];
+        if (!file.type.match('image.*')) {
+            alert('File "' + file.name + '" is not a valid image.');
+            continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File "' + file.name + '" exceeds the 5MB size limit.');
+            continue;
+        }
+        addPhotosTransfer.items.add(file);
+    }
+
+    picker.value = '';
+    renderAddSlots();
+}
+
+function removeAddPhoto(indexToRemove) {
+    var newTransfer = new DataTransfer();
+    var files = addPhotosTransfer.files;
+    for (var i = 0; i < files.length; i++) {
+        if (i !== indexToRemove) {
+            newTransfer.items.add(files[i]);
+        }
+    }
+    addPhotosTransfer = newTransfer;
+    renderAddSlots();
+}
+
+function validateInventoryAddForm(form) {
+    if (addPhotosTransfer.files.length < 1) {
+        var err = document.getElementById('add_img_error');
+        if (err) err.style.display = 'block';
+        var box = document.getElementById('add_photo_uploader_box');
+        if (box) {
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            box.style.borderColor = '#dc2626';
+        }
+        alert('Please add at least 1 image for this material (minimum 1, maximum 5 photos required).');
+        return false;
+    }
+    return true;
+}
+
+// Edit Modal Functions
+function openEditModal(id, name, sku, category, unit, threshold, notes, reusability, description) {
     document.getElementById('edit-form').action = '/business/inventory/' + id;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_sku').value = sku;
@@ -764,6 +1012,9 @@ function openEditModal(id, name, sku, category, unit, threshold, notes, reusabil
     document.getElementById('edit_unit').value = unit;
     document.getElementById('edit_threshold').value = threshold;
     document.getElementById('edit_notes').value = notes;
+    if (document.getElementById('edit_description')) {
+        document.getElementById('edit_description').value = description || '';
+    }
     if (reusability === 'not_reusable') {
         var el = document.getElementById('edit_reusability_not_reusable');
         if (el) el.checked = true;
@@ -771,13 +1022,119 @@ function openEditModal(id, name, sku, category, unit, threshold, notes, reusabil
         var el2 = document.getElementById('edit_reusability_reusable');
         if (el2) el2.checked = true;
     }
+    editPhotosTransfer = new DataTransfer();
+    renderEditSlots();
     document.getElementById('edit-modal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
+
 function closeEditModal() {
     document.getElementById('edit-modal').style.display = 'none';
     document.body.style.overflow = '';
 }
+
+function renderEditSlots() {
+    var grid = document.getElementById('edit_slots_grid');
+    var counter = document.getElementById('edit_img_counter');
+    var btn = document.getElementById('btn_edit_photos');
+    var files = editPhotosTransfer.files;
+    var count = files.length;
+
+    if (counter) {
+        counter.textContent = count === 0 ? 'Leave empty to keep current photos' : count + ' of 5 new photos selected';
+    }
+
+    var formInput = document.getElementById('edit_images_form_input');
+    if (formInput) {
+        formInput.files = editPhotosTransfer.files;
+    }
+
+    if (btn) {
+        btn.disabled = count >= 5;
+        btn.style.opacity = count >= 5 ? '0.5' : '1';
+    }
+
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    for (var i = 0; i < count; i++) {
+        (function(index) {
+            var file = files[index];
+            var card = document.createElement('div');
+            card.className = 'inv-slot-card';
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
+                    (index === 0 ? '<span class="inv-slot-cover-badge">New Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (index + 1) + '</span>') +
+                    '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeEditPhoto(' + index + ')">✕</button>';
+            };
+            reader.readAsDataURL(file);
+            grid.appendChild(card);
+        })(i);
+    }
+
+    if (count < 5) {
+        var addSlot = document.createElement('div');
+        addSlot.className = 'inv-slot-card empty-slot';
+        addSlot.title = 'Click to add more photos';
+        addSlot.onclick = function() {
+            document.getElementById('edit_images_picker').click();
+        };
+        addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
+        grid.appendChild(addSlot);
+
+        for (var j = count + 1; j < 5; j++) {
+            var emptySlot = document.createElement('div');
+            emptySlot.className = 'inv-slot-card empty-slot';
+            emptySlot.style.opacity = '0.45';
+            emptySlot.style.cursor = 'pointer';
+            emptySlot.onclick = function() {
+                document.getElementById('edit_images_picker').click();
+            };
+            emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (j + 1) + '</span>';
+            grid.appendChild(emptySlot);
+        }
+    }
+}
+
+function handleNewEditImages(picker) {
+    if (!picker.files || picker.files.length === 0) return;
+
+    var newFiles = picker.files;
+    for (var i = 0; i < newFiles.length; i++) {
+        if (editPhotosTransfer.files.length >= 5) {
+            alert('Maximum 5 photos allowed.');
+            break;
+        }
+        var file = newFiles[i];
+        if (!file.type.match('image.*')) {
+            alert('File "' + file.name + '" is not an image.');
+            continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File "' + file.name + '" exceeds the 5MB size limit.');
+            continue;
+        }
+        editPhotosTransfer.items.add(file);
+    }
+
+    picker.value = '';
+    renderEditSlots();
+}
+
+function removeEditPhoto(indexToRemove) {
+    var newTransfer = new DataTransfer();
+    var files = editPhotosTransfer.files;
+    for (var i = 0; i < files.length; i++) {
+        if (i !== indexToRemove) {
+            newTransfer.items.add(files[i]);
+        }
+    }
+    editPhotosTransfer = newTransfer;
+    renderEditSlots();
+}
+
 function openAdjustModal(id, name, unit, currentQty, defaultType) {
     document.getElementById('adjust-form').action = '/business/inventory/' + id + '/adjust';
     document.getElementById('adjust-item-name').textContent = name;
@@ -787,11 +1144,17 @@ function openAdjustModal(id, name, unit, currentQty, defaultType) {
     document.getElementById('adjust-modal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
+
 function closeAdjustModal() {
     document.getElementById('adjust-modal').style.display = 'none';
     document.body.style.overflow = '';
 }
+
 function openListMarketModal(id, name, category, unit, quantity, reusability) {
+    if (reusability === 'not_reusable') {
+        alert('This material is classified as Not Reusable (Scrap). Per platform policy, only reusable circular materials can be listed on the public marketplace. This item remains saved in your owner account.');
+        return;
+    }
     document.getElementById('lm_inventory_item_id').value = id;
     document.getElementById('lm_source_name').textContent = name;
     document.getElementById('lm_source_stock').textContent = quantity + ' ' + unit;
@@ -799,23 +1162,18 @@ function openListMarketModal(id, name, category, unit, quantity, reusability) {
     document.getElementById('lm_category').value = category;
     document.getElementById('lm_unit').value = unit;
     document.getElementById('lm_quantity').value = quantity;
-    if (reusability === 'not_reusable') {
-        var el = document.getElementById('lm_reusability_not_reusable');
-        if (el) el.checked = true;
-    } else {
-        var el2 = document.getElementById('lm_reusability_reusable');
-        if (el2) el2.checked = true;
-    }
     var buyRadio = document.getElementById('lm_type_buy');
     if (buyRadio) buyRadio.checked = true;
     handleListingTypeChange('buy', 'lm');
     document.getElementById('list-market-modal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
+
 function closeListMarketModal() {
     document.getElementById('list-market-modal').style.display = 'none';
     document.body.style.overflow = '';
 }
+
 function handleListingTypeChange(type, prefix) {
     var priceGroup = document.getElementById(prefix + '_price_group');
     var priceInput = document.getElementById(prefix + '_price');
@@ -841,88 +1199,20 @@ function handleListingTypeChange(type, prefix) {
     }
 }
 
-// Image Preview Helper for Add Modal
-function previewAddInventoryImages(input) {
-    var preview = document.getElementById('add_thumbs_preview');
-    var notice = document.getElementById('add_img_notice');
-    preview.innerHTML = '';
-
-    if (!input.files || input.files.length === 0) {
-        preview.style.display = 'none';
-        notice.textContent = '0 of 5 selected';
-        return;
-    }
-
-    if (input.files.length > 5) {
-        alert('You can select a maximum of 5 images. Only the first 5 will be uploaded.');
-    }
-
-    var count = Math.min(input.files.length, 5);
-    notice.textContent = count + ' of 5 selected';
-    preview.style.display = 'grid';
-
-    for (var i = 0; i < count; i++) {
-        (function(idx) {
-            var file = input.files[idx];
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var card = document.createElement('div');
-                card.className = 'inv-thumb-card';
-                card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
-                    (idx === 0 ? '<div class="inv-thumb-cover-tag">Cover</div>' : '');
-                preview.appendChild(card);
-            };
-            reader.readAsDataURL(file);
-        })(i);
-    }
-}
-
-// Image Preview Helper for Edit Modal
-function previewEditInventoryImages(input) {
-    var preview = document.getElementById('edit_thumbs_preview');
-    var notice = document.getElementById('edit_img_notice');
-    preview.innerHTML = '';
-
-    if (!input.files || input.files.length === 0) {
-        preview.style.display = 'none';
-        notice.textContent = 'Leave empty to keep current photos';
-        return;
-    }
-
-    var count = Math.min(input.files.length, 5);
-    notice.textContent = count + ' of 5 new images selected';
-    preview.style.display = 'grid';
-
-    for (var i = 0; i < count; i++) {
-        (function(idx) {
-            var file = input.files[idx];
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var card = document.createElement('div');
-                card.className = 'inv-thumb-card';
-                card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
-                    (idx === 0 ? '<div class="inv-thumb-cover-tag">Cover</div>' : '');
-                preview.appendChild(card);
-            };
-            reader.readAsDataURL(file);
-        })(i);
-    }
-}
-
-// Image Preview Helper for List on Marketplace Modal
 function previewInventoryListImages(input) {
     var preview = document.getElementById('lm-img-previews');
     var notice = document.getElementById('lm-img-notice');
+    if (!preview) return;
     preview.innerHTML = '';
 
     if (!input.files || input.files.length === 0) {
         preview.style.display = 'none';
-        notice.textContent = '0 of 5 selected (Inherits inventory photos by default)';
+        if (notice) notice.textContent = '0 of 5 selected (Inherits inventory photos by default)';
         return;
     }
 
     var count = Math.min(input.files.length, 5);
-    notice.textContent = count + ' of 5 images selected';
+    if (notice) notice.textContent = count + ' of 5 images selected';
     preview.style.display = 'grid';
 
     for (var i = 0; i < count; i++) {
@@ -931,15 +1221,20 @@ function previewInventoryListImages(input) {
             var reader = new FileReader();
             reader.onload = function(e) {
                 var card = document.createElement('div');
-                card.className = 'inv-thumb-card';
+                card.className = 'inv-slot-card';
                 card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
-                    (idx === 0 ? '<div class="inv-thumb-cover-tag">Cover</div>' : '');
+                    (idx === 0 ? '<span class="inv-slot-cover-badge">Cover</span>' : '');
                 preview.appendChild(card);
             };
             reader.readAsDataURL(file);
         })(i);
     }
 }
+
+// Initial slot render
+document.addEventListener('DOMContentLoaded', function() {
+    renderAddSlots();
+});
 </script>
 </body>
 </html>

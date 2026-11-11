@@ -43,6 +43,12 @@ class MarketplaceController extends Controller
 
         if ($myListingsOnly) {
             $query->where('business_id', $business->id);
+            if ($reusability !== '') {
+                $query->where('reusability', $reusability);
+            }
+        } else {
+            // Only reusable materials appear in the marketplace for other businesses
+            $query->where('reusability', 'reusable');
         }
 
         if ($search !== '') {
@@ -74,10 +80,6 @@ class MarketplaceController extends Controller
             }
         }
 
-        if ($reusability !== '') {
-            $query->where('reusability', $reusability);
-        }
-
         $listings = $query->latest()->get();
 
         // Get distinct categories and locations
@@ -95,9 +97,10 @@ class MarketplaceController extends Controller
             ->filter()
             ->values();
 
-        // User's inventory items for easy listing
+        // User's inventory items for easy listing (only reusable materials can be listed)
         $myInventoryItems = $business->inventoryItems()
             ->where('status', '!=', 'out_of_stock')
+            ->where('reusability', 'reusable')
             ->orderBy('name')
             ->get();
 
@@ -130,11 +133,13 @@ class MarketplaceController extends Controller
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'unit' => ['required', 'string', 'max:20'],
             'listing_type' => ['required', 'in:buy,borrow,free'],
-            'reusability' => ['required', 'in:reusable,not_reusable'],
+            'reusability' => ['required', 'in:reusable'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'condition' => ['nullable', 'string', 'max:40'],
             'images' => ['nullable', 'array', 'max:5'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ], [
+            'reusability.in' => 'Only reusable materials can be listed on the marketplace. Non-reusable items remain saved in your internal inventory only.',
         ]);
 
         $listingType = $validated['listing_type'];
@@ -160,11 +165,14 @@ class MarketplaceController extends Controller
             }
         }
 
-        // If inventory item is specified, ensure it belongs to the user
+        // If inventory item is specified, ensure it belongs to the user and is reusable
         $inventoryItemId = $validated['inventory_item_id'] ?? null;
         if ($inventoryItemId) {
             $item = InventoryItem::find($inventoryItemId);
             abort_unless($item && $item->business_id === $business->id, 403);
+            if ($item->reusability === 'not_reusable') {
+                return back()->with('error', 'This item is marked as Not Reusable (Scrap). Only reusable materials can be listed on the public marketplace.');
+            }
             if (empty($uploadedImages)) {
                 $uploadedImages = $item->getAllImages();
             }

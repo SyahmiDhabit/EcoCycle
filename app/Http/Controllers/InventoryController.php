@@ -71,6 +71,7 @@ class InventoryController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'sku' => ['nullable', 'string', 'max:100'],
             'category' => ['required', 'string', 'max:60'],
             'quantity' => ['required', 'numeric', 'min:0'],
@@ -78,8 +79,12 @@ class InventoryController extends Controller
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'images' => ['nullable', 'array', 'max:5'],
-            'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'images' => ['required', 'array', 'min:1', 'max:5'],
+            'images.*' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ], [
+            'images.required' => 'Please upload at least 1 photo for this inventory item (maximum 5).',
+            'images.min' => 'Please upload at least 1 photo for this inventory item (minimum 1, maximum 5).',
+            'images.max' => 'You can upload a maximum of 5 photos.',
         ]);
 
         // Process up to 5 uploaded images
@@ -115,6 +120,7 @@ class InventoryController extends Controller
             $item = InventoryItem::create([
                 'business_id' => $business->id,
                 'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
                 'sku' => $validated['sku'] ?? null,
                 'category' => $validated['category'],
                 'quantity' => $quantity,
@@ -163,6 +169,7 @@ class InventoryController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'sku' => ['nullable', 'string', 'max:100'],
             'category' => ['required', 'string', 'max:60'],
             'unit' => ['required', 'string', 'max:20'],
@@ -207,6 +214,7 @@ class InventoryController extends Controller
 
         $item->update([
             'name' => $validated['name'],
+            'description' => $validated['description'] ?? $item->description,
             'sku' => $validated['sku'] ?? null,
             'category' => $validated['category'],
             'unit' => $validated['unit'],

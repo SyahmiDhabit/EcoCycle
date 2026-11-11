@@ -513,6 +513,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             </select>
                         </div>
 
+                        <?php if ($myListingsOnly): ?>
                         <div class="filter-field">
                             <label for="mkt-reusability">Reusability</label>
                             <select id="mkt-reusability" name="reusability">
@@ -521,6 +522,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                 <option value="not_reusable" <?= request('reusability') === 'not_reusable' ? 'selected' : '' ?>>⊘ Not Reusable (Scrap)</option>
                             </select>
                         </div>
+                        <?php endif; ?>
 
                         <div class="filter-field">
                             <label for="mkt-loc">Location</label>
@@ -788,27 +790,16 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         </select>
                     </div>
 
-                    <!-- Reusability Classification with Segmented Cards -->
+                    <!-- Reusability Classification: Strictly Reusable on Marketplace -->
+                    <input type="hidden" name="reusability" value="reusable">
                     <div class="form-group">
-                        <label>
-                            <span>Reusability Classification *</span>
-                            <small style="color:#617769;font-weight:400;">Multi-use circular vs single-use scrap</small>
-                        </label>
-                        <div class="reusability-toggle-grid">
-                            <label class="reusability-toggle-card">
-                                <input type="radio" name="reusability" id="create_reusability_reusable" value="reusable" checked>
-                                <div class="toggle-card-content">
-                                    <span class="toggle-title" style="color:#15803d;">↻ Reusable</span>
-                                    <span class="toggle-desc">Durable, multi-use</span>
-                                </div>
-                            </label>
-                            <label class="reusability-toggle-card">
-                                <input type="radio" name="reusability" id="create_reusability_not_reusable" value="not_reusable">
-                                <div class="toggle-card-content">
-                                    <span class="toggle-title" style="color:#475569;">⊘ Not Reusable</span>
-                                    <span class="toggle-desc">Single-use scrap</span>
-                                </div>
-                            </label>
+                        <label>Reusability Classification</label>
+                        <div style="padding:10px 14px;border-radius:8px;background:#f0f7ef;border:1.5px solid #b8dab4;display:flex;align-items:center;gap:10px;">
+                            <span style="font-size:20px;color:#15803d;">↻</span>
+                            <div>
+                                <strong style="display:block;font-size:13px;color:#15803d;">Reusable Circular Material</strong>
+                                <small style="color:#526b5a;font-size:11px;">Public marketplace listings are strictly for reusable items. Non-reusable scrap items remain securely stored in your owner inventory account only.</small>
+                            </div>
                         </div>
                     </div>
 

@@ -773,48 +773,66 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         <input type="text" id="create_title" name="title" required placeholder="e.g. Surplus Clean Euro Pallets (Grade A)">
                     </div>
 
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                        <div class="form-group">
-                            <label for="create_category">Category *</label>
-                            <select id="create_category" name="category" required>
-                                <option value="Packaging & paper">Packaging & paper</option>
-                                <option value="Furniture & wood products">Furniture & wood products</option>
-                                <option value="Textiles & apparel">Textiles & apparel</option>
-                                <option value="Electronics & electrical">Electronics & electrical</option>
-                                <option value="Metal & fabrication">Metal & fabrication</option>
-                                <option value="Plastics & rubber">Plastics & rubber</option>
-                                <option value="Chemicals & lubricants">Chemicals & lubricants</option>
-                                <option value="Food & beverage organic">Food & beverage organic</option>
-                                <option value="Other">Other surplus material</option>
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label for="create_category">Category *</label>
+                        <select id="create_category" name="category" required>
+                            <option value="Packaging & paper">Packaging & paper</option>
+                            <option value="Furniture & wood products">Furniture & wood products</option>
+                            <option value="Textiles & apparel">Textiles & apparel</option>
+                            <option value="Electronics & electrical">Electronics & electrical</option>
+                            <option value="Metal & fabrication">Metal & fabrication</option>
+                            <option value="Plastics & rubber">Plastics & rubber</option>
+                            <option value="Chemicals & lubricants">Chemicals & lubricants</option>
+                            <option value="Food & beverage organic">Food & beverage organic</option>
+                            <option value="Other">Other surplus material</option>
+                        </select>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="create_reusability">Reusability Classification *</label>
-                            <select id="create_reusability" name="reusability" required>
-                                <option value="reusable">↻ Reusable (Multi-use & Circular)</option>
-                                <option value="not_reusable">⊘ Not Reusable (Single-use / Scrap)</option>
-                            </select>
+                    <!-- Reusability Classification with Segmented Cards -->
+                    <div class="form-group">
+                        <label>
+                            <span>Reusability Classification *</span>
+                            <small style="color:#617769;font-weight:400;">Multi-use circular vs single-use scrap</small>
+                        </label>
+                        <div class="reusability-toggle-grid">
+                            <label class="reusability-toggle-card">
+                                <input type="radio" name="reusability" id="create_reusability_reusable" value="reusable" checked>
+                                <div class="toggle-card-content">
+                                    <span class="toggle-title" style="color:#15803d;">↻ Reusable</span>
+                                    <span class="toggle-desc">Durable, multi-use</span>
+                                </div>
+                            </label>
+                            <label class="reusability-toggle-card">
+                                <input type="radio" name="reusability" id="create_reusability_not_reusable" value="not_reusable">
+                                <div class="toggle-card-content">
+                                    <span class="toggle-title" style="color:#475569;">⊘ Not Reusable</span>
+                                    <span class="toggle-desc">Single-use scrap</span>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
                     <!-- Listing Offer Type: Buy, Borrow, or Free -->
-                    <div class="form-group" style="background:#f8faf6;border:1px solid #e1e9df;border-radius:8px;padding:12px 14px;">
-                        <label style="font-size:12px;font-weight:700;color:#1c3d2a;margin-bottom:8px;display:block;">
-                            Listing Offer Option *
-                        </label>
-                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;background:#ffffff;border:1px solid #d4e0d2;padding:8px 10px;border-radius:6px;">
+                    <div class="form-group">
+                        <label>Listing Offer Option *</label>
+                        <div class="offer-toggle-grid">
+                            <label class="offer-toggle-card">
                                 <input type="radio" name="listing_type" value="buy" checked onchange="handleModalOfferChange('buy')">
-                                <span>🛒 Buy (Sell)</span>
+                                <span class="offer-icon">🛒</span>
+                                <span class="offer-label">Buy (Sell)</span>
+                                <span class="offer-sub">Set RM price</span>
                             </label>
-                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;background:#ffffff;border:1px solid #d4e0d2;padding:8px 10px;border-radius:6px;">
+                            <label class="offer-toggle-card">
                                 <input type="radio" name="listing_type" value="borrow" onchange="handleModalOfferChange('borrow')">
-                                <span>🤝 Borrow</span>
+                                <span class="offer-icon">🤝</span>
+                                <span class="offer-label">Borrow</span>
+                                <span class="offer-sub">Loan / deposit</span>
                             </label>
-                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;background:#ffffff;border:1px solid #d4e0d2;padding:8px 10px;border-radius:6px;">
+                            <label class="offer-toggle-card">
                                 <input type="radio" name="listing_type" value="free" onchange="handleModalOfferChange('free')">
-                                <span>🎁 Free Surplus</span>
+                                <span class="offer-icon">🎁</span>
+                                <span class="offer-label">Free Surplus</span>
+                                <span class="offer-sub">RM 0.00 Giveaway</span>
                             </label>
                         </div>
                     </div>
@@ -1052,7 +1070,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         if (opt.dataset.cat) document.getElementById('create_category').value = opt.dataset.cat;
         if (opt.dataset.qty) document.getElementById('create_quantity').value = opt.dataset.qty;
         if (opt.dataset.unit) document.getElementById('create_unit').value = opt.dataset.unit;
-        if (opt.dataset.reusability) document.getElementById('create_reusability').value = opt.dataset.reusability;
+        if (opt.dataset.reusability === 'not_reusable') {
+            var r1 = document.getElementById('create_reusability_not_reusable');
+            if (r1) r1.checked = true;
+        } else {
+            var r2 = document.getElementById('create_reusability_reusable');
+            if (r2) r2.checked = true;
+        }
     }
 
     // Quick View Modal

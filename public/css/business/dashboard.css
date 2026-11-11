@@ -1323,6 +1323,254 @@ h1, h2, h3, h4,
     background: #fbfdfa;
 }
 
+/* ---------------- MODAL FORM CONTROLS & INPUTS ---------------- */
+.modal-body .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 0;
+}
+
+.modal-body .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.modal-body .form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+}
+
+.modal-body label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #143823;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-body input[type="text"],
+.modal-body input[type="search"],
+.modal-body input[type="number"],
+.modal-body input[type="email"],
+.modal-body select,
+.modal-body textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #c8d9c6;
+    border-radius: 8px;
+    background-color: #ffffff;
+    font-family: var(--font-main);
+    font-size: 13.5px;
+    color: #123321;
+    line-height: 1.4;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    box-sizing: border-box;
+}
+
+.modal-body input[type="text"]:focus,
+.modal-body input[type="search"]:focus,
+.modal-body input[type="number"]:focus,
+.modal-body input[type="email"]:focus,
+.modal-body select:focus,
+.modal-body textarea:focus {
+    outline: none;
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 3.5px rgba(22, 62, 43, 0.12);
+    background-color: #ffffff;
+}
+
+.modal-body input::placeholder,
+.modal-body textarea::placeholder {
+    color: #92a496;
+    font-size: 13px;
+}
+
+.modal-body select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23345440' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 11px 7px;
+    padding-right: 36px;
+    cursor: pointer;
+}
+
+.modal-body textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.modal-body small {
+    font-size: 11.5px;
+    color: #556c5e;
+    line-height: 1.4;
+}
+
+.btn-save {
+    background: linear-gradient(180deg, #184b2e 0%, #123923 100%);
+    color: #ffffff;
+    border: 1px solid #0e2f1c;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font: 600 13px var(--font-main);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 5px rgba(18, 57, 35, 0.16);
+    transition: all 0.15s ease;
+}
+
+.btn-save:hover {
+    background: #0f2e1c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(18, 57, 35, 0.25);
+}
+
+.btn-save:active {
+    transform: translateY(0);
+}
+
+.btn-cancel {
+    background: #ffffff;
+    border: 1.5px solid #cadbc9;
+    color: #3b5344;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font: 600 13px var(--font-main);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-cancel:hover {
+    background: #f4f8f3;
+    border-color: #a8c4a6;
+    color: #143622;
+}
+
+/* ---------------- INTERACTIVE VISUAL TOGGLES (REUSABILITY & OFFER OPTIONS) ---------------- */
+.reusability-toggle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.reusability-toggle-card {
+    position: relative;
+    display: flex !important;
+    align-items: flex-start !important;
+    padding: 12px 14px;
+    border: 1.5px solid #cadbc9;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    gap: 10px;
+    box-sizing: border-box;
+}
+
+.reusability-toggle-card:hover {
+    border-color: #92b890;
+    background: #f8fbf7;
+}
+
+.reusability-toggle-card input[type="radio"] {
+    width: 16px !important;
+    height: 16px !important;
+    accent-color: var(--brand-green);
+    margin-top: 2px !important;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.reusability-toggle-card:has(input[type="radio"]:checked) {
+    border-color: var(--brand-green);
+    background: #eef6ec;
+    box-shadow: 0 0 0 1.5px var(--brand-green);
+}
+
+.toggle-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.toggle-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #123321;
+}
+
+.toggle-desc {
+    font-size: 11px;
+    color: #556c5e;
+    line-height: 1.35;
+    font-weight: 400;
+}
+
+/* Offer Type Selector Grid (Buy, Borrow, Free) */
+.offer-toggle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.offer-toggle-card {
+    position: relative;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 12px 10px;
+    border: 1.5px solid #cadbc9;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+    text-align: center;
+    align-items: center !important;
+    transition: all 0.18s ease;
+    gap: 4px;
+    box-sizing: border-box;
+}
+
+.offer-toggle-card:hover {
+    border-color: #92b890;
+    background: #f8fbf7;
+}
+
+.offer-toggle-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.offer-toggle-card:has(input[type="radio"]:checked) {
+    border-color: var(--brand-green);
+    background: #eef6ec;
+    box-shadow: 0 0 0 1.5px var(--brand-green);
+}
+
+.offer-toggle-card .offer-icon {
+    font-size: 18px;
+    margin-bottom: 2px;
+}
+
+.offer-toggle-card .offer-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #123321;
+}
+
+.offer-toggle-card .offer-sub {
+    font-size: 10.5px;
+    color: #617769;
+}
+
 /* ---------------- RESPONSIVE BREAKPOINTS ---------------- */
 @media (max-width: 1024px) {
     .filter-grid {

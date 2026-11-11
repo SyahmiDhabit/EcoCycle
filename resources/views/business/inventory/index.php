@@ -420,28 +420,40 @@ $activeNav = 'inventory';
                     </div>
                 </div>
 
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label for="add_reusability">Reusability Classification *</label>
-                        <select id="add_reusability" name="reusability" required>
-                            <option value="reusable" selected>↻ Reusable (Multi-use / circular / exchangeable)</option>
-                            <option value="not_reusable">⊘ Not Reusable (Single-use / non-reusable scrap)</option>
-                        </select>
-                        <small style="color:#6f7b72;font-size:11px;">Indicate whether this material can be reused or is single-use scrap.</small>
+                <div class="form-group">
+                    <label>
+                        <span>Reusability Classification *</span>
+                        <small style="color:#617769;font-weight:400;">Multi-use circular vs single-use scrap</small>
+                    </label>
+                    <div class="reusability-toggle-grid">
+                        <label class="reusability-toggle-card">
+                            <input type="radio" name="reusability" value="reusable" checked>
+                            <div class="toggle-card-content">
+                                <span class="toggle-title" style="color:#15803d;">↻ Reusable Material</span>
+                                <span class="toggle-desc">Durable, multi-use, exchangeable (pallets, crates, timber, containers)</span>
+                            </div>
+                        </label>
+                        <label class="reusability-toggle-card">
+                            <input type="radio" name="reusability" value="not_reusable">
+                            <div class="toggle-card-content">
+                                <span class="toggle-title" style="color:#475569;">⊘ Not Reusable (Scrap)</span>
+                                <span class="toggle-desc">Single-use cutoffs, trimmings, non-reusable recyclable byproduct</span>
+                            </div>
+                        </label>
                     </div>
+                </div>
+
+                <div class="form-row-3">
                     <div class="form-group">
                         <label for="add_quantity">Initial Quantity *</label>
                         <input id="add_quantity" name="quantity" type="number" step="0.01" min="0" required placeholder="e.g. 50">
                     </div>
-                </div>
-
-                <div class="form-row-2">
                     <div class="form-group">
                         <label for="add_unit">Unit of Measure *</label>
-                        <input id="add_unit" name="unit" type="text" required placeholder="e.g. kg, pcs, meters, boxes">
+                        <input id="add_unit" name="unit" type="text" required placeholder="e.g. kg, pcs, units">
                     </div>
                     <div class="form-group">
-                        <label for="add_threshold">Low Stock Alert Threshold (optional)</label>
+                        <label for="add_threshold">Alert Threshold</label>
                         <input id="add_threshold" name="minimum_threshold" type="number" step="0.01" min="0" placeholder="e.g. 10">
                     </div>
                 </div>
@@ -513,11 +525,23 @@ $activeNav = 'inventory';
                 </div>
 
                 <div class="form-group">
-                    <label for="edit_reusability">Reusability Classification *</label>
-                    <select id="edit_reusability" name="reusability" required>
-                        <option value="reusable">↻ Reusable (Multi-use / circular / exchangeable)</option>
-                        <option value="not_reusable">⊘ Not Reusable (Single-use / non-reusable scrap)</option>
-                    </select>
+                    <label>Reusability Classification *</label>
+                    <div class="reusability-toggle-grid">
+                        <label class="reusability-toggle-card">
+                            <input type="radio" name="reusability" id="edit_reusability_reusable" value="reusable">
+                            <div class="toggle-card-content">
+                                <span class="toggle-title" style="color:#15803d;">↻ Reusable</span>
+                                <span class="toggle-desc">Durable, multi-use, circular</span>
+                            </div>
+                        </label>
+                        <label class="reusability-toggle-card">
+                            <input type="radio" name="reusability" id="edit_reusability_not_reusable" value="not_reusable">
+                            <div class="toggle-card-content">
+                                <span class="toggle-title" style="color:#475569;">⊘ Not Reusable</span>
+                                <span class="toggle-desc">Single-use scrap / cutoffs</span>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="form-row-2">
@@ -646,22 +670,49 @@ $activeNav = 'inventory';
                     </div>
                 </div>
 
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label for="lm_listing_type">Listing Option (How to Offer) *</label>
-                        <select id="lm_listing_type" name="listing_type" required onchange="handleListingTypeChange(this.value, 'lm')">
-                            <option value="buy" selected>💰 Buy (For Sale with Price)</option>
-                            <option value="borrow">🔄 Borrow (Loan / Temporary Rental)</option>
-                            <option value="free">🎁 Take for Free (Free Giveaway)</option>
-                        </select>
+                <!-- Listing Option (Offer Type) with Segmented Cards -->
+                <div class="form-group">
+                    <label>Listing Offer Option *</label>
+                    <div class="offer-toggle-grid">
+                        <label class="offer-toggle-card">
+                            <input type="radio" name="listing_type" id="lm_type_buy" value="buy" checked onchange="handleListingTypeChange('buy', 'lm')">
+                            <span class="offer-icon">🛒</span>
+                            <span class="offer-label">Buy (Sell)</span>
+                            <span class="offer-sub">Set RM price</span>
+                        </label>
+                        <label class="offer-toggle-card">
+                            <input type="radio" name="listing_type" id="lm_type_borrow" value="borrow" onchange="handleListingTypeChange('borrow', 'lm')">
+                            <span class="offer-icon">🤝</span>
+                            <span class="offer-label">Borrow (Loan)</span>
+                            <span class="offer-sub">Deposit / rental</span>
+                        </label>
+                        <label class="offer-toggle-card">
+                            <input type="radio" name="listing_type" id="lm_type_free" value="free" onchange="handleListingTypeChange('free', 'lm')">
+                            <span class="offer-icon">🎁</span>
+                            <span class="offer-label">Take for Free</span>
+                            <span class="offer-sub">RM 0.00 Giveaway</span>
+                        </label>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="lm_reusability">Reusability Classification *</label>
-                        <select id="lm_reusability" name="reusability" required>
-                            <option value="reusable">↻ Reusable</option>
-                            <option value="not_reusable">⊘ Not Reusable</option>
-                        </select>
+                <!-- Reusability Classification -->
+                <div class="form-group">
+                    <label>Reusability Classification *</label>
+                    <div class="reusability-toggle-grid">
+                        <label class="reusability-toggle-card">
+                            <input type="radio" name="reusability" id="lm_reusability_reusable" value="reusable" checked>
+                            <div class="toggle-card-content">
+                                <span class="toggle-title" style="color:#15803d;">↻ Reusable</span>
+                                <span class="toggle-desc">Circular, multi-use, durable</span>
+                            </div>
+                        </label>
+                        <label class="reusability-toggle-card">
+                            <input type="radio" name="reusability" id="lm_reusability_not_reusable" value="not_reusable">
+                            <div class="toggle-card-content">
+                                <span class="toggle-title" style="color:#475569;">⊘ Not Reusable</span>
+                                <span class="toggle-desc">Single-use scrap / offcut</span>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
@@ -713,8 +764,12 @@ function openEditModal(id, name, sku, category, unit, threshold, notes, reusabil
     document.getElementById('edit_unit').value = unit;
     document.getElementById('edit_threshold').value = threshold;
     document.getElementById('edit_notes').value = notes;
-    if (document.getElementById('edit_reusability')) {
-        document.getElementById('edit_reusability').value = reusability || 'reusable';
+    if (reusability === 'not_reusable') {
+        var el = document.getElementById('edit_reusability_not_reusable');
+        if (el) el.checked = true;
+    } else {
+        var el2 = document.getElementById('edit_reusability_reusable');
+        if (el2) el2.checked = true;
     }
     document.getElementById('edit-modal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -744,8 +799,15 @@ function openListMarketModal(id, name, category, unit, quantity, reusability) {
     document.getElementById('lm_category').value = category;
     document.getElementById('lm_unit').value = unit;
     document.getElementById('lm_quantity').value = quantity;
-    document.getElementById('lm_reusability').value = reusability || 'reusable';
-    document.getElementById('lm_listing_type').value = 'buy';
+    if (reusability === 'not_reusable') {
+        var el = document.getElementById('lm_reusability_not_reusable');
+        if (el) el.checked = true;
+    } else {
+        var el2 = document.getElementById('lm_reusability_reusable');
+        if (el2) el2.checked = true;
+    }
+    var buyRadio = document.getElementById('lm_type_buy');
+    if (buyRadio) buyRadio.checked = true;
     handleListingTypeChange('buy', 'lm');
     document.getElementById('list-market-modal').style.display = 'flex';
     document.body.style.overflow = 'hidden';

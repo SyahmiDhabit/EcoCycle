@@ -268,6 +268,42 @@ $activeNav = 'inventory';
         }
         .modal-dialog-large {
             width: min(640px, 96vw) !important;
+            max-height: calc(100vh - 40px) !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .modal-dialog > form {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+        }
+        .modal-dialog .modal-body {
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: 100% !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-dialog .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-dialog .modal-body::-webkit-scrollbar-track {
+            background: #f4f8f3;
+            border-radius: 4px;
+        }
+        .modal-dialog .modal-body::-webkit-scrollbar-thumb {
+            background: #a3c9a8;
+            border-radius: 4px;
+        }
+        .modal-dialog .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #18422d;
+        }
+        .modal-dialog .modal-header,
+        .modal-dialog .modal-footer {
+            flex-shrink: 0 !important;
         }
     </style>
 </head>
@@ -458,7 +494,7 @@ $activeNav = 'inventory';
                 <div class="form-group">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                         <label style="margin:0;font-weight:700;color:#18422d;">
-                            Material Photos * <small style="font-weight:500;color:#556c5e;">(Minimum 1, Maximum 5 photos)</small>
+                            Material Photos <span style="color:#b91c1c;">*</span> <small style="font-weight:500;color:#556c5e;">(Min 1, Max 5 photos)</small>
                         </label>
                         <span id="add_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">0 of 5 selected (Min 1 required)</span>
                     </div>
@@ -872,7 +908,10 @@ function toggleReusabilityNotice(prefix, val) {
 function openAddModal() {
     addPhotosTransfer = new DataTransfer();
     renderAddSlots();
-    document.getElementById('add-modal').style.display = 'flex';
+    var modal = document.getElementById('add-modal');
+    modal.style.display = 'flex';
+    var body = modal.querySelector('.modal-body');
+    if (body) body.scrollTop = 0;
     document.body.style.overflow = 'hidden';
 }
 
@@ -1024,7 +1063,10 @@ function openEditModal(id, name, sku, category, unit, threshold, notes, reusabil
     }
     editPhotosTransfer = new DataTransfer();
     renderEditSlots();
-    document.getElementById('edit-modal').style.display = 'flex';
+    var modal = document.getElementById('edit-modal');
+    modal.style.display = 'flex';
+    var body = modal.querySelector('.modal-body');
+    if (body) body.scrollTop = 0;
     document.body.style.overflow = 'hidden';
 }
 
@@ -1141,7 +1183,10 @@ function openAdjustModal(id, name, unit, currentQty, defaultType) {
     document.getElementById('adjust-current-stock').textContent = currentQty + ' ' + unit;
     document.getElementById('adjust_type').value = defaultType || 'stock_in';
     document.getElementById('adjust-modal-title').textContent = defaultType === 'stock_out' ? 'Stock Out (-)' : 'Stock In (+)';
-    document.getElementById('adjust-modal').style.display = 'flex';
+    var modal = document.getElementById('adjust-modal');
+    modal.style.display = 'flex';
+    var body = modal.querySelector('.modal-body');
+    if (body) body.scrollTop = 0;
     document.body.style.overflow = 'hidden';
 }
 
@@ -1165,7 +1210,10 @@ function openListMarketModal(id, name, category, unit, quantity, reusability) {
     var buyRadio = document.getElementById('lm_type_buy');
     if (buyRadio) buyRadio.checked = true;
     handleListingTypeChange('buy', 'lm');
-    document.getElementById('list-market-modal').style.display = 'flex';
+    var modal = document.getElementById('list-market-modal');
+    modal.style.display = 'flex';
+    var body = modal.querySelector('.modal-body');
+    if (body) body.scrollTop = 0;
     document.body.style.overflow = 'hidden';
 }
 

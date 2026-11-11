@@ -43,9 +43,6 @@ class MarketplaceController extends Controller
 
         if ($myListingsOnly) {
             $query->where('business_id', $business->id);
-            if ($reusability !== '') {
-                $query->where('reusability', $reusability);
-            }
         } else {
             // Only reusable materials appear in the marketplace for other businesses
             $query->where('reusability', 'reusable');
@@ -78,6 +75,10 @@ class MarketplaceController extends Controller
             } else {
                 $query->where('listing_type', $listingType);
             }
+        }
+
+        if ($reusability !== '') {
+            $query->where('reusability', $reusability);
         }
 
         $listings = $query->latest()->get();

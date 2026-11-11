@@ -421,6 +421,47 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 grid-template-columns: repeat(3, 1fr);
             }
         }
+
+        .modal-card {
+            width: min(640px, 96vw) !important;
+            max-height: calc(100vh - 40px) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+        .modal-card > form {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+        }
+        .modal-card .modal-body {
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: 100% !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-card .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-card .modal-body::-webkit-scrollbar-track {
+            background: #f4f8f3;
+            border-radius: 4px;
+        }
+        .modal-card .modal-body::-webkit-scrollbar-thumb {
+            background: #a3c9a8;
+            border-radius: 4px;
+        }
+        .modal-card .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #18422d;
+        }
+        .modal-card .modal-header,
+        .modal-card .modal-footer {
+            flex-shrink: 0 !important;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -1024,10 +1065,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
     }
 
     function openCreateListingModal() {
-        document.getElementById('create-listing-modal').style.display = 'flex';
+        var modal = document.getElementById('create-listing-modal');
+        modal.style.display = 'flex';
+        var body = modal.querySelector('.modal-body');
+        if (body) body.scrollTop = 0;
+        document.body.style.overflow = 'hidden';
     }
     function closeCreateListingModal() {
         document.getElementById('create-listing-modal').style.display = 'none';
+        document.body.style.overflow = '';
     }
 
     function handleModalOfferChange(type) {
@@ -1145,11 +1191,16 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         var actionBtn = document.getElementById('modal-detail-action-btn');
         actionBtn.textContent = type === 'free' ? '🎁 Claim Free Material' : (type === 'borrow' ? '🤝 Request to Borrow' : 'Inquire to Buy &rarr;');
 
-        document.getElementById('listing-detail-modal').style.display = 'flex';
+        var modal = document.getElementById('listing-detail-modal');
+        modal.style.display = 'flex';
+        var body = modal.querySelector('.modal-body');
+        if (body) body.scrollTop = 0;
+        document.body.style.overflow = 'hidden';
     }
 
     function closeListingDetailModal() {
         document.getElementById('listing-detail-modal').style.display = 'none';
+        document.body.style.overflow = '';
     }
 
     function executeClaimFromModal() {

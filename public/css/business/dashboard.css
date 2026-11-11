@@ -1206,7 +1206,8 @@ h1, h2, h3, h4,
 }
 
 /* ---------------- MODALS & POPUPS ---------------- */
-.modal-backdrop {
+.modal-backdrop,
+.modal-overlay {
     position: fixed;
     inset: 0;
     z-index: 1000;
@@ -1215,12 +1216,15 @@ h1, h2, h3, h4,
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    padding: 20px 16px;
+    overflow-y: auto;
 }
 
-.modal-dialog {
+.modal-dialog,
+.modal-card {
     width: min(580px, 96vw);
-    max-height: 90vh;
+    max-height: calc(100vh - 40px);
+    height: auto;
     display: flex;
     flex-direction: column;
     border-radius: 12px;
@@ -1228,6 +1232,20 @@ h1, h2, h3, h4,
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
     overflow: hidden;
     animation: modalPop 0.18s ease-out;
+    margin: auto;
+}
+
+/* Ensure forms inside modals are flex containers and enable scrolling in modal-body */
+.modal-dialog > form,
+.modal-card > form,
+.modal-dialog form,
+.modal-card form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    margin: 0;
 }
 
 @keyframes modalPop {
@@ -1248,6 +1266,7 @@ h1, h2, h3, h4,
     justify-content: space-between;
     border-bottom: 1px solid #e5ede3;
     background: #fbfdfa;
+    flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -1270,6 +1289,7 @@ h1, h2, h3, h4,
     display: grid;
     place-items: center;
     transition: all 0.15s;
+    flex-shrink: 0;
 }
 
 .modal-close-btn:hover {
@@ -1279,12 +1299,33 @@ h1, h2, h3, h4,
 
 .modal-body {
     padding: 24px;
-    overflow-y: auto;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
     display: flex;
     flex-direction: column;
     gap: 18px;
     font-size: 13px;
     line-height: 1.5;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Polished visible scrollbar */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-body::-webkit-scrollbar-track {
+    background: #f4f8f3;
+    border-radius: 4px;
+}
+.modal-body::-webkit-scrollbar-thumb {
+    background: #a3c9a8;
+    border-radius: 4px;
+}
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #18422d;
 }
 
 .modal-detail-grid {
@@ -1321,6 +1362,7 @@ h1, h2, h3, h4,
     gap: 12px;
     border-top: 1px solid #e5ede3;
     background: #fbfdfa;
+    flex-shrink: 0;
 }
 
 /* ---------------- MODAL FORM CONTROLS & INPUTS ---------------- */

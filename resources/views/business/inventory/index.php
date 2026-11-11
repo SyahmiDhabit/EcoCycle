@@ -166,10 +166,9 @@ $activeNav = 'inventory';
         <div class="dashboard-alert error" role="alert"><?= e($errors->first()) ?></div>
     <?php endif; ?>
 
-    <div class="dashboard-title">
+    <div class="page-header">
         <div>
-            <p class="eyebrow">RAW MATERIALS &amp; CATALOG</p>
-            <h1>Inventory Management</h1>
+            <h1>Inventory management</h1>
             <p>Track materials, maintain safety thresholds, and record stock movements.</p>
         </div>
         <button type="button" class="btn-add-primary" onclick="openAddModal()">+ Add New Item</button>

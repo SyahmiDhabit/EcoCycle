@@ -113,15 +113,15 @@ $activeNav = 'marketplace';
                 <span class="current">Marketplace</span>
             </div>
 
-            <!-- Hero Banner -->
-            <div class="marketplace-hero-banner">
-                <div class="marketplace-hero-text">
-                    <h1>Surplus Materials Marketplace</h1>
+            <!-- Page Title -->
+            <div class="page-header">
+                <div>
+                    <h1>Surplus materials marketplace</h1>
                     <p>Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. Browse all listings across the country or filter by category.</p>
                 </div>
                 <div>
-                    <a href="/business" class="btn-search" style="text-decoration:none;background:#ffffff;color:#163e2b;font-weight:700;">
-                        <span>&larr; Back to Overview</span>
+                    <a href="/business" class="btn-back-directory">
+                        <span>&larr; Back to Directory</span>
                     </a>
                 </div>
             </div>

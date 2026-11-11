@@ -51,33 +51,21 @@ $hasFormErrors = $errors->any();
             <div class="breadcrumb-row">
                 <a href="/business">Overview</a>
                 <span class="sep">/</span>
-                <span class="current">Business Profile &amp; Verification</span>
+                <span class="current">Business Profile</span>
+            </div>
+
+            <!-- Page Title Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Business profile</h1>
+                    <p>Manage your company details, SSM verification documents, and platform account status.</p>
+                </div>
+                <div>
+                    <span class="status-pill <?= e($statusClass) ?>" style="font-size:12px;padding:6px 14px;font-weight:600;"><?= e($statusLabel) ?></span>
+                </div>
             </div>
 
             <div class="verification-content-wrapper">
-                <section class="verification-intro">
-                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-                        <div>
-                            <p class="application-id">@<?= e($business->name) ?></p>
-                            <h1>
-                                <?php if ($isApproved): ?>
-                                    Business Profile &amp; Verification
-                                <?php elseif ($isRejected): ?>
-                                    Your application needs changes.
-                                <?php else: ?>
-                                    Your business application is under review.
-                                <?php endif; ?>
-                            </h1>
-                        </div>
-                        <span class="status-pill <?= e($statusClass) ?>" style="font-size:12px;padding:6px 14px;"><?= e($statusLabel) ?></span>
-                    </div>
-                    <p>
-                        Submitted on <?= $submittedAt ? $submittedAt->format('j M Y \a\t g:i A').' MYT' : 'N/A' ?>.
-                        <?php if ($updatedAt && $submittedAt && $updatedAt->gt($submittedAt->addSeconds(60))): ?>
-                            Last modified on <?= $updatedAt->format('j M Y \a\t g:i A').' MYT' ?>.
-                        <?php endif; ?>
-                    </p>
-                </section>
 
     <?php if (session('status')): ?>
         <div class="submission-notice" role="status" aria-live="polite">

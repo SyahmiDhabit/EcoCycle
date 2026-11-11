@@ -141,6 +141,19 @@ $activeNav = 'overview';
                 <span class="current"><?= e($companyName) ?></span>
             </div>
 
+            <!-- Page Title Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Company profile</h1>
+                    <p>View verified Malaysian SME details, credentials, and available marketplace materials.</p>
+                </div>
+                <div>
+                    <a href="/business" class="btn-back-directory">
+                        <span>&larr; Back to Directory</span>
+                    </a>
+                </div>
+            </div>
+
             <!-- Company Profile Hero Card -->
             <section class="company-profile-hero">
                 <div class="company-profile-main">

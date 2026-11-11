@@ -1208,32 +1208,55 @@ h1, h2, h3, h4,
 /* ---------------- MODALS & POPUPS ---------------- */
 .modal-backdrop,
 .modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    background: rgba(14, 38, 25, 0.65);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 24px 16px;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 1050 !important;
+    background: rgba(14, 38, 25, 0.72) !important;
+    backdrop-filter: blur(3px) !important;
+    display: none;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 24px 16px !important;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+.modal-backdrop[style*="display: flex"],
+.modal-overlay[style*="display: flex"],
+.modal-backdrop.show,
+.modal-overlay.show,
+.modal-backdrop.active,
+.modal-overlay.active {
+    display: flex !important;
+}
+
+.modal-backdrop[style*="display: none"],
+.modal-overlay[style*="display: none"] {
+    display: none !important;
 }
 
 .modal-dialog,
-.modal-card {
-    width: min(580px, 96vw);
-    max-height: calc(100vh - 40px);
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    border-radius: 12px;
-    background: #ffffff;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
-    overflow: hidden;
+.modal-card,
+.modal-dialog-large {
+    position: relative !important;
+    width: min(640px, 95vw) !important;
+    max-height: calc(100vh - 48px) !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
+    overflow: hidden !important;
+    margin: 0 auto !important;
     animation: modalPop 0.18s ease-out;
-    margin: auto;
+    flex-shrink: 0 !important;
 }
 
 /* Ensure forms inside modals are flex containers and enable scrolling in modal-body */
@@ -1241,12 +1264,13 @@ h1, h2, h3, h4,
 .modal-card > form,
 .modal-dialog form,
 .modal-card form {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
-    margin: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 110px) !important;
+    overflow: hidden !important;
+    margin: 0 !important;
 }
 
 @keyframes modalPop {
@@ -1261,72 +1285,86 @@ h1, h2, h3, h4,
 }
 
 .modal-header {
-    padding: 18px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #e5ede3;
-    background: #fbfdfa;
-    flex-shrink: 0;
+    padding: 16px 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-bottom: 1px solid #e5ede3 !important;
+    background: #fbfdfa !important;
+    flex-shrink: 0 !important;
 }
 
 .modal-header h3 {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 700;
-    color: #113624;
+    margin: 0 !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    color: #113624 !important;
 }
 
 .modal-close-btn {
-    width: 30px;
-    height: 30px;
-    border: 1px solid #ccd8c9;
-    border-radius: 50%;
-    background: #ffffff;
-    color: #4a6352;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: all 0.15s;
-    flex-shrink: 0;
+    width: 30px !important;
+    height: 30px !important;
+    border: 1px solid #ccd8c9 !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    color: #4a6352 !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    display: grid !important;
+    place-items: center !important;
+    transition: all 0.15s !important;
+    flex-shrink: 0 !important;
 }
 
 .modal-close-btn:hover {
-    background: #eef6ec;
-    color: #113624;
+    background: #eef6ec !important;
+    color: #113624 !important;
 }
 
 .modal-body {
-    padding: 24px;
+    padding: 22px 24px !important;
     overflow-y: auto !important;
-    overflow-x: hidden;
-    flex: 1 1 auto;
-    min-height: 0;
-    max-height: calc(100vh - 200px) !important;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    font-size: 13px;
-    line-height: 1.5;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 180px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #176b40 #edf6ec !important;
 }
 
 /* Polished visible scrollbar */
 .modal-body::-webkit-scrollbar {
-    width: 8px;
+    width: 8px !important;
+    display: block !important;
 }
 .modal-body::-webkit-scrollbar-track {
-    background: #f4f8f3;
-    border-radius: 4px;
+    background: #f0f5ee !important;
+    border-radius: 4px !important;
 }
 .modal-body::-webkit-scrollbar-thumb {
-    background: #a3c9a8;
-    border-radius: 4px;
+    background: #176b40 !important;
+    border-radius: 4px !important;
 }
 .modal-body::-webkit-scrollbar-thumb:hover {
-    background: #18422d;
+    background: #0f4628 !important;
+}
+
+.modal-footer {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    padding: 14px 24px !important;
+    border-top: 1px solid #e5ede3 !important;
+    background: #fbfdfa !important;
+    flex-shrink: 0 !important;
 }
 
 .modal-detail-grid {
@@ -1612,6 +1650,185 @@ h1, h2, h3, h4,
 .offer-toggle-card .offer-sub {
     font-size: 10.5px;
     color: #617769;
+}
+
+/* ---------------- INVENTORY ITEM PICKER MODAL (CLICK ITEM FIRST TO LIST) ---------------- */
+.inv-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+.inv-pick-card {
+    border: 1.5px solid #cfe1cd;
+    border-radius: 10px;
+    padding: 12px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    position: relative;
+    text-align: left;
+}
+.inv-pick-card:hover {
+    border-color: var(--brand-green);
+    background: #f4f9f3;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(18, 51, 33, 0.08);
+}
+.inv-pick-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #c8d9c6;
+    flex-shrink: 0;
+    background: #eef6ec;
+}
+.inv-pick-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+}
+.inv-pick-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #123321;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.inv-pick-meta {
+    font-size: 11px;
+    color: #556c5e;
+}
+.inv-pick-stock {
+    font-size: 11px;
+    font-weight: 700;
+    color: #15803d;
+    background: #eef6ec;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    width: fit-content;
+}
+.inv-pick-arrow {
+    font-size: 16px;
+    color: var(--brand-green);
+    margin-left: auto;
+    font-weight: 800;
+}
+
+/* 5-Slot Photo Uploader Styles */
+.inv-photo-uploader-box {
+    border: 1.5px solid #c2d8bf;
+    background: #fbfdfa;
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.15s ease;
+}
+.inv-photo-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.btn-choose-photos {
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: #18422d;
+    color: #ffffff;
+    font: 700 12px var(--font-main);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s ease;
+}
+.btn-choose-photos:hover {
+    background: #103322;
+}
+.inv-photo-hint {
+    font-size: 11px;
+    color: #556c5e;
+}
+.inv-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+.inv-slot-card {
+    position: relative;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1.5px solid #c2d8bf;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.inv-slot-card.empty-slot {
+    border: 1.5px dashed #cbd5e1;
+    background: #f8fafc;
+    cursor: pointer;
+    flex-direction: column;
+    gap: 4px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+.inv-slot-card.empty-slot:hover {
+    border-color: #18422d;
+    background: #eef6ec;
+    color: #18422d;
+}
+.inv-slot-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.inv-slot-remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: #ffffff;
+    border: none;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+    z-index: 5;
+}
+.inv-slot-remove-btn:hover {
+    background: #dc2626;
+}
+.inv-slot-cover-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(14, 41, 27, 0.9);
+    color: #ffffff;
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
+    padding: 3px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 /* ---------------- RESPONSIVE BREAKPOINTS ---------------- */

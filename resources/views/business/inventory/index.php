@@ -266,53 +266,107 @@ $activeNav = 'inventory';
             gap: 4px;
             cursor: default;
         }
-        .modal-backdrop {
-            display: flex !important;
+        .modal-backdrop,
+        .modal-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 1050 !important;
+            background: rgba(14, 38, 25, 0.72) !important;
+            backdrop-filter: blur(3px) !important;
             align-items: flex-start !important;
             justify-content: center !important;
             padding: 24px 16px !important;
             overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
         }
+        .modal-backdrop[style*="display: none"],
+        .modal-overlay[style*="display: none"] {
+            display: none !important;
+        }
+        .modal-backdrop[style*="display: flex"],
+        .modal-overlay[style*="display: flex"] {
+            display: flex !important;
+        }
+        .modal-dialog,
+        .modal-card,
         .modal-dialog-large {
-            width: min(640px, 96vw) !important;
+            position: relative !important;
+            width: min(640px, 95vw) !important;
             max-height: calc(100vh - 48px) !important;
+            height: auto !important;
             display: flex !important;
             flex-direction: column !important;
-            margin: auto !important;
+            border-radius: 12px !important;
+            background: #ffffff !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
+            overflow: hidden !important;
+            margin: 0 auto !important;
+            flex-shrink: 0 !important;
         }
-        .modal-dialog > form {
+        .modal-dialog > form,
+        .modal-card > form,
+        .modal-dialog form,
+        .modal-card form {
             display: flex !important;
             flex-direction: column !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
+            max-height: calc(100vh - 110px) !important;
             overflow: hidden !important;
+            margin: 0 !important;
         }
-        .modal-dialog .modal-body {
+        .modal-dialog .modal-header,
+        .modal-card .modal-header,
+        .modal-header {
+            flex-shrink: 0 !important;
+        }
+        .modal-dialog .modal-body,
+        .modal-card .modal-body,
+        .modal-body {
             overflow-y: auto !important;
             overflow-x: hidden !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            max-height: calc(100vh - 190px) !important;
-            -webkit-overflow-scrolling: touch;
+            max-height: calc(100vh - 180px) !important;
+            padding: 22px 24px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #176b40 #edf6ec !important;
         }
-        .modal-dialog .modal-body::-webkit-scrollbar {
-            width: 8px;
+        .modal-dialog .modal-body::-webkit-scrollbar,
+        .modal-body::-webkit-scrollbar {
+            width: 8px !important;
+            display: block !important;
         }
-        .modal-dialog .modal-body::-webkit-scrollbar-track {
-            background: #f4f8f3;
-            border-radius: 4px;
+        .modal-dialog .modal-body::-webkit-scrollbar-track,
+        .modal-body::-webkit-scrollbar-track {
+            background: #f0f5ee !important;
+            border-radius: 4px !important;
         }
-        .modal-dialog .modal-body::-webkit-scrollbar-thumb {
-            background: #a3c9a8;
-            border-radius: 4px;
+        .modal-dialog .modal-body::-webkit-scrollbar-thumb,
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #176b40 !important;
+            border-radius: 4px !important;
         }
-        .modal-dialog .modal-body::-webkit-scrollbar-thumb:hover {
-            background: #18422d;
+        .modal-dialog .modal-body::-webkit-scrollbar-thumb:hover,
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #0d3e24 !important;
         }
-        .modal-dialog .modal-header,
-        .modal-dialog .modal-footer {
+        .modal-dialog .modal-footer,
+        .modal-card .modal-footer,
+        .modal-footer {
             flex-shrink: 0 !important;
+            padding: 14px 24px !important;
+            border-top: 1px solid #e5ede3 !important;
+            background: #fbfdfa !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 10px !important;
         }
     </style>
 </head>
@@ -404,7 +458,7 @@ $activeNav = 'inventory';
                         <tbody>
                             <?php foreach ($items as $item): ?>
                                 <tr>
-                                    <td data-label="Item">
+                                    <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>)' style="cursor:pointer;" title="Click to view/edit material details">
                                         <div style="display:flex;align-items:center;gap:12px;">
                                             <?php if ($item->image_path): ?>
                                                 <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.06);" loading="lazy">
@@ -453,13 +507,13 @@ $activeNav = 'inventory';
                                                 - Out
                                             </button>
                                             <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                                <button type="button" class="btn-list-market" title="List on Marketplace (Buy, Borrow, or Free)" onclick="openListMarketModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e(addslashes($item->category)) ?>', '<?= e(addslashes($item->unit)) ?>', <?= (float)$item->quantity ?>, 'reusable')">
+                                                <button type="button" class="btn-list-market" title="List on Marketplace (Buy, Borrow, or Free)" onclick='openListMarketModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= (float)$item->quantity ?>, "reusable", <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>)'>
                                                     🛒 List
                                                 </button>
                                             <?php else: ?>
                                                 <span class="btn-owner-only" title="Non-reusable material is kept in your account only and cannot be listed on the marketplace">🔒 Owner only</span>
                                             <?php endif; ?>
-                                            <button type="button" class="btn-edit" title="Edit details" onclick="openEditModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e(addslashes($item->sku ?? '')) ?>', '<?= e(addslashes($item->category)) ?>', '<?= e(addslashes($item->unit)) ?>', '<?= $item->minimum_threshold ?? '' ?>', '<?= e(addslashes($item->notes ?? '')) ?>', '<?= e($item->reusability ?? 'reusable') ?>', '<?= e(addslashes($item->description ?? '')) ?>')">
+                                            <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>)'>
                                                 Edit
                                             </button>
                                             <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
@@ -783,21 +837,31 @@ $activeNav = 'inventory';
                     From Inventory: <strong id="lm_source_name"></strong> &middot; Available Stock: <span id="lm_source_stock" style="color:#176b40;font-weight:700;"></span>
                 </p>
 
-                <!-- Photos Upload for Marketplace Listing -->
+                <!-- Photos Upload for Marketplace Listing with 5 slots & + Add Photos button -->
                 <div class="form-group">
-                    <label style="display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;color:#18422d;">Material Photos (1 to 5 Images - Optional)</span>
-                        <small style="color:#6f7b72;" id="lm-img-notice">0 of 5 selected (Inherits inventory photos by default)</small>
-                    </label>
-                    <div class="inv-image-dropzone" onclick="document.getElementById('lm_images').click()">
-                        <input type="file" id="lm_images" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="previewInventoryListImages(this)">
-                        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22543d" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <span style="font-size:12px;font-weight:700;color:#18422d;">Click to upload or override photos</span>
-                            <small style="font-size:11px;color:#617769;">If left blank, existing photos from this inventory item will be used.</small>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <label style="margin:0;font-weight:700;color:#18422d;">
+                            Material Photos <small style="font-weight:500;color:#556c5e;">(1 to 5 images - Inherits inventory photos by default)</small>
+                        </label>
+                        <span id="lm_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">Using inventory photos</span>
+                    </div>
+
+                    <div class="inv-photo-uploader-box" id="lm_photo_uploader_box">
+                        <input type="file" id="lm_images_form_input" name="images[]" multiple style="display:none;">
+                        <input type="file" id="lm_images_picker" accept="image/png,image/jpeg,image/webp,image/jpg" multiple style="display:none;" onchange="handleNewLmImages(this)">
+
+                        <div class="inv-photo-top-bar">
+                            <button type="button" class="btn-choose-photos" id="btn_lm_photos" onclick="document.getElementById('lm_images_picker').click()">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <span>+ Add / Replace Photos</span>
+                            </button>
+                            <span class="inv-photo-hint">Add up to 5 photos. Slot 1 is the cover photo.</span>
+                        </div>
+
+                        <div class="inv-slots-grid" id="lm_slots_grid">
+                            <!-- Slots rendered dynamically -->
                         </div>
                     </div>
-                    <div class="inv-thumbs-grid" id="lm-img-previews" style="display:none;"></div>
                 </div>
 
                 <div class="form-group">
@@ -1052,14 +1116,16 @@ function validateInventoryAddForm(form) {
 }
 
 // Edit Modal Functions
-function openEditModal(id, name, sku, category, unit, threshold, notes, reusability, description) {
+var editInitialImages = [];
+
+function openEditModal(id, name, sku, category, unit, threshold, notes, reusability, description, existingImages) {
     document.getElementById('edit-form').action = '/business/inventory/' + id;
     document.getElementById('edit_name').value = name;
-    document.getElementById('edit_sku').value = sku;
+    document.getElementById('edit_sku').value = sku || '';
     document.getElementById('edit_category').value = category;
     document.getElementById('edit_unit').value = unit;
-    document.getElementById('edit_threshold').value = threshold;
-    document.getElementById('edit_notes').value = notes;
+    document.getElementById('edit_threshold').value = (threshold !== null && threshold !== undefined && threshold !== 'null') ? threshold : '';
+    document.getElementById('edit_notes').value = notes || '';
     if (document.getElementById('edit_description')) {
         document.getElementById('edit_description').value = description || '';
     }
@@ -1071,6 +1137,7 @@ function openEditModal(id, name, sku, category, unit, threshold, notes, reusabil
         if (el2) el2.checked = true;
     }
     editPhotosTransfer = new DataTransfer();
+    editInitialImages = existingImages || [];
     renderEditSlots();
     var modal = document.getElementById('edit-modal');
     modal.style.display = 'flex';
@@ -1091,8 +1158,91 @@ function renderEditSlots() {
     var files = editPhotosTransfer.files;
     var count = files.length;
 
-    if (counter) {
-        counter.textContent = count === 0 ? 'Leave empty to keep current photos' : count + ' of 5 new photos selected';
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (count > 0) {
+        if (counter) {
+            counter.textContent = count + ' of 5 new photos selected';
+            counter.style.color = '#18422d';
+        }
+        for (var i = 0; i < count; i++) {
+            (function(index) {
+                var file = files[index];
+                var card = document.createElement('div');
+                card.className = 'inv-slot-card';
+
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
+                        (index === 0 ? '<span class="inv-slot-cover-badge">New Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (index + 1) + '</span>') +
+                        '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeEditPhoto(' + index + ')">✕</button>';
+                };
+                reader.readAsDataURL(file);
+                grid.appendChild(card);
+            })(i);
+        }
+
+        if (count < 5) {
+            var addSlot = document.createElement('div');
+            addSlot.className = 'inv-slot-card empty-slot';
+            addSlot.title = 'Click to add more photos';
+            addSlot.onclick = function() {
+                document.getElementById('edit_images_picker').click();
+            };
+            addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
+            grid.appendChild(addSlot);
+
+            for (var j = count + 1; j < 5; j++) {
+                var emptySlot = document.createElement('div');
+                emptySlot.className = 'inv-slot-card empty-slot';
+                emptySlot.style.opacity = '0.45';
+                emptySlot.style.cursor = 'pointer';
+                emptySlot.onclick = function() {
+                    document.getElementById('edit_images_picker').click();
+                };
+                emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (j + 1) + '</span>';
+                grid.appendChild(emptySlot);
+            }
+        }
+    } else {
+        // Show current existing photos
+        var initCount = editInitialImages.length;
+        if (counter) {
+            counter.textContent = initCount > 0 ? initCount + ' current photos (upload below to replace)' : 'No photos yet';
+            counter.style.color = '#556c5e';
+        }
+
+        for (var k = 0; k < initCount; k++) {
+            var exCard = document.createElement('div');
+            exCard.className = 'inv-slot-card';
+            exCard.innerHTML = '<img src="' + editInitialImages[k] + '" alt="Photo ' + (k + 1) + '">' +
+                (k === 0 ? '<span class="inv-slot-cover-badge">Current Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (k + 1) + '</span>');
+            grid.appendChild(exCard);
+        }
+
+        if (initCount < 5) {
+            var addSlotInit = document.createElement('div');
+            addSlotInit.className = 'inv-slot-card empty-slot';
+            addSlotInit.title = 'Click to add photos';
+            addSlotInit.onclick = function() {
+                document.getElementById('edit_images_picker').click();
+            };
+            addSlotInit.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
+            grid.appendChild(addSlotInit);
+
+            for (var m = initCount + 1; m < 5; m++) {
+                var emptySlotInit = document.createElement('div');
+                emptySlotInit.className = 'inv-slot-card empty-slot';
+                emptySlotInit.style.opacity = '0.45';
+                emptySlotInit.style.cursor = 'pointer';
+                emptySlotInit.onclick = function() {
+                    document.getElementById('edit_images_picker').click();
+                };
+                emptySlotInit.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (m + 1) + '</span>';
+                grid.appendChild(emptySlotInit);
+            }
+        }
     }
 
     var formInput = document.getElementById('edit_images_form_input');
@@ -1103,49 +1253,6 @@ function renderEditSlots() {
     if (btn) {
         btn.disabled = count >= 5;
         btn.style.opacity = count >= 5 ? '0.5' : '1';
-    }
-
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    for (var i = 0; i < count; i++) {
-        (function(index) {
-            var file = files[index];
-            var card = document.createElement('div');
-            card.className = 'inv-slot-card';
-
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
-                    (index === 0 ? '<span class="inv-slot-cover-badge">New Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (index + 1) + '</span>') +
-                    '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeEditPhoto(' + index + ')">✕</button>';
-            };
-            reader.readAsDataURL(file);
-            grid.appendChild(card);
-        })(i);
-    }
-
-    if (count < 5) {
-        var addSlot = document.createElement('div');
-        addSlot.className = 'inv-slot-card empty-slot';
-        addSlot.title = 'Click to add more photos';
-        addSlot.onclick = function() {
-            document.getElementById('edit_images_picker').click();
-        };
-        addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
-        grid.appendChild(addSlot);
-
-        for (var j = count + 1; j < 5; j++) {
-            var emptySlot = document.createElement('div');
-            emptySlot.className = 'inv-slot-card empty-slot';
-            emptySlot.style.opacity = '0.45';
-            emptySlot.style.cursor = 'pointer';
-            emptySlot.onclick = function() {
-                document.getElementById('edit_images_picker').click();
-            };
-            emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (j + 1) + '</span>';
-            grid.appendChild(emptySlot);
-        }
     }
 }
 
@@ -1204,7 +1311,10 @@ function closeAdjustModal() {
     document.body.style.overflow = '';
 }
 
-function openListMarketModal(id, name, category, unit, quantity, reusability) {
+var lmPhotosTransfer = new DataTransfer();
+var lmInitialImages = [];
+
+function openListMarketModal(id, name, category, unit, quantity, reusability, description, existingImages) {
     if (reusability === 'not_reusable') {
         alert('This material is classified as Not Reusable (Scrap). Per platform policy, only reusable circular materials can be listed on the public marketplace. This item remains saved in your owner account.');
         return;
@@ -1216,9 +1326,17 @@ function openListMarketModal(id, name, category, unit, quantity, reusability) {
     document.getElementById('lm_category').value = category;
     document.getElementById('lm_unit').value = unit;
     document.getElementById('lm_quantity').value = quantity;
+    if (document.getElementById('lm_description')) {
+        document.getElementById('lm_description').value = description || '';
+    }
     var buyRadio = document.getElementById('lm_type_buy');
     if (buyRadio) buyRadio.checked = true;
     handleListingTypeChange('buy', 'lm');
+
+    lmPhotosTransfer = new DataTransfer();
+    lmInitialImages = existingImages || [];
+    renderLmSlots();
+
     var modal = document.getElementById('list-market-modal');
     modal.style.display = 'flex';
     var body = modal.querySelector('.modal-body');
@@ -1231,61 +1349,147 @@ function closeListMarketModal() {
     document.body.style.overflow = '';
 }
 
-function handleListingTypeChange(type, prefix) {
-    var priceGroup = document.getElementById(prefix + '_price_group');
-    var priceInput = document.getElementById(prefix + '_price');
-    var priceLabel = document.getElementById(prefix + '_price_label');
-    var priceHint = document.getElementById(prefix + '_price_hint');
-    if (!priceGroup || !priceInput) return;
+function renderLmSlots() {
+    var grid = document.getElementById('lm_slots_grid');
+    var counter = document.getElementById('lm_img_counter');
+    var btn = document.getElementById('btn_lm_photos');
+    var files = lmPhotosTransfer.files;
+    var count = files.length;
 
-    if (type === 'free') {
-        priceGroup.style.display = 'none';
-        priceInput.required = false;
-        priceInput.value = '0';
-    } else if (type === 'borrow') {
-        priceGroup.style.display = 'block';
-        priceInput.required = false;
-        priceInput.value = '0';
-        if (priceLabel) priceLabel.textContent = 'Security Deposit / Fee (RM)';
-        if (priceHint) priceHint.textContent = 'Optional security deposit or loan fee (leave 0 for free borrow).';
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (count > 0) {
+        if (counter) {
+            counter.textContent = count + ' of 5 custom photos selected';
+            counter.style.color = '#18422d';
+        }
+
+        for (var i = 0; i < count; i++) {
+            (function(index) {
+                var file = files[index];
+                var card = document.createElement('div');
+                card.className = 'inv-slot-card';
+
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
+                        (index === 0 ? '<span class="inv-slot-cover-badge">Listing Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (index + 1) + '</span>') +
+                        '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeLmPhoto(' + index + ')">✕</button>';
+                };
+                reader.readAsDataURL(file);
+                grid.appendChild(card);
+            })(i);
+        }
+
+        if (count < 5) {
+            var addSlot = document.createElement('div');
+            addSlot.className = 'inv-slot-card empty-slot';
+            addSlot.title = 'Click to add more photos';
+            addSlot.onclick = function() {
+                document.getElementById('lm_images_picker').click();
+            };
+            addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
+            grid.appendChild(addSlot);
+
+            for (var j = count + 1; j < 5; j++) {
+                var emptySlot = document.createElement('div');
+                emptySlot.className = 'inv-slot-card empty-slot';
+                emptySlot.style.opacity = '0.45';
+                emptySlot.style.cursor = 'pointer';
+                emptySlot.onclick = function() {
+                    document.getElementById('lm_images_picker').click();
+                };
+                emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (j + 1) + '</span>';
+                grid.appendChild(emptySlot);
+            }
+        }
     } else {
-        priceGroup.style.display = 'block';
-        priceInput.required = true;
-        if (priceLabel) priceLabel.textContent = 'Unit Price (RM) *';
-        if (priceHint) priceHint.textContent = 'Specify price in RM per unit.';
+        // Show current inventory images
+        var initCount = lmInitialImages.length;
+        if (counter) {
+            counter.textContent = initCount > 0 ? 'Using ' + initCount + ' inventory photo(s)' : 'No photos in inventory item';
+            counter.style.color = '#556c5e';
+        }
+
+        for (var k = 0; k < initCount; k++) {
+            var exCard = document.createElement('div');
+            exCard.className = 'inv-slot-card';
+            exCard.innerHTML = '<img src="' + lmInitialImages[k] + '" alt="Photo ' + (k + 1) + '">' +
+                (k === 0 ? '<span class="inv-slot-cover-badge">Inherited Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (k + 1) + '</span>');
+            grid.appendChild(exCard);
+        }
+
+        if (initCount < 5) {
+            var addSlotInit = document.createElement('div');
+            addSlotInit.className = 'inv-slot-card empty-slot';
+            addSlotInit.title = 'Click to add custom photos';
+            addSlotInit.onclick = function() {
+                document.getElementById('lm_images_picker').click();
+            };
+            addSlotInit.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
+            grid.appendChild(addSlotInit);
+
+            for (var m = initCount + 1; m < 5; m++) {
+                var emptySlotInit = document.createElement('div');
+                emptySlotInit.className = 'inv-slot-card empty-slot';
+                emptySlotInit.style.opacity = '0.45';
+                emptySlotInit.style.cursor = 'pointer';
+                emptySlotInit.onclick = function() {
+                    document.getElementById('lm_images_picker').click();
+                };
+                emptySlotInit.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (m + 1) + '</span>';
+                grid.appendChild(emptySlotInit);
+            }
+        }
+    }
+
+    var formInput = document.getElementById('lm_images_form_input');
+    if (formInput) {
+        formInput.files = lmPhotosTransfer.files;
+    }
+
+    if (btn) {
+        btn.disabled = count >= 5;
+        btn.style.opacity = count >= 5 ? '0.5' : '1';
     }
 }
 
-function previewInventoryListImages(input) {
-    var preview = document.getElementById('lm-img-previews');
-    var notice = document.getElementById('lm-img-notice');
-    if (!preview) return;
-    preview.innerHTML = '';
+function handleNewLmImages(picker) {
+    if (!picker.files || picker.files.length === 0) return;
 
-    if (!input.files || input.files.length === 0) {
-        preview.style.display = 'none';
-        if (notice) notice.textContent = '0 of 5 selected (Inherits inventory photos by default)';
-        return;
+    var newFiles = picker.files;
+    for (var i = 0; i < newFiles.length; i++) {
+        if (lmPhotosTransfer.files.length >= 5) {
+            alert('Maximum 5 photos allowed. Additional photos were not added.');
+            break;
+        }
+        var file = newFiles[i];
+        if (!file.type.match('image.*')) {
+            alert('File "' + file.name + '" is not an image.');
+            continue;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File "' + file.name + '" exceeds the 5MB size limit.');
+            continue;
+        }
+        lmPhotosTransfer.items.add(file);
     }
 
-    var count = Math.min(input.files.length, 5);
-    if (notice) notice.textContent = count + ' of 5 images selected';
-    preview.style.display = 'grid';
+    picker.value = '';
+    renderLmSlots();
+}
 
-    for (var i = 0; i < count; i++) {
-        (function(idx) {
-            var file = input.files[idx];
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var card = document.createElement('div');
-                card.className = 'inv-slot-card';
-                card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
-                    (idx === 0 ? '<span class="inv-slot-cover-badge">Cover</span>' : '');
-                preview.appendChild(card);
-            };
-            reader.readAsDataURL(file);
-        })(i);
+function removeLmPhoto(indexToRemove) {
+    var newTransfer = new DataTransfer();
+    var files = lmPhotosTransfer.files;
+    for (var i = 0; i < files.length; i++) {
+        if (i !== indexToRemove) {
+            newTransfer.items.add(files[i]);
+        }
     }
+    lmPhotosTransfer = newTransfer;
+    renderLmSlots();
 }
 
 // Initial slot render

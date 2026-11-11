@@ -422,54 +422,111 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             }
         }
 
+        .modal-backdrop,
         .modal-overlay {
-            display: flex !important;
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 1050 !important;
+            background: rgba(14, 38, 25, 0.72) !important;
+            backdrop-filter: blur(3px) !important;
             align-items: flex-start !important;
             justify-content: center !important;
             padding: 24px 16px !important;
             overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
         }
-        .modal-card {
-            width: min(640px, 96vw) !important;
+        .modal-backdrop[style*="display: none"],
+        .modal-overlay[style*="display: none"] {
+            display: none !important;
+        }
+        .modal-backdrop[style*="display: flex"],
+        .modal-overlay[style*="display: flex"] {
+            display: flex !important;
+        }
+        .modal-dialog,
+        .modal-card,
+        .modal-dialog-large {
+            position: relative !important;
+            width: min(640px, 95vw) !important;
             max-height: calc(100vh - 48px) !important;
+            height: auto !important;
             display: flex !important;
             flex-direction: column !important;
+            border-radius: 12px !important;
+            background: #ffffff !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
             overflow: hidden !important;
-            margin: auto !important;
+            margin: 0 auto !important;
+            flex-shrink: 0 !important;
         }
-        .modal-card > form {
+        .modal-dialog > form,
+        .modal-card > form,
+        .modal-dialog form,
+        .modal-card form {
             display: flex !important;
             flex-direction: column !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
+            max-height: calc(100vh - 110px) !important;
             overflow: hidden !important;
+            margin: 0 !important;
         }
-        .modal-card .modal-body {
+        .modal-dialog .modal-header,
+        .modal-card .modal-header,
+        .modal-header {
+            flex-shrink: 0 !important;
+        }
+        .modal-dialog .modal-body,
+        .modal-card .modal-body,
+        .modal-body {
             overflow-y: auto !important;
             overflow-x: hidden !important;
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            max-height: calc(100vh - 190px) !important;
-            -webkit-overflow-scrolling: touch;
+            max-height: calc(100vh - 180px) !important;
+            padding: 22px 24px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #176b40 #edf6ec !important;
         }
-        .modal-card .modal-body::-webkit-scrollbar {
-            width: 8px;
+        .modal-dialog .modal-body::-webkit-scrollbar,
+        .modal-card .modal-body::-webkit-scrollbar,
+        .modal-body::-webkit-scrollbar {
+            width: 8px !important;
+            display: block !important;
         }
-        .modal-card .modal-body::-webkit-scrollbar-track {
-            background: #f4f8f3;
-            border-radius: 4px;
+        .modal-dialog .modal-body::-webkit-scrollbar-track,
+        .modal-card .modal-body::-webkit-scrollbar-track,
+        .modal-body::-webkit-scrollbar-track {
+            background: #f0f5ee !important;
+            border-radius: 4px !important;
         }
-        .modal-card .modal-body::-webkit-scrollbar-thumb {
-            background: #a3c9a8;
-            border-radius: 4px;
+        .modal-dialog .modal-body::-webkit-scrollbar-thumb,
+        .modal-card .modal-body::-webkit-scrollbar-thumb,
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #176b40 !important;
+            border-radius: 4px !important;
         }
-        .modal-card .modal-body::-webkit-scrollbar-thumb:hover {
-            background: #18422d;
+        .modal-dialog .modal-body::-webkit-scrollbar-thumb:hover,
+        .modal-card .modal-body::-webkit-scrollbar-thumb:hover,
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #0d3e24 !important;
         }
-        .modal-card .modal-header,
-        .modal-card .modal-footer {
+        .modal-dialog .modal-footer,
+        .modal-card .modal-footer,
+        .modal-footer {
             flex-shrink: 0 !important;
+            padding: 14px 24px !important;
+            border-top: 1px solid #e5ede3 !important;
+            background: #fbfdfa !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 10px !important;
         }
     </style>
 </head>
@@ -639,6 +696,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             $cardId = 'listing-card-' . $item->id;
                         ?>
                         <article class="listing-card" id="<?= $cardId ?>"
+                            onclick="openListingDetailModal(<?= $item->id ?>)"
+                            style="cursor: pointer;"
                             data-title="<?= e($item->title) ?>"
                             data-category="<?= e($item->category) ?>"
                             data-condition="<?= e($item->condition ?? 'Used - Good') ?>"
@@ -740,14 +799,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                 <?php endif; ?>
 
                                 <div class="listing-card-footer">
-                                    <button type="button" class="btn-view-quick" onclick="openListingDetailModal(<?= $item->id ?>)">
+                                    <button type="button" class="btn-view-quick" onclick="event.stopPropagation(); openListingDetailModal(<?= $item->id ?>)">
                                         Quick View
                                     </button>
 
                                     <?php if ($isOwner): ?>
-                                        <div style="display:flex;align-items:center;gap:6px;">
+                                        <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation();">
                                             <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:4px 8px;border-radius:4px;border:1px solid #bbf7d0;">Your Listing</span>
-                                            <form method="POST" action="/business/marketplace/<?= $item->id ?>" onsubmit="return confirm('Are you sure you want to remove this listing?');" style="margin:0;">
+                                            <form method="POST" action="/business/marketplace/<?= $item->id ?>" onsubmit="return confirm('Are you sure you want to remove this listing?');" style="margin:0;" onclick="event.stopPropagation();">
                                                 <input type="hidden" name="_token" value="<?= csrf_token() ?>">
                                                 <input type="hidden" name="_method" value="DELETE">
                                                 <button type="submit" style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:5px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;" title="Delete listing">
@@ -756,7 +815,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                             </form>
                                         </div>
                                     <?php else: ?>
-                                        <button type="button" class="btn-claim-action" onclick="openClaimModal('<?= e(addslashes($item->title)) ?>', '<?= e(addslashes($item->business?->business_name ?: ($item->business?->name ?? 'Partner'))) ?>', '<?= e($listingType) ?>')">
+                                        <button type="button" class="btn-claim-action" onclick="event.stopPropagation(); openClaimModal('<?= e(addslashes($item->title)) ?>', '<?= e(addslashes($item->business?->business_name ?: ($item->business?->name ?? 'Partner'))) ?>', '<?= e($listingType) ?>')">
                                             <?= $listingType === 'free' ? '🎁 Claim Free' : ($listingType === 'borrow' ? '🤝 Borrow' : 'Inquire &rarr;') ?>
                                         </button>
                                     <?php endif; ?>
@@ -769,55 +828,128 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         </main>
     </div>
 
-    <!-- Create Listing Modal (Supports 1 to 5 Images) -->
-    <div class="modal-overlay" id="create-listing-modal" style="display:none;" onclick="if(event.target===this)closeCreateListingModal()">
-        <div class="modal-card" style="max-width:580px;">
+    <!-- Step 1: Inventory Item Picker Modal (Click Reusable Item First, Then Listing Modal Pops Out) -->
+    <div class="modal-overlay" id="select-inventory-modal" style="display:none;" onclick="if(event.target===this)closeSelectInventoryModal()">
+        <div class="modal-card" style="max-width:680px;">
             <div class="modal-header">
-                <h3>List Material on Marketplace</h3>
+                <div>
+                    <h3 style="margin:0;">Select Reusable Item from Inventory</h3>
+                    <small style="color:#526b5a;font-size:12px;">Choose a verified reusable material from your inventory to create a marketplace listing:</small>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeSelectInventoryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <?php if (!isset($myInventoryItems) || $myInventoryItems->isEmpty()): ?>
+                    <div style="text-align:center;padding:36px 16px;">
+                        <div style="font-size:42px;margin-bottom:10px;">📦</div>
+                        <h4 style="margin:0 0 6px;color:#18422d;font-size:16px;">No Reusable Inventory Found</h4>
+                        <p style="margin:0 0 18px;color:#556c5e;font-size:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.5;">
+                            Public marketplace listings are strictly for verified reusable circular materials. (Non-reusable scrap items remain safely stored in your private owner account).
+                        </p>
+                        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                            <a href="/business/inventory" class="btn-choose-photos" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                                + Add Reusable Material to Inventory
+                            </a>
+                            <button type="button" onclick="openDirectCustomListing()" class="btn-cancel" style="cursor:pointer;padding:8px 16px;">
+                                Create Custom Listing &rarr;
+                            </button>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="inv-picker-grid">
+                        <?php foreach ($myInventoryItems as $inv): 
+                            $invImg = $inv->getPrimaryImage() ? asset($inv->getPrimaryImage()) : 'https://placehold.co/120x120/e8f5e9/1b5e20?text=' . urlencode(substr($inv->name, 0, 3));
+                            $invAllImgs = json_encode($inv->getAllImages());
+                        ?>
+                            <div class="inv-pick-card" onclick='selectInventoryItemForListing(<?= $inv->id ?>, <?= json_encode($inv->name) ?>, <?= json_encode($inv->category) ?>, <?= (float)$inv->quantity ?>, <?= json_encode($inv->unit) ?>, <?= json_encode($inv->description ?? '') ?>, <?= $invAllImgs ?>)'>
+                                <div class="inv-pick-thumb">
+                                    <img src="<?= e($invImg) ?>" alt="<?= e($inv->name) ?>">
+                                </div>
+                                <div class="inv-pick-details">
+                                    <div class="inv-pick-name"><?= e($inv->name) ?></div>
+                                    <div class="inv-pick-meta"><?= e($inv->category) ?></div>
+                                    <div class="inv-pick-stock">
+                                        <span class="inv-stock-badge"><?= (float)$inv->quantity ?> <?= e($inv->unit) ?></span>
+                                        <span class="inv-reuse-tag">↻ Reusable</span>
+                                    </div>
+                                </div>
+                                <div class="inv-pick-arrow">&rarr;</div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #cadbc9;display:flex;justify-content:space-between;align-items:center;">
+                        <small style="color:#617769;">Want to create a listing directly without selecting an item?</small>
+                        <button type="button" onclick="openDirectCustomListing()" style="background:transparent;border:none;color:#166534;font-weight:700;font-size:12.5px;cursor:pointer;text-decoration:underline;">
+                            + Enter custom details manually &rarr;
+                        </button>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeSelectInventoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Create Listing Modal (Pops Out with Pre-filled Item Details and 1 to 5 Photos) -->
+    <div class="modal-overlay" id="create-listing-modal" style="display:none;" onclick="if(event.target===this)closeCreateListingModal()">
+        <div class="modal-card" style="max-width:640px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="margin:0;">List Material on Marketplace</h3>
+                    <small style="color:#526b5a;font-size:12px;">Publish surplus material for verified SMEs to buy, borrow, or take for free.</small>
+                </div>
                 <button type="button" class="modal-close-btn" onclick="closeCreateListingModal()">&times;</button>
             </div>
-            <form method="POST" action="/business/marketplace" enctype="multipart/form-data">
+            <form method="POST" action="/business/marketplace" enctype="multipart/form-data" onsubmit="return validateListingForm(this)">
                 <input type="hidden" name="_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="inventory_item_id" id="modal_inventory_item_id" value="">
+                
                 <div class="modal-body">
-                    <!-- Optional Pre-fill from Inventory -->
-                    <?php if (isset($myInventoryItems) && $myInventoryItems->isNotEmpty()): ?>
-                        <div class="form-group" style="background:#f4f9f4;border:1px solid #cce5cc;border-radius:8px;padding:12px 14px;">
-                            <label style="font-size:12px;font-weight:700;color:#1b5e20;margin-bottom:4px;display:block;">
-                                📦 Select from Your Inventory (Quick Autofill)
-                            </label>
-                            <select id="modal_inventory_picker" onchange="autofillFromInventory(this)" style="font-size:13px;border-color:#a8cbb1;">
-                                <option value="">-- Choose an item to autofill or type custom below --</option>
-                                <?php foreach ($myInventoryItems as $inv): ?>
-                                    <option value="<?= $inv->id ?>"
-                                        data-name="<?= e($inv->name) ?>"
-                                        data-cat="<?= e($inv->category) ?>"
-                                        data-qty="<?= (float) $inv->quantity ?>"
-                                        data-unit="<?= e($inv->unit) ?>"
-                                        data-reusability="<?= e($inv->reusability ?? 'reusable') ?>"
-                                    >
-                                        <?= e($inv->name) ?> (<?= (float) $inv->quantity ?> <?= e($inv->unit) ?> &middot; <?= $inv->reusability === 'reusable' ? 'Reusable' : 'Not Reusable' ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <input type="hidden" name="inventory_item_id" id="modal_inventory_item_id" value="">
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- 1 to 5 Images Upload Section -->
-                    <div class="form-group">
-                        <label style="display:flex;justify-content:space-between;align-items:center;">
-                            <span>Material Photos (1 to 5 Images)</span>
-                            <small style="color:#617769;font-weight:500;" id="image-count-notice">0 of 5 selected</small>
-                        </label>
-                        <div class="image-upload-dropzone" onclick="document.getElementById('listing_images_input').click()">
-                            <input type="file" id="listing_images_input" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleImageSelection(this)">
-                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22543d" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                <span style="font-size:13px;font-weight:700;color:#18422d;">Click to upload 1 to 5 photos</span>
-                                <small style="font-size:11px;color:#617769;">PNG, JPG, or WEBP up to 5MB each. First image becomes the cover photo.</small>
+                    <!-- Sourced from Inventory Banner -->
+                    <div id="mkt_sourced_banner" style="display:none;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:2px;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-size:20px;">📦</span>
+                            <div>
+                                <strong style="color:#15803d;font-size:13px;display:block;" id="mkt_sourced_name">Sourced from Inventory</strong>
+                                <small style="color:#4b6354;font-size:11.5px;" id="mkt_sourced_stock">Stock Available: 0</small>
                             </div>
                         </div>
-                        <div class="preview-thumbs-grid" id="image-previews-container" style="display:none;"></div>
+                        <button type="button" onclick="changeInventoryItemForListing()" style="background:#ffffff;border:1px solid #86efac;color:#15803d;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
+                            ✎ Change Item
+                        </button>
+                    </div>
+
+                    <!-- 1 to 5 Photos Upload Section with Explicit Add Button & Slots -->
+                    <div class="form-group">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <label style="margin:0;font-weight:700;color:#18422d;">
+                                Material Photos <span style="color:#b91c1c;">*</span> <small style="font-weight:500;color:#556c5e;">(Min 1, Max 5 photos)</small>
+                            </label>
+                            <span id="mkt_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">0 of 5 selected</span>
+                        </div>
+
+                        <div class="inv-photo-uploader-box" id="mkt_photo_uploader_box">
+                            <!-- Hidden Real Form File Input (synchronized via DataTransfer) -->
+                            <input type="file" id="listing_images_form_input" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;">
+
+                            <div class="inv-photo-top-bar">
+                                <button type="button" class="btn-choose-photos" id="btn_mkt_add_photos" onclick="triggerMktFileInput()">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                    <span>+ Add Photos</span>
+                                </button>
+                                <span class="inv-photo-hint">Click "+ Add Photos" or any empty slot to add 1 to 5 images. Slot 1 is the cover photo.</span>
+                            </div>
+
+                            <!-- 5 Photo Slots Grid -->
+                            <div class="inv-slots-grid" id="mkt_slots_grid">
+                                <!-- Rendered dynamically by renderMktSlots() -->
+                            </div>
+
+                            <div id="mkt_img_error" style="display:none;margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">
+                                ⚠ Please select at least 1 photo for this listing (maximum 5 photos).
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -926,6 +1058,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <button type="submit" class="btn-save">Publish Listing &rarr;</button>
                 </div>
             </form>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -1037,49 +1171,243 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         }
     }
 
-    // Multi-Image Upload Preview for Create Listing Modal
-    function handleImageSelection(input) {
-        var previewContainer = document.getElementById('image-previews-container');
-        var notice = document.getElementById('image-count-notice');
-        previewContainer.innerHTML = '';
+    // Multi-Image Accumulator & Slot Management for Marketplace Listing
+    var mktPhotosTransfer = new DataTransfer();
+    var mktExistingImages = [];
+    var hasUserInventory = <?= (isset($myInventoryItems) && $myInventoryItems->isNotEmpty()) ? 'true' : 'false' ?>;
 
-        if (!input.files || input.files.length === 0) {
-            previewContainer.style.display = 'none';
-            notice.textContent = '0 of 5 selected';
+    // Trigger file chooser for marketplace listing
+    function triggerMktFileInput() {
+        var total = mktExistingImages.length + mktPhotosTransfer.files.length;
+        if (total >= 5) {
+            alert('Maximum of 5 photos reached. Remove a photo to add a different one.');
             return;
         }
-
-        if (input.files.length > 5) {
-            alert('You can upload a maximum of 5 images per listing. Only the first 5 will be kept.');
-        }
-
-        var count = Math.min(input.files.length, 5);
-        notice.textContent = count + ' of 5 selected';
-        previewContainer.style.display = 'grid';
-
-        for (var i = 0; i < count; i++) {
-            (function(idx) {
-                var file = input.files[idx];
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var card = document.createElement('div');
-                    card.className = 'thumb-preview-card';
-                    card.innerHTML = '<img src="' + e.target.result + '" alt="preview">' +
-                        (idx === 0 ? '<div class="thumb-cover-tag">Cover</div>' : '');
-                    previewContainer.appendChild(card);
-                };
-                reader.readAsDataURL(file);
-            })(i);
+        var input = document.getElementById('listing_images_form_input');
+        if (input) {
+            input.value = '';
+            input.click();
         }
     }
 
+    // Handle new images chosen via file input (appends with DataTransfer)
+    document.addEventListener('DOMContentLoaded', function() {
+        var fileInput = document.getElementById('listing_images_form_input');
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                var newFiles = this.files;
+                if (!newFiles || newFiles.length === 0) return;
+
+                var currentTotal = mktExistingImages.length + mktPhotosTransfer.files.length;
+                var availableSlots = 5 - currentTotal;
+
+                if (availableSlots <= 0) {
+                    alert('Maximum of 5 photos allowed per listing.');
+                    return;
+                }
+
+                var filesToAdd = Array.from(newFiles).slice(0, availableSlots);
+                if (newFiles.length > availableSlots) {
+                    alert('Only ' + availableSlots + ' more photo(s) could be added to stay within the 5-photo limit.');
+                }
+
+                filesToAdd.forEach(function(file) {
+                    mktPhotosTransfer.items.add(file);
+                });
+
+                renderMktSlots();
+            });
+        }
+    });
+
+    // Render 5 photo slots visually
+    function renderMktSlots() {
+        var grid = document.getElementById('mkt_slots_grid');
+        var counter = document.getElementById('mkt_img_counter');
+        var err = document.getElementById('mkt_img_error');
+        if (err) err.style.display = 'none';
+
+        var existingCount = mktExistingImages.length;
+        var newFiles = mktPhotosTransfer.files;
+        var newCount = newFiles.length;
+        var totalCount = existingCount + newCount;
+
+        if (counter) {
+            counter.textContent = totalCount + ' of 5 selected' + (totalCount === 0 ? ' (At least 1 required)' : '');
+            counter.style.color = totalCount >= 1 ? '#18422d' : '#b91c1c';
+        }
+
+        var formInput = document.getElementById('listing_images_form_input');
+        if (formInput) {
+            formInput.files = mktPhotosTransfer.files;
+        }
+
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        // 1. Render pre-existing inventory images
+        for (var i = 0; i < existingCount; i++) {
+            (function(idx) {
+                var imgSrc = mktExistingImages[idx];
+                var card = document.createElement('div');
+                card.className = 'inv-slot-card';
+                card.innerHTML = '<img src="' + imgSrc + '" alt="Photo ' + (idx + 1) + '">' +
+                    '<button type="button" class="inv-slot-remove-btn" onclick="removeMktPhoto(' + idx + ', true)" title="Remove photo">&times;</button>' +
+                    (idx === 0 ? '<span class="inv-slot-cover-badge">Cover</span>' : '');
+                grid.appendChild(card);
+            })(i);
+        }
+
+        // 2. Render newly chosen files
+        for (var j = 0; j < newCount; j++) {
+            (function(slotIdx, fileIdx) {
+                var file = newFiles[fileIdx];
+                var card = document.createElement('div');
+                card.className = 'inv-slot-card';
+
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (slotIdx + 1) + '">' +
+                        '<button type="button" class="inv-slot-remove-btn" onclick="removeMktPhoto(' + fileIdx + ', false)" title="Remove photo">&times;</button>' +
+                        (slotIdx === 0 ? '<span class="inv-slot-cover-badge">Cover</span>' : '');
+                };
+                reader.readAsDataURL(file);
+
+                grid.appendChild(card);
+            })(existingCount + j, j);
+        }
+
+        // 3. Fill remaining slots up to 5 with empty placeholders
+        for (var k = totalCount; k < 5; k++) {
+            (function(slotNumber) {
+                var emptyCard = document.createElement('div');
+                emptyCard.className = 'inv-slot-card empty-slot';
+                emptyCard.onclick = triggerMktFileInput;
+                emptyCard.innerHTML = slotNumber === 0 ? 
+                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>' : 
+                    '<span>Slot ' + (slotNumber + 1) + '</span>';
+                grid.appendChild(emptyCard);
+            })(k);
+        }
+    }
+
+    // Remove photo from slot
+    function removeMktPhoto(index, isExisting) {
+        if (isExisting) {
+            mktExistingImages.splice(index, 1);
+        } else {
+            var updatedTransfer = new DataTransfer();
+            var files = mktPhotosTransfer.files;
+            for (var i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    updatedTransfer.items.add(files[i]);
+                }
+            }
+            mktPhotosTransfer = updatedTransfer;
+        }
+        renderMktSlots();
+    }
+
+    // Validate listing form
+    function validateListingForm(form) {
+        var total = mktExistingImages.length + mktPhotosTransfer.files.length;
+        if (total < 1) {
+            var err = document.getElementById('mkt_img_error');
+            if (err) err.style.display = 'block';
+            alert('Please select at least 1 photo for this listing (maximum 5 photos).');
+            return false;
+        }
+        return true;
+    }
+
+    // Step 1: Open Inventory Picker or Direct Listing Modal
     function openCreateListingModal() {
+        if (hasUserInventory) {
+            openSelectInventoryModal();
+        } else {
+            openDirectCustomListing();
+        }
+    }
+
+    function openSelectInventoryModal() {
+        var modal = document.getElementById('select-inventory-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            var body = modal.querySelector('.modal-body');
+            if (body) body.scrollTop = 0;
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeSelectInventoryModal() {
+        var modal = document.getElementById('select-inventory-modal');
+        if (modal) modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    // Step 2: Clicking an Item First Selects It & Pops Out Listing Modal
+    function selectInventoryItemForListing(id, name, cat, qty, unit, desc, images) {
+        closeSelectInventoryModal();
+
+        // Fill Form Fields
+        document.getElementById('modal_inventory_item_id').value = id;
+        document.getElementById('create_title').value = name;
+        document.getElementById('create_category').value = cat;
+        document.getElementById('create_quantity').value = qty;
+        document.getElementById('create_unit').value = unit;
+        document.getElementById('create_desc').value = desc || '';
+
+        // Sourced from inventory banner
+        var banner = document.getElementById('mkt_sourced_banner');
+        if (banner) {
+            document.getElementById('mkt_sourced_name').textContent = 'Sourced from Inventory: ' + name;
+            document.getElementById('mkt_sourced_stock').textContent = 'Stock Available: ' + qty + ' ' + unit + ' (Verified Reusable)';
+            banner.style.display = 'flex';
+        }
+
+        // Preload Photos from inventory item
+        mktExistingImages = Array.isArray(images) ? images.slice(0, 5) : [];
+        mktPhotosTransfer = new DataTransfer();
+        renderMktSlots();
+
+        // Pop Out Create Listing Modal
         var modal = document.getElementById('create-listing-modal');
         modal.style.display = 'flex';
         var body = modal.querySelector('.modal-body');
         if (body) body.scrollTop = 0;
         document.body.style.overflow = 'hidden';
     }
+
+    // Direct custom listing without inventory selection
+    function openDirectCustomListing() {
+        closeSelectInventoryModal();
+
+        document.getElementById('modal_inventory_item_id').value = '';
+        var banner = document.getElementById('mkt_sourced_banner');
+        if (banner) banner.style.display = 'none';
+
+        document.getElementById('create_title').value = '';
+        document.getElementById('create_quantity').value = '';
+        document.getElementById('create_unit').value = '';
+        document.getElementById('create_desc').value = '';
+
+        mktExistingImages = [];
+        mktPhotosTransfer = new DataTransfer();
+        renderMktSlots();
+
+        var modal = document.getElementById('create-listing-modal');
+        modal.style.display = 'flex';
+        var body = modal.querySelector('.modal-body');
+        if (body) body.scrollTop = 0;
+        document.body.style.overflow = 'hidden';
+    }
+
+    // Change inventory item from inside listing modal
+    function changeInventoryItemForListing() {
+        closeCreateListingModal();
+        openSelectInventoryModal();
+    }
+
     function closeCreateListingModal() {
         document.getElementById('create-listing-modal').style.display = 'none';
         document.body.style.overflow = '';
@@ -1105,27 +1433,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         }
     }
 
-    function autofillFromInventory(selectEl) {
-        var opt = selectEl.options[selectEl.selectedIndex];
-        if (!opt || !opt.value) {
-            document.getElementById('modal_inventory_item_id').value = '';
-            return;
-        }
-        document.getElementById('modal_inventory_item_id').value = opt.value;
-        if (opt.dataset.name) document.getElementById('create_title').value = opt.dataset.name;
-        if (opt.dataset.cat) document.getElementById('create_category').value = opt.dataset.cat;
-        if (opt.dataset.qty) document.getElementById('create_quantity').value = opt.dataset.qty;
-        if (opt.dataset.unit) document.getElementById('create_unit').value = opt.dataset.unit;
-        if (opt.dataset.reusability === 'not_reusable') {
-            var r1 = document.getElementById('create_reusability_not_reusable');
-            if (r1) r1.checked = true;
-        } else {
-            var r2 = document.getElementById('create_reusability_reusable');
-            if (r2) r2.checked = true;
-        }
-    }
-
-    // Quick View Modal
+    // Quick View Detail Modal
     var currentActiveModalListing = null;
 
     function openListingDetailModal(listingId) {

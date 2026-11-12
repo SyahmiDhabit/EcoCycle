@@ -424,4 +424,187 @@ class MarketplaceAndInventoryTest extends TestCase
 
         $this->assertDatabaseMissing('marketplace_listings', ['id' => $listing->id]);
     }
+
+    public function test_reusable_inventory_item_automatically_creates_active_marketplace_listing(): void
+    {
+        $business = $this->createApprovedBusiness('BioGreen Manufacturing');
+
+        $image = UploadedFile::fake()->image('pallet.jpg', 400, 400);
+
+        $response = $this->actingAs($business)
+            ->from(route('business.inventory'))
+            ->post(route('business.inventory.store'), [
+                'name' => 'Grade-A Reusable Wooden Pallets',
+                'description' => 'Heat treated pine wood pallets, certified for logistics reuse.',
+                'category' => 'Furniture & wood products',
+                'quantity' => 80,
+                'unit' => 'pallets',
+                'reusability' => 'reusable',
+                'listing_type' => 'buy',
+                'price' => 35.50,
+                'condition' => 'Used - Good',
+                'images' => [$image],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('business.inventory'));
+
+        // Check Inventory Item was created
+        $item = InventoryItem::where('name', 'Grade-A Reusable Wooden Pallets')->firstOrFail();
+        $this->assertSame('reusable', $item->reusability);
+        $this->assertSame('35.50', (string) $item->price);
+
+        // Check Marketplace Listing was AUTOMATICALLY created and linked!
+        $listing = MarketplaceListing::where('inventory_item_id', $item->id)->firstOrFail();
+        $this->assertSame('active', $listing->status);
+        $this->assertSame('Grade-A Reusable Wooden Pallets', $listing->title);
+        $this->assertSame('buy', $listing->listing_type);
+        $this->assertSame(35.50, (float) $listing->price);
+        $this->assertSame(80.0, (float) $listing->quantity);
+        $this->assertSame($business->id, $listing->business_id);
+        $this->assertNotNull($listing->image_path);
+
+        // Verify it appears in Marketplace view
+        $mktResponse = $this->actingAs($business)->get(route('business.marketplace'));
+        $mktResponse->assertOk();
+        $mktResponse->assertSee('Grade-A Reusable Wooden Pallets');
+
+        // Verify it appears in public Business Directory show page for other businesses!
+        $viewer = $this->createApprovedBusiness('Buyer Corp');
+        $dirResponse = $this->actingAs($viewer)->get(route('business.directory.show', $business));
+        $dirResponse->assertOk();
+        $dirResponse->assertSee('Grade-A Reusable Wooden Pallets');
+    }
+
+    public function test_not_reusable_inventory_item_remains_internal_scrap_and_never_lists_on_marketplace(): void
+    {
+        $business = $this->createApprovedBusiness('Selangor Steel Mills');
+
+        $image = UploadedFile::fake()->image('scrap.jpg', 400, 400);
+
+        $response = $this->actingAs($business)
+            ->from(route('business.inventory'))
+            ->post(route('business.inventory.store'), [
+                'name' => 'Mixed Metal Shavings & Scrap Offcuts',
+                'description' => 'Industrial machining shavings from CNC cutting.',
+                'category' => 'Metal & fabrication',
+                'quantity' => 250,
+                'unit' => 'kg',
+                'reusability' => 'not_reusable',
+                'images' => [$image],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+
+        // Check Inventory Item was created as scrap
+        $item = InventoryItem::where('name', 'Mixed Metal Shavings & Scrap Offcuts')->firstOrFail();
+        $this->assertSame('not_reusable', $item->reusability);
+
+        // Check NO Marketplace listing was created
+        $this->assertDatabaseMissing('marketplace_listings', [
+            'inventory_item_id' => $item->id,
+        ]);
+        $this->assertDatabaseMissing('marketplace_listings', [
+            'title' => 'Mixed Metal Shavings & Scrap Offcuts',
+        ]);
+
+        // Verify other businesses cannot see it on directory
+        $viewer = $this->createApprovedBusiness('Buyer Corp');
+        $dirResponse = $this->actingAs($viewer)->get(route('business.directory.show', $business));
+        $dirResponse->assertOk();
+        $dirResponse->assertDontSee('Mixed Metal Shavings & Scrap Offcuts');
+    }
+
+    public function test_inventory_updates_and_quantity_adjustments_synchronize_to_marketplace(): void
+    {
+        $business = $this->createApprovedBusiness('Textile Hub Sdn Bhd');
+        $image = UploadedFile::fake()->image('fabric.jpg', 400, 400);
+
+        $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Cotton Fabric Rolls',
+            'category' => 'Textiles & apparel',
+            'quantity' => 100,
+            'unit' => 'meters',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 12.00,
+            'images' => [$image],
+        ]);
+
+        $item = InventoryItem::where('name', 'Cotton Fabric Rolls')->firstOrFail();
+        $listing = MarketplaceListing::where('inventory_item_id', $item->id)->firstOrFail();
+        $this->assertSame('active', $listing->status);
+        $this->assertSame(100.0, (float) $listing->quantity);
+
+        // Deduct stock to 0 via stock_out adjustment
+        $this->actingAs($business)->post(route('business.inventory.adjust', $item), [
+            'type' => 'stock_out',
+            'quantity' => 100,
+        ]);
+
+        $item->refresh();
+        $listing->refresh();
+        $this->assertSame(0.0, (float) $item->quantity);
+        $this->assertSame('out_of_stock', $item->status);
+        $this->assertSame('sold', $listing->status);
+
+        // Replenish stock via stock_in adjustment
+        $this->actingAs($business)->post(route('business.inventory.adjust', $item), [
+            'type' => 'stock_in',
+            'quantity' => 50,
+        ]);
+
+        $item->refresh();
+        $listing->refresh();
+        $this->assertSame(50.0, (float) $item->quantity);
+        $this->assertSame('in_stock', $item->status);
+        $this->assertSame('active', $listing->status);
+
+        // Change reusability to not_reusable (scrap) via update
+        $this->actingAs($business)->put(route('business.inventory.update', $item), [
+            'name' => 'Damaged Cotton Fabric Scrap',
+            'category' => 'Textiles & apparel',
+            'unit' => 'meters',
+            'reusability' => 'not_reusable',
+        ]);
+
+        $item->refresh();
+        $this->assertSame('not_reusable', $item->reusability);
+        $this->assertDatabaseMissing('marketplace_listings', [
+            'inventory_item_id' => $item->id,
+        ]);
+    }
+
+    public function test_marketplace_direct_listing_automatically_creates_inventory_item(): void
+    {
+        $business = $this->createApprovedBusiness('Packaging Specialist');
+        $image = UploadedFile::fake()->image('cartons.jpg', 400, 400);
+
+        $response = $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'title' => 'Excess Corrugated Cartons',
+            'description' => 'Unused double-wall shipping boxes.',
+            'category' => 'Packaging & paper',
+            'quantity' => 200,
+            'unit' => 'boxes',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 4.50,
+            'images' => [$image],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        // Marketplace listing created
+        $listing = MarketplaceListing::where('title', 'Excess Corrugated Cartons')->firstOrFail();
+        $this->assertNotNull($listing->inventory_item_id);
+
+        // Inventory item was automatically created and synchronized!
+        $item = InventoryItem::find($listing->inventory_item_id);
+        $this->assertNotNull($item);
+        $this->assertSame('Excess Corrugated Cartons', $item->name);
+        $this->assertSame('Packaging & paper', $item->category);
+        $this->assertSame(200.0, (float) $item->quantity);
+        $this->assertSame('reusable', $item->reusability);
+        $this->assertSame(4.50, (float) $item->price);
+    }
 }

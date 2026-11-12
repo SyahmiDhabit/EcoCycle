@@ -283,6 +283,24 @@ $activeNav = 'inventory';
             background: #dbeafe;
             border-color: #60a5fa;
         }
+        .btn-market-live {
+            padding: 4px 8px;
+            border: 1px solid #86efac;
+            border-radius: 4px;
+            background: #f0fdf4;
+            color: #15803d;
+            font: 700 11px var(--font-main);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+        }
+        .btn-market-live:hover {
+            background: #dcfce7;
+            border-color: #4ade80;
+            color: #166534;
+        }
         .modal-backdrop,
         .modal-overlay {
             position: fixed !important;
@@ -470,7 +488,7 @@ $activeNav = 'inventory';
                         <tbody>
                             <?php foreach ($items as $item): ?>
                                 <tr>
-                                    <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>)' style="cursor:pointer;" title="Click to view/edit material details">
+                                    <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
                                         <div style="display:flex;align-items:center;gap:12px;">
                                             <?php if ($item->image_path): ?>
                                                 <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.06);" loading="lazy">
@@ -490,9 +508,9 @@ $activeNav = 'inventory';
                                     <td data-label="Category"><?= e($item->category) ?></td>
                                     <td data-label="Reusability">
                                         <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                            <span class="badge-reusable" title="Reusable circular material">↻ Reusable</span>
+                                            <span class="badge-reusable" title="Reusable circular material - automatically published to Marketplace & Directory">↻ Reusable</span>
                                         <?php else: ?>
-                                            <span class="badge-not-reusable" title="Single-use / non-reusable scrap">⊘ Not Reusable</span>
+                                            <span class="badge-not-reusable" title="Single-use scrap - private internal inventory only">⊘ Scrap</span>
                                         <?php endif; ?>
                                     </td>
                                     <td data-label="Stock Level">
@@ -519,16 +537,16 @@ $activeNav = 'inventory';
                                                 - Out
                                             </button>
                                             <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                                <button type="button" class="btn-list-market" title="List on Marketplace (Buy, Borrow, or Free)" onclick='openListMarketModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= (float)$item->quantity ?>, "reusable", <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>)'>
-                                                    🛒 List
-                                                </button>
+                                                <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="Automatically live on Marketplace & Business Directory. Click to view on Marketplace.">
+                                                    🛒 On Market
+                                                </a>
                                             <?php else: ?>
-                                                <span class="btn-owner-only" title="Non-reusable material is kept in your account only and cannot be listed on the marketplace">🔒 Scrap</span>
+                                                <span class="btn-owner-only" title="Non-reusable scrap is private to your account only and not listed on the marketplace">🔒 Scrap</span>
                                                 <button type="button" class="btn-ai-advisor" title="EcoCycle AI Scrap Advisor: View circular recovery options & send to Wastage Monitoring" onclick='openAiAdvisorModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= (float)$item->quantity ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>)'>
                                                     💡 AI Advisor
                                                 </button>
                                             <?php endif; ?>
-                                            <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>)'>
+                                            <button type="button" class="btn-edit" title="Edit details & marketplace pricing" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
                                                 Edit
                                             </button>
                                             <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
@@ -644,19 +662,61 @@ $activeNav = 'inventory';
                             <input type="radio" name="reusability" value="reusable" checked onchange="toggleReusabilityNotice('add', this.value)">
                             <div class="toggle-card-content">
                                 <span class="toggle-title" style="color:#15803d;">↻ Reusable Material</span>
-                                <span class="toggle-desc">Durable, multi-use. Can be listed on the public marketplace for other businesses to buy, borrow, or take.</span>
+                                <span class="toggle-desc">Durable, multi-use. Automatically published to Marketplace and Business Directory.</span>
                             </div>
                         </label>
                         <label class="reusability-toggle-card">
                             <input type="radio" name="reusability" value="not_reusable" onchange="toggleReusabilityNotice('add', this.value)">
                             <div class="toggle-card-content">
                                 <span class="toggle-title" style="color:#475569;">⊘ Not Reusable (Scrap)</span>
-                                <span class="toggle-desc">Single-use cutoffs / scrap. Saved in your owner account only (will NOT appear or be listed on the marketplace).</span>
+                                <span class="toggle-desc">Single-use cutoffs / scrap. Kept private for waste tracking & AI Scrap Advisor.</span>
                             </div>
                         </label>
                     </div>
-                    <div id="add_reusability_scrap_notice" style="display:none;margin-top:8px;padding:9px 12px;border-radius:6px;background:#fef7f6;border:1px solid #fecaca;color:#991b1b;font-size:12px;line-height:1.4;">
-                        🔒 <strong>Owner Account Only:</strong> Not-reusable materials remain saved in your account for internal tracking. They cannot be listed on the public marketplace for other businesses.
+
+                    <!-- Marketplace & Directory Trade Settings (Automatic Publication for Reusable) -->
+                    <div id="add_marketplace_trade_panel" style="margin-top:12px;background:#f4fbf6;border:1.5px solid #bbf0cb;border-radius:8px;padding:14px 16px;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                            <span style="font-size:16px;">🛒</span>
+                            <strong style="color:#0f5132;font-size:13px;">Marketplace & Directory Publication Settings</strong>
+                        </div>
+                        <p style="margin:0 0 12px;font-size:12px;color:#1e4620;line-height:1.45;">
+                            Reusable materials are <strong>automatically published to the EcoCycle Marketplace</strong> and showcased under your company profile in the Business Directory.
+                        </p>
+                        <div class="form-row-3" style="margin-bottom:0;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="add_listing_type">Listing Type *</label>
+                                <select id="add_listing_type" name="listing_type" onchange="toggleAddPriceField(this.value)">
+                                    <option value="buy">Sell (For Sale)</option>
+                                    <option value="borrow">Lend (Borrow)</option>
+                                    <option value="free">Free (Donate / Giveaway)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="add_price_group" style="margin-bottom:0;">
+                                <label for="add_price">Price per Unit (RM)</label>
+                                <input id="add_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="add_condition">Material Condition</label>
+                                <select id="add_condition" name="condition">
+                                    <option value="Used - Good">Used - Good</option>
+                                    <option value="Like New">Like New</option>
+                                    <option value="Surplus Unopened">Surplus Unopened</option>
+                                    <option value="Used - Fair">Used - Fair</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="add_reusability_scrap_notice" style="display:none;margin-top:12px;padding:12px 14px;border-radius:8px;background:#fef7f6;border:1.5px solid #fecaca;color:#991b1b;font-size:12px;line-height:1.45;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                            <span style="font-size:15px;">🔒</span>
+                            <strong style="color:#7f1d1d;">Internal Scrap Only (Not Listed on Marketplace)</strong>
+                        </div>
+                        This material is non-reusable scrap. It will remain saved in your private inventory for waste monitoring. It will <strong>NOT</strong> appear on the public marketplace or business directory.
+                        <div style="margin-top:6px;color:#1e3a8a;font-weight:600;">
+                            💡 EcoCycle AI Scrap Advisor is available directly from your inventory table to recommend compliant recycling & recovery solutions.
+                        </div>
                     </div>
                 </div>
 
@@ -760,19 +820,58 @@ $activeNav = 'inventory';
                     <label>Reusability Classification *</label>
                     <div class="reusability-toggle-grid">
                         <label class="reusability-toggle-card">
-                            <input type="radio" name="reusability" id="edit_reusability_reusable" value="reusable">
+                            <input type="radio" name="reusability" id="edit_reusability_reusable" value="reusable" onchange="toggleReusabilityNotice('edit', this.value)">
                             <div class="toggle-card-content">
                                 <span class="toggle-title" style="color:#15803d;">↻ Reusable</span>
-                                <span class="toggle-desc">Durable, multi-use, circular</span>
+                                <span class="toggle-desc">Durable, multi-use, circular (Synced with Marketplace & Directory)</span>
                             </div>
                         </label>
                         <label class="reusability-toggle-card">
-                            <input type="radio" name="reusability" id="edit_reusability_not_reusable" value="not_reusable">
+                            <input type="radio" name="reusability" id="edit_reusability_not_reusable" value="not_reusable" onchange="toggleReusabilityNotice('edit', this.value)">
                             <div class="toggle-card-content">
                                 <span class="toggle-title" style="color:#475569;">⊘ Not Reusable</span>
-                                <span class="toggle-desc">Single-use scrap / cutoffs</span>
+                                <span class="toggle-desc">Single-use scrap / cutoffs (Private internal inventory)</span>
                             </div>
                         </label>
+                    </div>
+
+                    <!-- Marketplace & Directory Trade Settings (Automatic Sync for Reusable) -->
+                    <div id="edit_marketplace_trade_panel" style="margin-top:12px;background:#f4fbf6;border:1.5px solid #bbf0cb;border-radius:8px;padding:14px 16px;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                            <span style="font-size:16px;">🛒</span>
+                            <strong style="color:#0f5132;font-size:13px;">Marketplace & Directory Publication Settings</strong>
+                        </div>
+                        <div class="form-row-3" style="margin-bottom:0;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="edit_listing_type">Listing Type *</label>
+                                <select id="edit_listing_type" name="listing_type" onchange="toggleEditPriceField(this.value)">
+                                    <option value="buy">Sell (For Sale)</option>
+                                    <option value="borrow">Lend (Borrow)</option>
+                                    <option value="free">Free (Donate / Giveaway)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="edit_price_group" style="margin-bottom:0;">
+                                <label for="edit_price">Price per Unit (RM)</label>
+                                <input id="edit_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label for="edit_condition">Material Condition</label>
+                                <select id="edit_condition" name="condition">
+                                    <option value="Used - Good">Used - Good</option>
+                                    <option value="Like New">Like New</option>
+                                    <option value="Surplus Unopened">Surplus Unopened</option>
+                                    <option value="Used - Fair">Used - Fair</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="edit_reusability_scrap_notice" style="display:none;margin-top:12px;padding:12px 14px;border-radius:8px;background:#fef7f6;border:1.5px solid #fecaca;color:#991b1b;font-size:12px;line-height:1.45;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                            <span style="font-size:15px;">🔒</span>
+                            <strong style="color:#7f1d1d;">Internal Scrap Only (Unlisted from Marketplace)</strong>
+                        </div>
+                        Marking this item as Non-Reusable scrap will remove it from the public marketplace and business directory. It stays saved in your private inventory for waste monitoring and AI Scrap Advisor suggestions.
                     </div>
                 </div>
 
@@ -1071,8 +1170,41 @@ var editPhotosTransfer = new DataTransfer();
 
 function toggleReusabilityNotice(prefix, val) {
     var notice = document.getElementById(prefix + '_reusability_scrap_notice');
-    if (notice) {
-        notice.style.display = val === 'not_reusable' ? 'block' : 'none';
+    var tradePanel = document.getElementById(prefix + '_marketplace_trade_panel');
+    if (val === 'not_reusable') {
+        if (notice) notice.style.display = 'block';
+        if (tradePanel) tradePanel.style.display = 'none';
+    } else {
+        if (notice) notice.style.display = 'none';
+        if (tradePanel) tradePanel.style.display = 'block';
+    }
+}
+
+function toggleAddPriceField(val) {
+    var pGrp = document.getElementById('add_price_group');
+    if (!pGrp) return;
+    if (val === 'free') {
+        pGrp.style.opacity = '0.35';
+        pGrp.style.pointerEvents = 'none';
+        var inp = document.getElementById('add_price');
+        if (inp) inp.value = '0.00';
+    } else {
+        pGrp.style.opacity = '1';
+        pGrp.style.pointerEvents = 'auto';
+    }
+}
+
+function toggleEditPriceField(val) {
+    var pGrp = document.getElementById('edit_price_group');
+    if (!pGrp) return;
+    if (val === 'free') {
+        pGrp.style.opacity = '0.35';
+        pGrp.style.pointerEvents = 'none';
+        var inp = document.getElementById('edit_price');
+        if (inp) inp.value = '0.00';
+    } else {
+        pGrp.style.opacity = '1';
+        pGrp.style.pointerEvents = 'auto';
     }
 }
 
@@ -1216,7 +1348,7 @@ function validateInventoryAddForm(form) {
 // Edit Modal Functions
 var editInitialImages = [];
 
-function openEditModal(id, name, sku, category, unit, threshold, notes, reusability, description, existingImages) {
+function openEditModal(id, name, sku, category, unit, threshold, notes, reusability, description, existingImages, price, listingType, condition) {
     document.getElementById('edit-form').action = '/business/inventory/' + id;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_sku').value = sku || '';
@@ -1227,12 +1359,26 @@ function openEditModal(id, name, sku, category, unit, threshold, notes, reusabil
     if (document.getElementById('edit_description')) {
         document.getElementById('edit_description').value = description || '';
     }
+
+    if (document.getElementById('edit_listing_type')) {
+        document.getElementById('edit_listing_type').value = listingType || 'buy';
+    }
+    if (document.getElementById('edit_price')) {
+        document.getElementById('edit_price').value = (price !== null && price !== undefined && parseFloat(price) > 0) ? price : '';
+    }
+    if (document.getElementById('edit_condition')) {
+        document.getElementById('edit_condition').value = condition || 'Used - Good';
+    }
+    toggleEditPriceField(listingType || 'buy');
+
     if (reusability === 'not_reusable') {
         var el = document.getElementById('edit_reusability_not_reusable');
         if (el) el.checked = true;
+        toggleReusabilityNotice('edit', 'not_reusable');
     } else {
         var el2 = document.getElementById('edit_reusability_reusable');
         if (el2) el2.checked = true;
+        toggleReusabilityNotice('edit', 'reusable');
     }
     editPhotosTransfer = new DataTransfer();
     editInitialImages = existingImages || [];

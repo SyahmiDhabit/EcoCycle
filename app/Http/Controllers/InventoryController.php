@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\BusinessNotification;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
+use App\Models\MarketplaceListing;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +29,16 @@ class InventoryController extends Controller
 
         if ($business->account_status !== 'approved') {
             return view('business.verification', ['business' => $business]);
+        }
+
+        // Auto-heal / synchronize any reusable inventory items missing a marketplace listing
+        $unsynced = $business->inventoryItems()
+            ->where('reusability', 'reusable')
+            ->whereDoesntHave('marketplaceListing')
+            ->get();
+
+        foreach ($unsynced as $itemToSync) {
+            static::syncInventoryToMarketplace($itemToSync);
         }
 
         $query = $business->inventoryItems()->latest();
@@ -77,6 +89,9 @@ class InventoryController extends Controller
             'quantity' => ['required', 'numeric', 'min:0'],
             'unit' => ['required', 'string', 'max:20'],
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
+            'listing_type' => ['nullable', 'in:buy,borrow,free'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'condition' => ['nullable', 'string', 'max:40'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'images' => ['required', 'array', 'min:1', 'max:5'],
@@ -116,7 +131,12 @@ class InventoryController extends Controller
             $status = 'low_stock';
         }
 
-        DB::transaction(function () use ($business, $validated, $quantity, $threshold, $status, $uploadedImages): void {
+        $reusability = $validated['reusability'] ?? 'reusable';
+        $listingType = $validated['listing_type'] ?? 'buy';
+        $condition = $validated['condition'] ?? 'Used - Good';
+        $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : 0);
+
+        DB::transaction(function () use ($business, $validated, $quantity, $threshold, $status, $uploadedImages, $reusability, $listingType, $price, $condition): void {
             $item = InventoryItem::create([
                 'business_id' => $business->id,
                 'name' => $validated['name'],
@@ -125,7 +145,10 @@ class InventoryController extends Controller
                 'category' => $validated['category'],
                 'quantity' => $quantity,
                 'unit' => $validated['unit'],
-                'reusability' => $validated['reusability'] ?? 'reusable',
+                'reusability' => $reusability,
+                'listing_type' => $listingType,
+                'price' => $price,
+                'condition' => $condition,
                 'image_path' => $uploadedImages[0] ?? null,
                 'image_1' => $uploadedImages[0] ?? null,
                 'image_2' => $uploadedImages[1] ?? null,
@@ -149,17 +172,35 @@ class InventoryController extends Controller
                 ]);
             }
 
-            BusinessNotification::send(
-                $business->id,
-                'Inventory Stock Logged',
-                "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$validated['category']}) to your internal inventory.",
-                'inventory_added',
-                '/business/inventory',
-                'blue'
-            );
+            // Synchronize with Marketplace & Business Profile Directory
+            static::syncInventoryToMarketplace($item, $validated);
+
+            if ($reusability === 'reusable') {
+                BusinessNotification::send(
+                    $business->id,
+                    'Material Added & Live on Marketplace',
+                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$validated['category']}). It is automatically active on the Marketplace and visible in your business directory profile.",
+                    'inventory_added',
+                    '/business/marketplace',
+                    'green'
+                );
+            } else {
+                BusinessNotification::send(
+                    $business->id,
+                    'Scrap Material Logged in Inventory',
+                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$validated['category']}) as internal scrap. AI Scrap Advisor guidance is ready.",
+                    'inventory_added',
+                    '/business/inventory',
+                    'blue'
+                );
+            }
         });
 
-        return back()->with('status', "Inventory item '{$validated['name']}' added successfully.");
+        $successMsg = ($reusability === 'reusable')
+            ? "Inventory item '{$validated['name']}' added and automatically published to Marketplace & Directory!"
+            : "Scrap item '{$validated['name']}' saved to internal inventory. Click 'AI Advisor' for circular recovery suggestions.";
+
+        return back()->with('status', $successMsg);
     }
 
     public function update(Request $request, InventoryItem $item): RedirectResponse
@@ -174,6 +215,9 @@ class InventoryController extends Controller
             'category' => ['required', 'string', 'max:60'],
             'unit' => ['required', 'string', 'max:20'],
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
+            'listing_type' => ['nullable', 'in:buy,borrow,free'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'condition' => ['nullable', 'string', 'max:40'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'images' => ['nullable', 'array', 'max:5'],
@@ -212,13 +256,21 @@ class InventoryController extends Controller
             $status = 'low_stock';
         }
 
+        $reusability = $validated['reusability'] ?? $item->reusability ?? 'reusable';
+        $listingType = $validated['listing_type'] ?? $item->listing_type ?? 'buy';
+        $condition = $validated['condition'] ?? $item->condition ?? 'Used - Good';
+        $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : ($item->price ?? 0));
+
         $item->update([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? $item->description,
             'sku' => $validated['sku'] ?? null,
             'category' => $validated['category'],
             'unit' => $validated['unit'],
-            'reusability' => $validated['reusability'] ?? $item->reusability ?? 'reusable',
+            'reusability' => $reusability,
+            'listing_type' => $listingType,
+            'price' => $price,
+            'condition' => $condition,
             'image_path' => $uploadedImages[0] ?? null,
             'image_1' => $uploadedImages[0] ?? null,
             'image_2' => $uploadedImages[1] ?? null,
@@ -231,7 +283,10 @@ class InventoryController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return back()->with('status', "Item '{$item->name}' updated successfully.");
+        // Sync with marketplace
+        static::syncInventoryToMarketplace($item, $validated);
+
+        return back()->with('status', "Item '{$item->name}' updated and synced successfully.");
     }
 
     public function adjust(Request $request, InventoryItem $item): RedirectResponse
@@ -280,10 +335,13 @@ class InventoryController extends Controller
                 'quantity_after' => $newQty,
                 'notes' => $validated['notes'] ?? ($type === 'stock_in' ? 'Stock replenished' : 'Stock dispatched / used'),
             ]);
+
+            // Sync with marketplace
+            static::syncInventoryToMarketplace($item);
         });
 
         $actionWord = $type === 'stock_in' ? 'added to' : 'deducted from';
-        return back()->with('status', "{$adjQty} {$item->unit} {$actionWord} '{$item->name}'. New balance: {$newQty} {$item->unit}.");
+        return back()->with('status', "{$adjQty} {$item->unit} {$actionWord} '{$item->name}'. New balance: {$newQty} {$item->unit} (Marketplace synced).");
     }
 
     public function destroy(InventoryItem $item): RedirectResponse
@@ -298,9 +356,75 @@ class InventoryController extends Controller
             }
         }
 
+        // Delete any linked marketplace listing
+        MarketplaceListing::where('inventory_item_id', $item->id)->delete();
+
         $name = $item->name;
         $item->delete();
 
-        return back()->with('status', "Inventory item '{$name}' deleted.");
+        return back()->with('status', "Inventory item '{$name}' and its marketplace listing deleted.");
+    }
+
+    /**
+     * Synchronize an inventory item with the public marketplace listings.
+     * - Reusable materials automatically become active marketplace listings (and appear on directory profile).
+     * - Non-reusable scrap materials remain private internal inventory and are removed from the marketplace.
+     */
+    public static function syncInventoryToMarketplace(InventoryItem $item, array $extraData = []): ?MarketplaceListing
+    {
+        if (($item->reusability ?? 'reusable') === 'reusable') {
+            $business = $item->business ?: User::find($item->business_id);
+            $listingType = $extraData['listing_type'] ?? $item->listing_type ?? 'buy';
+            if (!in_array($listingType, ['buy', 'borrow', 'free'], true)) {
+                $listingType = 'buy';
+            }
+            $isFree = $listingType === 'free';
+            $price = $isFree ? 0 : (isset($extraData['price']) && $extraData['price'] !== '' && $extraData['price'] !== null
+                ? (float) $extraData['price']
+                : ($item->price ? (float) $item->price : 0));
+
+            $condition = $extraData['condition'] ?? $item->condition ?? 'Used - Good';
+            $qty = (float) $item->quantity;
+            $status = $qty > 0 ? 'active' : 'sold';
+
+            $listing = MarketplaceListing::where('inventory_item_id', $item->id)->first();
+            if (! $listing) {
+                $listing = new MarketplaceListing();
+                $listing->business_id = $item->business_id;
+                $listing->inventory_item_id = $item->id;
+            }
+
+            $listing->title = $item->name;
+            $listing->description = !empty($item->description)
+                ? $item->description
+                : (!empty($listing->description) ? $listing->description : 'Reusable surplus material available for circular exchange on EcoCycle.');
+            $listing->category = $item->category;
+            $listing->quantity = $qty;
+            $listing->unit = $item->unit;
+            $listing->listing_type = $listingType;
+            $listing->reusability = 'reusable';
+            $listing->price = $price;
+            $listing->is_free = $isFree;
+            $listing->condition = $condition;
+            $listing->location_city = $listing->location_city ?: ($business?->city ?: 'Kuala Lumpur');
+            $listing->location_state = $listing->location_state ?: ($business?->state ?: 'Selangor');
+
+            $images = $item->getAllImages();
+            $listing->image_path = $images[0] ?? null;
+            $listing->image_1 = $images[0] ?? null;
+            $listing->image_2 = $images[1] ?? null;
+            $listing->image_3 = $images[2] ?? null;
+            $listing->image_4 = $images[3] ?? null;
+            $listing->image_5 = $images[4] ?? null;
+            $listing->images = $images;
+            $listing->status = $status;
+            $listing->save();
+
+            return $listing;
+        }
+
+        // If marked as not_reusable, delete any active marketplace listing for this item
+        MarketplaceListing::where('inventory_item_id', $item->id)->delete();
+        return null;
     }
 }

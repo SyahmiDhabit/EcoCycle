@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'minimum_threshold',
     'status',
     'reusability',
+    'price',
+    'listing_type',
+    'condition',
     'image_path',
     'image_1',
     'image_2',
@@ -39,6 +42,7 @@ class InventoryItem extends Model
         return [
             'quantity' => 'decimal:2',
             'minimum_threshold' => 'decimal:2',
+            'price' => 'decimal:2',
             'images' => 'array',
         ];
     }
@@ -100,6 +104,11 @@ class InventoryItem extends Model
     public function marketplaceListings(): HasMany
     {
         return $this->hasMany(MarketplaceListing::class, 'inventory_item_id');
+    }
+
+    public function marketplaceListing(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(MarketplaceListing::class, 'inventory_item_id');
     }
 
     public function isLowStock(): bool

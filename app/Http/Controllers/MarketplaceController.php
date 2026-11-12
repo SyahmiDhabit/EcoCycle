@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BusinessNotification;
 use App\Models\InventoryItem;
+use App\Models\InventoryTransaction;
 use App\Models\MarketplaceListing;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -176,6 +177,46 @@ class MarketplaceController extends Controller
             }
             if (empty($uploadedImages)) {
                 $uploadedImages = $item->getAllImages();
+            }
+            $item->update([
+                'price' => $price,
+                'listing_type' => $listingType,
+                'condition' => $condition,
+            ]);
+        } else {
+            // Auto-create unified Inventory Item so both tables remain synchronized
+            $invItem = InventoryItem::create([
+                'business_id' => $business->id,
+                'name' => $validated['title'],
+                'description' => $description,
+                'category' => $validated['category'],
+                'quantity' => (float) $validated['quantity'],
+                'unit' => $validated['unit'],
+                'reusability' => 'reusable',
+                'listing_type' => $listingType,
+                'price' => $price,
+                'condition' => $condition,
+                'image_path' => $uploadedImages[0] ?? null,
+                'image_1' => $uploadedImages[0] ?? null,
+                'image_2' => $uploadedImages[1] ?? null,
+                'image_3' => $uploadedImages[2] ?? null,
+                'image_4' => $uploadedImages[3] ?? null,
+                'image_5' => $uploadedImages[4] ?? null,
+                'images' => $uploadedImages,
+                'status' => ((float) $validated['quantity'] > 0) ? 'in_stock' : 'out_of_stock',
+            ]);
+
+            $inventoryItemId = $invItem->id;
+
+            if ((float) $validated['quantity'] > 0) {
+                InventoryTransaction::create([
+                    'business_id' => $business->id,
+                    'inventory_item_id' => $invItem->id,
+                    'transaction_type' => 'stock_in',
+                    'quantity_change' => (float) $validated['quantity'],
+                    'quantity_after' => (float) $validated['quantity'],
+                    'notes' => 'Created via Marketplace Listing',
+                ]);
             }
         }
 

@@ -96,11 +96,11 @@ $unreadNotificationsCount = $realNotifications->where('is_read', false)->count()
             </div>
         </div>
 
-        <!-- User Profile Pill -->
-        <a href="<?= route('business.application') ?>" class="topbar-profile" title="View company profile">
+        <!-- User Profile Pill (Opens Business Profile & Password Settings) -->
+        <a href="<?= route('business.profile') ?>" class="topbar-profile" title="Manage Business Profile & Password Settings">
             <span class="topbar-avatar" style="overflow:hidden;padding:0;">
                 <?php if ($business?->profile_image): ?>
-                    <img src="<?= e($business->profile_image_url) ?>" alt="<?= e($companyName) ?>" style="width:100%;height:100%;object-fit:cover;display:block;">
+                    <img src="<?= e($business->profile_image_url ?: $business->profile_image) ?>" alt="<?= e($companyName) ?>" style="width:100%;height:100%;object-fit:cover;display:block;">
                 <?php else: ?>
                     <?= e($avatarInitials) ?>
                 <?php endif; ?>

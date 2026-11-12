@@ -157,6 +157,8 @@ class BusinessFullSuiteTest extends TestCase
             'payment_reference' => 'FPX-TEST-9988',
             'status' => 'completed',
         ]);
+        $this->assertSame(0.0, (float) $listing->fresh()->quantity);
+        $this->assertSame('sold', $listing->fresh()->status);
     }
 
     public function test_my_listings_page_and_review_feedback(): void

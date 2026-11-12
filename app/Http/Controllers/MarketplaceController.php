@@ -30,6 +30,14 @@ class MarketplaceController extends Controller
             return view('business.verification', ['business' => $business]);
         }
 
+        // Auto-heal / synchronize any reusable inventory items missing from marketplace_listings
+        $unsynced = InventoryItem::where('reusability', 'reusable')
+            ->whereDoesntHave('marketplaceListing')
+            ->get();
+        foreach ($unsynced as $itemToSync) {
+            InventoryController::syncInventoryToMarketplace($itemToSync);
+        }
+
         // Query marketplace listings directly from database
         $search = trim((string) $request->query('q', ''));
         $category = trim((string) $request->query('category', ''));

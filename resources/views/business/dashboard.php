@@ -156,6 +156,9 @@ $activeNav = 'overview';
                                             </svg>
                                             <span>Verified SME</span>
                                         </span>
+                                        <?php if (!empty($biz['is_current_user'])): ?>
+                                            <span style="background:#e0f2fe;color:#0369a1;font-weight:700;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid #bae6fd;">Your Business</span>
+                                        <?php endif; ?>
                                         <span class="category-tag"><?= e($biz['industry']) ?></span>
                                     </div>
                                     <h3 class="card-title"><?= e($biz['business_name']) ?></h3>
@@ -203,7 +206,12 @@ $activeNav = 'overview';
                                         data-location="<?= e(strtolower($biz['location'])) ?>"
                                         data-materials="<?= e(strtolower($biz['materials'])) ?>">
                                         <td class="company-cell">
-                                            <strong><?= e($biz['business_name']) ?></strong>
+                                            <div style="display:flex;align-items:center;gap:6px;">
+                                                <strong><?= e($biz['business_name']) ?></strong>
+                                                <?php if (!empty($biz['is_current_user'])): ?>
+                                                    <span style="background:#e0f2fe;color:#0369a1;font-weight:700;font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid #bae6fd;">Your Business</span>
+                                                <?php endif; ?>
+                                            </div>
                                             <small>
                                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                                     <polyline points="20 6 9 17 4 12"></polyline>

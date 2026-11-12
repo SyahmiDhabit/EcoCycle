@@ -33,11 +33,10 @@ class BusinessDashboardController extends Controller
             return view('business.verification', ['business' => $business]);
         }
 
-        // Fetch real approved businesses from the database (other than current business)
-        // Eager-loading marketplace listings and inventory items in a single query set
+        // Fetch approved businesses from database including current business
+        // Eager-loading active marketplace listings and inventory items
         $dbApprovedUsers = User::query()
             ->where('account_status', 'approved')
-            ->where('id', '!=', $business->id)
             ->with(['marketplaceListings' => function ($q) {
                 $q->where('status', 'active');
             }])
@@ -103,6 +102,7 @@ class BusinessDashboardController extends Controller
                 'id' => $u->id,
                 'business_name' => $u->business_name ?: $u->name,
                 'name' => $u->name,
+                'is_current_user' => ($u->id === $business->id),
                 'industry' => $u->industry ?: 'Not specified',
                 'city' => $u->city ?: '',
                 'state' => $u->state ?: '',

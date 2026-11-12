@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BusinessNotification;
+use App\Models\InventoryTransaction;
 use App\Models\MaterialExchange;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -125,6 +126,41 @@ class TransactionController extends Controller
             $exchange->invoice_number = 'INV-' . date('Y') . '-' . str_pad((string) $exchange->id, 5, '0', STR_PAD_LEFT);
         }
         $exchange->save();
+
+        // Automatically deduct purchased quantity from the listing and inventory
+        if ($listing = $exchange->listing) {
+            $newListingQty = max(0, (float) $listing->quantity - (float) $exchange->quantity);
+            $listing->quantity = $newListingQty;
+            if ($newListingQty <= 0) {
+                $listing->status = 'sold';
+            }
+            $listing->save();
+
+            if ($invItem = $listing->inventoryItem) {
+                $newInvQty = max(0, (float) $invItem->quantity - (float) $exchange->quantity);
+                $threshold = $invItem->minimum_threshold !== null ? (float) $invItem->minimum_threshold : null;
+                $invStatus = 'in_stock';
+                if ($newInvQty <= 0) {
+                    $invStatus = 'out_of_stock';
+                } elseif ($threshold !== null && $newInvQty <= $threshold) {
+                    $invStatus = 'low_stock';
+                }
+
+                $invItem->update([
+                    'quantity' => $newInvQty,
+                    'status' => $invStatus,
+                ]);
+
+                InventoryTransaction::create([
+                    'business_id' => $invItem->business_id,
+                    'inventory_item_id' => $invItem->id,
+                    'transaction_type' => 'stock_out',
+                    'quantity_change' => -(float) $exchange->quantity,
+                    'quantity_after' => $newInvQty,
+                    'notes' => "Sold via Order #{$exchange->invoice_number} (Ref: {$ref})",
+                ]);
+            }
+        }
 
         // Notify counterpart
         $notifyTarget = ($business->id === $exchange->provider_business_id) ? $exchange->requester_business_id : $exchange->provider_business_id;

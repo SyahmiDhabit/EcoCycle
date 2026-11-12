@@ -399,13 +399,6 @@ $activeNav = 'inventory';
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
         <main class="dashboard-main">
-            <!-- Breadcrumbs -->
-            <div class="breadcrumb-row">
-                <a href="/business">Overview</a>
-                <span class="sep">/</span>
-                <span class="current">Inventory</span>
-            </div>
-
             <?php if (session('status')): ?>
                 <div class="dashboard-alert success" role="status" style="margin-bottom:16px;padding:12px 16px;border-radius:8px;background:#eaf3e8;border:1px solid #c7dbc5;color:#176b40;font-size:13px;font-weight:600;">
                     <?= e(session('status')) ?>

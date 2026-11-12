@@ -517,6 +517,18 @@ h1, h2, h3, h4,
     text-decoration: underline;
 }
 
+.sidebar-user-pill:hover {
+    background: #eaf3e8 !important;
+    border-color: var(--brand-green) !important;
+    box-shadow: 0 2px 8px rgba(23, 107, 64, 0.12);
+}
+
+.sidebar-user-pill.active {
+    background: #e1efe0 !important;
+    border-color: #176b40 !important;
+    box-shadow: 0 0 0 2px rgba(23, 107, 64, 0.15);
+}
+
 /* ---------------- MAIN CONTENT ---------------- */
 .dashboard-main {
     flex: 1;
@@ -526,14 +538,9 @@ h1, h2, h3, h4,
     margin: 0 auto;
 }
 
-/* Breadcrumb */
+/* Breadcrumb (Disabled globally as requested) */
 .breadcrumb-row {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    display: none !important;
 }
 
 .breadcrumb-row a {

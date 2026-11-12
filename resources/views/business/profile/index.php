@@ -281,13 +281,6 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
         <main class="dashboard-main">
-            <!-- Breadcrumbs -->
-            <div class="breadcrumb-row">
-                <a href="/business">Overview</a>
-                <span class="sep">/</span>
-                <span class="current">Business Profile &amp; Security</span>
-            </div>
-
             <!-- Page Title Header -->
             <div class="page-header" style="margin-bottom:24px;">
                 <div>

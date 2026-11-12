@@ -75,7 +75,37 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             </svg>
             <span>Reports</span>
         </a>
+
+        <a href="/business/profile" class="sidebar-link <?= $activeNav === 'profile' ? 'active' : '' ?>" title="Business Profile, Logo & Password Settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Business Profile</span>
+        </a>
     </nav>
+
+    <!-- Navbar Profile Card (Matches Topbar Profile - Click to view & update) -->
+    <div style="padding: 10px 14px 4px;">
+        <a href="<?= route('business.profile') ?>" class="sidebar-user-pill <?= $activeNav === 'profile' ? 'active' : '' ?>" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f4f8f3;border:1.5px solid #cadbc9;border-radius:10px;text-decoration:none;transition:all 0.15s ease;" title="Click to view & update Business Profile">
+            <span style="width:34px;height:34px;border-radius:50%;overflow:hidden;background:#176b40;color:#ffffff;display:grid;place-items:center;font-weight:700;font-size:12px;flex-shrink:0;border:1.5px solid #235839;">
+                <?php if ($business?->profile_image): ?>
+                    <img src="<?= e($business->profile_image_url ?: $business->profile_image) ?>" alt="<?= e($companyName) ?>" style="width:100%;height:100%;object-fit:cover;display:block;">
+                <?php else: ?>
+                    <?= e(strtoupper(substr($companyName, 0, 2))) ?>
+                <?php endif; ?>
+            </span>
+            <span style="display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.25;">
+                <strong style="font-size:12px;color:#123321;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;"><?= e($companyName) ?></strong>
+                <span style="font-size:10.5px;color:#15803d;font-weight:700;"><?= e(match ($business?->account_status) {
+                    'approved' => '✓ Verified SME',
+                    'rejected' => 'Changes Required',
+                    default => 'Verification Pending',
+                }) ?></span>
+            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#526b5a" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
+    </div>
 
     <div class="sidebar-footer-card">
         <?php if ($business?->account_status === 'approved'): ?>

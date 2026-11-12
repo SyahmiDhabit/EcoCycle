@@ -37,13 +37,6 @@ $activeNav = 'overview';
 
         <!-- MAIN DASHBOARD CONTENT -->
         <main class="dashboard-main">
-            <!-- Breadcrumbs matching navigation: Overview -->
-            <div class="breadcrumb-row">
-                <a href="/business">Overview</a>
-                <span class="sep">/</span>
-                <span class="current">Business Directory</span>
-            </div>
-
             <!-- Page Title -->
             <div class="directory-header">
                 <div>

@@ -541,13 +541,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
         <main class="dashboard-main">
-            <!-- Breadcrumbs -->
-            <div class="breadcrumb-row">
-                <a href="/business">Overview</a>
-                <span class="sep">/</span>
-                <span class="current"><?= $myListingsOnly ? 'My Listings' : 'Marketplace' ?></span>
-            </div>
-
             <!-- Page Title Header -->
             <div class="page-header">
                 <div>

@@ -47,13 +47,6 @@ $hasFormErrors = $errors->any();
         ?>
 
         <main class="dashboard-main verification-content-main">
-            <!-- Breadcrumbs matching navigation -->
-            <div class="breadcrumb-row">
-                <a href="/business">Overview</a>
-                <span class="sep">/</span>
-                <span class="current">Business Profile</span>
-            </div>
-
             <!-- Page Title Header -->
             <div class="page-header">
                 <div>

@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -35,8 +36,6 @@ class AdminDashboardController extends Controller
 
     public function approve(User $business, BusinessMailNotifier $mailer): RedirectResponse
     {
-        $alreadyApproved = $business->account_status === 'approved';
-
         $business->update([
             'account_status' => 'approved',
             'review_note' => null,
@@ -53,11 +52,27 @@ class AdminDashboardController extends Controller
             'green'
         );
 
-        if (! $alreadyApproved) {
-            $mailer->decision($business->fresh(), 'approved');
-        }
+        $this->notifyDecision($business->fresh(), 'approved', null, $mailer);
 
         return back()->with('status', "{$business->business_name} has been approved.");
+    }
+
+    public function requestChanges(Request $request, User $business, BusinessMailNotifier $mailer): RedirectResponse
+    {
+        $validated = $request->validate([
+            'review_note' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $business->update([
+            'account_status' => 'rejected',
+            'review_note' => $validated['review_note'],
+            'reviewed_by' => Auth::guard('admin')->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        $this->notifyDecision($business->fresh(), 'changes_requested', $validated['review_note'], $mailer);
+
+        return back()->with('status', "{$business->business_name} needs changes before approval.");
     }
 
     public function reject(Request $request, User $business, BusinessMailNotifier $mailer): RedirectResponse
@@ -71,11 +86,7 @@ class AdminDashboardController extends Controller
         if (! in_array($actionType, ['request_changes', 'reject'], true)) {
             $actionType = 'request_changes';
         }
-
-        $alreadyNotified = $business->account_status === 'rejected'
-            && $business->review_note === $validated['review_note']
-            && $business->reviewed_at !== null
-            && $business->reviewed_at->diffInSeconds(now()) < 30;
+        $decisionType = $actionType === 'reject' ? 'rejected' : 'changes_requested';
 
         $business->update([
             'account_status' => 'rejected',
@@ -84,17 +95,36 @@ class AdminDashboardController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        $decisionType = $actionType === 'reject' ? 'rejected' : 'changes_requested';
+        $this->notifyDecision($business->fresh(), $decisionType, $validated['review_note'], $mailer);
 
-        if (! $alreadyNotified) {
-            $mailer->decision($business->fresh(), $decisionType);
-        }
-
-        $statusMsg = $actionType === 'reject'
-            ? "{$business->business_name} registration has been rejected."
-            : "{$business->business_name} needs changes before approval.";
+        $statusMsg = $decisionType === 'changes_requested'
+            ? "{$business->business_name} needs changes before approval."
+            : "{$business->business_name} registration has been rejected.";
 
         return back()->with('status', $statusMsg);
+    }
+
+    private function notifyDecision(User $business, string $decisionType, ?string $reviewNote, BusinessMailNotifier $mailer): void
+    {
+        $cacheKey = "last_business_decision_{$business->id}";
+        $lastDecision = Cache::get($cacheKey);
+
+        $isDuplicate = is_array($lastDecision)
+            && ($lastDecision['decision'] ?? null) === $decisionType
+            && ($lastDecision['note'] ?? null) === $reviewNote
+            && (now()->timestamp - ($lastDecision['time'] ?? 0)) < 5;
+
+        if ($isDuplicate) {
+            return;
+        }
+
+        Cache::put($cacheKey, [
+            'decision' => $decisionType,
+            'note' => $reviewNote,
+            'time' => now()->timestamp,
+        ], 10);
+
+        $mailer->decision($business, $decisionType);
     }
 
     public function markAllNotificationsRead(Request $request): JsonResponse

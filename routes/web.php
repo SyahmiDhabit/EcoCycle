@@ -77,6 +77,7 @@ Route::redirect('/admin', '/admin/dashboard')->name('admin.entry');
 Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->middleware('auth:admin')->name('admin.dashboard');
 Route::post('/admin/notifications/mark-read', [AdminDashboardController::class, 'markAllNotificationsRead'])->middleware('auth:admin')->name('admin.notifications.mark-read');
 Route::post('/admin/business/{business}/approve', [AdminDashboardController::class, 'approve'])->middleware('auth:admin')->name('admin.business.approve');
+Route::post('/admin/business/{business}/request-changes', [AdminDashboardController::class, 'requestChanges'])->middleware('auth:admin')->name('admin.business.request-changes');
 Route::post('/admin/business/{business}/reject', [AdminDashboardController::class, 'reject'])->middleware('auth:admin')->name('admin.business.reject');
 Route::get('/admin/business/{business}/documents/{document}', [AdminDashboardController::class, 'document'])->middleware('auth:admin')->name('admin.business.document');
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

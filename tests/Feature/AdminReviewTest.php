@@ -43,7 +43,17 @@ class AdminReviewTest extends TestCase
         $this->assertNotNull($business->reviewed_at);
         $this->assertEquals($admin->id, $business->reviewedBy->id);
 
-        Mail::assertSent(BusinessApplicationDecision::class);
+        Mail::assertSent(BusinessApplicationDecision::class, function ($mail) use ($business) {
+            $isToBusiness = $mail->hasTo($business->email);
+            $hasCorrectSubject = $mail->envelope()->subject === 'Your EcoCycle business application is approved';
+            $isApproved = $mail->decision === 'approved';
+
+            $rendered = $mail->render();
+            $containsBizName = str_contains($rendered, 'Eco Plastics Sdn Bhd');
+            $containsStatus = str_contains($rendered, 'Approved');
+
+            return $isToBusiness && $hasCorrectSubject && $isApproved && $containsBizName && $containsStatus;
+        });
     }
 
     public function test_admin_can_reject_business_with_note_and_foreign_key_is_saved(): void
@@ -307,5 +317,76 @@ class AdminReviewTest extends TestCase
 
         // Still only 1 email sent, no duplicate sent
         Mail::assertSent(BusinessApplicationDecision::class, 1);
+    }
+
+    public function test_admin_can_use_dedicated_request_changes_endpoint(): void
+    {
+        Mail::fake();
+
+        $admin = Administrator::create([
+            'name' => 'Reviewer Admin 5',
+            'email' => 'reviewer5@ecocycle.test',
+            'password' => 'secret123',
+        ]);
+
+        $business = User::factory()->create([
+            'name' => 'green_metals',
+            'business_name' => 'Green Metals Sdn Bhd',
+            'email' => 'contact@greenmetals.com',
+            'account_status' => 'pending',
+            'business_registration_number' => '202401055555 (5555555-M)',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.business.request-changes', $business), [
+                'review_note' => 'Please provide complete page 1-3 of SSM profile.',
+            ]);
+
+        $response->assertSessionHas('status', 'Green Metals Sdn Bhd needs changes before approval.');
+
+        $business->refresh();
+        $this->assertSame('rejected', $business->account_status);
+        $this->assertSame('Please provide complete page 1-3 of SSM profile.', $business->review_note);
+
+        Mail::assertSent(BusinessApplicationDecision::class, function ($mail) {
+            $isToBusiness = $mail->hasTo('contact@greenmetals.com');
+            $hasCorrectSubject = $mail->envelope()->subject === 'Action required: Changes requested for your EcoCycle business registration';
+            $isChangesRequested = $mail->decision === 'changes_requested';
+
+            $rendered = $mail->render();
+            $containsRemarks = str_contains($rendered, 'Please provide complete page 1-3 of SSM profile.');
+            $containsBizName = str_contains($rendered, 'Green Metals Sdn Bhd');
+            $containsStatus = str_contains($rendered, 'Changes Required');
+
+            return $isToBusiness && $hasCorrectSubject && $isChangesRequested && $containsRemarks && $containsBizName && $containsStatus;
+        });
+    }
+
+    public function test_admin_can_reapprove_or_resend_approval_email(): void
+    {
+        Mail::fake();
+
+        $admin = Administrator::create([
+            'name' => 'Reviewer Admin 6',
+            'email' => 'reviewer6@ecocycle.test',
+            'password' => 'secret123',
+        ]);
+
+        $business = User::factory()->create([
+            'business_name' => 'Circular Rubber Sdn Bhd',
+            'email' => 'rubber@circulareco.com',
+            'account_status' => 'approved',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.business.approve', $business));
+
+        $response->assertSessionHas('status', 'Circular Rubber Sdn Bhd has been approved.');
+
+        Mail::assertSent(BusinessApplicationDecision::class, function ($mail) {
+            return $mail->hasTo('rubber@circulareco.com')
+                && $mail->decision === 'approved'
+                && $mail->envelope()->subject === 'Your EcoCycle business application is approved';
+        });
     }
 }

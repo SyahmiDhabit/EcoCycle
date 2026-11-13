@@ -246,25 +246,31 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                             <?= csrf_field() ?>
                             <button class="admin-primary" type="submit">Approve business</button>
                         </form>
-                        <form class="reject-form" method="POST" action="<?= e(route('admin.business.reject', $business)) ?>">
+                        <form class="reject-form" method="POST" action="<?= e(route('admin.business.request-changes', $business)) ?>">
                             <?= csrf_field() ?>
                             <label class="visually-hidden" for="review-note-<?= $business->id ?>">Reason or remarks</label>
                             <input id="review-note-<?= $business->id ?>" name="review_note" value="<?= e(old('review_note')) ?>" placeholder="Explain remarks or reason for rejection" required maxlength="1000">
-                            <button class="admin-warning" type="submit" name="action_type" value="request_changes" title="Request business to update details or replace documents">Request changes</button>
-                            <button class="admin-danger" type="submit" name="action_type" value="reject" title="Reject business registration">Reject</button>
+                            <button class="admin-warning" type="submit" formaction="<?= e(route('admin.business.request-changes', $business)) ?>" name="action_type" value="request_changes" title="Request business to update details or replace documents">Request changes</button>
+                            <button class="admin-danger" type="submit" formaction="<?= e(route('admin.business.reject', $business)) ?>" name="action_type" value="reject" title="Reject business registration">Reject</button>
                         </form>
                     </div>
                 <?php } else { ?>
                     <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-                        <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:600;">
-                            ✓ Verified SME &middot; Approved on <?= $business->reviewed_at ? e($business->reviewed_at->timezone('Asia/Kuala_Lumpur')->format('j M Y')) : 'Record' ?>
-                        </span>
-                        <form class="reject-form" style="max-width:520px;" method="POST" action="<?= e(route('admin.business.reject', $business)) ?>">
+                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:600;">
+                                ✓ Verified SME &middot; Approved on <?= $business->reviewed_at ? e($business->reviewed_at->timezone('Asia/Kuala_Lumpur')->format('j M Y')) : 'Record' ?>
+                            </span>
+                            <form method="POST" action="<?= e(route('admin.business.approve', $business)) ?>" style="display:inline;margin:0;">
+                                <?= csrf_field() ?>
+                                <button class="admin-outline" type="submit" style="font-size:11px;padding:4px 10px;cursor:pointer;" title="Resend approval confirmation email to business">Resend Approval Email</button>
+                            </form>
+                        </div>
+                        <form class="reject-form" style="max-width:520px;" method="POST" action="<?= e(route('admin.business.request-changes', $business)) ?>">
                             <?= csrf_field() ?>
                             <label class="visually-hidden" for="re-review-note-<?= $business->id ?>">Re-review note</label>
                             <input id="re-review-note-<?= $business->id ?>" name="review_note" placeholder="Explain remarks / updates needed..." required maxlength="1000">
-                            <button class="admin-warning" type="submit" name="action_type" value="request_changes" style="white-space:nowrap;">Request changes</button>
-                            <button class="admin-danger" type="submit" name="action_type" value="reject" style="white-space:nowrap;">Reject</button>
+                            <button class="admin-warning" type="submit" formaction="<?= e(route('admin.business.request-changes', $business)) ?>" name="action_type" value="request_changes" style="white-space:nowrap;">Request changes</button>
+                            <button class="admin-danger" type="submit" formaction="<?= e(route('admin.business.reject', $business)) ?>" name="action_type" value="reject" style="white-space:nowrap;">Reject</button>
                         </form>
                     </div>
                 <?php } ?>

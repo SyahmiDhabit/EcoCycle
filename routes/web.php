@@ -1,29 +1,30 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Storage;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\BusinessDashboardController;
-use App\Http\Controllers\BusinessApplicationController;
-use App\Http\Controllers\BusinessNotificationController;
-use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\MarketplaceController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\BusinessApplicationController;
+use App\Http\Controllers\BusinessDashboardController;
+use App\Http\Controllers\BusinessNotificationController;
+use App\Http\Controllers\BusinessProfileController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
-use App\Http\Controllers\WastageMonitoringController;
-use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\MyListingController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\BusinessProfileController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\WastageMonitoringController;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::view('/', 'main.mainpage')->name('home');
 Route::get('/business', BusinessDashboardController::class)->middleware('auth')->name('business.dashboard');
 Route::get('/business/directory/{company}', [BusinessDashboardController::class, 'show'])->middleware('auth')->name('business.directory.show');
 Route::get('/business/marketplace', [MarketplaceController::class, 'index'])->middleware('auth')->name('business.marketplace');
 Route::post('/business/marketplace', [MarketplaceController::class, 'store'])->middleware('auth')->name('business.marketplace.store');
+Route::post('/business/marketplace/{listing}/exchange', [TransactionController::class, 'store'])->middleware('auth')->name('business.marketplace.exchange');
 Route::delete('/business/marketplace/{listing}', [MarketplaceController::class, 'destroy'])->middleware('auth')->name('business.marketplace.destroy');
 Route::get('/business/inventory', [InventoryController::class, 'index'])->middleware('auth')->name('business.inventory');
 Route::post('/business/inventory', [InventoryController::class, 'store'])->middleware('auth')->name('business.inventory.store');
@@ -76,9 +77,10 @@ Route::post('/reset-password', [PasswordResetController::class, 'update'])->name
 Route::post('/language', [LanguageController::class, 'update'])->name('language.update');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 Route::get('/profile-images/{filename}', function (string $filename) {
-    $path = 'profile-images/' . $filename;
+    $path = 'profile-images/'.$filename;
     $disk = Storage::disk('public');
     abort_unless($disk->exists($path), 404);
+
     return Response::make($disk->get($path), 200, [
         'Content-Type' => $disk->mimeType($path) ?: 'image/png',
         'Cache-Control' => 'public, max-age=86400',
@@ -86,9 +88,10 @@ Route::get('/profile-images/{filename}', function (string $filename) {
 })->name('profile.image');
 
 Route::get('/listing-images/{filename}', function (string $filename) {
-    $path = 'listing-images/' . $filename;
+    $path = 'listing-images/'.$filename;
     $disk = Storage::disk('public');
     abort_unless($disk->exists($path), 404);
+
     return Response::make($disk->get($path), 200, [
         'Content-Type' => $disk->mimeType($path) ?: 'image/jpeg',
         'Cache-Control' => 'public, max-age=86400',
@@ -96,9 +99,10 @@ Route::get('/listing-images/{filename}', function (string $filename) {
 })->name('listing.image');
 
 Route::get('/inventory-images/{filename}', function (string $filename) {
-    $path = 'inventory-images/' . $filename;
+    $path = 'inventory-images/'.$filename;
     $disk = Storage::disk('public');
     abort_unless($disk->exists($path), 404);
+
     return Response::make($disk->get($path), 200, [
         'Content-Type' => $disk->mimeType($path) ?: 'image/jpeg',
         'Cache-Control' => 'public, max-age=86400',

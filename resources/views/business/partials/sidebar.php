@@ -1,8 +1,12 @@
 <?php
+
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+
 /** @var string|null $activeNav */
-/** @var \App\Models\User|null $business */
+/** @var User|null $business */
 $activeNav = $activeNav ?? 'overview';
-$business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
+$business = $business ?? Auth::guard()->user();
 $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
 ?>
 <aside class="dashboard-sidebar" id="dashboard-sidebar">
@@ -75,25 +79,17 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             </svg>
             <span>Reports</span>
         </a>
-
-        <a href="/business/profile" class="sidebar-link <?= $activeNav === 'profile' ? 'active' : '' ?>" title="Business Profile, Logo & Password Settings">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span>Business Profile</span>
-        </a>
     </nav>
 
     <!-- Navbar Profile Card (Matches Topbar Profile - Click to view & update) -->
     <div style="padding: 10px 14px 4px;">
         <a href="<?= route('business.profile') ?>" class="sidebar-user-pill <?= $activeNav === 'profile' ? 'active' : '' ?>" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f4f8f3;border:1.5px solid #cadbc9;border-radius:10px;text-decoration:none;transition:all 0.15s ease;" title="Click to view & update Business Profile">
             <span style="width:34px;height:34px;border-radius:50%;overflow:hidden;background:#176b40;color:#ffffff;display:grid;place-items:center;font-weight:700;font-size:12px;flex-shrink:0;border:1.5px solid #235839;">
-                <?php if ($business?->profile_image): ?>
+                <?php if ($business?->profile_image) { ?>
                     <img src="<?= e($business->profile_image_url ?: $business->profile_image) ?>" alt="<?= e($companyName) ?>" style="width:100%;height:100%;object-fit:cover;display:block;">
-                <?php else: ?>
+                <?php } else { ?>
                     <?= e(strtoupper(substr($companyName, 0, 2))) ?>
-                <?php endif; ?>
+                <?php } ?>
             </span>
             <span style="display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.25;">
                 <strong style="font-size:12px;color:#123321;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;"><?= e($companyName) ?></strong>
@@ -108,19 +104,19 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
     </div>
 
     <div class="sidebar-footer-card">
-        <?php if ($business?->account_status === 'approved'): ?>
+        <?php if ($business?->account_status === 'approved') { ?>
             <span>Verified SME</span>
             <p><?= e($companyName) ?> is approved for nationwide circular exchange.</p>
             <a href="/business/marketplace">Browse marketplace &rarr;</a>
-        <?php elseif ($business?->account_status === 'rejected'): ?>
+        <?php } elseif ($business?->account_status === 'rejected') { ?>
             <span style="color:#dc2626;">Changes Required</span>
             <p>Your verification requires corrections before approval.</p>
             <a href="<?= route('business.application') ?>" style="color:#b91c1c;">Update application &rarr;</a>
-        <?php else: ?>
+        <?php } else { ?>
             <span style="color:#d97706;">Verification Pending</span>
             <p>Your registration is in review by administrator.</p>
             <a href="<?= route('business.application') ?>" style="color:#b45309;">Check status &rarr;</a>
-        <?php endif; ?>
+        <?php } ?>
     </div>
 </aside>
 

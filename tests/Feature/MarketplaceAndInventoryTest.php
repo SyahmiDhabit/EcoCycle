@@ -3,7 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\InventoryItem;
+use App\Models\InventoryTransaction;
+use App\Models\Item;
 use App\Models\MarketplaceListing;
+use App\Models\MarketplaceReview;
+use App\Models\MaterialExchange;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -68,7 +72,7 @@ class MarketplaceAndInventoryTest extends TestCase
 
         // Test inventory image route returns 200
         $firstFilename = basename($item->image_path);
-        $this->get('/inventory-images/' . $firstFilename)->assertOk();
+        $this->get('/inventory-images/'.$firstFilename)->assertOk();
 
         // Test listing from this inventory item inherits the images automatically!
         $listResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
@@ -181,7 +185,7 @@ class MarketplaceAndInventoryTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        
+
         $listing = MarketplaceListing::where('title', 'Grade A Wooden Pallets 120x100')->firstOrFail();
         $this->assertNotNull($listing->image_path);
         $this->assertNotNull($listing->image_1);
@@ -194,7 +198,7 @@ class MarketplaceAndInventoryTest extends TestCase
 
         // Test image route returns 200
         $firstFilename = basename($listing->image_path);
-        $this->get('/listing-images/' . $firstFilename)->assertOk();
+        $this->get('/listing-images/'.$firstFilename)->assertOk();
     }
 
     public function test_can_upload_all_five_images_for_product_and_inventory(): void
@@ -213,13 +217,13 @@ class MarketplaceAndInventoryTest extends TestCase
         $invResponse = $this->actingAs($business)
             ->from(route('business.inventory'))
             ->post(route('business.inventory.store'), [
-            'name' => 'Complete 5-Image Inventory Item',
-            'category' => 'Metal & fabrication',
-            'quantity' => 100,
-            'unit' => 'kg',
-            'reusability' => 'reusable',
-            'images' => $fiveImages,
-        ]);
+                'name' => 'Complete 5-Image Inventory Item',
+                'category' => 'Metal & fabrication',
+                'quantity' => 100,
+                'unit' => 'kg',
+                'reusability' => 'reusable',
+                'images' => $fiveImages,
+            ]);
         $invResponse->assertRedirect(route('business.inventory'));
 
         $item = InventoryItem::where('name', 'Complete 5-Image Inventory Item')->firstOrFail();
@@ -254,7 +258,7 @@ class MarketplaceAndInventoryTest extends TestCase
         // Test delete cleans up stored files
         $firstListingImage = basename($listing->image_1);
         $this->actingAs($business)->delete(route('business.marketplace.destroy', $listing));
-        $this->assertFalse(Storage::disk('public')->exists('listing-images/' . $firstListingImage));
+        $this->assertFalse(Storage::disk('public')->exists('listing-images/'.$firstListingImage));
     }
 
     public function test_marketplace_filters_by_listing_type_and_reusability(): void
@@ -617,5 +621,147 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertSame(200.0, (float) $item->quantity);
         $this->assertSame('reusable', $item->reusability);
         $this->assertSame(4.50, (float) $item->price);
+    }
+
+    public function test_end_to_end_marketplace_exchange_transaction_flow(): void
+    {
+        $seller = $this->createApprovedBusiness('Seller Eco Print');
+        $buyer = $this->createApprovedBusiness('Buyer Packaging Ltd');
+
+        // 1. Seller adds reusable item into inventory
+        $image = UploadedFile::fake()->image('paper.jpg', 400, 400);
+        $this->actingAs($seller)->post(route('business.inventory.store'), [
+            'name' => 'Recycled Kraft Sheets',
+            'description' => 'Heavyweight 120gsm kraft paper.',
+            'category' => 'Packaging & paper',
+            'quantity' => 100,
+            'unit' => 'reams',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 25.00,
+            'images' => [$image],
+        ])->assertSessionHasNoErrors();
+
+        $item = Item::where('name', 'Recycled Kraft Sheets')->firstOrFail();
+        $this->assertSame('active', $item->status);
+
+        // 2. Buyer views marketplace and requests an exchange / order for 30 reams
+        $exchangeResponse = $this->actingAs($buyer)->post(route('business.marketplace.exchange', $item), [
+            'quantity' => 30,
+            'notes' => 'Please arrange delivery to Shah Alam plant.',
+        ]);
+
+        $exchangeResponse->assertRedirect(route('business.transactions', ['tab' => 'purchases']));
+        $exchangeResponse->assertSessionHas('status');
+
+        $exchange = MaterialExchange::where('item_id', $item->id)->firstOrFail();
+        $this->assertSame($seller->id, $exchange->provider_business_id);
+        $this->assertSame($buyer->id, $exchange->requester_business_id);
+        $this->assertSame(30.0, (float) $exchange->quantity);
+        $this->assertSame(750.00, (float) $exchange->total_price);
+        $this->assertSame('pending_payment', $exchange->payment_status);
+
+        // 3. Seller requests payment (generates invoice notification)
+        $this->actingAs($seller)
+            ->post(route('business.transactions.request-payment', $exchange))
+            ->assertSessionHas('status');
+
+        $exchange->refresh();
+        $this->assertSame('requested', $exchange->payment_status);
+        $this->assertNotNull($exchange->payment_requested_at);
+
+        // 4. Buyer marks as paid
+        $this->actingAs($buyer)
+            ->post(route('business.transactions.mark-paid', $exchange), [
+                'payment_reference' => 'FPX-TEST-9988',
+            ])
+            ->assertSessionHas('status');
+
+        $exchange->refresh();
+        $this->assertSame('paid', $exchange->payment_status);
+        $this->assertSame('completed', $exchange->status);
+        $this->assertSame('FPX-TEST-9988', $exchange->payment_reference);
+
+        // 5. Verify quantity was automatically deducted from item (100 - 30 = 70)
+        $item->refresh();
+        $this->assertSame(70.0, (float) $item->quantity);
+        $this->assertSame('active', $item->status);
+
+        // 6. Verify inventory transaction record was created
+        $invTrans = InventoryTransaction::where('inventory_item_id', $item->id)->where('transaction_type', 'stock_out')->first();
+        $this->assertNotNull($invTrans);
+        $this->assertSame(-30.0, (float) $invTrans->quantity_change);
+        $this->assertSame(70.0, (float) $invTrans->quantity_after);
+
+        // 7. Buyer leaves review for the seller on this item
+        $reviewResponse = $this->actingAs($buyer)->post(route('business.listings.reviews', $item), [
+            'rating' => 5,
+            'comment' => 'Excellent quality kraft sheets and prompt dispatch!',
+            'exchange_type' => 'buy',
+        ]);
+        $reviewResponse->assertRedirect();
+
+        $review = MarketplaceReview::where('item_id', $item->id)->firstOrFail();
+        $this->assertSame(5, $review->rating);
+        $this->assertSame($seller->id, $review->seller_business_id);
+        $this->assertSame($buyer->id, $review->reviewer_business_id);
+    }
+
+    public function test_marketplace_exchange_guardrails_and_visibility(): void
+    {
+        $seller = $this->createApprovedBusiness('Alpha Tech');
+        $buyer = $this->createApprovedBusiness('Beta Systems');
+
+        // Reusable item
+        $reusableItem = Item::create([
+            'business_id' => $seller->id,
+            'name' => 'Aluminum Offcuts',
+            'category' => 'Metals & machinery',
+            'quantity' => 50,
+            'unit' => 'kg',
+            'price' => 12.00,
+            'reusability' => 'reusable',
+            'status' => 'active',
+        ]);
+
+        // Scrap non-reusable item
+        $scrapItem = Item::create([
+            'business_id' => $seller->id,
+            'name' => 'Contaminated Solvent Sludge',
+            'category' => 'Chemicals & solvents',
+            'quantity' => 20,
+            'unit' => 'L',
+            'price' => 0.00,
+            'reusability' => 'not_reusable',
+            'status' => 'in_stock',
+        ]);
+
+        // 1. Seller cannot order their own item
+        $this->actingAs($seller)
+            ->post(route('business.marketplace.exchange', $reusableItem), ['quantity' => 5])
+            ->assertStatus(400);
+
+        // 2. Buyer cannot order non-reusable scrap item
+        $this->actingAs($buyer)
+            ->post(route('business.marketplace.exchange', $scrapItem), ['quantity' => 5])
+            ->assertStatus(400);
+
+        // 3. Buyer cannot request more than available stock
+        $this->actingAs($buyer)
+            ->post(route('business.marketplace.exchange', $reusableItem), ['quantity' => 999])
+            ->assertSessionHasErrors(['quantity']);
+
+        // 4. Check Overview directory: Buyer sees Seller, but NOT themselves in the directory
+        $overviewResponse = $this->actingAs($buyer)->get(route('business.dashboard'));
+        $overviewResponse->assertOk();
+        $overviewResponse->assertSee('Alpha Tech');
+        $this->assertCount(1, $overviewResponse->viewData('businesses'));
+        $this->assertSame('Alpha Tech', $overviewResponse->viewData('businesses')[0]['business_name']);
+
+        // 5. Check Marketplace: Reusable item is visible, scrap is NOT visible
+        $marketplaceResponse = $this->actingAs($buyer)->get(route('business.marketplace'));
+        $marketplaceResponse->assertOk();
+        $marketplaceResponse->assertSee('Aluminum Offcuts');
+        $marketplaceResponse->assertDontSee('Contaminated Solvent Sludge');
     }
 }

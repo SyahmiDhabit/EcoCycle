@@ -1,11 +1,16 @@
 <?php
-/** @var \App\Models\User|null $business */
-/** @var \App\Models\User $company */
-/** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\MarketplaceListing> $listings */
 
-$business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
+use App\Models\MarketplaceListing;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
+
+/** @var User|null $business */
+/** @var User $company */
+/** @var Collection<int, MarketplaceListing> $listings */
+$business = $business ?? Auth::guard()->user();
 $companyName = $company->business_name ?: $company->name;
-$companyLocation = trim(($company->city ?: '') . ($company->city && $company->state ? ', ' : '') . ($company->state ?: 'Malaysia'));
+$companyLocation = trim(($company->city ?: '').($company->city && $company->state ? ', ' : '').($company->state ?: 'Malaysia'));
 $avatarInitials = strtoupper(substr($companyName, 0, 2));
 $activeNav = 'overview';
 ?>
@@ -149,11 +154,11 @@ $activeNav = 'overview';
             <section class="company-profile-hero">
                 <div class="company-profile-main">
                     <div class="company-profile-avatar" style="overflow:hidden;padding:0;">
-                        <?php if ($company->profile_image): ?>
+                        <?php if ($company->profile_image) { ?>
                             <img src="<?= e($company->profile_image_url) ?>" alt="<?= e($companyName) ?>" style="width:100%;height:100%;object-fit:cover;display:block;">
-                        <?php else: ?>
+                        <?php } else { ?>
                             <?= e($avatarInitials) ?>
-                        <?php endif; ?>
+                        <?php } ?>
                     </div>
                     <div class="company-profile-info">
                         <h1><?= e($companyName) ?></h1>
@@ -201,12 +206,12 @@ $activeNav = 'overview';
                 </div>
             </section>
 
-            <?php if (!empty($company->registered_address)): ?>
+            <?php if (! empty($company->registered_address)) { ?>
                 <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:10px;padding:16px 20px;margin-bottom:28px;">
                     <small style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:4px;">Registered Facility Address</small>
                     <span style="font-size:13px;color:#143324;"><?= e($company->registered_address) ?>, <?= e($company->city) ?>, <?= e($company->state) ?></span>
                 </div>
-            <?php endif; ?>
+            <?php } ?>
 
             <!-- ACTIVE SURPLUS LISTINGS -->
             <section aria-labelledby="listings-heading">
@@ -217,7 +222,7 @@ $activeNav = 'overview';
                     </div>
                 </div>
 
-                <?php if ($listings->isEmpty()): ?>
+                <?php if ($listings->isEmpty()) { ?>
                     <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:12px;padding:48px 24px;text-align:center;">
                         <span class="signin-brand-mark" style="margin:0 auto 12px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                         <h3 style="margin:0 0 6px;font-size:15px;color:#123321;">No active listings at this time</h3>
@@ -228,18 +233,18 @@ $activeNav = 'overview';
                             Contact Company Directly &rarr;
                         </a>
                     </div>
-                <?php else: ?>
+                <?php } else { ?>
                     <div class="listings-grid">
-                        <?php foreach ($listings as $item): ?>
+                        <?php foreach ($listings as $item) { ?>
                             <article class="business-card">
                                 <div class="card-image-wrap">
-                                    <?php if (!empty($item->image_path)): ?>
+                                    <?php if (! empty($item->image_path)) { ?>
                                         <img src="<?= e($item->image_path) ?>" alt="<?= e($item->title) ?>" loading="lazy">
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <div style="width:100%;height:100%;display:grid;place-items:center;background:#f0f6ee;">
                                             <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </div>
                                 <div class="card-body">
                                     <div class="card-badges">
@@ -253,24 +258,24 @@ $activeNav = 'overview';
                                         <strong>Available:</strong> <?= (float) $item->quantity ?> <?= e($item->unit) ?> &middot; <?= e($item->condition ?: 'Good surplus') ?>
                                     </div>
 
-                                    <?php if ($item->is_free): ?>
+                                    <?php if ($item->is_free) { ?>
                                         <div style="font-weight:700;color:#15803d;margin-bottom:12px;">Free Surplus</div>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <div style="font-weight:700;color:var(--brand-green);margin-bottom:12px;">
                                             RM <?= number_format((float) $item->price, 2) ?> <span style="font-size:11px;font-weight:400;color:#6f7b72;">/ <?= e($item->unit) ?></span>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php } ?>
 
                                     <div class="card-footer" style="padding-top:10px;">
-                                        <a href="mailto:<?= e($company->email) ?>?subject=<?= e(urlencode('Inquiry for ' . $item->title)) ?>" class="btn-view-profile" style="width:100%;justify-content:center;text-decoration:none;">
-                                            Inquire About This Material &rarr;
+                                        <a href="/business/marketplace?q=<?= urlencode($item->title) ?>" class="btn-view-profile" style="width:100%;justify-content:center;text-decoration:none;">
+                                            Order on Marketplace &rarr;
                                         </a>
                                     </div>
                                 </div>
                             </article>
-                        <?php endforeach; ?>
+                        <?php } ?>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
             </section>
         </main>
     </div>

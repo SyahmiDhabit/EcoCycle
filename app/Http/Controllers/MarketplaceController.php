@@ -48,7 +48,8 @@ class MarketplaceController extends Controller
 
         $query = MarketplaceListing::query()
             ->with('business')
-            ->where('status', 'active');
+            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('quantity', '>', 0);
 
         if ($myListingsOnly) {
             $query->where('business_id', $business->id);
@@ -60,8 +61,8 @@ class MarketplaceController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('category', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
             });
         }
 
@@ -72,7 +73,7 @@ class MarketplaceController extends Controller
         if ($location !== '') {
             $query->where(function ($q) use ($location) {
                 $q->where('location_state', 'like', "%{$location}%")
-                  ->orWhere('location_city', 'like', "%{$location}%");
+                    ->orWhere('location_city', 'like', "%{$location}%");
             });
         }
 
@@ -94,14 +95,18 @@ class MarketplaceController extends Controller
 
         // Get distinct categories and locations
         $categories = MarketplaceListing::query()
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('quantity', '>', 0)
+            ->where('reusability', 'reusable')
             ->distinct()
             ->pluck('category')
             ->filter()
             ->values();
 
         $locations = MarketplaceListing::query()
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('quantity', '>', 0)
+            ->where('reusability', 'reusable')
             ->distinct()
             ->pluck('location_state')
             ->filter()
@@ -155,8 +160,8 @@ class MarketplaceController extends Controller
         $listingType = $validated['listing_type'];
         $isFree = $listingType === 'free';
         $price = $isFree ? 0 : (isset($validated['price']) ? (float) $validated['price'] : null);
-        $description = !empty($validated['description']) ? $validated['description'] : 'Surplus material available for circular exchange on EcoCycle.';
-        $condition = !empty($validated['condition']) ? $validated['condition'] : 'Used - Good';
+        $description = ! empty($validated['description']) ? $validated['description'] : 'Surplus material available for circular exchange on EcoCycle.';
+        $condition = ! empty($validated['condition']) ? $validated['condition'] : 'Used - Good';
 
         // Handle 1 to 5 uploaded images
         $uploadedImages = [];
@@ -167,9 +172,9 @@ class MarketplaceController extends Controller
                 foreach (array_slice($files, 0, 5) as $file) {
                     if ($file && $file->isValid()) {
                         $ext = $file->getClientOriginalExtension() ?: 'jpg';
-                        $filename = 'listing_' . Str::random(24) . '.' . $ext;
+                        $filename = 'listing_'.Str::random(24).'.'.$ext;
                         $disk->putFileAs('listing-images', $file, $filename);
-                        $uploadedImages[] = '/listing-images/' . $filename;
+                        $uploadedImages[] = '/listing-images/'.$filename;
                     }
                 }
             }
@@ -206,7 +211,7 @@ class MarketplaceController extends Controller
                 'image_3' => $uploadedImages[2] ?? $listing->image_3,
                 'image_4' => $uploadedImages[3] ?? $listing->image_4,
                 'image_5' => $uploadedImages[4] ?? $listing->image_5,
-                'images' => !empty($uploadedImages) ? $uploadedImages : $listing->images,
+                'images' => ! empty($uploadedImages) ? $uploadedImages : $listing->images,
             ]);
         } else {
             $listing = MarketplaceListing::create([
@@ -276,7 +281,7 @@ class MarketplaceController extends Controller
         foreach ($listing->getAllImages() as $img) {
             if (str_starts_with($img, '/listing-images/')) {
                 $filename = basename($img);
-                $disk->delete('listing-images/' . $filename);
+                $disk->delete('listing-images/'.$filename);
             }
         }
 

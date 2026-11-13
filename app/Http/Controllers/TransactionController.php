@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\BusinessNotification;
 use App\Models\InventoryTransaction;
+use App\Models\Item;
 use App\Models\MaterialExchange;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class TransactionController extends Controller
@@ -37,7 +40,7 @@ class TransactionController extends Controller
         } else {
             $query->where(function ($q) use ($business) {
                 $q->where('provider_business_id', $business->id)
-                  ->orWhere('requester_business_id', $business->id);
+                    ->orWhere('requester_business_id', $business->id);
             });
         }
 
@@ -50,7 +53,7 @@ class TransactionController extends Controller
         // Calculate KPI Metrics
         $allBusinessExchanges = MaterialExchange::where(function ($q) use ($business) {
             $q->where('provider_business_id', $business->id)
-              ->orWhere('requester_business_id', $business->id);
+                ->orWhere('requester_business_id', $business->id);
         })->get();
 
         $totalRevenueRm = $allBusinessExchanges->where('provider_business_id', $business->id)
@@ -79,6 +82,94 @@ class TransactionController extends Controller
         ]);
     }
 
+    public function store(Request $request, Item $listing): RedirectResponse
+    {
+        $this->checkApproved();
+        /** @var User $business */
+        $business = Auth::user();
+
+        abort_if($listing->business_id === $business->id, 400, 'You cannot order materials from your own business.');
+        abort_if(($listing->reusability ?? 'reusable') === 'not_reusable', 400, 'This item is not available for public exchange.');
+
+        $availableQty = (float) $listing->quantity;
+        abort_if($availableQty <= 0, 400, 'This item is currently out of stock.');
+
+        $validated = $request->validate([
+            'quantity' => ['required', 'numeric', 'min:0.01', "max:{$availableQty}"],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ], [
+            'quantity.required' => 'Please enter the quantity you wish to order or claim.',
+            'quantity.min' => 'Quantity must be at least 0.01.',
+            'quantity.max' => "Requested quantity exceeds available stock of {$availableQty} {$listing->unit}.",
+        ]);
+
+        $orderQty = (float) $validated['quantity'];
+        $isFree = (bool) $listing->is_free || $listing->listing_type === 'free';
+        $totalPrice = $isFree ? 0.00 : round($orderQty * (float) $listing->price, 2);
+        $invoiceNumber = 'INV-'.date('Y').'-'.strtoupper(Str::random(6));
+
+        $exchange = DB::transaction(function () use ($listing, $business, $orderQty, $totalPrice, $invoiceNumber, $isFree, $validated) {
+            $exchange = MaterialExchange::create([
+                'invoice_number' => $invoiceNumber,
+                'item_id' => $listing->id,
+                'provider_business_id' => $listing->business_id,
+                'requester_business_id' => $business->id,
+                'quantity' => $orderQty,
+                'unit' => $listing->unit,
+                'total_price' => $totalPrice,
+                'status' => $isFree ? 'completed' : 'pending',
+                'payment_status' => $isFree ? 'paid' : 'pending_payment',
+                'payment_reference' => $isFree ? 'FREE-GRANT' : null,
+                'paid_at' => $isFree ? now() : null,
+                'completed_at' => $isFree ? now() : null,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            // If free claim, deduct stock immediately
+            if ($isFree) {
+                $newQty = max(0, (float) $listing->quantity - $orderQty);
+                $newStatus = $newQty <= 0 ? 'sold' : 'active';
+                $listing->update([
+                    'quantity' => $newQty,
+                    'status' => $newStatus,
+                ]);
+
+                InventoryTransaction::create([
+                    'business_id' => $listing->business_id,
+                    'inventory_item_id' => $listing->id,
+                    'transaction_type' => 'stock_out',
+                    'quantity_change' => -$orderQty,
+                    'quantity_after' => $newQty,
+                    'notes' => "Free material claimed via Order #{$invoiceNumber}",
+                ]);
+            }
+
+            return $exchange;
+        });
+
+        // Notifications
+        BusinessNotification::send(
+            $listing->business_id,
+            'New Material Order Received',
+            "{$business->business_name} ordered {$orderQty} {$listing->unit} of '{$listing->name}'. Order #{$invoiceNumber}.",
+            'exchange',
+            '/business/transactions?tab=sales',
+            'green'
+        );
+
+        BusinessNotification::send(
+            $business->id,
+            'Material Order Placed',
+            "You placed Order #{$invoiceNumber} for {$orderQty} {$listing->unit} of '{$listing->name}'.",
+            'exchange',
+            '/business/transactions?tab=purchases',
+            'blue'
+        );
+
+        return redirect()->route('business.transactions', ['tab' => 'purchases'])
+            ->with('status', "Order #{$invoiceNumber} successfully placed! You can track payment and order status below.");
+    }
+
     public function requestPayment(Request $request, MaterialExchange $exchange): RedirectResponse
     {
         $this->checkApproved();
@@ -87,7 +178,7 @@ class TransactionController extends Controller
         abort_unless($exchange->provider_business_id === $business->id, 403, 'Only the material seller/provider can request payment.');
 
         if (empty($exchange->invoice_number)) {
-            $exchange->invoice_number = 'INV-' . date('Y') . '-' . str_pad((string) $exchange->id, 5, '0', STR_PAD_LEFT);
+            $exchange->invoice_number = 'INV-'.date('Y').'-'.str_pad((string) $exchange->id, 5, '0', STR_PAD_LEFT);
         }
 
         $exchange->payment_status = 'requested';
@@ -98,7 +189,7 @@ class TransactionController extends Controller
         BusinessNotification::send(
             $exchange->requester_business_id,
             'Payment Requested for Material Order',
-            "{$business->business_name} has requested payment of RM " . number_format((float) $exchange->total_price, 2) . " for Invoice #{$exchange->invoice_number}.",
+            "{$business->business_name} has requested payment of RM ".number_format((float) $exchange->total_price, 2)." for Invoice #{$exchange->invoice_number}.",
             '/business/transactions?tab=purchases'
         );
 
@@ -115,7 +206,7 @@ class TransactionController extends Controller
             403
         );
 
-        $ref = $request->input('payment_reference') ?: ('FPX-' . strtoupper(bin2hex(random_bytes(4))));
+        $ref = $request->input('payment_reference') ?: ('FPX-'.strtoupper(bin2hex(random_bytes(4))));
 
         $exchange->payment_status = 'paid';
         $exchange->payment_reference = $ref;
@@ -123,7 +214,7 @@ class TransactionController extends Controller
         $exchange->status = 'completed';
         $exchange->completed_at = now();
         if (empty($exchange->invoice_number)) {
-            $exchange->invoice_number = 'INV-' . date('Y') . '-' . str_pad((string) $exchange->id, 5, '0', STR_PAD_LEFT);
+            $exchange->invoice_number = 'INV-'.date('Y').'-'.str_pad((string) $exchange->id, 5, '0', STR_PAD_LEFT);
         }
         $exchange->save();
 

@@ -1,5 +1,9 @@
 <?php
-/** @var \App\Models\User|null $business */
+
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+
+/** @var User|null $business */
 /** @var int $trackedItemsCount */
 /** @var int $materialsListedCount */
 /** @var float $wasteDivertedKg */
@@ -9,10 +13,9 @@
 /** @var array<int, string> $availableIndustries */
 /** @var array<int, string> $availableLocations */
 /** @var array<int, string> $availableMaterials */
-
-$business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
+$business = $business ?? Auth::guard()->user();
 $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
-$companyLocation = trim(($business?->city ?: '') . ($business?->city && $business?->state ? ', ' : '') . ($business?->state ?: 'Malaysia'));
+$companyLocation = trim(($business?->city ?: '').($business?->city && $business?->state ? ', ' : '').($business?->state ?: 'Malaysia'));
 $activeNav = 'overview';
 ?>
 <!doctype html>
@@ -57,27 +60,27 @@ $activeNav = 'overview';
                             <label for="filter-industry">Industry</label>
                             <select id="filter-industry" onchange="applyFilters()">
                                 <option value="">All industries</option>
-                                <?php foreach ($availableIndustries as $ind): ?>
+                                <?php foreach ($availableIndustries as $ind) { ?>
                                     <option value="<?= e($ind) ?>"><?= e($ind) ?></option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
                         <div class="filter-field">
                             <label for="filter-location">Location</label>
                             <select id="filter-location" onchange="applyFilters()">
                                 <option value="">All locations</option>
-                                <?php foreach ($availableLocations as $loc): ?>
+                                <?php foreach ($availableLocations as $loc) { ?>
                                     <option value="<?= e($loc) ?>"><?= e($loc) ?></option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
                         <div class="filter-field">
                             <label for="filter-material">Material</label>
                             <select id="filter-material" onchange="applyFilters()">
                                 <option value="">All materials</option>
-                                <?php foreach ($availableMaterials as $mat): ?>
+                                <?php foreach ($availableMaterials as $mat) { ?>
                                     <option value="<?= e($mat) ?>"><?= e($mat) ?></option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
                     </div>
@@ -111,7 +114,7 @@ $activeNav = 'overview';
                         <h2 id="featured-heading">Verified Businesses</h2>
                         <p id="featured-count-text"><?= count($businesses) ?> <?= count($businesses) === 1 ? 'business' : 'businesses' ?> on record</p>
                     </div>
-                    <?php if (!empty($businesses)): ?>
+                    <?php if (! empty($businesses)) { ?>
                         <div class="sort-select-wrap">
                             <select id="featured-sort" onchange="sortCards(this.value)" aria-label="Sort businesses">
                                 <option value="featured">Sort: Default &darr;</option>
@@ -119,10 +122,10 @@ $activeNav = 'overview';
                                 <option value="listings">Sort: Most listings</option>
                             </select>
                         </div>
-                    <?php endif; ?>
+                    <?php } ?>
                 </div>
 
-                <?php if (empty($businesses)): ?>
+                <?php if (empty($businesses)) { ?>
                     <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:12px;padding:48px 24px;text-align:center;margin-bottom:32px;">
                         <span class="signin-brand-mark" style="margin:0 auto 14px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                         <h3 style="margin:0 0 6px;font-size:16px;color:#123321;">No other approved businesses found yet</h3>
@@ -130,9 +133,9 @@ $activeNav = 'overview';
                             When other businesses register and are approved by the administrator, they will appear here automatically.
                         </p>
                     </div>
-                <?php else: ?>
+                <?php } else { ?>
                     <div class="featured-grid" id="featured-grid">
-                        <?php foreach ($businesses as $biz): ?>
+                        <?php foreach ($businesses as $biz) { ?>
                             <article class="business-card"
                                      data-name="<?= e(strtolower($biz['business_name'])) ?>"
                                      data-industry="<?= e(strtolower($biz['industry'])) ?>"
@@ -140,13 +143,13 @@ $activeNav = 'overview';
                                      data-materials="<?= e(strtolower($biz['materials'])) ?>"
                                      data-listings="<?= (int) $biz['listings_count'] ?>">
                                 <div class="card-image-wrap">
-                                    <?php if (!empty($biz['image'])): ?>
+                                    <?php if (! empty($biz['image'])) { ?>
                                         <img src="<?= e($biz['image']) ?>" alt="<?= e($biz['business_name']) ?>" loading="lazy">
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <div style="width:100%;height:100%;display:grid;place-items:center;background:#f0f6ee;">
                                             <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </div>
                                 <div class="card-body">
                                     <div class="card-badges">
@@ -172,13 +175,13 @@ $activeNav = 'overview';
                                     </div>
                                 </div>
                             </article>
-                        <?php endforeach; ?>
+                        <?php } ?>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
             </section>
 
             <!-- SECTION 2: Businesses Directory Table (Pure Database) -->
-            <?php if (!empty($businesses)): ?>
+            <?php if (! empty($businesses)) { ?>
                 <section class="table-section-card" aria-labelledby="table-heading">
                     <div class="table-header-title">
                         <h2 id="table-heading">Company directory</h2>
@@ -196,7 +199,7 @@ $activeNav = 'overview';
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($businesses as $biz): ?>
+                                <?php foreach ($businesses as $biz) { ?>
                                     <tr class="table-biz-row"
                                         data-name="<?= e(strtolower($biz['business_name'])) ?>"
                                         data-industry="<?= e(strtolower($biz['industry'])) ?>"
@@ -224,7 +227,7 @@ $activeNav = 'overview';
                                             </button>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </tbody>
                         </table>
                     </div>
@@ -238,7 +241,7 @@ $activeNav = 'overview';
                         </div>
                     </div>
                 </section>
-            <?php endif; ?>
+            <?php } ?>
         </main>
     </div>
 
@@ -372,7 +375,7 @@ $activeNav = 'overview';
                     '</div>' +
                     '<div style="text-align:right;flex-shrink:0;">' +
                     (item.is_free ? '<span style="font-size:11px;font-weight:700;color:#15803d;">Free Surplus</span>' : '<span style="font-size:11px;font-weight:700;color:#176b40;">RM ' + (item.price || '0.00') + '</span>') +
-                    '<br><a href="mailto:' + encodeURIComponent(biz.email || '') + '?subject=' + encodeURIComponent('Inquiry for ' + item.title) + '" style="font-size:10px;color:#176b40;font-weight:600;text-decoration:none;">Inquire &rarr;</a>' +
+                    '<br><a href="/business/marketplace?q=' + encodeURIComponent(item.title || '') + '" style="font-size:10.5px;color:#176b40;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:3px;margin-top:2px;">Order on Marketplace &rarr;</a>' +
                     '</div>';
                 listingsContainer.appendChild(card);
             });

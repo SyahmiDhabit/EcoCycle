@@ -1,17 +1,23 @@
 <?php
-/** @var \App\Models\User|null $business */
-/** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\MarketplaceListing> $listings */
-/** @var \Illuminate\Support\Collection<int, string> $categories */
-/** @var \Illuminate\Support\Collection<int, string> $locations */
-/** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\InventoryItem> $myInventoryItems */
+
+use App\Models\InventoryItem;
+use App\Models\MarketplaceListing;
+use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+
+/** @var User|null $business */
+/** @var Illuminate\Database\Eloquent\Collection<int, MarketplaceListing> $listings */
+/** @var Collection<int, string> $categories */
+/** @var Collection<int, string> $locations */
+/** @var Illuminate\Database\Eloquent\Collection<int, InventoryItem> $myInventoryItems */
 /** @var string|null $search */
 /** @var string|null $selectedCategory */
 /** @var string|null $selectedLocation */
 /** @var string|null $selectedListingType */
 /** @var string|null $selectedReusability */
 /** @var bool $myListingsOnly */
-
-$business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
+$business = $business ?? Auth::guard()->user();
 $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
 $myListingsOnly = $myListingsOnly ?? request()->boolean('my_listings');
 $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
@@ -556,25 +562,25 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             </div>
 
             <!-- Flash Status Messages -->
-            <?php if (session('status')): ?>
+            <?php if (session('status')) { ?>
                 <div style="margin-bottom:18px;background:#e8f5e9;border:1px solid #c8e6c9;color:#1b5e20;padding:12px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span><?= e(session('status')) ?></span>
                 </div>
-            <?php endif; ?>
+            <?php } ?>
 
-            <?php if (session('error')): ?>
+            <?php if (session('error')) { ?>
                 <div style="margin-bottom:18px;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:12px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                     <span><?= e(session('error')) ?></span>
                 </div>
-            <?php endif; ?>
+            <?php } ?>
 
             <!-- View Tabs: All vs My Listings -->
             <div class="marketplace-tabs">
-                <a href="/business/marketplace" class="mkt-tab-btn <?= !$myListingsOnly ? 'active' : '' ?>">
+                <a href="/business/marketplace" class="mkt-tab-btn <?= ! $myListingsOnly ? 'active' : '' ?>">
                     <span>🛒 All Marketplace Listings</span>
-                    <span class="mkt-tab-badge"><?= \App\Models\MarketplaceListing::where('status', 'active')->count() ?></span>
+                    <span class="mkt-tab-badge"><?= MarketplaceListing::where('status', 'active')->count() ?></span>
                 </a>
                 <a href="/business/marketplace?my_listings=1" class="mkt-tab-btn <?= $myListingsOnly ? 'active' : '' ?>">
                     <span>📋 My Listings</span>
@@ -585,9 +591,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <!-- Filter Card -->
             <section class="filter-card">
                 <form method="GET" action="/business/marketplace">
-                    <?php if ($myListingsOnly): ?>
+                    <?php if ($myListingsOnly) { ?>
                         <input type="hidden" name="my_listings" value="1">
-                    <?php endif; ?>
+                    <?php } ?>
 
                     <div class="filter-row-top">
                         <div class="filter-field">
@@ -599,9 +605,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             <label for="mkt-cat">Category</label>
                             <select id="mkt-cat" name="category">
                                 <option value="">All Categories</option>
-                                <?php foreach ($categories as $cat): ?>
+                                <?php foreach ($categories as $cat) { ?>
                                     <option value="<?= e($cat) ?>" <?= request('category') === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
 
@@ -615,7 +621,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             </select>
                         </div>
 
-                        <?php if ($myListingsOnly): ?>
+                        <?php if ($myListingsOnly) { ?>
                         <div class="filter-field">
                             <label for="mkt-reusability">Reusability</label>
                             <select id="mkt-reusability" name="reusability">
@@ -624,15 +630,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                 <option value="not_reusable" <?= request('reusability') === 'not_reusable' ? 'selected' : '' ?>>⊘ Not Reusable (Scrap)</option>
                             </select>
                         </div>
-                        <?php endif; ?>
+                        <?php } ?>
 
                         <div class="filter-field">
                             <label for="mkt-loc">Location</label>
                             <select id="mkt-loc" name="location">
                                 <option value="">All Locations</option>
-                                <?php foreach ($locations as $loc): ?>
+                                <?php foreach ($locations as $loc) { ?>
                                     <option value="<?= e($loc) ?>" <?= request('location') === $loc ? 'selected' : '' ?>><?= e($loc) ?></option>
-                                <?php endforeach; ?>
+                                <?php } ?>
                             </select>
                         </div>
 
@@ -643,11 +649,11 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     <span>Filter</span>
                                 </button>
-                                <?php if (request()->hasAny(['q', 'category', 'location', 'listing_type', 'reusability'])): ?>
+                                <?php if (request()->hasAny(['q', 'category', 'location', 'listing_type', 'reusability'])) { ?>
                                     <a href="<?= $myListingsOnly ? '/business/marketplace?my_listings=1' : '/business/marketplace' ?>" class="btn-back-directory" style="height:38px;padding:0 12px;display:grid;place-items:center;" title="Reset filters">
                                         ✕
                                     </a>
-                                <?php endif; ?>
+                                <?php } ?>
                             </div>
                         </div>
                     </div>
@@ -663,7 +669,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             </div>
 
             <!-- Listings Grid -->
-            <?php if ($listings->isEmpty()): ?>
+            <?php if ($listings->isEmpty()) { ?>
                 <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:14px;padding:52px 24px;text-align:center;margin-bottom:32px;">
                     <span class="signin-brand-mark" style="margin:0 auto 14px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                     <h3 style="margin:0 0 6px;font-size:17px;color:#123321;font-weight:700;">No material listings found</h3>
@@ -679,16 +685,16 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         </a>
                     </div>
                 </div>
-            <?php else: ?>
+            <?php } else { ?>
                 <div class="marketplace-grid">
-                    <?php foreach ($listings as $idx => $item): ?>
+                    <?php foreach ($listings as $idx => $item) { ?>
                         <?php
                             $isOwner = $item->business_id === $business->id;
-                            $listingType = $item->listing_type ?: ($item->is_free ? 'free' : 'buy');
-                            $isReusable = ($item->reusability === 'reusable');
-                            $images = $item->getAllImages();
-                            $imgCount = count($images);
-                            $cardId = 'listing-card-' . $item->id;
+                        $listingType = $item->listing_type ?: ($item->is_free ? 'free' : 'buy');
+                        $isReusable = ($item->reusability === 'reusable');
+                        $images = $item->getAllImages();
+                        $imgCount = count($images);
+                        $cardId = 'listing-card-'.$item->id;
                         ?>
                         <article class="listing-card" id="<?= $cardId ?>"
                             onclick="openListingDetailModal(<?= $item->id ?>)"
@@ -709,43 +715,43 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         >
                             <!-- Multi-Image Carousel / Gallery Area -->
                             <div class="listing-img-container" id="gallery-container-<?= $item->id ?>">
-                                <?php if ($imgCount > 0): ?>
+                                <?php if ($imgCount > 0) { ?>
                                     <img src="<?= e($images[0]) ?>" alt="<?= e($item->title) ?>" class="listing-img-slide" id="img-display-<?= $item->id ?>" loading="lazy">
                                     
-                                    <?php if ($imgCount > 1): ?>
+                                    <?php if ($imgCount > 1) { ?>
                                         <button type="button" class="listing-img-nav-btn prev" onclick="slideListingImage(<?= $item->id ?>, -1, event)" aria-label="Previous image">&lsaquo;</button>
                                         <button type="button" class="listing-img-nav-btn next" onclick="slideListingImage(<?= $item->id ?>, 1, event)" aria-label="Next image">&rsaquo;</button>
                                         
                                         <div class="listing-dots-indicator" id="dots-container-<?= $item->id ?>">
-                                            <?php for ($i = 0; $i < $imgCount; $i++): ?>
+                                            <?php for ($i = 0; $i < $imgCount; $i++) { ?>
                                                 <span class="listing-dot <?= $i === 0 ? 'active' : '' ?>"></span>
-                                            <?php endfor; ?>
+                                            <?php } ?>
                                         </div>
 
                                         <div class="img-count-badge">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                                             <span id="img-counter-<?= $item->id ?>">1/<?= $imgCount ?></span>
                                         </div>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <div class="img-count-badge">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                                             <span>1 photo</span>
                                         </div>
-                                    <?php endif; ?>
-                                <?php else: ?>
+                                    <?php } ?>
+                                <?php } else { ?>
                                     <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#eef4ed;gap:8px;">
                                         <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                                         <span style="font-size:11px;font-weight:600;color:#617769;">Verified SME Material</span>
                                     </div>
-                                <?php endif; ?>
+                                <?php } ?>
 
                                 <!-- Reusability Top-Right Pill -->
                                 <div class="reusability-corner-badge">
-                                    <?php if ($isReusable): ?>
+                                    <?php if ($isReusable) { ?>
                                         <span class="badge-reusable" style="box-shadow:0 2px 6px rgba(0,0,0,0.12);background:#ffffff;font-size:11px;">↻ Reusable</span>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <span class="badge-not-reusable" style="box-shadow:0 2px 6px rgba(0,0,0,0.12);background:#ffffff;font-size:11px;">⊘ Not Reusable</span>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </div>
                             </div>
 
@@ -753,13 +759,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             <div class="listing-body">
                                 <div class="card-badges-row">
                                     <!-- Offer type badge -->
-                                    <?php if ($listingType === 'free'): ?>
+                                    <?php if ($listingType === 'free') { ?>
                                         <span class="offer-type-badge free">🎁 Free Surplus</span>
-                                    <?php elseif ($listingType === 'borrow'): ?>
+                                    <?php } elseif ($listingType === 'borrow') { ?>
                                         <span class="offer-type-badge borrow">🤝 Borrow</span>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <span class="offer-type-badge buy">🛒 Buy</span>
-                                    <?php endif; ?>
+                                    <?php } ?>
 
                                     <span class="category-tag"><?= e($item->category) ?></span>
                                     <span class="condition-pill"><?= e($item->condition ?? 'Used - Good') ?></span>
@@ -775,30 +781,30 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                 <!-- Pricing Box -->
                                 <div class="listing-pricing-box">
                                     <div>
-                                        <?php if ($listingType === 'free'): ?>
+                                        <?php if ($listingType === 'free') { ?>
                                             <span class="price-main free-price">FREE</span>
                                             <span class="price-unit">(RM 0.00)</span>
-                                        <?php elseif ($listingType === 'borrow'): ?>
+                                        <?php } elseif ($listingType === 'borrow') { ?>
                                             <span class="price-main borrow-price">RM <?= number_format((float) $item->price, 2) ?></span>
                                             <span class="price-unit"><?= (float) $item->price > 0 ? 'deposit / loan rate' : 'free loan' ?></span>
-                                        <?php else: ?>
+                                        <?php } else { ?>
                                             <span class="price-main">RM <?= number_format((float) $item->price, 2) ?></span>
                                             <span class="price-unit">/ <?= e($item->unit) ?></span>
-                                        <?php endif; ?>
+                                        <?php } ?>
                                     </div>
                                     <span class="qty-badge"><?= (float) $item->quantity ?> <?= e($item->unit) ?></span>
                                 </div>
 
-                                <?php if (!empty($item->description)): ?>
+                                <?php if (! empty($item->description)) { ?>
                                     <p class="listing-desc-excerpt"><?= e($item->description) ?></p>
-                                <?php endif; ?>
+                                <?php } ?>
 
                                 <div class="listing-card-footer">
                                     <button type="button" class="btn-view-quick" onclick="event.stopPropagation(); openListingDetailModal(<?= $item->id ?>)">
                                         Quick View
                                     </button>
 
-                                    <?php if ($isOwner): ?>
+                                    <?php if ($isOwner) { ?>
                                         <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation();">
                                             <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:4px 8px;border-radius:4px;border:1px solid #bbf7d0;">Your Listing</span>
                                             <form method="POST" action="/business/marketplace/<?= $item->id ?>" onsubmit="return confirm('Are you sure you want to remove this listing?');" style="margin:0;" onclick="event.stopPropagation();">
@@ -809,17 +815,17 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                                 </button>
                                             </form>
                                         </div>
-                                    <?php else: ?>
-                                        <button type="button" class="btn-claim-action" onclick="event.stopPropagation(); openClaimModal('<?= e(addslashes($item->title)) ?>', '<?= e(addslashes($item->business?->business_name ?: ($item->business?->name ?? 'Partner'))) ?>', '<?= e($listingType) ?>')">
+                                    <?php } else { ?>
+                                        <button type="button" class="btn-claim-action" onclick="event.stopPropagation(); openExchangeOrderModal(<?= $item->id ?>)">
                                             <?= $listingType === 'free' ? '🎁 Claim Free' : ($listingType === 'borrow' ? '🤝 Borrow' : 'Inquire &rarr;') ?>
                                         </button>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </div>
                             </div>
                         </article>
-                    <?php endforeach; ?>
+                    <?php } ?>
                 </div>
-            <?php endif; ?>
+            <?php } ?>
         </main>
     </div>
 
@@ -834,7 +840,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 <button type="button" class="modal-close-btn" onclick="closeSelectInventoryModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <?php if (!isset($myInventoryItems) || $myInventoryItems->isEmpty()): ?>
+                <?php if (! isset($myInventoryItems) || $myInventoryItems->isEmpty()) { ?>
                     <div style="text-align:center;padding:36px 16px;">
                         <div style="font-size:42px;margin-bottom:10px;">📦</div>
                         <h4 style="margin:0 0 6px;color:#18422d;font-size:16px;">No Reusable Inventory Found</h4>
@@ -850,13 +856,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             </button>
                         </div>
                     </div>
-                <?php else: ?>
+                <?php } else { ?>
                     <div class="inv-picker-grid">
-                        <?php foreach ($myInventoryItems as $inv): 
-                            $invImg = $inv->getPrimaryImage() ? asset($inv->getPrimaryImage()) : 'https://placehold.co/120x120/e8f5e9/1b5e20?text=' . urlencode(substr($inv->name, 0, 3));
+                        <?php foreach ($myInventoryItems as $inv) {
+                            $invImg = $inv->getPrimaryImage() ? asset($inv->getPrimaryImage()) : 'https://placehold.co/120x120/e8f5e9/1b5e20?text='.urlencode(substr($inv->name, 0, 3));
                             $invAllImgs = json_encode($inv->getAllImages());
-                        ?>
-                            <div class="inv-pick-card" onclick='selectInventoryItemForListing(<?= $inv->id ?>, <?= json_encode($inv->name) ?>, <?= json_encode($inv->category) ?>, <?= (float)$inv->quantity ?>, <?= json_encode($inv->unit) ?>, <?= json_encode($inv->description ?? '') ?>, <?= $invAllImgs ?>)'>
+                            ?>
+                            <div class="inv-pick-card" onclick='selectInventoryItemForListing(<?= $inv->id ?>, <?= json_encode($inv->name) ?>, <?= json_encode($inv->category) ?>, <?= (float) $inv->quantity ?>, <?= json_encode($inv->unit) ?>, <?= json_encode($inv->description ?? '') ?>, <?= $invAllImgs ?>)'>
                                 <div class="inv-pick-thumb">
                                     <img src="<?= e($invImg) ?>" alt="<?= e($inv->name) ?>">
                                 </div>
@@ -864,13 +870,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                     <div class="inv-pick-name"><?= e($inv->name) ?></div>
                                     <div class="inv-pick-meta"><?= e($inv->category) ?></div>
                                     <div class="inv-pick-stock">
-                                        <span class="inv-stock-badge"><?= (float)$inv->quantity ?> <?= e($inv->unit) ?></span>
+                                        <span class="inv-stock-badge"><?= (float) $inv->quantity ?> <?= e($inv->unit) ?></span>
                                         <span class="inv-reuse-tag">↻ Reusable</span>
                                     </div>
                                 </div>
                                 <div class="inv-pick-arrow">&rarr;</div>
                             </div>
-                        <?php endforeach; ?>
+                        <?php } ?>
                     </div>
                     <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #cadbc9;display:flex;justify-content:space-between;align-items:center;">
                         <small style="color:#617769;">Want to create a listing directly without selecting an item?</small>
@@ -878,7 +884,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             + Enter custom details manually &rarr;
                         </button>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeSelectInventoryModal()">Close</button>
@@ -1515,15 +1521,173 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.body.style.overflow = '';
     }
 
+    <!-- REAL MATERIAL EXCHANGE / ORDER MODAL -->
+    <div class="modal-overlay" id="exchange-order-modal" style="display:none;" onclick="if(event.target===this)closeExchangeOrderModal()">
+        <div class="modal-card" style="max-width:540px;">
+            <div class="modal-header">
+                <div>
+                    <h3 id="order-modal-heading" style="margin:0;font-size:18px;color:#123321;">Request Material Exchange</h3>
+                    <small style="color:#526b5a;font-size:12px;">Initiate a verified circular exchange with this SME.</small>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeExchangeOrderModal()">&times;</button>
+            </div>
+            <form id="exchange-order-form" method="POST" action="">
+                <?= csrf_field() ?>
+                <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
+                    <!-- Item summary box -->
+                    <div style="display:flex;gap:14px;padding:12px;background:#f8faf6;border:1px solid #dbe6d7;border-radius:8px;align-items:center;">
+                        <img id="order-modal-img" src="" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #cadbc9;">
+                        <div style="flex:1;min-width:0;">
+                            <strong id="order-modal-title" style="display:block;font-size:14px;color:#123321;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Item Name</strong>
+                            <span id="order-modal-provider" style="display:block;font-size:12px;color:#45604e;">Provider</span>
+                            <span id="order-modal-stock" style="display:block;font-size:11px;color:#15803d;font-weight:700;margin-top:2px;">Stock: 0</span>
+                        </div>
+                    </div>
+
+                    <!-- Quantity Input -->
+                    <div>
+                        <label for="order-quantity" style="display:block;font-size:12px;font-weight:700;color:#123321;margin-bottom:6px;">
+                            Quantity to Request (<span id="order-unit-label">units</span>) *
+                        </label>
+                        <input type="number" id="order-quantity" name="quantity" class="modal-field-input" step="any" min="0.01" required oninput="calculateOrderTotal()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cadbc9;border-radius:6px;font-size:14px;">
+                        <small id="order-max-hint" style="color:#6b8070;font-size:11px;margin-top:4px;display:block;">Available in stock: 0</small>
+                    </div>
+
+                    <!-- Live Price Summary -->
+                    <div style="background:#eaf3e8;border:1px solid #c0d8bd;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <span style="display:block;font-size:11px;color:#45604e;font-weight:600;">Unit Rate</span>
+                            <strong id="order-unit-price" style="font-size:13px;color:#123321;">RM 0.00</strong>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="display:block;font-size:11px;color:#45604e;font-weight:600;">Estimated Total</span>
+                            <strong id="order-total-price" style="font-size:18px;color:#176b40;font-weight:800;">RM 0.00</strong>
+                        </div>
+                    </div>
+
+                    <!-- Notes / Message -->
+                    <div>
+                        <label for="order-notes" style="display:block;font-size:12px;font-weight:700;color:#123321;margin-bottom:6px;">
+                            Order Notes / Delivery or Pickup Instructions (Optional)
+                        </label>
+                        <textarea id="order-notes" name="notes" rows="2" placeholder="e.g., We will arrange our own logistics, or please ship to our warehouse address..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cadbc9;border-radius:6px;font-size:12px;resize:vertical;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:14px 20px;border-top:1px solid #e1e9df;display:flex;justify-content:flex-end;gap:10px;background:#ffffff;border-radius:0 0 12px 12px;">
+                    <button type="button" class="btn-cancel" onclick="closeExchangeOrderModal()" style="padding:8px 16px;border:1px solid #cadbc9;background:#ffffff;border-radius:6px;cursor:pointer;">Cancel</button>
+                    <button type="submit" id="order-submit-btn" class="btn-submit" style="padding:8px 18px;background:#176b40;color:#ffffff;border:none;border-radius:6px;font-weight:700;cursor:pointer;">Confirm Order &rarr;</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
     function executeClaimFromModal() {
         if (!currentActiveModalListing) return;
+        var listingId = currentActiveModalListing.id;
         closeListingDetailModal();
-        openClaimModal(currentActiveModalListing.title, currentActiveModalListing.company, currentActiveModalListing.type);
+        openExchangeOrderModal(listingId);
     }
 
-    function openClaimModal(title, bizName, offerType) {
-        var verb = offerType === 'free' ? 'claim request for' : (offerType === 'borrow' ? 'borrowing request for' : 'purchase inquiry for');
-        alert('EcoCycle exchange initiated: A ' + verb + ' "' + title + '" from ' + bizName + ' has been sent to their workspace.');
+    var currentExchangeItem = null;
+
+    function openExchangeOrderModal(listingId) {
+        var card = document.getElementById('listing-card-' + listingId);
+        if (!card) return;
+
+        var title = card.dataset.title;
+        var company = card.dataset.company;
+        var city = card.dataset.city;
+        var state = card.dataset.state;
+        var price = parseFloat(card.dataset.price || 0);
+        var qty = parseFloat(card.dataset.qty || 0);
+        var unit = card.dataset.unit || 'units';
+        var type = card.dataset.type || 'buy';
+        var images = [];
+        try {
+            images = JSON.parse(card.dataset.images || '[]');
+        } catch(e) {}
+
+        currentExchangeItem = {
+            id: listingId,
+            title: title,
+            company: company,
+            price: price,
+            qty: qty,
+            unit: unit,
+            type: type
+        };
+
+        var form = document.getElementById('exchange-order-form');
+        form.action = '/business/marketplace/' + listingId + '/exchange';
+
+        document.getElementById('order-modal-title').textContent = title;
+        document.getElementById('order-modal-provider').textContent = company + ' · ' + city + ', ' + state;
+        document.getElementById('order-modal-stock').textContent = 'Stock Available: ' + qty + ' ' + unit;
+        document.getElementById('order-unit-label').textContent = unit;
+        document.getElementById('order-max-hint').textContent = 'Available in stock: ' + qty + ' ' + unit;
+
+        var imgEl = document.getElementById('order-modal-img');
+        if (images && images.length > 0) {
+            imgEl.src = images[0];
+            imgEl.style.display = 'block';
+        } else {
+            imgEl.src = '/images/figma/ecocycle-leaf.svg';
+            imgEl.style.display = 'block';
+        }
+
+        var qtyInput = document.getElementById('order-quantity');
+        qtyInput.max = qty;
+        qtyInput.value = Math.min(1, qty);
+
+        var heading = document.getElementById('order-modal-heading');
+        var submitBtn = document.getElementById('order-submit-btn');
+
+        if (type === 'free') {
+            heading.textContent = '🎁 Claim Free Material';
+            submitBtn.textContent = 'Claim Free Material';
+            document.getElementById('order-unit-price').textContent = 'FREE';
+        } else if (type === 'borrow') {
+            heading.textContent = '🤝 Request to Borrow Material';
+            submitBtn.textContent = 'Submit Borrow Request';
+            document.getElementById('order-unit-price').textContent = price > 0 ? ('RM ' + price.toFixed(2) + ' deposit') : 'Free Loan';
+        } else {
+            heading.textContent = '🛒 Purchase Material Order';
+            submitBtn.textContent = 'Confirm Order & Inquire';
+            document.getElementById('order-unit-price').textContent = 'RM ' + price.toFixed(2) + ' / ' + unit;
+        }
+
+        calculateOrderTotal();
+
+        var modal = document.getElementById('exchange-order-modal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function calculateOrderTotal() {
+        if (!currentExchangeItem) return;
+        var qtyInput = document.getElementById('order-quantity');
+        var reqQty = parseFloat(qtyInput.value || 0);
+        var totalEl = document.getElementById('order-total-price');
+
+        if (currentExchangeItem.type === 'free') {
+            totalEl.textContent = 'RM 0.00 (Free)';
+            return;
+        }
+
+        if (currentExchangeItem.type === 'borrow') {
+            totalEl.textContent = currentExchangeItem.price > 0 ? ('RM ' + (currentExchangeItem.price * reqQty).toFixed(2)) : 'RM 0.00 (Free Loan)';
+            return;
+        }
+
+        var total = reqQty * currentExchangeItem.price;
+        totalEl.textContent = 'RM ' + total.toFixed(2);
+    }
+
+    function closeExchangeOrderModal() {
+        var modal = document.getElementById('exchange-order-modal');
+        if (modal) modal.style.display = 'none';
+        document.body.style.overflow = '';
     }
     </script>
 </body>

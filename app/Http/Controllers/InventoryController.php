@@ -24,7 +24,7 @@ class InventoryController extends Controller
 
     public function index(Request $request): View
     {
-        /** @var \App\Models\User $business */
+        /** @var User $business */
         $business = Auth::user();
 
         if ($business->account_status !== 'approved') {
@@ -46,7 +46,7 @@ class InventoryController extends Controller
         if ($search = trim((string) $request->input('search'))) {
             $query->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -55,7 +55,17 @@ class InventoryController extends Controller
         }
 
         if ($status = $request->input('status')) {
-            $query->where('status', $status);
+            if ($status === 'in_stock') {
+                $query->whereIn('status', ['in_stock', 'active'])->where('quantity', '>', 0);
+            } elseif ($status === 'low_stock') {
+                $query->where('status', 'low_stock');
+            } elseif ($status === 'out_of_stock') {
+                $query->where(function ($q) {
+                    $q->whereIn('status', ['out_of_stock', 'sold'])->orWhere('quantity', '<=', 0);
+                });
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         if ($reusability = $request->input('reusability')) {
@@ -111,9 +121,9 @@ class InventoryController extends Controller
                 foreach (array_slice($files, 0, 5) as $file) {
                     if ($file && $file->isValid()) {
                         $ext = $file->getClientOriginalExtension() ?: 'jpg';
-                        $filename = 'inv_' . Str::random(24) . '.' . $ext;
+                        $filename = 'inv_'.Str::random(24).'.'.$ext;
                         $disk->putFileAs('inventory-images', $file, $filename);
-                        $uploadedImages[] = '/inventory-images/' . $filename;
+                        $uploadedImages[] = '/inventory-images/'.$filename;
                     }
                 }
             }
@@ -124,14 +134,16 @@ class InventoryController extends Controller
             ? (float) $validated['minimum_threshold']
             : null;
 
+        $reusability = $validated['reusability'] ?? 'reusable';
         $status = 'in_stock';
         if ($quantity <= 0) {
             $status = 'out_of_stock';
+        } elseif ($reusability === 'reusable') {
+            $status = 'active';
         } elseif ($threshold !== null && $quantity <= $threshold) {
             $status = 'low_stock';
         }
 
-        $reusability = $validated['reusability'] ?? 'reusable';
         $listingType = $validated['listing_type'] ?? 'buy';
         $condition = $validated['condition'] ?? 'Used - Good';
         $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : 0);
@@ -233,12 +245,12 @@ class InventoryController extends Controller
                 foreach (array_slice($files, 0, 5) as $file) {
                     if ($file && $file->isValid()) {
                         $ext = $file->getClientOriginalExtension() ?: 'jpg';
-                        $filename = 'inv_' . Str::random(24) . '.' . $ext;
+                        $filename = 'inv_'.Str::random(24).'.'.$ext;
                         $disk->putFileAs('inventory-images', $file, $filename);
-                        $newImages[] = '/inventory-images/' . $filename;
+                        $newImages[] = '/inventory-images/'.$filename;
                     }
                 }
-                if (!empty($newImages)) {
+                if (! empty($newImages)) {
                     $uploadedImages = $newImages;
                 }
             }
@@ -341,6 +353,7 @@ class InventoryController extends Controller
         });
 
         $actionWord = $type === 'stock_in' ? 'added to' : 'deducted from';
+
         return back()->with('status', "{$adjQty} {$item->unit} {$actionWord} '{$item->name}'. New balance: {$newQty} {$item->unit} (Marketplace synced).");
     }
 
@@ -352,7 +365,7 @@ class InventoryController extends Controller
         $disk = Storage::disk('public');
         foreach ($item->getAllImages() as $img) {
             if (str_starts_with($img, '/inventory-images/')) {
-                $disk->delete('inventory-images/' . basename($img));
+                $disk->delete('inventory-images/'.basename($img));
             }
         }
 
@@ -376,7 +389,7 @@ class InventoryController extends Controller
 
         if (($item->reusability ?? 'reusable') === 'reusable') {
             $listingType = $extraData['listing_type'] ?? $item->listing_type ?? 'buy';
-            if (!in_array($listingType, ['buy', 'borrow', 'free'], true)) {
+            if (! in_array($listingType, ['buy', 'borrow', 'free'], true)) {
                 $listingType = 'buy';
             }
             $isFree = $listingType === 'free';
@@ -410,6 +423,7 @@ class InventoryController extends Controller
             'inventory_item_id' => null,
             'status' => ((float) $item->quantity > 0) ? 'in_stock' : 'out_of_stock',
         ]);
+
         return null;
     }
 }

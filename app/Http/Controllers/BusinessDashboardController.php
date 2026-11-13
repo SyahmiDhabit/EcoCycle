@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InventoryItem;
-use App\Models\MarketplaceListing;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +24,7 @@ class BusinessDashboardController extends Controller
             if (Auth::guard('admin')->check()) {
                 return redirect()->route('admin.dashboard');
             }
+
             return redirect()->route('login');
         }
 
@@ -39,7 +38,9 @@ class BusinessDashboardController extends Controller
             ->where('account_status', 'approved')
             ->where('id', '!=', $business->id)
             ->with(['marketplaceListings' => function ($q) {
-                $q->where('status', 'active');
+                $q->whereIn('status', ['active', 'in_stock', 'low_stock'])
+                    ->where('quantity', '>', 0)
+                    ->where('reusability', '!=', 'not_reusable');
             }])
             ->with('inventoryItems')
             ->latest()
@@ -51,10 +52,10 @@ class BusinessDashboardController extends Controller
         $materialsMap = [];
 
         foreach ($dbApprovedUsers as $u) {
-            if (!empty($u->industry)) {
+            if (! empty($u->industry)) {
                 $industriesMap[$u->industry] = true;
             }
-            if (!empty($u->state)) {
+            if (! empty($u->state)) {
                 $locationsMap[$u->state] = true;
             }
 
@@ -66,23 +67,23 @@ class BusinessDashboardController extends Controller
                 $materialsMap[$cat] = true;
             }
 
-            $materialsStr = !empty($cats) ? implode(' · ', array_slice($cats, 0, 3)) : ($u->industry ?: 'Materials on request');
+            $materialsStr = ! empty($cats) ? implode(' · ', array_slice($cats, 0, 3)) : ($u->industry ?: 'Materials on request');
 
             // Find image if available from profile_image, listings, or profile doc
             $image = null;
-            if (!empty($u->profile_image)) {
+            if (! empty($u->profile_image)) {
                 $image = $u->profile_image_url;
             } else {
                 $firstWithImage = $listings->firstWhere('image_path', '!=', null);
-                if ($firstWithImage && !empty($firstWithImage->image_path)) {
+                if ($firstWithImage && ! empty($firstWithImage->image_path)) {
                     $image = $firstWithImage->image_path;
-                } elseif (!empty($u->ssm_profile_path) && preg_match('/\.(jpg|jpeg|png|webp)$/i', $u->ssm_profile_path)) {
+                } elseif (! empty($u->ssm_profile_path) && preg_match('/\.(jpg|jpeg|png|webp)$/i', $u->ssm_profile_path)) {
                     $image = '/business/application/documents/profile';
                 }
             }
 
             $locationParts = array_filter([$u->city, $u->state]);
-            $locationStr = !empty($locationParts) ? implode(', ', $locationParts) : 'Malaysia';
+            $locationStr = ! empty($locationParts) ? implode(', ', $locationParts) : 'Malaysia';
 
             $formattedListings = $listings->map(function ($l) {
                 return [
@@ -108,7 +109,7 @@ class BusinessDashboardController extends Controller
                 'state' => $u->state ?: '',
                 'location' => $locationStr,
                 'registered_address' => $u->registered_address ?: 'Not specified',
-                'description' => $u->registered_address ? ('Registered facility in ' . $locationStr . '.') : 'Verified EcoCycle partner.',
+                'description' => $u->registered_address ? ('Registered facility in '.$locationStr.'.') : 'Verified EcoCycle partner.',
                 'materials' => $materialsStr,
                 'listings_count' => $listings->count(),
                 'image' => $image,
@@ -153,7 +154,10 @@ class BusinessDashboardController extends Controller
 
         $company->load([
             'marketplaceListings' => function ($q) {
-                $q->where('status', 'active')->latest();
+                $q->whereIn('status', ['active', 'in_stock', 'low_stock'])
+                    ->where('quantity', '>', 0)
+                    ->where('reusability', '!=', 'not_reusable')
+                    ->latest();
             },
             'inventoryItems',
         ]);

@@ -31,9 +31,11 @@ class MyListingController extends Controller
         $query = MarketplaceListing::where('business_id', $business->id)->with('reviews.reviewer')->latest();
 
         if ($statusTab === 'active') {
-            $query->where('status', 'active');
+            $query->whereIn('status', ['active', 'in_stock', 'low_stock'])->where('quantity', '>', 0);
         } elseif ($statusTab === 'sold') {
-            $query->where('status', 'sold');
+            $query->where(function ($q) {
+                $q->whereIn('status', ['sold', 'out_of_stock'])->orWhere('quantity', '<=', 0);
+            });
         } elseif ($statusTab === 'borrowed') {
             $query->where('listing_type', 'borrow');
         }
@@ -51,8 +53,12 @@ class MyListingController extends Controller
 
         // Counts
         $allListings = MarketplaceListing::where('business_id', $business->id)->get();
-        $totalActive = $allListings->where('status', 'active')->count();
-        $totalSold = $allListings->where('status', 'sold')->count();
+        $totalActive = $allListings->filter(function ($l) {
+            return in_array($l->status, ['active', 'in_stock', 'low_stock']) && (float) $l->quantity > 0;
+        })->count();
+        $totalSold = $allListings->filter(function ($l) {
+            return in_array($l->status, ['sold', 'out_of_stock']) || (float) $l->quantity <= 0;
+        })->count();
         $totalBorrowed = $allListings->where('listing_type', 'borrow')->count();
 
         return view('business.listings.index', [
@@ -82,7 +88,7 @@ class MyListingController extends Controller
         $listing->status = $validated['status'];
         $listing->save();
 
-        return back()->with('status', "Listing status updated to: " . ucfirst($validated['status']));
+        return back()->with('status', 'Listing status updated to: '.ucfirst($validated['status']));
     }
 
     public function storeReview(Request $request, MarketplaceListing $listing): RedirectResponse

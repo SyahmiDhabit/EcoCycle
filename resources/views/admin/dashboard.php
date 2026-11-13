@@ -1,12 +1,19 @@
 <?php
-/** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> $businesses */
+
+use App\Models\AdminNotification;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\ViewErrorBag;
+
+/** @var Collection<int, User> $businesses */
 /** @var int $pendingCount */
 /** @var int $approvedCount */
 /** @var int $rejectedCount */
-/** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\AdminNotification> $notifications */
+/** @var Collection<int, AdminNotification> $notifications */
 /** @var int $unreadNotificationsCount */
-/** @var \Illuminate\Support\ViewErrorBag $errors */
-$adminUser = \Illuminate\Support\Facades\Auth::guard('admin')->user();
+/** @var ViewErrorBag $errors */
+$adminUser = Auth::guard('admin')->user();
 $adminName = $adminUser?->name ?? 'Administrator';
 $notifications = $notifications ?? collect();
 $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
@@ -36,47 +43,47 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
-                <?php if ($unreadNotificationsCount > 0): ?>
+                <?php if ($unreadNotificationsCount > 0) { ?>
                     <span class="admin-notif-badge" id="admin-notif-badge"><?= $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount ?></span>
-                <?php endif; ?>
+                <?php } ?>
             </button>
 
             <div class="admin-notif-dropdown" id="admin-notif-dropdown">
                 <div class="admin-notif-header">
                     <h4>
                         <span>Notifications</span>
-                        <?php if ($unreadNotificationsCount > 0): ?>
+                        <?php if ($unreadNotificationsCount > 0) { ?>
                             <span style="font-size:10px;background:#eef5ee;color:var(--green);padding:2px 6px;border-radius:10px;" id="admin-notif-header-count"><?= $unreadNotificationsCount ?> unread</span>
-                        <?php endif; ?>
+                        <?php } ?>
                     </h4>
-                    <?php if ($unreadNotificationsCount > 0): ?>
+                    <?php if ($unreadNotificationsCount > 0) { ?>
                         <button type="button" class="admin-notif-mark-btn" id="admin-notif-mark-all" onclick="markAllAdminNotificationsRead()">Mark all as read</button>
-                    <?php endif; ?>
+                    <?php } ?>
                 </div>
 
                 <div class="admin-notif-list" id="admin-notif-items">
-                    <?php if ($notifications->isEmpty()): ?>
+                    <?php if ($notifications->isEmpty()) { ?>
                         <div class="admin-notif-empty">
                             <p style="margin:0;">No notifications yet.</p>
                         </div>
-                    <?php else: ?>
-                        <?php foreach ($notifications as $notif): ?>
-                            <a href="<?= e($notif->link ?: '/admin') ?>" class="admin-notif-item <?= ! $notif->is_read ? 'unread' : '' ?> <?= $notif->type === 'application_resubmitted' ? 'type-resubmitted' : '' ?>">
+                    <?php } else { ?>
+                        <?php foreach ($notifications as $notif) { ?>
+                            <a href="<?= e($notif->link ?: '/admin/dashboard') ?>" class="admin-notif-item <?= ! $notif->is_read ? 'unread' : '' ?> <?= $notif->type === 'application_resubmitted' ? 'type-resubmitted' : '' ?>">
                                 <div class="admin-notif-icon">
-                                    <?php if ($notif->type === 'application_resubmitted'): ?>
+                                    <?php if ($notif->type === 'application_resubmitted') { ?>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                             <polyline points="23 4 23 10 17 10"></polyline>
                                             <polyline points="1 20 1 14 7 14"></polyline>
                                             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
                                         </svg>
-                                    <?php else: ?>
+                                    <?php } else { ?>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                                             <circle cx="8.5" cy="7" r="4"></circle>
                                             <line x1="20" y1="8" x2="20" y2="14"></line>
                                             <line x1="23" y1="11" x2="17" y2="11"></line>
                                         </svg>
-                                    <?php endif; ?>
+                                    <?php } ?>
                                 </div>
                                 <div class="admin-notif-body">
                                     <div class="admin-notif-title"><?= e($notif->title) ?></div>
@@ -84,8 +91,8 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                                     <div class="admin-notif-time"><?= $notif->created_at ? e($notif->created_at->diffForHumans()) : 'Just now' ?></div>
                                 </div>
                             </a>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                        <?php } ?>
+                    <?php } ?>
                 </div>
             </div>
         </div>
@@ -106,12 +113,12 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
         </div>
     </div>
 
-    <?php if (session('status')): ?>
+    <?php if (session('status')) { ?>
         <div class="admin-success" role="status"><?= e(session('status')) ?></div>
-    <?php endif; ?>
-    <?php if ($errors->any()): ?>
+    <?php } ?>
+    <?php if ($errors->any()) { ?>
         <div class="admin-alert" role="alert"><?= e($errors->first()) ?></div>
-    <?php endif; ?>
+    <?php } ?>
 
     <section class="admin-stats" aria-label="Application totals">
         <article>
@@ -130,11 +137,11 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
 
     <section class="application-list">
         <h2>Submitted applications <span><?= $businesses->count() ?></span></h2>
-        <?php if ($businesses->isEmpty()): ?>
+        <?php if ($businesses->isEmpty()) { ?>
             <p class="admin-empty">No business applications have been submitted yet.</p>
-        <?php endif; ?>
+        <?php } ?>
 
-        <?php foreach ($businesses as $business): ?>
+        <?php foreach ($businesses as $business) { ?>
             <?php
             $bizInitials = strtoupper(substr($business->business_name ?: $business->name, 0, 2));
             $fullAddress = implode(', ', array_filter([
@@ -148,11 +155,11 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                 <div class="application-heading">
                     <div style="display:flex;align-items:center;gap:14px;">
                         <div class="business-profile-avatar">
-                            <?php if ($business->profile_image): ?>
+                            <?php if ($business->profile_image) { ?>
                                 <img src="<?= e($business->profile_image_url) ?>" alt="<?= e($business->business_name) ?>">
-                            <?php else: ?>
+                            <?php } else { ?>
                                 <span><?= e($bizInitials) ?></span>
-                            <?php endif; ?>
+                            <?php } ?>
                         </div>
                         <div>
                             <h3 style="margin:0 0 2px;font-size:16px;color:#123321;"><?= e($business->business_name) ?></h3>
@@ -163,22 +170,22 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <button type="button" class="btn-view-biz-profile" onclick='openBusinessModal(<?= json_encode([
-                            "id" => $business->id,
-                            "business_name" => $business->business_name,
-                            "name" => $business->name,
-                            "email" => $business->email,
-                            "phone" => $business->business_phone,
-                            "registration_no" => $business->business_registration_number,
-                            "industry" => $business->industry,
-                            "address" => $fullAddress,
-                            "city" => $business->city,
-                            "state" => $business->state,
-                            "status" => ucfirst($business->account_status),
-                            "image" => $business->profile_image_url,
-                            "inventory_count" => $business->inventory_items_count ?? 0,
-                            "listings_count" => $business->marketplace_listings_count ?? 0,
-                            "cert_url" => route("admin.business.document", [$business, "certificate"]),
-                            "profile_url" => route("admin.business.document", [$business, "profile"]),
+                            'id' => $business->id,
+                            'business_name' => $business->business_name,
+                            'name' => $business->name,
+                            'email' => $business->email,
+                            'phone' => $business->business_phone,
+                            'registration_no' => $business->business_registration_number,
+                            'industry' => $business->industry,
+                            'address' => $fullAddress,
+                            'city' => $business->city,
+                            'state' => $business->state,
+                            'status' => ucfirst($business->account_status),
+                            'image' => $business->profile_image_url,
+                            'inventory_count' => $business->inventory_items_count ?? 0,
+                            'listings_count' => $business->marketplace_listings_count ?? 0,
+                            'cert_url' => route('admin.business.document', [$business, 'certificate']),
+                            'profile_url' => route('admin.business.document', [$business, 'profile']),
                         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
                             👁 View Profile
                         </button>
@@ -226,14 +233,14 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                     </a>
                 </div>
 
-                <?php if ($business->review_note): ?>
+                <?php if ($business->review_note) { ?>
                     <div class="review-note">
                         <strong>Review note</strong>
                         <p><?= e($business->review_note) ?></p>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
 
-                <?php if ($business->account_status !== 'approved'): ?>
+                <?php if ($business->account_status !== 'approved') { ?>
                     <div class="application-actions">
                         <form method="POST" action="<?= e(route('admin.business.approve', $business)) ?>">
                             <?= csrf_field() ?>
@@ -246,7 +253,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                             <button class="admin-danger" type="submit">Request changes</button>
                         </form>
                     </div>
-                <?php else: ?>
+                <?php } else { ?>
                     <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
                         <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:600;">
                             ✓ Verified SME &middot; Approved on <?= $business->reviewed_at ? e($business->reviewed_at->timezone('Asia/Kuala_Lumpur')->format('j M Y')) : 'Record' ?>
@@ -258,9 +265,9 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                             <button class="admin-danger" type="submit" style="white-space:nowrap;">Request re-review</button>
                         </form>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
             </article>
-        <?php endforeach; ?>
+        <?php } ?>
     </section>
 </main>
 

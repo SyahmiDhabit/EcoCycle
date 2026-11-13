@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Mail\BusinessApplicationDecision;
+use App\Mail\BusinessApplicationSubmitted;
 use App\Models\Administrator;
+use App\Models\AdminNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -77,7 +79,7 @@ class AdminReviewTest extends TestCase
                 && ! $mail->hasTo($admin->email)
                 && ! $mail->hasTo('ssyahmidhabit@gmail.com');
         });
-        Mail::assertNotSent(\App\Mail\BusinessApplicationSubmitted::class);
+        Mail::assertNotSent(BusinessApplicationSubmitted::class);
 
         // Rejection is communicated only in email
         $this->assertDatabaseMissing('business_notification', [
@@ -158,11 +160,11 @@ class AdminReviewTest extends TestCase
             'account_status' => 'pending',
         ]);
 
-        \App\Models\AdminNotification::send(
+        AdminNotification::send(
             'new_registration',
             'New Business Registration',
             'Solar Biofuel Enterprise has registered for review.',
-            '/admin',
+            '/admin/dashboard',
             $business->id
         );
 

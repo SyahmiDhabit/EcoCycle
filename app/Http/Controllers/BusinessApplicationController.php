@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\AdminNotification;
 use App\Models\User;
 use App\Services\BusinessMailNotifier;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -24,6 +26,7 @@ class BusinessApplicationController extends Controller
             if (Auth::guard('admin')->check()) {
                 return redirect()->route('admin.dashboard');
             }
+
             return redirect()->route('login');
         }
 
@@ -174,7 +177,7 @@ class BusinessApplicationController extends Controller
             'application_resubmitted',
             'Application Resubmitted',
             "{$business->business_name} has updated their registration information and documents for administrator review.",
-            '/admin',
+            '/admin/dashboard',
             $business->id
         );
 
@@ -194,7 +197,7 @@ class BusinessApplicationController extends Controller
 
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        /** @var FilesystemAdapter $disk */
         $disk = Storage::disk('local');
 
         return $disk->download($path);
@@ -301,14 +304,14 @@ class BusinessApplicationController extends Controller
             'application_resubmitted',
             'Application Resubmitted',
             "{$business->business_name} has resubmitted their application documents for administrator review.",
-            '/admin',
+            '/admin/dashboard',
             $business->id
         );
 
         return redirect()->route('business.dashboard')->with('status', 'Your updated application has been resubmitted for administrator review.');
     }
 
-    private function getUploadErrorMessage(?\Illuminate\Http\UploadedFile $file, string $defaultMessage): string
+    private function getUploadErrorMessage(?UploadedFile $file, string $defaultMessage): string
     {
         if (! $file) {
             return $defaultMessage;

@@ -53,7 +53,7 @@ class AdminNotification extends Model
         string $type,
         string $title,
         string $message,
-        ?string $link = '/admin',
+        ?string $link = '/admin/dashboard',
         ?int $businessId = null,
         ?int $adminId = null
     ): self {
@@ -61,7 +61,7 @@ class AdminNotification extends Model
             'type' => $type,
             'title' => $title,
             'message' => $message,
-            'link' => $link ?: '/admin',
+            'link' => $link ?: '/admin/dashboard',
             'business_id' => $businessId,
             'admin_id' => $adminId,
             'is_read' => false,

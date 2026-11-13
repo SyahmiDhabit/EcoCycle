@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminNotification;
 use App\Models\User;
 use App\Services\BusinessMailNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
@@ -132,11 +134,11 @@ class RegisteredUserController extends Controller
         $business = User::query()->where('email', $validated['email'])->firstOrFail();
         app(BusinessMailNotifier::class)->submitted($business);
 
-        \App\Models\AdminNotification::send(
+        AdminNotification::send(
             'new_registration',
             'New Business Registration',
             "{$business->business_name} ({$business->business_registration_number}) has submitted registration documents for review.",
-            '/admin',
+            '/admin/dashboard',
             $business->id
         );
 
@@ -176,7 +178,7 @@ class RegisteredUserController extends Controller
         ]);
     }
 
-    private function getUploadErrorMessage(?\Illuminate\Http\UploadedFile $file, string $defaultMessage): string
+    private function getUploadErrorMessage(?UploadedFile $file, string $defaultMessage): string
     {
         if (! $file) {
             return $defaultMessage;

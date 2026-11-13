@@ -1,6 +1,9 @@
 <?php
-/** @var \Illuminate\Support\ViewErrorBag $errors */
-$errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
+
+use Illuminate\Support\ViewErrorBag;
+
+/** @var ViewErrorBag $errors */
+$errors = $errors ?? session('errors', new ViewErrorBag);
 $emailError = $errors->first('identifier');
 $passwordError = $errors->first('password');
 ?>
@@ -31,41 +34,45 @@ $passwordError = $errors->first('password');
                     <p>Sign in to keep your materials and operations moving.</p>
                 </header>
 
-                <?php if (session('status')): ?>
+                <?php if (session('status')) { ?>
                     <div style="padding:12px 16px;border-radius:7px;background:#eaf3e8;border:1px solid #c7dbc5;color:#285c44;font-size:12px;font-weight:600;margin-bottom:16px;" role="status">
                         <?= e(session('status')) ?>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
 
-                <?php if (session('error')): ?>
+                <?php if (session('error')) { ?>
                     <div class="signin-error-summary" role="alert" aria-live="assertive" style="background:#f9eae6;border-color:#e0b2ac;margin-bottom:16px;">
                         <strong style="color:#a0483e;">Account Not Approved</strong>
                         <span style="color:#a0483e;"><?= e(session('error')) ?></span>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
 
-                <?php if ($errors->any()): ?>
+                <?php if ($errors->any()) { ?>
                     <div class="signin-error-summary" role="alert" aria-live="assertive">
                         <strong>We couldn’t sign you in.</strong>
                         <span><?= e($emailError ?: ($passwordError ?: $errors->first())) ?></span>
                     </div>
-                <?php endif; ?>
+                <?php } ?>
 
                 <form class="signin-form" method="POST" action="/login">
                     <?= csrf_field() ?>
                     <div class="signin-field">
                         <label for="identifier">Business email or company username</label>
                         <input id="identifier" name="identifier" type="text" value="<?= e(old('identifier')) ?>" placeholder="e.g. owner@business.com or company username" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="identifier-error"' : '' ?>>
-                        <?php if ($emailError): ?><small class="signin-field-error" id="identifier-error"><?= e($emailError) ?></small><?php endif; ?>
+                        <?php if ($emailError) { ?><small class="signin-field-error" id="identifier-error"><?= e($emailError) ?></small><?php } ?>
                     </div>
 
                     <div class="signin-field">
                         <label for="password">Password</label>
                         <input id="password" name="password" type="password" placeholder="e.g. Enter your password" autocomplete="current-password" required aria-invalid="<?= $passwordError ? 'true' : 'false' ?>" <?= $passwordError ? 'aria-describedby="password-error"' : '' ?>>
-                        <?php if ($passwordError): ?><small class="signin-field-error" id="password-error"><?= e($passwordError) ?></small><?php endif; ?>
+                        <?php if ($passwordError) { ?><small class="signin-field-error" id="password-error"><?= e($passwordError) ?></small><?php } ?>
                     </div>
 
                     <div class="signin-options">
+                        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#526b5a;cursor:pointer;user-select:none;">
+                            <input type="checkbox" name="remember" value="1" style="accent-color:#176b40;">
+                            <span>Remember me</span>
+                        </label>
                         <a href="<?= e(route('password.request')) ?>">Forgot password?</a>
                     </div>
 

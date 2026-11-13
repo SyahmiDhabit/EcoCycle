@@ -30,6 +30,7 @@ class BusinessApplicationDecision extends Mailable
     {
         return new Content(
             view: 'emails.business-application-decision',
+            text: 'emails.business-application-decision-text',
             with: [
                 'business' => $this->business,
                 'decision' => $this->decision,

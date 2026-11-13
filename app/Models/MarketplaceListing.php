@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'business_id',
     'inventory_item_id',
     'title',
+    'name',
     'description',
+    'sku',
     'category',
     'quantity',
     'unit',
@@ -21,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'listing_type',
     'reusability',
     'condition',
+    'minimum_threshold',
     'location_city',
     'location_state',
     'image_path',
@@ -31,12 +34,56 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'image_5',
     'images',
     'status',
+    'notes',
 ])]
 class MarketplaceListing extends Model
 {
     use HasFactory;
 
-    protected $table = 'marketplace_listings';
+    protected $table = 'listing';
+
+    protected static function booted(): void
+    {
+        static::created(function (MarketplaceListing $listing): void {
+            if (empty($listing->inventory_item_id)) {
+                $listing->inventory_item_id = $listing->id;
+                $listing->saveQuietly();
+            }
+        });
+    }
+
+    public function getStatusAttribute(): string
+    {
+        $raw = $this->attributes['status'] ?? 'active';
+        if (isset($this->attributes['quantity']) && (float) $this->attributes['quantity'] <= 0) {
+            return 'sold';
+        }
+        if ($raw === 'in_stock' || $raw === 'low_stock') {
+            return 'active';
+        }
+        return $raw;
+    }
+
+    public function getNameAttribute(): ?string
+    {
+        return $this->attributes['name'] ?? $this->attributes['title'] ?? null;
+    }
+
+    public function setNameAttribute($value): void
+    {
+        $this->attributes['name'] = $value;
+        if (empty($this->attributes['title'])) {
+            $this->attributes['title'] = $value;
+        }
+    }
+
+    public function setTitleAttribute($value): void
+    {
+        $this->attributes['title'] = $value;
+        if (empty($this->attributes['name'])) {
+            $this->attributes['name'] = $value;
+        }
+    }
 
     protected function casts(): array
     {
@@ -94,7 +141,7 @@ class MarketplaceListing extends Model
 
     public function inventoryItem(): BelongsTo
     {
-        return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
+        return $this->belongsTo(InventoryItem::class, 'id', 'id');
     }
 
     public function exchanges(): HasMany

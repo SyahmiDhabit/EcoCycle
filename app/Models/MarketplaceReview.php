@@ -19,7 +19,7 @@ class MarketplaceReview extends Model
 {
     use HasFactory;
 
-    protected $table = 'marketplace_reviews';
+    protected $table = 'marketplace_review';
 
     protected function casts(): array
     {

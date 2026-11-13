@@ -27,7 +27,7 @@ class MaterialExchange extends Model
 {
     use HasFactory;
 
-    protected $table = 'material_exchanges';
+    protected $table = 'material_exchange';
 
     protected function casts(): array
     {

@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'business_id',
+    'inventory_item_id',
+    'title',
     'name',
     'description',
     'sku',
@@ -20,8 +22,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'status',
     'reusability',
     'price',
+    'is_free',
     'listing_type',
     'condition',
+    'location_city',
+    'location_state',
     'image_path',
     'image_1',
     'image_2',
@@ -35,7 +40,50 @@ class InventoryItem extends Model
 {
     use HasFactory;
 
-    protected $table = 'inventory_items';
+    protected $table = 'listing';
+
+    protected static function booted(): void
+    {
+        static::created(function (InventoryItem $item): void {
+            if (($item->reusability ?? 'reusable') === 'reusable' && empty($item->inventory_item_id)) {
+                $item->inventory_item_id = $item->id;
+                $item->saveQuietly();
+            }
+        });
+    }
+
+    public function getStatusAttribute(): string
+    {
+        $raw = $this->attributes['status'] ?? 'in_stock';
+        if (isset($this->attributes['quantity']) && (float) $this->attributes['quantity'] <= 0) {
+            return 'out_of_stock';
+        }
+        if ($raw === 'active' || $raw === 'sold') {
+            return (isset($this->attributes['quantity']) && (float) $this->attributes['quantity'] <= 0) ? 'out_of_stock' : 'in_stock';
+        }
+        return $raw;
+    }
+
+    public function getTitleAttribute(): ?string
+    {
+        return $this->attributes['title'] ?? $this->attributes['name'] ?? null;
+    }
+
+    public function setTitleAttribute($value): void
+    {
+        $this->attributes['title'] = $value;
+        if (empty($this->attributes['name'])) {
+            $this->attributes['name'] = $value;
+        }
+    }
+
+    public function setNameAttribute($value): void
+    {
+        $this->attributes['name'] = $value;
+        if (empty($this->attributes['title'])) {
+            $this->attributes['title'] = $value;
+        }
+    }
 
     protected function casts(): array
     {
@@ -103,12 +151,12 @@ class InventoryItem extends Model
 
     public function marketplaceListings(): HasMany
     {
-        return $this->hasMany(MarketplaceListing::class, 'inventory_item_id');
+        return $this->hasMany(MarketplaceListing::class, 'id', 'id');
     }
 
     public function marketplaceListing(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $this->hasOne(MarketplaceListing::class, 'inventory_item_id');
+        return $this->hasOne(MarketplaceListing::class, 'id', 'id');
     }
 
     public function isLowStock(): bool

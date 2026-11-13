@@ -372,8 +372,9 @@ class InventoryController extends Controller
      */
     public static function syncInventoryToMarketplace(InventoryItem $item, array $extraData = []): ?MarketplaceListing
     {
+        $business = $item->business ?: User::find($item->business_id);
+
         if (($item->reusability ?? 'reusable') === 'reusable') {
-            $business = $item->business ?: User::find($item->business_id);
             $listingType = $extraData['listing_type'] ?? $item->listing_type ?? 'buy';
             if (!in_array($listingType, ['buy', 'borrow', 'free'], true)) {
                 $listingType = 'buy';
@@ -387,44 +388,28 @@ class InventoryController extends Controller
             $qty = (float) $item->quantity;
             $status = $qty > 0 ? 'active' : 'sold';
 
-            $listing = MarketplaceListing::where('inventory_item_id', $item->id)->first();
-            if (! $listing) {
-                $listing = new MarketplaceListing();
-                $listing->business_id = $item->business_id;
-                $listing->inventory_item_id = $item->id;
-            }
+            $item->update([
+                'title' => $item->name,
+                'name' => $item->name,
+                'listing_type' => $listingType,
+                'reusability' => 'reusable',
+                'price' => $price,
+                'is_free' => $isFree,
+                'condition' => $condition,
+                'location_city' => $item->location_city ?: ($business?->city ?: 'Kuala Lumpur'),
+                'location_state' => $item->location_state ?: ($business?->state ?: 'Selangor'),
+                'status' => $status,
+                'inventory_item_id' => $item->id,
+            ]);
 
-            $listing->title = $item->name;
-            $listing->description = !empty($item->description)
-                ? $item->description
-                : (!empty($listing->description) ? $listing->description : 'Reusable surplus material available for circular exchange on EcoCycle.');
-            $listing->category = $item->category;
-            $listing->quantity = $qty;
-            $listing->unit = $item->unit;
-            $listing->listing_type = $listingType;
-            $listing->reusability = 'reusable';
-            $listing->price = $price;
-            $listing->is_free = $isFree;
-            $listing->condition = $condition;
-            $listing->location_city = $listing->location_city ?: ($business?->city ?: 'Kuala Lumpur');
-            $listing->location_state = $listing->location_state ?: ($business?->state ?: 'Selangor');
-
-            $images = $item->getAllImages();
-            $listing->image_path = $images[0] ?? null;
-            $listing->image_1 = $images[0] ?? null;
-            $listing->image_2 = $images[1] ?? null;
-            $listing->image_3 = $images[2] ?? null;
-            $listing->image_4 = $images[3] ?? null;
-            $listing->image_5 = $images[4] ?? null;
-            $listing->images = $images;
-            $listing->status = $status;
-            $listing->save();
-
-            return $listing;
+            return MarketplaceListing::find($item->id);
         }
 
-        // If marked as not_reusable, delete any active marketplace listing for this item
-        MarketplaceListing::where('inventory_item_id', $item->id)->delete();
+        // If marked as not_reusable, dissociate inventory_item_id so it is excluded from marketplace
+        $item->update([
+            'inventory_item_id' => null,
+            'status' => ((float) $item->quantity > 0) ? 'in_stock' : 'out_of_stock',
+        ]);
         return null;
     }
 }

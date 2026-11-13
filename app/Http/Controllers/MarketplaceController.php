@@ -178,31 +178,49 @@ class MarketplaceController extends Controller
         // If inventory item is specified, ensure it belongs to the user and is reusable
         $inventoryItemId = $validated['inventory_item_id'] ?? null;
         if ($inventoryItemId) {
-            $item = InventoryItem::find($inventoryItemId);
-            abort_unless($item && $item->business_id === $business->id, 403);
-            if ($item->reusability === 'not_reusable') {
+            $listing = MarketplaceListing::find($inventoryItemId);
+            abort_unless($listing && $listing->business_id === $business->id, 403);
+            if ($listing->reusability === 'not_reusable') {
                 return back()->with('error', 'This item is marked as Not Reusable (Scrap). Only reusable materials can be listed on the public marketplace.');
             }
             if (empty($uploadedImages)) {
-                $uploadedImages = $item->getAllImages();
+                $uploadedImages = $listing->getAllImages();
             }
-            $item->update([
-                'price' => $price,
-                'listing_type' => $listingType,
-                'condition' => $condition,
-            ]);
-        } else {
-            // Auto-create unified Inventory Item so both tables remain synchronized
-            $invItem = InventoryItem::create([
-                'business_id' => $business->id,
+            $listing->update([
+                'title' => $validated['title'],
                 'name' => $validated['title'],
                 'description' => $description,
                 'category' => $validated['category'],
                 'quantity' => (float) $validated['quantity'],
                 'unit' => $validated['unit'],
-                'reusability' => 'reusable',
                 'listing_type' => $listingType,
+                'reusability' => 'reusable',
                 'price' => $price,
+                'is_free' => $isFree,
+                'condition' => $condition,
+                'status' => 'active',
+                'inventory_item_id' => $listing->id,
+                'image_path' => $uploadedImages[0] ?? $listing->image_path,
+                'image_1' => $uploadedImages[0] ?? $listing->image_1,
+                'image_2' => $uploadedImages[1] ?? $listing->image_2,
+                'image_3' => $uploadedImages[2] ?? $listing->image_3,
+                'image_4' => $uploadedImages[3] ?? $listing->image_4,
+                'image_5' => $uploadedImages[4] ?? $listing->image_5,
+                'images' => !empty($uploadedImages) ? $uploadedImages : $listing->images,
+            ]);
+        } else {
+            $listing = MarketplaceListing::create([
+                'business_id' => $business->id,
+                'title' => $validated['title'],
+                'name' => $validated['title'],
+                'description' => $description,
+                'category' => $validated['category'],
+                'quantity' => (float) $validated['quantity'],
+                'unit' => $validated['unit'],
+                'listing_type' => $listingType,
+                'reusability' => 'reusable',
+                'price' => $price,
+                'is_free' => $isFree,
                 'condition' => $condition,
                 'image_path' => $uploadedImages[0] ?? null,
                 'image_1' => $uploadedImages[0] ?? null,
@@ -211,15 +229,18 @@ class MarketplaceController extends Controller
                 'image_4' => $uploadedImages[3] ?? null,
                 'image_5' => $uploadedImages[4] ?? null,
                 'images' => $uploadedImages,
-                'status' => ((float) $validated['quantity'] > 0) ? 'in_stock' : 'out_of_stock',
+                'location_city' => $business->city ?: 'Kuala Lumpur',
+                'location_state' => $business->state ?: 'Selangor',
+                'status' => 'active',
             ]);
 
-            $inventoryItemId = $invItem->id;
+            $listing->inventory_item_id = $listing->id;
+            $listing->save();
 
             if ((float) $validated['quantity'] > 0) {
                 InventoryTransaction::create([
                     'business_id' => $business->id,
-                    'inventory_item_id' => $invItem->id,
+                    'inventory_item_id' => $listing->id,
                     'transaction_type' => 'stock_in',
                     'quantity_change' => (float) $validated['quantity'],
                     'quantity_after' => (float) $validated['quantity'],
@@ -227,31 +248,6 @@ class MarketplaceController extends Controller
                 ]);
             }
         }
-
-        $listing = MarketplaceListing::create([
-            'business_id' => $business->id,
-            'inventory_item_id' => $inventoryItemId,
-            'title' => $validated['title'],
-            'description' => $description,
-            'category' => $validated['category'],
-            'quantity' => (float) $validated['quantity'],
-            'unit' => $validated['unit'],
-            'listing_type' => $listingType,
-            'reusability' => $validated['reusability'],
-            'price' => $price,
-            'is_free' => $isFree,
-            'condition' => $condition,
-            'image_path' => $uploadedImages[0] ?? null,
-            'image_1' => $uploadedImages[0] ?? null,
-            'image_2' => $uploadedImages[1] ?? null,
-            'image_3' => $uploadedImages[2] ?? null,
-            'image_4' => $uploadedImages[3] ?? null,
-            'image_5' => $uploadedImages[4] ?? null,
-            'images' => $uploadedImages,
-            'location_city' => $business->city ?: 'Kuala Lumpur',
-            'location_state' => $business->state ?: 'Selangor',
-            'status' => 'active',
-        ]);
 
         $typeLabel = match ($listingType) {
             'borrow' => 'for Borrowing',

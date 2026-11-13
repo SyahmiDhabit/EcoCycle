@@ -19,7 +19,7 @@ class InventoryTransaction extends Model
 {
     use HasFactory;
 
-    protected $table = 'inventory_transactions';
+    protected $table = 'inventory_transaction';
 
     protected function casts(): array
     {

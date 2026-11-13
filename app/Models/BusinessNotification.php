@@ -21,7 +21,7 @@ class BusinessNotification extends Model
 {
     use HasFactory;
 
-    protected $table = 'business_notifications';
+    protected $table = 'business_notification';
 
     protected function casts(): array
     {

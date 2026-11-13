@@ -28,7 +28,7 @@ class WasteRecord extends Model
 {
     use HasFactory;
 
-    protected $table = 'waste_records';
+    protected $table = 'waste_record';
 
     protected function casts(): array
     {

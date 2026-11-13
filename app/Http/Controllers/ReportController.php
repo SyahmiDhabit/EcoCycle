@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\InventoryItem;
-use App\Models\MarketplaceListing;
 use App\Models\MaterialExchange;
 use App\Models\User;
 use App\Models\WasteRecord;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -40,7 +40,7 @@ class ReportController extends Controller
         // 2. Circular Materials & Wastage Analytics
         $allWasteRecords = WasteRecord::where('business_id', $business->id)->get();
         $notReusableScrapTotalKg = (float) $allWasteRecords->sum('quantity');
-        
+
         $scrapDivertedKg = (float) $allWasteRecords->filter(function ($r) {
             return $r->is_diverted || in_array($r->status, ['sent_to_facility', 'recycled', 'composted']);
         })->sum('quantity');
@@ -59,14 +59,14 @@ class ReportController extends Controller
         $estimatedCo2AvoidedKg = round($totalDivertedFromLandfillKg * 1.82, 1);
 
         // Circularity Index % = Diverted / (Diverted + Landfilled/Pending)
-        $circularityRate = ($notReusableScrapTotalKg + $reusableStockTotal) > 0 ? 
+        $circularityRate = ($notReusableScrapTotalKg + $reusableStockTotal) > 0 ?
             round(($totalDivertedFromLandfillKg / ($notReusableScrapTotalKg + $reusableStockTotal)) * 100, 1) : 100.0;
 
         // Category breakdown for reporting
         $categoryBreakdown = [];
         foreach ($allWasteRecords as $w) {
             $cat = $w->waste_type ?: 'General Scrap';
-            if (!isset($categoryBreakdown[$cat])) {
+            if (! isset($categoryBreakdown[$cat])) {
                 $categoryBreakdown[$cat] = 0;
             }
             $categoryBreakdown[$cat] += (float) $w->quantity;
@@ -75,7 +75,7 @@ class ReportController extends Controller
         // Recent transaction and waste activity logs for printable audit report
         $recentTransactions = MaterialExchange::where(function ($q) use ($business) {
             $q->where('provider_business_id', $business->id)
-              ->orWhere('requester_business_id', $business->id);
+                ->orWhere('requester_business_id', $business->id);
         })->with(['listing', 'provider', 'requester'])->latest()->take(8)->get();
 
         $recentWasteLogs = WasteRecord::where('business_id', $business->id)->latest('recorded_at')->take(8)->get();

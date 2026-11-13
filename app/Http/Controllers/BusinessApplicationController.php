@@ -84,6 +84,7 @@ class BusinessApplicationController extends Controller
             'profile_image.image' => 'The profile image must be a valid image file.',
             'profile_image.mimes' => 'The profile image must be a JPG, JPEG, PNG, or WEBP file.',
             'profile_image.max' => 'The profile image must not exceed 5 MB.',
+            'profile_image.uploaded' => $this->getUploadErrorMessage($request->file('profile_image'), 'The profile image failed to upload. Please ensure the file is under 5 MB and in JPG, JPEG, PNG, or WEBP format.'),
             'ssm_certificate.mimes' => 'The certificate must be a PDF, JPG, PNG, or WEBP file.',
             'ssm_certificate.max' => 'The certificate must not exceed 10 MB.',
             'ssm_certificate.uploaded' => $this->getUploadErrorMessage($request->file('ssm_certificate'), 'The SSM certificate failed to upload. Please ensure the file is under 10 MB and in PDF, JPG, PNG, or WEBP format.'),
@@ -144,7 +145,7 @@ class BusinessApplicationController extends Controller
             $business->update($updateData);
 
             if ($newProfileImagePath && $oldProfileImagePath) {
-                Storage::disk('public')->delete($oldProfileImagePath);
+                Storage::disk('public')->delete(ltrim($oldProfileImagePath, '/'));
             }
 
             if ($newCertificatePath && $oldCertificatePath) {
@@ -218,7 +219,7 @@ class BusinessApplicationController extends Controller
         }
 
         if ($business->profile_image) {
-            Storage::disk('public')->delete($business->profile_image);
+            Storage::disk('public')->delete(ltrim($business->profile_image, '/'));
         }
 
         Auth::guard('web')->logout();

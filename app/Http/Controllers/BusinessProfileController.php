@@ -58,9 +58,12 @@ class BusinessProfileController extends Controller
             $file = $request->file('profile_image');
             if ($file && $file->isValid()) {
                 $ext = $file->getClientOriginalExtension() ?: 'png';
-                $filename = 'profile_' . Str::random(24) . '.' . $ext;
+                $filename = 'profile_'.Str::random(24).'.'.$ext;
                 Storage::disk('public')->putFileAs('profile-images', $file, $filename);
-                $business->profile_image = '/profile-images/' . $filename;
+                if ($business->profile_image) {
+                    Storage::disk('public')->delete(ltrim($business->profile_image, '/'));
+                }
+                $business->profile_image = 'profile-images/'.$filename;
             }
         }
 

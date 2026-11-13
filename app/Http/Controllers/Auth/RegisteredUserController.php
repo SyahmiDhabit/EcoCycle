@@ -85,6 +85,7 @@ class RegisteredUserController extends Controller
             'profile_image.image' => 'The profile image must be a valid image file.',
             'profile_image.mimes' => 'The profile image must be a JPG, JPEG, PNG, or WEBP file.',
             'profile_image.max' => 'The profile image must not exceed 5 MB.',
+            'profile_image.uploaded' => $this->getUploadErrorMessage($request->file('profile_image'), 'The profile image failed to upload. Please ensure the file is under 5 MB and in JPG, JPEG, PNG, or WEBP format.'),
         ]);
 
         $certificatePath = null;

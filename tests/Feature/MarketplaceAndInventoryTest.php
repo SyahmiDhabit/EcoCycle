@@ -107,7 +107,7 @@ class MarketplaceAndInventoryTest extends TestCase
             'location_state' => 'Selangor',
         ]);
         $buyResponse->assertRedirect();
-        $this->assertDatabaseHas('listing', [
+        $this->assertDatabaseHas('item', [
             'business_id' => $business->id,
             'title' => 'Treated Timber Offcuts',
             'listing_type' => 'buy',
@@ -129,7 +129,7 @@ class MarketplaceAndInventoryTest extends TestCase
             'location_state' => 'Selangor',
         ]);
         $borrowResponse->assertRedirect();
-        $this->assertDatabaseHas('listing', [
+        $this->assertDatabaseHas('item', [
             'business_id' => $business->id,
             'title' => 'Heavy Duty Reusable Crates',
             'listing_type' => 'borrow',
@@ -149,7 +149,7 @@ class MarketplaceAndInventoryTest extends TestCase
             'location_state' => 'Selangor',
         ]);
         $freeResponse->assertRedirect();
-        $this->assertDatabaseHas('listing', [
+        $this->assertDatabaseHas('item', [
             'business_id' => $business->id,
             'title' => 'Clean Shredded Cardboard',
             'listing_type' => 'free',
@@ -351,7 +351,7 @@ class MarketplaceAndInventoryTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['reusability']);
-        $this->assertDatabaseMissing('listing', ['title' => 'Scrap listing attempt']);
+        $this->assertDatabaseMissing('item', ['title' => 'Scrap listing attempt']);
     }
 
     public function test_inventory_creation_requires_at_least_one_image_and_max_five(): void
@@ -415,14 +415,14 @@ class MarketplaceAndInventoryTest extends TestCase
             ->delete(route('business.marketplace.destroy', $listing))
             ->assertForbidden();
 
-        $this->assertDatabaseHas('listing', ['id' => $listing->id]);
+        $this->assertDatabaseHas('item', ['id' => $listing->id]);
 
         // Owner can delete
         $this->actingAs($owner)
             ->delete(route('business.marketplace.destroy', $listing))
             ->assertRedirect();
 
-        $this->assertDatabaseMissing('listing', ['id' => $listing->id]);
+        $this->assertDatabaseMissing('item', ['id' => $listing->id]);
     }
 
     public function test_reusable_inventory_item_automatically_creates_active_marketplace_listing(): void
@@ -500,12 +500,12 @@ class MarketplaceAndInventoryTest extends TestCase
         $item = InventoryItem::where('name', 'Mixed Metal Shavings & Scrap Offcuts')->firstOrFail();
         $this->assertSame('not_reusable', $item->reusability);
 
-        // Check item in listing is saved as not_reusable scrap
-        $this->assertDatabaseHas('listing', [
+        // Check item in item table is saved as not_reusable scrap
+        $this->assertDatabaseHas('item', [
             'id' => $item->id,
             'reusability' => 'not_reusable',
         ]);
-        $this->assertDatabaseMissing('listing', [
+        $this->assertDatabaseMissing('item', [
             'id' => $item->id,
             'reusability' => 'reusable',
         ]);
@@ -576,11 +576,11 @@ class MarketplaceAndInventoryTest extends TestCase
 
         $item->refresh();
         $this->assertSame('not_reusable', $item->reusability);
-        $this->assertDatabaseMissing('listing', [
+        $this->assertDatabaseMissing('item', [
             'id' => $item->id,
             'reusability' => 'reusable',
         ]);
-        $this->assertDatabaseHas('listing', [
+        $this->assertDatabaseHas('item', [
             'id' => $item->id,
             'reusability' => 'not_reusable',
         ]);

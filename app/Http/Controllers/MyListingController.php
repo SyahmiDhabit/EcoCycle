@@ -99,7 +99,7 @@ class MyListingController extends Controller
         ]);
 
         MarketplaceReview::create([
-            'listing_id' => $listing->id,
+            'item_id' => $listing->id,
             'seller_business_id' => $listing->business_id,
             'reviewer_business_id' => $business->id,
             'rating' => $validated['rating'],

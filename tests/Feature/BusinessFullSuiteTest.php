@@ -124,7 +124,7 @@ class BusinessFullSuiteTest extends TestCase
         ]);
 
         $exchange = MaterialExchange::create([
-            'listing_id' => $listing->id,
+            'item_id' => $listing->id,
             'provider_business_id' => $seller->id,
             'requester_business_id' => $buyer->id,
             'quantity' => 10,
@@ -191,7 +191,7 @@ class BusinessFullSuiteTest extends TestCase
                 'status' => 'sold',
             ]);
         $statusResponse->assertRedirect();
-        $this->assertDatabaseHas('listing', [
+        $this->assertDatabaseHas('item', [
             'id' => $listing->id,
             'status' => 'sold',
         ]);
@@ -205,7 +205,7 @@ class BusinessFullSuiteTest extends TestCase
             ]);
         $reviewResponse->assertRedirect();
         $this->assertDatabaseHas('marketplace_review', [
-            'listing_id' => $listing->id,
+            'item_id' => $listing->id,
             'seller_business_id' => $seller->id,
             'reviewer_business_id' => $buyer->id,
             'rating' => 5,

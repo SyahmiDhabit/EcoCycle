@@ -40,7 +40,7 @@ class InventoryItem extends Model
 {
     use HasFactory;
 
-    protected $table = 'listing';
+    protected $table = 'item';
 
     protected static function booted(): void
     {

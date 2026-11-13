@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'invoice_number',
+    'item_id',
     'listing_id',
     'provider_business_id',
     'requester_business_id',
@@ -29,6 +30,26 @@ class MaterialExchange extends Model
 
     protected $table = 'material_exchange';
 
+    public function getItemIdAttribute(): ?int
+    {
+        return $this->attributes['item_id'] ?? null;
+    }
+
+    public function setItemIdAttribute($value): void
+    {
+        $this->attributes['item_id'] = $value;
+    }
+
+    public function getListingIdAttribute(): ?int
+    {
+        return $this->attributes['item_id'] ?? null;
+    }
+
+    public function setListingIdAttribute($value): void
+    {
+        $this->attributes['item_id'] = $value;
+    }
+
     protected function casts(): array
     {
         return [
@@ -40,9 +61,14 @@ class MaterialExchange extends Model
         ];
     }
 
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class, 'item_id');
+    }
+
     public function listing(): BelongsTo
     {
-        return $this->belongsTo(MarketplaceListing::class, 'listing_id');
+        return $this->belongsTo(MarketplaceListing::class, 'item_id');
     }
 
     public function provider(): BelongsTo

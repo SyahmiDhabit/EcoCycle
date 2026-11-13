@@ -73,6 +73,11 @@ class User extends Authenticatable
         return $this->belongsTo(Administrator::class, 'reviewed_by');
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(Item::class, 'business_id');
+    }
+
     public function inventoryItems(): HasMany
     {
         return $this->hasMany(InventoryItem::class, 'business_id');

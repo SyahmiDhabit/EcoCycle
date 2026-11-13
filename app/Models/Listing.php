@@ -3,10 +3,9 @@
 namespace App\Models;
 
 /**
- * Primary Unified Model for the single 'listing' table.
- * Used for both Inventory items and Marketplace listings.
+ * Backwards compatibility alias for the unified 'item' model.
  */
-class Listing extends MarketplaceListing
+class Listing extends Item
 {
-    protected $table = 'listing';
+    protected $table = 'item';
 }

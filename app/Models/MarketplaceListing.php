@@ -40,7 +40,7 @@ class MarketplaceListing extends Model
 {
     use HasFactory;
 
-    protected $table = 'listing';
+    protected $table = 'item';
 
     protected static function booted(): void
     {
@@ -146,11 +146,11 @@ class MarketplaceListing extends Model
 
     public function exchanges(): HasMany
     {
-        return $this->hasMany(MaterialExchange::class, 'listing_id');
+        return $this->hasMany(MaterialExchange::class, 'item_id');
     }
 
     public function reviews(): HasMany
     {
-        return $this->hasMany(MarketplaceReview::class, 'listing_id');
+        return $this->hasMany(MarketplaceReview::class, 'item_id');
     }
 }

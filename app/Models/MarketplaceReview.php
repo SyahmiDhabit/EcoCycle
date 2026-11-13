@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
+    'item_id',
     'listing_id',
     'seller_business_id',
     'reviewer_business_id',
@@ -21,6 +22,26 @@ class MarketplaceReview extends Model
 
     protected $table = 'marketplace_review';
 
+    public function getItemIdAttribute(): ?int
+    {
+        return $this->attributes['item_id'] ?? null;
+    }
+
+    public function setItemIdAttribute($value): void
+    {
+        $this->attributes['item_id'] = $value;
+    }
+
+    public function getListingIdAttribute(): ?int
+    {
+        return $this->attributes['item_id'] ?? null;
+    }
+
+    public function setListingIdAttribute($value): void
+    {
+        $this->attributes['item_id'] = $value;
+    }
+
     protected function casts(): array
     {
         return [
@@ -28,9 +49,14 @@ class MarketplaceReview extends Model
         ];
     }
 
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class, 'item_id');
+    }
+
     public function listing(): BelongsTo
     {
-        return $this->belongsTo(MarketplaceListing::class, 'listing_id');
+        return $this->belongsTo(MarketplaceListing::class, 'item_id');
     }
 
     public function seller(): BelongsTo

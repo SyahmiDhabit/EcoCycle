@@ -150,7 +150,7 @@ class DatabaseRelationshipsTest extends TestCase
         ]);
 
         $exchange = MaterialExchange::create([
-            'listing_id' => $listing->id,
+            'item_id' => $listing->id,
             'provider_business_id' => $provider->id,
             'requester_business_id' => $requester->id,
             'quantity' => 10,

@@ -185,4 +185,127 @@ class AdminReviewTest extends TestCase
             'is_read' => true,
         ]);
     }
+
+    public function test_admin_can_request_changes_and_email_is_sent_with_remarks_and_status(): void
+    {
+        Mail::fake();
+
+        $admin = Administrator::create([
+            'name' => 'Reviewer Admin',
+            'email' => 'reviewer2@ecocycle.test',
+            'password' => 'secret123',
+        ]);
+
+        $business = User::factory()->create([
+            'name' => 'sarah_biz',
+            'business_name' => 'Sarah Eco Tech',
+            'email' => 'sarah@ecotech.my',
+            'account_status' => 'pending',
+            'business_registration_number' => '202301019999 (1234567-T)',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.business.reject', $business), [
+                'review_note' => 'Please provide page 2 of your SSM certificate clearly.',
+                'action_type' => 'request_changes',
+            ]);
+
+        $response->assertSessionHas('status', 'Sarah Eco Tech needs changes before approval.');
+
+        $business->refresh();
+        $this->assertSame('rejected', $business->account_status);
+        $this->assertSame('Please provide page 2 of your SSM certificate clearly.', $business->review_note);
+
+        Mail::assertSent(BusinessApplicationDecision::class, function ($mail) {
+            $isToBusiness = $mail->hasTo('sarah@ecotech.my');
+            $hasCorrectSubject = $mail->envelope()->subject === 'Action required: Changes requested for your EcoCycle business registration';
+            $isChangesRequested = $mail->decision === 'changes_requested';
+
+            $rendered = $mail->render();
+            $containsRemarks = str_contains($rendered, 'Please provide page 2 of your SSM certificate clearly.');
+            $containsBizName = str_contains($rendered, 'Sarah Eco Tech');
+            $containsStatus = str_contains($rendered, 'Changes Required');
+
+            return $isToBusiness && $hasCorrectSubject && $isChangesRequested && $containsRemarks && $containsBizName && $containsStatus;
+        });
+    }
+
+    public function test_admin_can_reject_registration_and_email_is_sent_with_rejection_reason_and_status(): void
+    {
+        Mail::fake();
+
+        $admin = Administrator::create([
+            'name' => 'Reviewer Admin',
+            'email' => 'reviewer3@ecocycle.test',
+            'password' => 'secret123',
+        ]);
+
+        $business = User::factory()->create([
+            'name' => 'banned_biz',
+            'business_name' => 'Invalid Timber Ltd',
+            'email' => 'invalid@timber.my',
+            'account_status' => 'pending',
+            'business_registration_number' => '202001099999 (9999999-X)',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.business.reject', $business), [
+                'review_note' => 'SSM certificate registration does not match company registry.',
+                'action_type' => 'reject',
+            ]);
+
+        $response->assertSessionHas('status', 'Invalid Timber Ltd registration has been rejected.');
+
+        $business->refresh();
+        $this->assertSame('rejected', $business->account_status);
+
+        Mail::assertSent(BusinessApplicationDecision::class, function ($mail) {
+            $isToBusiness = $mail->hasTo('invalid@timber.my');
+            $hasCorrectSubject = $mail->envelope()->subject === 'Update regarding your EcoCycle business registration: Application Rejected';
+            $isRejected = $mail->decision === 'rejected';
+
+            $rendered = $mail->render();
+            $containsReason = str_contains($rendered, 'SSM certificate registration does not match company registry.');
+            $containsBizName = str_contains($rendered, 'Invalid Timber Ltd');
+            $containsStatus = str_contains($rendered, 'Registration Rejected');
+
+            return $isToBusiness && $hasCorrectSubject && $isRejected && $containsReason && $containsBizName && $containsStatus;
+        });
+    }
+
+    public function test_duplicate_status_update_does_not_send_duplicate_emails(): void
+    {
+        Mail::fake();
+
+        $admin = Administrator::create([
+            'name' => 'Reviewer Admin',
+            'email' => 'reviewer4@ecocycle.test',
+            'password' => 'secret123',
+        ]);
+
+        $business = User::factory()->create([
+            'business_name' => 'Duplicate Test Corp',
+            'email' => 'dupe@testcorp.my',
+            'account_status' => 'pending',
+        ]);
+
+        // First review note
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.business.reject', $business), [
+                'review_note' => 'First note',
+                'action_type' => 'request_changes',
+            ]);
+
+        Mail::assertSent(BusinessApplicationDecision::class, 1);
+
+        // Immediate duplicate submission with the same note
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.business.reject', $business), [
+                'review_note' => 'First note',
+                'action_type' => 'request_changes',
+            ]);
+
+        // Still only 1 email sent, no duplicate sent
+        Mail::assertSent(BusinessApplicationDecision::class, 1);
+    }
 }

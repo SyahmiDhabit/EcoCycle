@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\BusinessApplicationDecision;
 use App\Mail\BusinessApplicationSubmitted;
+use App\Models\Administrator;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -16,38 +17,50 @@ class BusinessMailNotifier
         $adminEmail = config('services.ecocycle.admin_email') ?: 'ssyahmidhabit@gmail.com';
         $adminRecipients = array_values(array_filter(array_unique(array_merge(
             [$adminEmail],
-            \App\Models\Administrator::pluck('email')->all()
+            Administrator::pluck('email')->all()
         ))));
 
         if (! empty($adminRecipients)) {
-            $this->send('registration', $business->id, fn () => Mail::to($adminRecipients)
+            $this->send('registration', $business->id, implode(', ', $adminRecipients), fn () => Mail::to($adminRecipients)
                 ->send(new BusinessApplicationSubmitted($business, $isUpdate)));
         }
     }
 
-    public function decision(User $business): void
+    public function decision(User $business, string $decisionType = 'changes_requested'): void
     {
-        $this->send('decision', $business->id, fn () => Mail::to($business->email)
-            ->send(new BusinessApplicationDecision($business, $business->account_status)));
-    }
+        if (! in_array($decisionType, ['approved', 'rejected', 'changes_requested'], true)) {
+            $decisionType = $business->account_status === 'approved' ? 'approved' : 'changes_requested';
+        }
 
-    private function send(string $type, int $businessId, callable $send): void
-    {
-        if (config('mail.default') === 'log') {
-            Log::info('EcoCycle email notification is not sent because MAIL_MAILER is set to log.', [
-                'notification' => $type,
-                'business_id' => $businessId,
+        $recipient = trim((string) $business->email);
+        if (empty($recipient) || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            Log::warning('EcoCycle email notification skipped: Invalid recipient email', [
+                'business_id' => $business->id,
+                'email' => $business->email,
+                'decision' => $decisionType,
             ]);
 
             return;
         }
 
+        $this->send('decision', $business->id, $recipient, fn () => Mail::to($recipient)
+            ->send(new BusinessApplicationDecision($business, $decisionType)));
+    }
+
+    private function send(string $type, int $businessId, string $recipient, callable $send): void
+    {
         try {
             $send();
+            Log::info('EcoCycle email notification successfully sent.', [
+                'type' => $type,
+                'business_id' => $businessId,
+                'recipient' => $recipient,
+            ]);
         } catch (Throwable $exception) {
             Log::error('EcoCycle email notification could not be sent: '.$exception->getMessage(), [
-                'notification' => $type,
+                'type' => $type,
                 'business_id' => $businessId,
+                'recipient' => $recipient,
                 'exception' => $exception::class,
                 'message' => $exception->getMessage(),
             ]);

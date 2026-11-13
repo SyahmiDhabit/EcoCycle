@@ -13,15 +13,15 @@ class BusinessApplicationDecision extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public User $business, public string $decision)
-    {
-    }
+    public function __construct(public User $business, public string $decision) {}
 
     public function envelope(): Envelope
     {
-        $subject = $this->decision === 'approved'
-            ? 'Your EcoCycle business application is approved'
-            : 'Action required: Changes requested for your EcoCycle business registration';
+        $subject = match ($this->decision) {
+            'approved' => 'Your EcoCycle business application is approved',
+            'rejected' => 'Update regarding your EcoCycle business registration: Application Rejected',
+            default => 'Action required: Changes requested for your EcoCycle business registration',
+        };
 
         return new Envelope(subject: $subject);
     }
@@ -30,7 +30,10 @@ class BusinessApplicationDecision extends Mailable
     {
         return new Content(
             view: 'emails.business-application-decision',
-            with: ['business' => $this->business, 'decision' => $this->decision],
+            with: [
+                'business' => $this->business,
+                'decision' => $this->decision,
+            ],
         );
     }
 }

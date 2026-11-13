@@ -248,9 +248,10 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                         </form>
                         <form class="reject-form" method="POST" action="<?= e(route('admin.business.reject', $business)) ?>">
                             <?= csrf_field() ?>
-                            <label class="visually-hidden" for="review-note-<?= $business->id ?>">Reason for changes</label>
-                            <input id="review-note-<?= $business->id ?>" name="review_note" value="<?= e(old('review_note')) ?>" placeholder="Explain what needs to change" required maxlength="1000">
-                            <button class="admin-danger" type="submit">Request changes</button>
+                            <label class="visually-hidden" for="review-note-<?= $business->id ?>">Reason or remarks</label>
+                            <input id="review-note-<?= $business->id ?>" name="review_note" value="<?= e(old('review_note')) ?>" placeholder="Explain remarks or reason for rejection" required maxlength="1000">
+                            <button class="admin-warning" type="submit" name="action_type" value="request_changes" title="Request business to update details or replace documents">Request changes</button>
+                            <button class="admin-danger" type="submit" name="action_type" value="reject" title="Reject business registration">Reject</button>
                         </form>
                     </div>
                 <?php } else { ?>
@@ -258,11 +259,12 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                         <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:600;">
                             ✓ Verified SME &middot; Approved on <?= $business->reviewed_at ? e($business->reviewed_at->timezone('Asia/Kuala_Lumpur')->format('j M Y')) : 'Record' ?>
                         </span>
-                        <form class="reject-form" style="max-width:440px;" method="POST" action="<?= e(route('admin.business.reject', $business)) ?>">
+                        <form class="reject-form" style="max-width:520px;" method="POST" action="<?= e(route('admin.business.reject', $business)) ?>">
                             <?= csrf_field() ?>
                             <label class="visually-hidden" for="re-review-note-<?= $business->id ?>">Re-review note</label>
-                            <input id="re-review-note-<?= $business->id ?>" name="review_note" placeholder="Request updates/changes..." required maxlength="1000">
-                            <button class="admin-danger" type="submit" style="white-space:nowrap;">Request re-review</button>
+                            <input id="re-review-note-<?= $business->id ?>" name="review_note" placeholder="Explain remarks / updates needed..." required maxlength="1000">
+                            <button class="admin-warning" type="submit" name="action_type" value="request_changes" style="white-space:nowrap;">Request changes</button>
+                            <button class="admin-danger" type="submit" name="action_type" value="reject" style="white-space:nowrap;">Reject</button>
                         </form>
                     </div>
                 <?php } ?>

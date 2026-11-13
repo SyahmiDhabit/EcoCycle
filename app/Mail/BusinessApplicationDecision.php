@@ -18,9 +18,9 @@ class BusinessApplicationDecision extends Mailable
     public function envelope(): Envelope
     {
         $subject = match ($this->decision) {
-            'approved' => 'Your EcoCycle business application is approved',
+            'approved' => 'Update regarding your EcoCycle business registration: Application Approved',
             'rejected' => 'Update regarding your EcoCycle business registration: Application Rejected',
-            default => 'Action required: Changes requested for your EcoCycle business registration',
+            default => 'Update regarding your EcoCycle business registration: Changes Requested',
         };
 
         return new Envelope(subject: $subject);

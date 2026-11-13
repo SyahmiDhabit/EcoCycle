@@ -112,7 +112,7 @@ class AdminDashboardController extends Controller
         $isDuplicate = is_array($lastDecision)
             && ($lastDecision['decision'] ?? null) === $decisionType
             && ($lastDecision['note'] ?? null) === $reviewNote
-            && (now()->timestamp - ($lastDecision['time'] ?? 0)) < 5;
+            && (now()->timestamp - ($lastDecision['time'] ?? 0)) < 1;
 
         if ($isDuplicate) {
             return;
@@ -122,7 +122,7 @@ class AdminDashboardController extends Controller
             'decision' => $decisionType,
             'note' => $reviewNote,
             'time' => now()->timestamp,
-        ], 10);
+        ], 3);
 
         $mailer->decision($business, $decisionType);
     }

@@ -132,7 +132,7 @@ $isChangesRequested = ! $isApproved && ! $isRejected;
 
                 <?php } else { ?>
                     <!-- REQUEST CHANGES SCENARIO -->
-                    <h1 style="margin:0 0 12px;font-size:22px;color:#92400e;font-weight:700;">Action Required: Changes Requested for Your Business Application</h1>
+                    <h1 style="margin:0 0 12px;font-size:22px;color:#92400e;font-weight:700;">Business Registration Status: Changes Requested</h1>
                     <p style="margin:0 0 16px;font-size:14px;color:#3f5146;">
                         Hello <strong><?= e($business->name) ?></strong>,
                     </p>

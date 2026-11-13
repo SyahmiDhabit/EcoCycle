@@ -45,7 +45,7 @@ class AdminReviewTest extends TestCase
 
         Mail::assertSent(BusinessApplicationDecision::class, function ($mail) use ($business) {
             $isToBusiness = $mail->hasTo($business->email);
-            $hasCorrectSubject = $mail->envelope()->subject === 'Your EcoCycle business application is approved';
+            $hasCorrectSubject = $mail->envelope()->subject === 'Update regarding your EcoCycle business registration: Application Approved';
             $isApproved = $mail->decision === 'approved';
 
             $rendered = $mail->render();
@@ -228,7 +228,7 @@ class AdminReviewTest extends TestCase
 
         Mail::assertSent(BusinessApplicationDecision::class, function ($mail) {
             $isToBusiness = $mail->hasTo('sarah@ecotech.my');
-            $hasCorrectSubject = $mail->envelope()->subject === 'Action required: Changes requested for your EcoCycle business registration';
+            $hasCorrectSubject = $mail->envelope()->subject === 'Update regarding your EcoCycle business registration: Changes Requested';
             $isChangesRequested = $mail->decision === 'changes_requested';
 
             $rendered = $mail->render();
@@ -350,7 +350,7 @@ class AdminReviewTest extends TestCase
 
         Mail::assertSent(BusinessApplicationDecision::class, function ($mail) {
             $isToBusiness = $mail->hasTo('contact@greenmetals.com');
-            $hasCorrectSubject = $mail->envelope()->subject === 'Action required: Changes requested for your EcoCycle business registration';
+            $hasCorrectSubject = $mail->envelope()->subject === 'Update regarding your EcoCycle business registration: Changes Requested';
             $isChangesRequested = $mail->decision === 'changes_requested';
 
             $rendered = $mail->render();
@@ -386,7 +386,7 @@ class AdminReviewTest extends TestCase
         Mail::assertSent(BusinessApplicationDecision::class, function ($mail) {
             return $mail->hasTo('rubber@circulareco.com')
                 && $mail->decision === 'approved'
-                && $mail->envelope()->subject === 'Your EcoCycle business application is approved';
+                && $mail->envelope()->subject === 'Update regarding your EcoCycle business registration: Application Approved';
         });
     }
 }

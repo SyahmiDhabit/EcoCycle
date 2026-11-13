@@ -44,26 +44,28 @@ class BusinessMailNotifier
         }
 
         $this->send('decision', $business->id, $recipient, fn () => Mail::to($recipient)
-            ->send(new BusinessApplicationDecision($business, $decisionType)));
+            ->send(new BusinessApplicationDecision($business, $decisionType)), $decisionType);
     }
 
-    private function send(string $type, int $businessId, string $recipient, callable $send): void
+    private function send(string $type, int $businessId, string $recipient, callable $send, ?string $decisionType = null): void
     {
         try {
             $send();
-            Log::info('EcoCycle email notification successfully sent.', [
+            Log::info('EcoCycle email notification successfully sent.', array_filter([
                 'type' => $type,
+                'decision' => $decisionType,
                 'business_id' => $businessId,
                 'recipient' => $recipient,
-            ]);
+            ]));
         } catch (Throwable $exception) {
-            Log::error('EcoCycle email notification could not be sent: '.$exception->getMessage(), [
+            Log::error('EcoCycle email notification could not be sent: '.$exception->getMessage(), array_filter([
                 'type' => $type,
+                'decision' => $decisionType,
                 'business_id' => $businessId,
                 'recipient' => $recipient,
                 'exception' => $exception::class,
                 'message' => $exception->getMessage(),
-            ]);
+            ]));
         }
     }
 }

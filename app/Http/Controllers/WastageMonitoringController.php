@@ -95,7 +95,7 @@ class WastageMonitoringController extends Controller
         $business = Auth::user();
 
         $validated = $request->validate([
-            'inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
+            'inventory_item_id' => ['nullable', 'exists:listing,id'],
             'material_name' => ['required', 'string', 'max:255'],
             'waste_type' => ['required', 'string', 'max:60'],
             'quantity' => ['required', 'numeric', 'min:0.01'],

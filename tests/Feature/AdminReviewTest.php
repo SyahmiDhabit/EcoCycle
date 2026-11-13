@@ -80,7 +80,7 @@ class AdminReviewTest extends TestCase
         Mail::assertNotSent(\App\Mail\BusinessApplicationSubmitted::class);
 
         // Rejection is communicated only in email
-        $this->assertDatabaseMissing('business_notifications', [
+        $this->assertDatabaseMissing('business_notification', [
             'business_id' => $business->id,
         ]);
     }
@@ -118,7 +118,7 @@ class AdminReviewTest extends TestCase
             ->assertSessionHas('status');
 
         // Verify a real notification was created in database
-        $this->assertDatabaseHas('business_notifications', [
+        $this->assertDatabaseHas('business_notification', [
             'business_id' => $business->id,
             'type' => 'verification_approved',
             'title' => 'Business Verification Approved',
@@ -139,7 +139,7 @@ class AdminReviewTest extends TestCase
             ->assertOk()
             ->assertJson(['success' => true]);
 
-        $this->assertDatabaseHas('business_notifications', [
+        $this->assertDatabaseHas('business_notification', [
             'business_id' => $business->id,
             'is_read' => true,
         ]);
@@ -177,7 +177,7 @@ class AdminReviewTest extends TestCase
             ->assertOk()
             ->assertJson(['success' => true]);
 
-        $this->assertDatabaseHas('admin_notifications', [
+        $this->assertDatabaseHas('admin_notification', [
             'type' => 'new_registration',
             'business_id' => $business->id,
             'is_read' => true,

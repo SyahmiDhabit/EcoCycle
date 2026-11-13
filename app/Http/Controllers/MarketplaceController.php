@@ -136,7 +136,7 @@ class MarketplaceController extends Controller
         $business = Auth::user();
 
         $validated = $request->validate([
-            'inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
+            'inventory_item_id' => ['nullable', 'exists:listing,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'category' => ['required', 'string', 'max:60'],

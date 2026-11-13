@@ -80,7 +80,7 @@ class BusinessRegistrationTest extends TestCase
         $this->assertTrue(Storage::disk('local')->exists($user->ssm_certificate_path));
         $this->assertTrue(Storage::disk('local')->exists($user->ssm_profile_path));
 
-        $this->assertDatabaseHas('admin_notifications', [
+        $this->assertDatabaseHas('admin_notification', [
             'type' => 'new_registration',
             'business_id' => $user->id,
             'is_read' => false,

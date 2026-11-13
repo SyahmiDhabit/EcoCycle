@@ -73,7 +73,7 @@ class DatabaseRelationshipsTest extends TestCase
 
         // When item is deleted, transactions cascade
         $item->delete();
-        $this->assertDatabaseMissing('inventory_transactions', ['id' => $tx->id]);
+        $this->assertDatabaseMissing('inventory_transaction', ['id' => $tx->id]);
     }
 
     public function test_waste_record_foreign_keys_and_null_on_item_delete(): void
@@ -112,7 +112,7 @@ class DatabaseRelationshipsTest extends TestCase
 
         // Delete inventory item -> waste record preserves history but sets inventory_item_id to NULL
         $item->delete();
-        $this->assertDatabaseHas('waste_records', [
+        $this->assertDatabaseHas('waste_record', [
             'id' => $waste->id,
             'inventory_item_id' => null,
         ]);
@@ -169,6 +169,6 @@ class DatabaseRelationshipsTest extends TestCase
 
         // When listing is deleted, exchange records cascade
         $listing->delete();
-        $this->assertDatabaseMissing('material_exchanges', ['id' => $exchange->id]);
+        $this->assertDatabaseMissing('material_exchange', ['id' => $exchange->id]);
     }
 }

@@ -113,7 +113,7 @@ class BusinessApplicationTest extends TestCase
             return $mail->business->id === $updated->id && $mail->isUpdate === true;
         });
 
-        $this->assertDatabaseHas('admin_notifications', [
+        $this->assertDatabaseHas('admin_notification', [
             'type' => 'application_resubmitted',
             'business_id' => $updated->id,
             'is_read' => false,
@@ -164,7 +164,7 @@ class BusinessApplicationTest extends TestCase
             return $mail->business->id === $updated->id && $mail->isUpdate === true;
         });
 
-        $this->assertDatabaseHas('admin_notifications', [
+        $this->assertDatabaseHas('admin_notification', [
             'type' => 'application_resubmitted',
             'business_id' => $updated->id,
             'is_read' => false,
@@ -196,7 +196,7 @@ class BusinessApplicationTest extends TestCase
         $this->assertNull($updated->review_note);
         $this->assertTrue(Storage::disk('local')->exists($updated->ssm_profile_path));
 
-        $this->assertDatabaseHas('admin_notifications', [
+        $this->assertDatabaseHas('admin_notification', [
             'type' => 'application_resubmitted',
             'business_id' => $updated->id,
         ]);

@@ -58,7 +58,7 @@ class BusinessFullSuiteTest extends TestCase
 
         $response->assertRedirect('/business/waste-monitoring');
 
-        $this->assertDatabaseHas('waste_records', [
+        $this->assertDatabaseHas('waste_record', [
             'business_id' => $biz->id,
             'inventory_item_id' => $item->id,
             'material_name' => 'Steel Machine Shavings',
@@ -96,7 +96,7 @@ class BusinessFullSuiteTest extends TestCase
             ]);
 
         $updateResponse->assertRedirect('/business/waste-monitoring');
-        $this->assertDatabaseHas('waste_records', [
+        $this->assertDatabaseHas('waste_record', [
             'id' => $record->id,
             'status' => 'recycled',
             'is_diverted' => true,
@@ -139,7 +139,7 @@ class BusinessFullSuiteTest extends TestCase
             ->post("/business/transactions/{$exchange->id}/request-payment");
         
         $reqResponse->assertRedirect();
-        $this->assertDatabaseHas('material_exchanges', [
+        $this->assertDatabaseHas('material_exchange', [
             'id' => $exchange->id,
             'payment_status' => 'requested',
         ]);
@@ -151,7 +151,7 @@ class BusinessFullSuiteTest extends TestCase
             ]);
 
         $paidResponse->assertRedirect();
-        $this->assertDatabaseHas('material_exchanges', [
+        $this->assertDatabaseHas('material_exchange', [
             'id' => $exchange->id,
             'payment_status' => 'paid',
             'payment_reference' => 'FPX-TEST-9988',
@@ -191,7 +191,7 @@ class BusinessFullSuiteTest extends TestCase
                 'status' => 'sold',
             ]);
         $statusResponse->assertRedirect();
-        $this->assertDatabaseHas('marketplace_listings', [
+        $this->assertDatabaseHas('listing', [
             'id' => $listing->id,
             'status' => 'sold',
         ]);
@@ -204,7 +204,7 @@ class BusinessFullSuiteTest extends TestCase
                 'exchange_type' => 'buy',
             ]);
         $reviewResponse->assertRedirect();
-        $this->assertDatabaseHas('marketplace_reviews', [
+        $this->assertDatabaseHas('marketplace_review', [
             'listing_id' => $listing->id,
             'seller_business_id' => $seller->id,
             'reviewer_business_id' => $buyer->id,

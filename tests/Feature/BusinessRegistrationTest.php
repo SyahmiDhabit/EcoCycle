@@ -56,7 +56,7 @@ class BusinessRegistrationTest extends TestCase
             'ssm_profile' => UploadedFile::fake()->image('profile.png'),
         ]);
 
-        $response->assertRedirect(route('business.dashboard'))
+        $response->assertRedirect(route('business.pending'))
             ->assertSessionHas('status');
 
         $user = User::where('email', 'amir@kayukita.com.my')->firstOrFail();
@@ -86,9 +86,14 @@ class BusinessRegistrationTest extends TestCase
             'is_read' => false,
         ]);
 
-        $this->get(route('business.dashboard'))
+        $this->get(route('business.pending'))
             ->assertOk()
+            ->assertSee('Waiting for Admin Approval')
             ->assertSee('Your business application has been submitted and is pending administrator review.');
+
+        // Unapproved business cannot bypass approval to access dashboard
+        $this->get(route('business.dashboard'))
+            ->assertRedirect(route('business.pending'));
     }
 
     public function test_registration_rejects_missing_and_invalid_fields(): void
@@ -189,7 +194,7 @@ class BusinessRegistrationTest extends TestCase
             'ssm_profile' => UploadedFile::fake()->image('profile.png'),
         ]);
 
-        $response->assertRedirect(route('business.dashboard'));
+        $response->assertRedirect(route('business.pending'));
 
         Mail::assertSent(BusinessApplicationSubmitted::class, function ($mail) {
             return $mail->hasTo(config('services.ecocycle.admin_email'));
@@ -334,7 +339,7 @@ class BusinessRegistrationTest extends TestCase
             'ssm_profile' => UploadedFile::fake()->image('profile.png'),
         ]);
 
-        $response->assertRedirect(route('business.dashboard'));
+        $response->assertRedirect(route('business.pending'));
 
         $user = User::where('email', 'admin@ecotimber.com.my')->firstOrFail();
         $this->assertNotNull($user->profile_image);

@@ -147,7 +147,7 @@ class RegisteredUserController extends Controller
         Auth::guard('web')->login($business);
         $request->session()->regenerate();
 
-        return redirect()->route('business.dashboard')->with(
+        return redirect()->route('business.pending')->with(
             'status',
             'Your business application has been submitted and is pending administrator review.',
         );

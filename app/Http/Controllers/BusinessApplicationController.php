@@ -17,6 +17,28 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BusinessApplicationController extends Controller
 {
+    public function pending(Request $request): View|RedirectResponse
+    {
+        /** @var User|null $business */
+        $business = $request->user() ?: Auth::guard('web')->user();
+
+        if (! $business) {
+            if (Auth::guard('admin')->check()) {
+                return redirect()->route('admin.dashboard');
+            }
+
+            return redirect()->route('login');
+        }
+
+        if ($business->account_status === 'approved') {
+            return redirect()->route('business.dashboard');
+        }
+
+        return view('business.pending', [
+            'business' => $business,
+        ]);
+    }
+
     public function show(Request $request): View|RedirectResponse
     {
         /** @var User|null $business */
@@ -30,7 +52,11 @@ class BusinessApplicationController extends Controller
             return redirect()->route('login');
         }
 
-        return view('business.verification', [
+        if ($business->account_status === 'approved') {
+            return redirect()->route('business.dashboard');
+        }
+
+        return view('business.pending', [
             'business' => $business,
         ]);
     }
@@ -309,7 +335,7 @@ class BusinessApplicationController extends Controller
             $business->id
         );
 
-        return redirect()->route('business.dashboard')->with('status', 'Your updated application has been resubmitted for administrator review.');
+        return redirect()->route('business.pending')->with('status', 'Your updated application has been resubmitted for administrator review.');
     }
 
     private function getUploadErrorMessage(?UploadedFile $file, string $defaultMessage): string

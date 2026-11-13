@@ -29,6 +29,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create([
             'email' => 'owner@example.com',
             'password' => Hash::make('Password123'),
+            'account_status' => 'approved',
         ]);
 
         $this->post(route('login.store'), [
@@ -41,12 +42,37 @@ class AuthenticationTest extends TestCase
         $this->get(route('business.dashboard'))->assertOk();
     }
 
+    public function test_unapproved_business_signs_in_and_redirects_to_pending_approval_page(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'pending@example.com',
+            'password' => Hash::make('Password123'),
+            'account_status' => 'pending',
+        ]);
+
+        $this->post(route('login.store'), [
+            'identifier' => 'pending@example.com',
+            'password' => 'Password123',
+        ])
+            ->assertRedirect(route('business.pending'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->get(route('business.pending'))
+            ->assertOk()
+            ->assertSee('Waiting for Admin Approval');
+
+        // Blocked from accessing the dashboard directly
+        $this->get(route('business.dashboard'))
+            ->assertRedirect(route('business.pending'));
+    }
+
     public function test_business_can_sign_in_with_company_username(): void
     {
         $user = User::factory()->create([
             'name' => 'kayukita_enterprise',
             'email' => 'owner@kayukita.com.my',
             'password' => Hash::make('Password123'),
+            'account_status' => 'approved',
         ]);
 
         $this->post(route('login.store'), [
@@ -80,6 +106,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create([
             'email' => 'owner@example.com',
             'password' => Hash::make('Password123'),
+            'account_status' => 'approved',
         ]);
 
         $this->post(route('login.store'), [

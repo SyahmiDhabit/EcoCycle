@@ -6,6 +6,7 @@ use App\Mail\BusinessApplicationSubmitted;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -188,7 +189,7 @@ class BusinessApplicationTest extends TestCase
                 'ssm_profile' => UploadedFile::fake()->create('fresh_profile.pdf', 200, 'application/pdf'),
             ]);
 
-        $response->assertRedirect(route('business.dashboard'));
+        $response->assertRedirect(route('business.pending'));
         $response->assertSessionHas('status');
 
         $updated = $business->fresh();
@@ -206,7 +207,7 @@ class BusinessApplicationTest extends TestCase
     {
         $business = User::factory()->create([
             'email' => 'rejected@example.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('Secret123'),
+            'password' => Hash::make('Secret123'),
             'account_status' => 'rejected',
             'review_note' => 'The uploaded SSM was unreadable. Please re-upload.',
         ]);
@@ -216,15 +217,18 @@ class BusinessApplicationTest extends TestCase
             'password' => 'Secret123',
         ]);
 
-        $response->assertRedirect(route('business.dashboard'));
+        $response->assertRedirect(route('business.pending'));
         $this->assertAuthenticatedAs($business);
 
         $this->actingAs($business)
-            ->get(route('business.dashboard'))
+            ->get(route('business.pending'))
             ->assertOk()
             ->assertSee('Changes required')
-            ->assertSee('The uploaded SSM was unreadable. Please re-upload.')
-            ->assertSee('Update application details &amp; fix issues', false);
+            ->assertSee('The uploaded SSM was unreadable. Please re-upload.');
+
+        $this->actingAs($business)
+            ->get(route('business.dashboard'))
+            ->assertRedirect(route('business.pending'));
     }
 
     public function test_rejected_business_can_delete_application_data_and_restart(): void
@@ -313,5 +317,109 @@ class BusinessApplicationTest extends TestCase
 
         $imageUrl = route('profile.image', ['filename' => basename($business->profile_image)]);
         $this->get($imageUrl)->assertOk();
+    }
+
+    public function test_approved_business_is_redirected_away_from_pending_approval_page_to_dashboard(): void
+    {
+        $business = User::factory()->create([
+            'account_status' => 'approved',
+        ]);
+
+        $this->actingAs($business)
+            ->get(route('business.pending'))
+            ->assertRedirect(route('business.dashboard'));
+
+        $this->actingAs($business)
+            ->get(route('business.application'))
+            ->assertRedirect(route('business.dashboard'));
+    }
+
+    public function test_unapproved_business_cannot_access_dashboard_or_subroutes_and_is_redirected_to_pending(): void
+    {
+        $business = User::factory()->create([
+            'account_status' => 'pending',
+        ]);
+
+        $this->actingAs($business)
+            ->get(route('business.dashboard'))
+            ->assertRedirect(route('business.pending'));
+
+        $this->actingAs($business)
+            ->get(route('business.inventory'))
+            ->assertRedirect(route('business.pending'));
+
+        $this->actingAs($business)
+            ->get(route('business.marketplace'))
+            ->assertRedirect(route('business.pending'));
+
+        $this->actingAs($business)
+            ->get(route('business.waste.index'))
+            ->assertRedirect(route('business.pending'));
+
+        $this->actingAs($business)
+            ->get(route('business.listings'))
+            ->assertRedirect(route('business.pending'));
+
+        $this->actingAs($business)
+            ->get(route('business.transactions'))
+            ->assertRedirect(route('business.pending'));
+
+        $this->actingAs($business)
+            ->get(route('business.reports'))
+            ->assertRedirect(route('business.pending'));
+
+        $this->actingAs($business)
+            ->get(route('business.profile'))
+            ->assertRedirect(route('business.pending'));
+    }
+
+    public function test_pending_approval_page_does_not_contain_dashboard_sidebar_navigation(): void
+    {
+        $business = User::factory()->create([
+            'business_name' => 'Pending SME Sdn Bhd',
+            'account_status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($business)
+            ->get(route('business.pending'));
+
+        $response->assertOk();
+        $response->assertSee('Registration Pending Approval');
+        $response->assertSee('Waiting for Admin Approval');
+        $response->assertSee('Pending SME Sdn Bhd');
+        $response->assertSee('Logout');
+
+        // Verify dashboard navigation sidebar is NOT present
+        $response->assertDontSee('id="dashboard-sidebar"', false);
+        $response->assertDontSee('sidebar-section-title', false);
+        $response->assertDontSee('Surplus Materials Marketplace');
+        $response->assertDontSee('Manage internal materials & stock');
+    }
+
+    public function test_admin_approval_enables_dashboard_access(): void
+    {
+        $business = User::factory()->create([
+            'business_name' => 'Newly Approved SME',
+            'account_status' => 'pending',
+        ]);
+
+        // Prior to approval: redirected to pending
+        $this->actingAs($business)
+            ->get(route('business.dashboard'))
+            ->assertRedirect(route('business.pending'));
+
+        // Admin approves business
+        $business->update(['account_status' => 'approved']);
+
+        // After approval: dashboard is accessible with full navbar and navigation
+        $response = $this->actingAs($business->fresh())
+            ->get(route('business.dashboard'));
+
+        $response->assertOk();
+        $response->assertSee('Business directory');
+        $response->assertSee('id="dashboard-sidebar"', false);
+        $response->assertSee('Overview');
+        $response->assertSee('Inventory');
+        $response->assertSee('Marketplace');
     }
 }

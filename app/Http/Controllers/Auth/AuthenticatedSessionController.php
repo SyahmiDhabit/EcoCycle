@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Administrator;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Administrator;
-use App\Models\User;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -58,11 +57,17 @@ class AuthenticatedSessionController extends Controller
             ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($identifier)])
             ->first();
 
+        $remember = $request->boolean('remember');
+
         if ($business && Hash::check($credentials['password'], $business->password)) {
-            Auth::guard('web')->login($business);
+            Auth::guard('web')->login($business, $remember);
             $request->session()->regenerate();
 
-            return redirect()->intended(route('business.dashboard'));
+            if ($business->account_status === 'approved') {
+                return redirect()->intended(route('business.dashboard'));
+            }
+
+            return redirect()->route('business.pending');
         }
 
         return back()

@@ -29,7 +29,7 @@ class BusinessDashboardController extends Controller
         }
 
         if ($business->account_status !== 'approved') {
-            return view('business.verification', ['business' => $business]);
+            return redirect()->route('business.pending');
         }
 
         // Fetch approved businesses from database (other than current business)
@@ -147,7 +147,7 @@ class BusinessDashboardController extends Controller
         $business = Auth::user();
 
         if ($business->account_status !== 'approved') {
-            return view('business.verification', ['business' => $business]);
+            return redirect()->route('business.pending');
         }
 
         abort_unless($company->account_status === 'approved', 404, 'Business profile not found.');

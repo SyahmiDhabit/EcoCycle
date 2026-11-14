@@ -8,6 +8,7 @@ use App\Http\Controllers\BusinessApplicationController;
 use App\Http\Controllers\BusinessDashboardController;
 use App\Http\Controllers\BusinessNotificationController;
 use App\Http\Controllers\BusinessProfileController;
+use App\Http\Controllers\EcoCycleHelperController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MarketplaceController;
@@ -70,6 +71,12 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::get('/business/profile', [BusinessProfileController::class, 'show'])->name('business.profile');
     Route::put('/business/profile', [BusinessProfileController::class, 'updateProfile'])->name('business.profile.update');
     Route::put('/business/profile/password', [BusinessProfileController::class, 'updatePassword'])->name('business.profile.password');
+
+    // EcoCycle Helper (AI Chatbot, Material Recommendations & GPS Recycling Centre Locator)
+    Route::get('/business/helper', [EcoCycleHelperController::class, 'index'])->name('business.helper');
+    Route::post('/business/helper/chat', [EcoCycleHelperController::class, 'chat'])->name('business.helper.chat');
+    Route::get('/business/helper/analyze/{item}', [EcoCycleHelperController::class, 'analyzeItem'])->name('business.helper.analyze');
+    Route::post('/business/helper/nearby-centres', [EcoCycleHelperController::class, 'nearbyCentres'])->name('business.helper.nearby');
 
     Route::post('/business/notifications/mark-read', [BusinessNotificationController::class, 'markAllAsRead'])->name('business.notifications.mark-read');
 });

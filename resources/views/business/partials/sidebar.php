@@ -49,6 +49,15 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
             <span>Marketplace</span>
         </a>
 
+        <a href="/business/helper" class="sidebar-link <?= $activeNav === 'helper' ? 'active' : '' ?>" title="AI Circular Scrap Advisor & GPS Recycling Centre Locator">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 2a10 10 0 1 0 10 10"></path>
+                <polygon points="12 8 8 12 12 16 16 12 12 8"></polygon>
+            </svg>
+            <span>EcoCycle Helper (AI)</span>
+        </a>
+
         <a href="/business/my-listings" class="sidebar-link <?= $activeNav === 'listings' ? 'active' : '' ?>" title="View your listings, item status, and buyer feedback">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="8" y1="6" x2="21" y2="6"></line>

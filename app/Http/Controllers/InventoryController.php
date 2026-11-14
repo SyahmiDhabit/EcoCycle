@@ -72,6 +72,11 @@ class InventoryController extends Controller
             $query->where('reusability', $reusability);
         }
 
+        $viewMode = $request->input('view', 'table');
+        if (! in_array($viewMode, ['table', 'catalog', 'grid'])) {
+            $viewMode = 'table';
+        }
+
         $items = $query->paginate(15)->withQueryString();
         $categories = $business->inventoryItems()->distinct()->pluck('category')->filter()->values();
 
@@ -83,6 +88,7 @@ class InventoryController extends Controller
             'selectedCategory' => $category,
             'selectedStatus' => $status,
             'selectedReusability' => $reusability,
+            'viewMode' => $viewMode,
         ]);
     }
 

@@ -15,6 +15,7 @@ $search = $search ?? '';
 $selectedCategory = $selectedCategory ?? '';
 $selectedStatus = $selectedStatus ?? '';
 $selectedReusability = $selectedReusability ?? '';
+$viewMode = $viewMode ?? 'table';
 $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
 $activeNav = 'inventory';
 ?>
@@ -144,6 +145,184 @@ $activeNav = 'inventory';
             margin-top: 20px;
             display: flex;
             justify-content: center;
+        }
+
+        /* View Toggle Group */
+        .view-switcher-wrap {
+            display: inline-flex;
+            align-items: center;
+            background: #eef3ed;
+            border-radius: 8px;
+            padding: 3px;
+            gap: 2px;
+            border: 1px solid #d4dfd2;
+        }
+        .view-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: #4a5c4e;
+            font: 600 12px var(--font-main);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .view-toggle-btn:hover {
+            color: #123321;
+            background: rgba(255, 255, 255, 0.6);
+        }
+        .view-toggle-btn.active {
+            background: #ffffff;
+            color: #18422d;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            font-weight: 700;
+        }
+
+        /* Catalog Grid Layout */
+        .inventory-catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+            gap: 18px;
+            margin-top: 14px;
+        }
+        .catalog-card {
+            background: #ffffff;
+            border: 1px solid #dbe6da;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 6px rgba(18, 51, 33, 0.04);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            position: relative;
+        }
+        .catalog-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(18, 51, 33, 0.08);
+            border-color: #b7ceb4;
+        }
+        .catalog-card-header {
+            position: relative;
+            height: 160px;
+            background: #f1f6f0;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .catalog-card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.25s ease;
+        }
+        .catalog-card:hover .catalog-card-img {
+            transform: scale(1.03);
+        }
+        .catalog-card-badges-top {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+        .catalog-card-body {
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+        .catalog-card-title-row {
+            cursor: pointer;
+        }
+        .catalog-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #123321;
+            margin: 0 0 3px;
+            line-height: 1.3;
+        }
+        .catalog-card-sku {
+            font-size: 11px;
+            color: #6a7c6f;
+            font-weight: 500;
+        }
+        .catalog-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 12px;
+            color: #4a5c4e;
+        }
+        .catalog-cat-pill {
+            background: #eef5eb;
+            color: #1f5033;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        .catalog-condition-pill {
+            background: #f4f7f4;
+            color: #4a5c4e;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 11px;
+            border: 1px solid #e1ebe0;
+        }
+        .catalog-stock-row {
+            background: #f9fbf8;
+            border: 1px solid #e8f0e6;
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .catalog-stock-val {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .catalog-stock-number {
+            font-size: 16px;
+            font-weight: 800;
+            color: #18422d;
+        }
+        .catalog-stock-bar-wrap {
+            height: 6px;
+            background: #e2ede0;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .catalog-stock-bar {
+            height: 100%;
+            border-radius: 999px;
+        }
+        .catalog-price-tag {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #18422d;
+        }
+        .catalog-card-actions {
+            padding: 10px 14px;
+            border-top: 1px solid #eef3ed;
+            background: #fcfdfa;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         /* Image Upload & Slots Preview */
@@ -443,6 +622,7 @@ $activeNav = 'inventory';
             <section class="panel" style="margin-top:20px;">
                 <div class="inventory-toolbar">
                     <form class="filter-form" method="GET" action="<?= route('business.inventory') ?>">
+                        <input type="hidden" name="view" id="filter_view_input" value="<?= e($viewMode) ?>">
                         <input class="filter-input" type="search" name="search" value="<?= e($search) ?>" placeholder="Search by item name or SKU...">
                         
                         <select class="filter-select" name="category">
@@ -467,99 +647,239 @@ $activeNav = 'inventory';
 
                         <button type="submit" class="btn-filter">Filter</button>
                         <?php if ($search || $selectedCategory || $selectedStatus || $selectedReusability): ?>
-                            <a href="<?= route('business.inventory') ?>" style="font-size:12px;color:#6f7b72;text-decoration:underline;">Reset</a>
+                            <a href="<?= route('business.inventory', ['view' => $viewMode]) ?>" style="font-size:12px;color:#6f7b72;text-decoration:underline;">Reset</a>
                         <?php endif; ?>
                     </form>
+
+                    <div class="view-switcher-wrap" role="group" aria-label="Inventory View Layout">
+                        <button type="button" class="view-toggle-btn <?= $viewMode !== 'catalog' ? 'active' : '' ?>" id="viewBtnTable" onclick="switchInventoryView('table')" title="Switch to Table View">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                            <span>Table</span>
+                        </button>
+                        <button type="button" class="view-toggle-btn <?= $viewMode === 'catalog' ? 'active' : '' ?>" id="viewBtnCatalog" onclick="switchInventoryView('catalog')" title="Switch to Catalog Grid View">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            <span>Catalog Grid</span>
+                        </button>
+                    </div>
                 </div>
 
                 <?php if ($items->isNotEmpty()): ?>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th style="width:28%;">Material / Item</th>
-                                <th style="width:14%;">Category</th>
-                                <th style="width:12%;">Reusability</th>
-                                <th style="width:13%;">Stock Level</th>
-                                <th style="width:11%;">Low Alert</th>
-                                <th style="width:10%;">Status</th>
-                                <th style="width:12%;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($items as $item): ?>
+                    <div id="inventory-table-container" style="display: <?= $viewMode === 'catalog' ? 'none' : 'block' ?>; overflow-x: auto;">
+                        <table class="table">
+                            <thead>
                                 <tr>
-                                    <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
-                                        <div style="display:flex;align-items:center;gap:12px;">
-                                            <?php if ($item->image_path): ?>
-                                                <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.06);" loading="lazy">
-                                            <?php else: ?>
-                                                <div style="width:44px;height:44px;border-radius:8px;background:#eef6ec;border:1px solid #cce5c8;display:grid;place-items:center;flex-shrink:0;color:#235839;font-weight:700;font-size:16px;">
-                                                    📦
+                                    <th style="width:28%;">Material / Item</th>
+                                    <th style="width:14%;">Category</th>
+                                    <th style="width:12%;">Reusability</th>
+                                    <th style="width:13%;">Stock Level</th>
+                                    <th style="width:11%;">Low Alert</th>
+                                    <th style="width:10%;">Status</th>
+                                    <th style="width:12%;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($items as $item): ?>
+                                    <tr>
+                                        <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
+                                            <div style="display:flex;align-items:center;gap:12px;">
+                                                <?php if ($item->image_path): ?>
+                                                    <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.06);" loading="lazy">
+                                                <?php else: ?>
+                                                    <div style="width:44px;height:44px;border-radius:8px;background:#eef6ec;border:1px solid #cce5c8;display:grid;place-items:center;flex-shrink:0;color:#235839;font-weight:700;font-size:16px;">
+                                                        📦
+                                                    </div>
+                                                <?php endif; ?>
+                                                <div>
+                                                    <strong style="color:#123321;font-size:14px;"><?= e($item->name) ?></strong>
+                                                    <?php if ($item->sku): ?>
+                                                        <small style="display:block;color:#6f7b72;font-size:11px;">SKU: <?= e($item->sku) ?></small>
+                                                    <?php endif; ?>
                                                 </div>
+                                            </div>
+                                        </td>
+                                        <td data-label="Category"><?= e($item->category) ?></td>
+                                        <td data-label="Reusability">
+                                            <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
+                                                <span class="badge-reusable" title="Reusable circular material - automatically published to Marketplace & Directory">↻ Reusable</span>
+                                            <?php else: ?>
+                                                <span class="badge-not-reusable" title="Single-use scrap - private internal inventory only">⊘ Scrap</span>
                                             <?php endif; ?>
+                                        </td>
+                                        <td data-label="Stock Level">
+                                            <span style="font-size:14px;font-weight:700;color:#173e2c;"><?= (float) $item->quantity ?></span> <?= e($item->unit) ?>
+                                        </td>
+                                        <td data-label="Threshold">
+                                            <?= $item->minimum_threshold !== null ? (float) $item->minimum_threshold . ' ' . e($item->unit) : '<span style="color:#8a9990;">None</span>' ?>
+                                        </td>
+                                        <td data-label="Status">
+                                            <?php if ($item->status === 'out_of_stock'): ?>
+                                                <span class="status status-out-of-stock">Out of stock</span>
+                                            <?php elseif ($item->status === 'low_stock'): ?>
+                                                <span class="status status-low-stock">Low stock</span>
+                                            <?php else: ?>
+                                                <span class="status status-in-stock">In stock</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td data-label="Actions">
+                                            <div class="action-group">
+                                                <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
+                                                    + In
+                                                </button>
+                                                <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
+                                                    - Out
+                                                </button>
+                                                <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
+                                                    <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="Automatically live on Marketplace & Business Directory. Click to view on Marketplace.">
+                                                        🛒 On Market
+                                                    </a>
+                                                <?php else: ?>
+                                                    <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Forward to EcoCycle Helper: Circular Economy Analysis & GPS Recycling Centres">
+                                                        💡 EcoCycle Helper
+                                                    </a>
+                                                <?php endif; ?>
+                                                <button type="button" class="btn-edit" title="Edit details & marketplace pricing" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                                    Edit
+                                                </button>
+                                                <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
+                                                    <?= csrf_field() ?>
+                                                    <?= method_field('DELETE') ?>
+                                                    <button type="submit" class="btn-delete" title="Delete item">✕</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="inventory-catalog-container" class="inventory-catalog-grid" style="display: <?= $viewMode === 'catalog' ? 'grid' : 'none' ?>;">
+                        <?php foreach ($items as $item): ?>
+                            <div class="catalog-card">
+                                <div class="catalog-card-header" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' title="Click to view/edit details">
+                                    <?php if ($item->image_path): ?>
+                                        <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" class="catalog-card-img" loading="lazy">
+                                    <?php else: ?>
+                                        <div style="width:100%;height:100%;display:grid;place-items:center;background:#edf5eb;color:#235839;font-size:38px;">
+                                            📦
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="catalog-card-badges-top">
+                                        <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
+                                            <span class="badge-reusable" style="font-size:11px;padding:3px 8px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">↻ Reusable</span>
+                                        <?php else: ?>
+                                            <span class="badge-not-reusable" style="font-size:11px;padding:3px 8px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">⊘ Scrap</span>
+                                        <?php endif; ?>
+
+                                        <?php if ($item->status === 'out_of_stock' || (float)$item->quantity <= 0): ?>
+                                            <span class="status status-out-of-stock" style="font-size:11px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">Out of stock</span>
+                                        <?php elseif ($item->status === 'low_stock' || ($item->minimum_threshold !== null && (float)$item->quantity <= (float)$item->minimum_threshold)): ?>
+                                            <span class="status status-low-stock" style="font-size:11px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">Low stock</span>
+                                        <?php else: ?>
+                                            <span class="status status-in-stock" style="font-size:11px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">In stock</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <div class="catalog-card-body">
+                                    <div class="catalog-card-title-row" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                        <h4 class="catalog-card-title"><?= e($item->name) ?></h4>
+                                        <?php if ($item->sku): ?>
+                                            <span class="catalog-card-sku">SKU: <?= e($item->sku) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <div class="catalog-meta-row">
+                                        <span class="catalog-cat-pill"><?= e($item->category) ?></span>
+                                        <span class="catalog-condition-pill"><?= e($item->condition ?? 'Used - Good') ?></span>
+                                    </div>
+
+                                    <div class="catalog-stock-row">
+                                        <div class="catalog-stock-val">
                                             <div>
-                                                <strong style="color:#123321;font-size:14px;"><?= e($item->name) ?></strong>
-                                                <?php if ($item->sku): ?>
-                                                    <small style="display:block;color:#6f7b72;font-size:11px;">SKU: <?= e($item->sku) ?></small>
+                                                <span class="catalog-stock-number"><?= (float) $item->quantity ?></span>
+                                                <span style="font-size:12px;font-weight:600;color:#556c5e;"><?= e($item->unit) ?></span>
+                                            </div>
+                                            <div style="font-size:11px;color:#6f7b72;">
+                                                <?php if ($item->minimum_threshold !== null): ?>
+                                                    Min Alert: <strong><?= (float) $item->minimum_threshold ?> <?= e($item->unit) ?></strong>
+                                                <?php else: ?>
+                                                    Min Alert: <em>None</em>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td data-label="Category"><?= e($item->category) ?></td>
-                                    <td data-label="Reusability">
-                                        <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                            <span class="badge-reusable" title="Reusable circular material - automatically published to Marketplace & Directory">↻ Reusable</span>
-                                        <?php else: ?>
-                                            <span class="badge-not-reusable" title="Single-use scrap - private internal inventory only">⊘ Scrap</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td data-label="Stock Level">
-                                        <span style="font-size:14px;font-weight:700;color:#173e2c;"><?= (float) $item->quantity ?></span> <?= e($item->unit) ?>
-                                    </td>
-                                    <td data-label="Threshold">
-                                        <?= $item->minimum_threshold !== null ? (float) $item->minimum_threshold . ' ' . e($item->unit) : '<span style="color:#8a9990;">None</span>' ?>
-                                    </td>
-                                    <td data-label="Status">
-                                        <?php if ($item->status === 'out_of_stock'): ?>
-                                            <span class="status status-out-of-stock">Out of stock</span>
-                                        <?php elseif ($item->status === 'low_stock'): ?>
-                                            <span class="status status-low-stock">Low stock</span>
-                                        <?php else: ?>
-                                            <span class="status status-in-stock">In stock</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td data-label="Actions">
-                                        <div class="action-group">
-                                            <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
-                                                + In
-                                            </button>
-                                            <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
-                                                - Out
-                                            </button>
-                                            <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                                <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="Automatically live on Marketplace & Business Directory. Click to view on Marketplace.">
-                                                    🛒 On Market
-                                                </a>
-                                            <?php else: ?>
-                                                <span class="btn-owner-only" title="Non-reusable scrap is private to your account only and not listed on the marketplace">🔒 Scrap</span>
-                                                <button type="button" class="btn-ai-advisor" title="EcoCycle AI Scrap Advisor: View circular recovery options & send to Wastage Monitoring" onclick='openAiAdvisorModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= (float)$item->quantity ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>)'>
-                                                    💡 AI Advisor
-                                                </button>
-                                            <?php endif; ?>
-                                            <button type="button" class="btn-edit" title="Edit details & marketplace pricing" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
-                                                Edit
-                                            </button>
-                                            <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
-                                                <?= csrf_field() ?>
-                                                <?= method_field('DELETE') ?>
-                                                <button type="submit" class="btn-delete" title="Delete item">✕</button>
-                                            </form>
+                                        <?php
+                                            $qty = (float) $item->quantity;
+                                            $thresh = $item->minimum_threshold !== null ? (float) $item->minimum_threshold : null;
+                                            $barPct = 100;
+                                            $barColor = '#16a34a';
+                                            if ($qty <= 0) {
+                                                $barPct = 0;
+                                                $barColor = '#dc2626';
+                                            } elseif ($thresh !== null && $thresh > 0) {
+                                                $barPct = max(5, min(100, ($qty / ($thresh * 2)) * 100));
+                                                if ($qty <= $thresh) {
+                                                    $barColor = '#d97706';
+                                                }
+                                            }
+                                        ?>
+                                        <div class="catalog-stock-bar-wrap" title="Stock availability ratio">
+                                            <div class="catalog-stock-bar" style="width: <?= $barPct ?>%; background: <?= $barColor ?>;"></div>
                                         </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                    </div>
+
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
+                                        <div class="catalog-price-tag">
+                                            <?php if (($item->listing_type ?? 'buy') === 'free'): ?>
+                                                <span style="color:#16a34a;font-weight:800;">FREE</span>
+                                            <?php elseif (($item->listing_type ?? 'buy') === 'borrow'): ?>
+                                                <span style="color:#2563eb;font-weight:700;">🤝 Borrow</span>
+                                                <?php if ((float) ($item->price ?? 0) > 0): ?>
+                                                    <span style="font-size:11px;color:#64748b;">(RM <?= number_format((float) $item->price, 2) ?>)</span>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <span>RM <?= number_format((float) ($item->price ?? 0), 2) ?></span>
+                                                <span style="font-size:11px;font-weight:500;color:#6a7c6f;">/ <?= e($item->unit) ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="catalog-card-actions">
+                                    <div style="display:inline-flex;gap:4px;">
+                                        <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
+                                            + In
+                                        </button>
+                                        <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
+                                            - Out
+                                        </button>
+                                    </div>
+
+                                    <div style="display:inline-flex;gap:4px;align-items:center;">
+                                        <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
+                                            <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="Automatically live on Marketplace & Business Directory">
+                                                🛒 Market
+                                            </a>
+                                        <?php else: ?>
+                                            <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Forward to EcoCycle Helper: AI Circular Recommendations & GPS Recycling Centres">
+                                                💡 Helper
+                                            </a>
+                                        <?php endif; ?>
+
+                                        <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                            Edit
+                                        </button>
+
+                                        <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
+                                            <?= csrf_field() ?>
+                                            <?= method_field('DELETE') ?>
+                                            <button type="submit" class="btn-delete" title="Delete item">✕</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
 
                     <div class="pagination-wrap">
                         <?= $items->links()?->toHtml() ?>
@@ -1848,9 +2168,42 @@ function closeAiAdvisorModal() {
     document.body.style.overflow = '';
 }
 
-// Initial slot render
+function switchInventoryView(mode) {
+    var tableView = document.getElementById('inventory-table-container');
+    var catalogView = document.getElementById('inventory-catalog-container');
+    var btnTable = document.getElementById('viewBtnTable');
+    var btnCatalog = document.getElementById('viewBtnCatalog');
+    var filterViewInput = document.getElementById('filter_view_input');
+
+    if (mode === 'catalog') {
+        if (tableView) tableView.style.display = 'none';
+        if (catalogView) catalogView.style.display = 'grid';
+        if (btnTable) btnTable.classList.remove('active');
+        if (btnCatalog) btnCatalog.classList.add('active');
+        if (filterViewInput) filterViewInput.value = 'catalog';
+        try { localStorage.setItem('ecocycle_inventory_view', 'catalog'); } catch (e) {}
+    } else {
+        if (tableView) tableView.style.display = 'block';
+        if (catalogView) catalogView.style.display = 'none';
+        if (btnTable) btnTable.classList.add('active');
+        if (btnCatalog) btnCatalog.classList.remove('active');
+        if (filterViewInput) filterViewInput.value = 'table';
+        try { localStorage.setItem('ecocycle_inventory_view', 'table'); } catch (e) {}
+    }
+}
+
+// Initial slot render & view initialization
 document.addEventListener('DOMContentLoaded', function() {
     renderAddSlots();
+
+    var urlParams = new URLSearchParams(window.location.search);
+    var savedView = urlParams.get('view');
+    if (!savedView) {
+        try { savedView = localStorage.getItem('ecocycle_inventory_view'); } catch (e) {}
+    }
+    if (savedView === 'catalog') {
+        switchInventoryView('catalog');
+    }
 });
 </script>
 </body>

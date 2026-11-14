@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Auth;
 $business = $business ?? Auth::guard()->user();
 $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
 $myListingsOnly = $myListingsOnly ?? request()->boolean('my_listings');
+$currentTab = $currentTab ?? (request('tab') ?: ($myListingsOnly ? 'my_listings' : 'reusable'));
+$reusableCount = $reusableCount ?? MarketplaceListing::where('reusability', 'reusable')->whereIn('status', ['active', 'in_stock', 'low_stock'])->where('quantity', '>', 0)->count();
+$nonReusableCount = $nonReusableCount ?? MarketplaceListing::where('reusability', 'not_reusable')->whereIn('status', ['active', 'in_stock', 'low_stock'])->where('quantity', '>', 0)->count();
+$myListingsCount = $myListingsCount ?? ($business ? $business->marketplaceListings()->whereIn('status', ['active', 'in_stock', 'low_stock'])->where('quantity', '>', 0)->count() : 0);
 $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 ?>
 <!doctype html>
@@ -27,7 +31,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= $myListingsOnly ? 'My Listings' : 'Surplus Materials Marketplace' ?> — EcoCycle</title>
+    <title><?= $currentTab === 'non_reusable' ? 'Non-Reusable Items' : ($myListingsOnly ? 'My Listings' : 'Reusable Materials Marketplace') ?> — EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -550,10 +554,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <!-- Page Title Header -->
             <div class="page-header">
                 <div>
-                    <h1><?= $myListingsOnly ? 'My marketplace listings' : 'Surplus materials marketplace' ?></h1>
-                    <p>Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. Listings support <strong>Buy</strong>, <strong>Borrow</strong>, or <strong>Take for Free</strong> with circular reusability tracking.</p>
+                    <h1><?= $currentTab === 'non_reusable' ? 'Non-reusable items category' : ($myListingsOnly ? 'My marketplace listings' : 'Reusable materials marketplace') ?></h1>
+                    <p><?= $currentTab === 'non_reusable' 
+                        ? 'Industrial scrap, single-use residues, and manufacturing cutoffs separated from the normal reusable marketplace. Forward items directly to <strong>EcoCycle Helper</strong> for circular upcycling advice or find matching certified recyclers.' 
+                        : 'Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. Reusable listings support <strong>Buy</strong>, <strong>Borrow</strong>, or <strong>Take for Free</strong>.' ?></p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
+                    <a href="/business/helper" class="btn-create-listing" style="background:#1e3a8a;color:#fff;text-decoration:none;padding:10px 18px;border-radius:6px;font:600 13px var(--font-main);display:inline-flex;align-items:center;gap:8px;">
+                        <span>💡 EcoCycle Helper</span>
+                    </a>
                     <button type="button" class="btn-create-listing" onclick="openCreateListingModal()" style="background:var(--brand-green);color:#fff;border:none;padding:10px 18px;border-radius:6px;font:600 13px var(--font-main);display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         <span>+ Create New Listing</span>
@@ -576,23 +585,45 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 </div>
             <?php } ?>
 
-            <!-- View Tabs: All vs My Listings -->
+            <!-- View Tabs: Reusable vs Non-Reusable vs My Listings -->
             <div class="marketplace-tabs">
-                <a href="/business/marketplace" class="mkt-tab-btn <?= ! $myListingsOnly ? 'active' : '' ?>">
-                    <span>🛒 All Marketplace Listings</span>
-                    <span class="mkt-tab-badge"><?= MarketplaceListing::where('status', 'active')->count() ?></span>
+                <a href="/business/marketplace?tab=reusable" class="mkt-tab-btn <?= $currentTab === 'reusable' ? 'active' : '' ?>">
+                    <span>🛒 ↻ Reusable Items</span>
+                    <span class="mkt-tab-badge"><?= $reusableCount ?></span>
                 </a>
-                <a href="/business/marketplace?my_listings=1" class="mkt-tab-btn <?= $myListingsOnly ? 'active' : '' ?>">
+                <a href="/business/marketplace?tab=non_reusable" class="mkt-tab-btn <?= $currentTab === 'non_reusable' ? 'active' : '' ?>" style="<?= $currentTab === 'non_reusable' ? 'border-color:#b45309;color:#92400e;background:#fef3c7;' : '' ?>">
+                    <span>⊘ Non-Reusable Items (Scrap &amp; Recovery)</span>
+                    <span class="mkt-tab-badge" style="<?= $currentTab === 'non_reusable' ? 'background:#b45309;color:#fff;' : '' ?>"><?= $nonReusableCount ?></span>
+                </a>
+                <a href="/business/marketplace?my_listings=1" class="mkt-tab-btn <?= $currentTab === 'my_listings' ? 'active' : '' ?>">
                     <span>📋 My Listings</span>
-                    <span class="mkt-tab-badge"><?= $business->marketplaceListings()->where('status', 'active')->count() ?></span>
+                    <span class="mkt-tab-badge"><?= $myListingsCount ?></span>
                 </a>
             </div>
+
+            <?php if ($currentTab === 'non_reusable') { ?>
+                <!-- Non-Reusable Dedicated Banner with Direct AI & GPS Link -->
+                <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <span style="font-size:26px;">💡</span>
+                        <div>
+                            <strong style="color:#92400e;font-size:13.5px;display:block;">Non-Reusable Scrap &amp; Waste Category</strong>
+                            <span style="color:#78350f;font-size:12.5px;">These materials are separated from the standard reusable marketplace. Click <strong>"Ask EcoCycle Helper"</strong> on any item to receive instant circular upcycling advice or locate matching certified recycling facilities via GPS.</span>
+                        </div>
+                    </div>
+                    <a href="/business/helper" style="background:#1e3a8a;color:#ffffff;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+                        <span>Open EcoCycle Helper &rarr;</span>
+                    </a>
+                </div>
+            <?php } ?>
 
             <!-- Filter Card -->
             <section class="filter-card">
                 <form method="GET" action="/business/marketplace">
                     <?php if ($myListingsOnly) { ?>
                         <input type="hidden" name="my_listings" value="1">
+                    <?php } elseif ($currentTab === 'non_reusable') { ?>
+                        <input type="hidden" name="tab" value="non_reusable">
                     <?php } ?>
 
                     <div class="filter-row-top">
@@ -815,6 +846,10 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                                 </button>
                                             </form>
                                         </div>
+                                    <?php } elseif (! $isReusable) { ?>
+                                        <a href="/business/helper?item_id=<?= $item->id ?>" class="btn-claim-action" style="background:#1e3a8a;color:#ffffff;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 14px;" onclick="event.stopPropagation();" title="Forward non-reusable item to EcoCycle Helper for AI advice & GPS recycler locator">
+                                            <span>💡 Ask Helper</span>
+                                        </a>
                                     <?php } else { ?>
                                         <button type="button" class="btn-claim-action" onclick="event.stopPropagation(); openExchangeOrderModal(<?= $item->id ?>)">
                                             <?= $listingType === 'free' ? '🎁 Claim Free' : ($listingType === 'borrow' ? '🤝 Borrow' : 'Inquire &rarr;') ?>
@@ -1115,8 +1150,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <p id="modal-detail-desc" style="margin:0;font-size:13px;color:#2e4436;line-height:1.6;background:#fbfdfa;border:1px solid #e1e9df;padding:12px;border-radius:8px;"></p>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeListingDetailModal()">Close</button>
+            <div class="modal-footer" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;gap:8px;">
+                    <button type="button" class="btn-cancel" onclick="closeListingDetailModal()">Close</button>
+                    <a id="modal-detail-helper-link" href="/business/helper" class="btn-claim-action" style="background:#1e3a8a;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 14px;">
+                        <span>💡 Ask EcoCycle Helper</span>
+                    </a>
+                </div>
                 <button type="button" class="btn-claim-action" id="modal-detail-action-btn" onclick="executeClaimFromModal()">
                     Inquire Now &rarr;
                 </button>
@@ -1508,6 +1548,11 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
         var actionBtn = document.getElementById('modal-detail-action-btn');
         actionBtn.textContent = type === 'free' ? '🎁 Claim Free Material' : (type === 'borrow' ? '🤝 Request to Borrow' : 'Inquire to Buy &rarr;');
+
+        var helperLink = document.getElementById('modal-detail-helper-link');
+        if (helperLink) {
+            helperLink.href = '/business/helper?item_id=' + listingId;
+        }
 
         var modal = document.getElementById('listing-detail-modal');
         modal.style.display = 'flex';

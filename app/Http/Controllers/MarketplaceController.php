@@ -46,15 +46,31 @@ class MarketplaceController extends Controller
         $reusability = trim((string) $request->query('reusability', ''));
         $myListingsOnly = $request->boolean('my_listings');
 
+        // Determine current tab / category
+        $tab = $request->query('tab');
+        if ($myListingsOnly) {
+            $tab = 'my_listings';
+        } elseif ($tab === 'non_reusable' || $reusability === 'not_reusable') {
+            $tab = 'non_reusable';
+        } else {
+            $tab = 'reusable';
+        }
+
         $query = MarketplaceListing::query()
             ->with('business')
             ->whereIn('status', ['active', 'in_stock', 'low_stock'])
             ->where('quantity', '>', 0);
 
-        if ($myListingsOnly) {
+        if ($tab === 'my_listings') {
             $query->where('business_id', $business->id);
+            if ($reusability !== '') {
+                $query->where('reusability', $reusability);
+            }
+        } elseif ($tab === 'non_reusable') {
+            // Dedicated Non-Reusable Category (Scrap, Cutoffs, Circular Recovery - excluded from normal reusable market)
+            $query->where('reusability', 'not_reusable');
         } else {
-            // Only reusable materials appear in the marketplace for other businesses
+            // Normal Reusable Marketplace
             $query->where('reusability', 'reusable');
         }
 
@@ -87,32 +103,54 @@ class MarketplaceController extends Controller
             }
         }
 
-        if ($reusability !== '') {
+        if ($reusability !== '' && $tab === 'my_listings') {
             $query->where('reusability', $reusability);
         }
 
         $listings = $query->latest()->get();
 
-        // Get distinct categories and locations
-        $categories = MarketplaceListing::query()
+        // Counts for tabs
+        $reusableCount = MarketplaceListing::query()
             ->whereIn('status', ['active', 'in_stock', 'low_stock'])
             ->where('quantity', '>', 0)
             ->where('reusability', 'reusable')
+            ->count();
+
+        $nonReusableCount = MarketplaceListing::query()
+            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('quantity', '>', 0)
+            ->where('reusability', 'not_reusable')
+            ->count();
+
+        $myListingsCount = $business->marketplaceListings()
+            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('quantity', '>', 0)
+            ->count();
+
+        // Get distinct categories and locations for the current category context
+        $catLocationScope = MarketplaceListing::query()
+            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('quantity', '>', 0);
+
+        if ($tab === 'non_reusable') {
+            $catLocationScope->where('reusability', 'not_reusable');
+        } elseif ($tab === 'reusable') {
+            $catLocationScope->where('reusability', 'reusable');
+        }
+
+        $categories = (clone $catLocationScope)
             ->distinct()
             ->pluck('category')
             ->filter()
             ->values();
 
-        $locations = MarketplaceListing::query()
-            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
-            ->where('quantity', '>', 0)
-            ->where('reusability', 'reusable')
+        $locations = (clone $catLocationScope)
             ->distinct()
             ->pluck('location_state')
             ->filter()
             ->values();
 
-        // User's inventory items for easy listing (only reusable materials can be listed)
+        // User's inventory items for easy listing
         $myInventoryItems = $business->inventoryItems()
             ->where('status', '!=', 'out_of_stock')
             ->where('reusability', 'reusable')
@@ -131,6 +169,10 @@ class MarketplaceController extends Controller
             'selectedListingType' => $listingType,
             'selectedReusability' => $reusability,
             'myListingsOnly' => $myListingsOnly,
+            'currentTab' => $tab,
+            'reusableCount' => $reusableCount,
+            'nonReusableCount' => $nonReusableCount,
+            'myListingsCount' => $myListingsCount,
         ]);
     }
 
@@ -157,6 +199,7 @@ class MarketplaceController extends Controller
             'reusability.in' => 'Only reusable materials can be listed on the marketplace. Non-reusable items remain saved in your internal inventory only.',
         ]);
 
+        $reusability = $validated['reusability'] ?? 'reusable';
         $listingType = $validated['listing_type'];
         $isFree = $listingType === 'free';
         $price = $isFree ? 0 : (isset($validated['price']) ? (float) $validated['price'] : null);
@@ -199,7 +242,7 @@ class MarketplaceController extends Controller
                 'quantity' => (float) $validated['quantity'],
                 'unit' => $validated['unit'],
                 'listing_type' => $listingType,
-                'reusability' => 'reusable',
+                'reusability' => $reusability,
                 'price' => $price,
                 'is_free' => $isFree,
                 'condition' => $condition,
@@ -223,7 +266,7 @@ class MarketplaceController extends Controller
                 'quantity' => (float) $validated['quantity'],
                 'unit' => $validated['unit'],
                 'listing_type' => $listingType,
-                'reusability' => 'reusable',
+                'reusability' => $reusability,
                 'price' => $price,
                 'is_free' => $isFree,
                 'condition' => $condition,

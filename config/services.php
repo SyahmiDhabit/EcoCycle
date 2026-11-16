@@ -42,4 +42,9 @@ return [
         'admin_locale' => env('ECOCYCLE_ADMIN_LOCALE', 'en'),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-1.5-flash'),
+    ],
+
 ];

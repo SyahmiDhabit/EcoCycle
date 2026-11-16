@@ -261,4 +261,90 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $responseTable->assertSee('inventory-table-container', false);
         $responseTable->assertSee('Aluminum Offcut Sheets 3mm');
     }
+
+    public function test_gemini_api_integration_analyzes_material_when_api_key_is_configured(): void
+    {
+        $business = $this->createApprovedBusiness();
+
+        config(['services.gemini.api_key' => 'fake-gemini-key']);
+        config(['services.gemini.model' => 'gemini-1.5-flash']);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'https://generativelanguage.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([
+                'candidates' => [
+                    [
+                        'content' => [
+                            'parts' => [
+                                [
+                                    'text' => json_encode([
+                                        'strategy' => 'Gemini Optical Polymer Sorting & Pyrolysis',
+                                        'primary_path' => 'Thermal Depolymerization',
+                                        'action_recommendation' => 'Convert to circular pyrolysis oil',
+                                        'repurpose_ideas' => ['Cracked virgin-grade polymer feed', 'Industrial fuel blend'],
+                                        'recycling_steps' => ['Step 1: Shred', 'Step 2: Pyrolyze in oxygen-free retort'],
+                                        'disposal_warning' => 'Avoid unmonitored incineration.',
+                                        'estimated_value_myr' => 'RM 2.50 - RM 4.00 per kg',
+                                        'carbon_saving_estimate' => '3.2 kg CO2e saved per kg',
+                                        'compliance_note' => 'Licensed under DOE Clean Air and Scheduled Waste guidelines.',
+                                    ]),
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $item = InventoryItem::create([
+            'business_id' => $business->id,
+            'name' => 'Polymer Film Roll Offcuts',
+            'category' => 'Plastics & rubber',
+            'quantity' => 450,
+            'unit' => 'kg',
+            'reusability' => 'not_reusable',
+            'listing_type' => 'buy',
+            'price' => 1.50,
+            'condition' => 'Scrap / Cutoffs',
+            'status' => 'in_stock',
+        ]);
+
+        $response = $this->actingAs($business)->getJson(route('business.helper.analyze', $item->id));
+
+        $response->assertOk();
+        $this->assertSame('Gemini Optical Polymer Sorting & Pyrolysis', $response->json('analysis.strategy'));
+        $this->assertSame('Thermal Depolymerization', $response->json('analysis.primary_path'));
+        $this->assertSame('Google Gemini AI', $response->json('analysis.ai_source'));
+    }
+
+    public function test_gemini_api_integration_handles_chat_replies_when_api_key_is_configured(): void
+    {
+        $business = $this->createApprovedBusiness();
+
+        config(['services.gemini.api_key' => 'fake-gemini-key']);
+        config(['services.gemini.model' => 'gemini-1.5-flash']);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'https://generativelanguage.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([
+                'candidates' => [
+                    [
+                        'content' => [
+                            'parts' => [
+                                [
+                                    'text' => 'Based on Gemini circular analysis, industrial copper wire offcuts should be stripped and consolidated into 50kg bales for certified secondary smelters in Klang.',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($business)->postJson(route('business.helper.chat'), [
+            'message' => 'What is the most cost-effective recovery method for copper cable scrap?',
+        ]);
+
+        $response->assertOk();
+        $this->assertTrue($response->json('success'));
+        $this->assertStringContainsString('Based on Gemini circular analysis', $response->json('reply'));
+    }
 }

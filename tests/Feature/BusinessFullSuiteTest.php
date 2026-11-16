@@ -257,4 +257,37 @@ class BusinessFullSuiteTest extends TestCase
         $biz->refresh();
         $this->assertTrue(Hash::check('newSecretPass!2026', $biz->password));
     }
+
+    public function test_business_dashboard_displays_single_top_left_hamburger_and_slide_out_sidebar(): void
+    {
+        $biz = $this->createApprovedBusiness('Eco Slide Sidebar Corp');
+
+        $response = $this->actingAs($biz)->get('/business');
+
+        $response->assertOk();
+
+        // Exactly ONE hamburger button on top-left
+        $response->assertSee('id="sidebar-toggle-btn"', false);
+        $response->assertSee('onclick="toggleSidebar()"', false);
+        $response->assertSee('class="hamburger-icon-bars"', false);
+        $response->assertDontSee('id="nav-drawer-toggle-btn"', false);
+        $response->assertDontSee('id="business-right-drawer"', false);
+
+        // Slide-out left sidebar & backdrop
+        $response->assertSee('id="dashboard-sidebar"', false);
+        $response->assertSee('id="sidebar-backdrop"', false);
+        $response->assertSee('class="sidebar-close-btn"', false);
+        $response->assertSee('onclick="closeSidebar()"', false);
+
+        // All existing business navigation links inside the collapsible sidebar
+        $response->assertSee('href="/business"', false);
+        $response->assertSee('href="/business/inventory"', false);
+        $response->assertSee('href="/business/waste-monitoring"', false);
+        $response->assertSee('href="/business/marketplace"', false);
+        $response->assertSee('href="/business/helper"', false);
+        $response->assertSee('href="/business/my-listings"', false);
+        $response->assertSee('href="/business/transactions"', false);
+        $response->assertSee('href="/business/reports"', false);
+        $response->assertSee(route('business.profile'), false);
+    }
 }

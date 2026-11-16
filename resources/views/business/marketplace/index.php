@@ -1165,9 +1165,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
     </div>
 
     <script>
-    function toggleSidebar() {
-        document.getElementById('dashboard-sidebar').classList.toggle('open');
-    }
     function toggleNotificationMenu(e) {
         e.stopPropagation();
         var menu = document.getElementById('notification-dropdown');

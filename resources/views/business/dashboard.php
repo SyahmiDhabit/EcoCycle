@@ -321,11 +321,6 @@ $activeNav = 'overview';
     </div>
 
     <script>
-    function toggleSidebar() {
-        var sidebar = document.getElementById('dashboard-sidebar');
-        if (sidebar) sidebar.classList.toggle('open');
-    }
-
     function handleNavNotice(e, sectionName) {
         e.preventDefault();
         alert('The ' + sectionName + ' module is active for your business workspace.');

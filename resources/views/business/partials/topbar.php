@@ -6,14 +6,16 @@ $avatarInitials = strtoupper(substr($companyName, 0, 2));
 
 $realNotifications = $business?->notifications()->take(8)->get() ?? collect();
 $unreadNotificationsCount = $realNotifications->where('is_read', false)->count();
+$activeNav = $activeNav ?? 'overview';
 ?>
 <!-- EcoCycle Clean Professional Topbar -->
 <header class="topbar" role="banner">
     <div class="topbar-left">
-        <button type="button" class="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle navigation menu" title="Toggle Menu">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
+        <!-- Single Hamburger Button on Top-Left to toggle Left Slide-Out Sidebar -->
+        <button type="button" class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle navigation menu" title="Toggle Navigation Menu" aria-expanded="false" aria-controls="dashboard-sidebar">
+            <svg class="hamburger-icon-bars" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
         </button>
@@ -131,14 +133,6 @@ $unreadNotificationsCount = $realNotifications->where('is_read', false)->count()
 </header>
 
 <script>
-if (!window.toggleSidebar) {
-    window.toggleSidebar = function() {
-        var sidebar = document.getElementById('dashboard-sidebar');
-        if (sidebar) {
-            sidebar.classList.toggle('open');
-        }
-    };
-}
 function toggleNotificationMenu(e) {
     if (e) {
         e.preventDefault();

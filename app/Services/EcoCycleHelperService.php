@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Item;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class EcoCycleHelperService
 {
@@ -27,7 +29,12 @@ class EcoCycleHelperService
         $normName = mb_strtolower(trim($name));
         $combinedText = $normName . ' ' . mb_strtolower($description);
 
-        $analysis = $this->determineAnalysisProfile($normCategory, $combinedText, $condition, $quantity, $unit, $reusability);
+        $geminiAnalysis = null;
+        if (! empty(config('services.gemini.api_key'))) {
+            $geminiAnalysis = $this->analyzeWithGemini($name, $category, $description, $condition, $quantity, $unit, $reusability);
+        }
+
+        $analysis = $geminiAnalysis ?: $this->determineAnalysisProfile($normCategory, $combinedText, $condition, $quantity, $unit, $reusability);
 
         return array_merge([
             'item_name' => $name,
@@ -37,6 +44,7 @@ class EcoCycleHelperService
             'reusability' => $reusability,
             'has_images' => ! empty($images),
             'image_count' => count($images),
+            'ai_source' => $geminiAnalysis ? 'Google Gemini AI' : 'EcoCycle Expert Engine',
         ], $analysis);
     }
 
@@ -50,6 +58,13 @@ class EcoCycleHelperService
      */
     public function reply(string $userMessage, ?array $contextItem = null, array $history = []): array
     {
+        if (! empty(config('services.gemini.api_key'))) {
+            $geminiReply = $this->replyWithGemini($userMessage, $contextItem, $history);
+            if ($geminiReply !== null) {
+                return $geminiReply;
+            }
+        }
+
         $query = mb_strtolower(trim($userMessage));
         $itemName = $contextItem['name'] ?? $contextItem['item_name'] ?? 'your material';
         $category = mb_strtolower($contextItem['category'] ?? 'general');
@@ -74,6 +89,159 @@ class EcoCycleHelperService
 
         return [
             'reply' => $reply,
+            'suggested_questions' => [
+                "What is the estimated market price for {$itemName}?",
+                "How should we store and prepare {$itemName} for pickup?",
+                "Are there DOE or licensing requirements for transporting this?",
+                "Find certified recyclers near my current GPS location",
+            ],
+        ];
+    }
+
+    /**
+     * Call Google Gemini Generative Language API
+     */
+    public function callGemini(string $prompt, float $temperature = 0.4): ?string
+    {
+        $apiKey = config('services.gemini.api_key');
+        if (empty($apiKey)) {
+            return null;
+        }
+
+        $model = config('services.gemini.model', 'gemini-2.5-flash');
+        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+        try {
+            $response = Http::timeout(5)->post($endpoint, [
+                'contents' => [
+                    [
+                        'role' => 'user',
+                        'parts' => [
+                            ['text' => $prompt],
+                        ],
+                    ],
+                ],
+                'generationConfig' => [
+                    'temperature' => $temperature,
+                    'maxOutputTokens' => 1500,
+                ],
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+            }
+
+            Log::warning('Gemini API call returned non-200 status', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Gemini API call failed: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Analyze non-reusable scrap using Google Gemini API
+     */
+    private function analyzeWithGemini(string $name, string $category, string $description, string $condition, float $quantity, string $unit, string $reusability): ?array
+    {
+        $prompt = <<<PROMPT
+You are EcoCycle AI, an expert industrial circular economy and waste recovery consultant in Malaysia.
+Analyze the following industrial material/scrap:
+
+Material Name: {$name}
+Category: {$category}
+Description: {$description}
+Condition: {$condition}
+Quantity: {$quantity} {$unit}
+Classification: Non-reusable / Scrap
+
+Provide an actionable, technical circular economy analysis formatted STRICTLY as a raw JSON object (no markdown wrapping, no code fences) with the exact following keys:
+{
+  "strategy": "Primary technical circular strategy title (string)",
+  "primary_path": "Short primary recovery pathway name e.g. Mechanical Repelletizing, Secondary Smelting, Industrial Composting (string)",
+  "action_recommendation": "Main recommended action e.g. Shred & Granulate into Flake, Smelt into Ingot, Digest into Biogas (string)",
+  "repurpose_ideas": ["3 practical upcycling or repurposing ideas as an array of strings"],
+  "recycling_steps": ["Step 1: ...", "Step 2: ...", "Step 3: ...", "Step 4: ...", "Step 5: ..."],
+  "disposal_warning": "Environmental hazard or landfill diversion note (string)",
+  "estimated_value_myr": "Estimated scrap price benchmark range in Malaysian Ringgit per unit/kg (string)",
+  "carbon_saving_estimate": "Estimated kg of CO2e avoided by recycling instead of virgin production or landfilling (string)",
+  "compliance_note": "Malaysian Department of Environment (DOE) / Act 672 / Scheduled Waste regulatory compliance guidance (string)"
+}
+PROMPT;
+
+        $rawResponse = $this->callGemini($prompt, 0.2);
+        if (empty($rawResponse)) {
+            return null;
+        }
+
+        // Clean any accidental markdown code fences
+        $cleaned = trim($rawResponse);
+        if (str_starts_with($cleaned, '```json')) {
+            $cleaned = substr($cleaned, 7);
+        } elseif (str_starts_with($cleaned, '```')) {
+            $cleaned = substr($cleaned, 3);
+        }
+        if (str_ends_with($cleaned, '```')) {
+            $cleaned = substr($cleaned, 0, -3);
+        }
+        $cleaned = trim($cleaned);
+
+        $decoded = json_decode($cleaned, true);
+        if (! is_array($decoded) || ! isset($decoded['strategy'], $decoded['primary_path'])) {
+            return null;
+        }
+
+        return [
+            'strategy' => $decoded['strategy'] ?? 'Industrial Circular Recovery',
+            'primary_path' => $decoded['primary_path'] ?? 'Material Valorization',
+            'action_recommendation' => $decoded['action_recommendation'] ?? 'Recycle into secondary raw material',
+            'repurpose_ideas' => (array) ($decoded['repurpose_ideas'] ?? []),
+            'recycling_steps' => (array) ($decoded['recycling_steps'] ?? []),
+            'disposal_warning' => $decoded['disposal_warning'] ?? 'Divert from landfill into certified recycling streams.',
+            'estimated_value_myr' => $decoded['estimated_value_myr'] ?? 'Subject to market scrap pricing',
+            'carbon_saving_estimate' => $decoded['carbon_saving_estimate'] ?? 'Significant carbon footprint reduction achieved by circular recovery.',
+            'compliance_note' => $decoded['compliance_note'] ?? 'Comply with Malaysian environmental regulations.',
+        ];
+    }
+
+    /**
+     * Conversational Q&A using Google Gemini API
+     */
+    private function replyWithGemini(string $userMessage, ?array $contextItem, array $history): ?array
+    {
+        $contextStr = '';
+        if ($contextItem) {
+            $itemName = $contextItem['name'] ?? $contextItem['item_name'] ?? 'Material';
+            $cat = $contextItem['category'] ?? 'General';
+            $qty = $contextItem['quantity'] ?? 1;
+            $unit = $contextItem['unit'] ?? 'units';
+            $cond = $contextItem['condition'] ?? 'Used';
+            $desc = $contextItem['description'] ?? '';
+            $contextStr = "Current material context:\n- Name: {$itemName}\n- Category: {$cat}\n- Quantity: {$qty} {$unit}\n- Condition: {$cond}\n- Description: {$desc}\n";
+        }
+
+        $systemPrompt = <<<PROMPT
+You are EcoCycle AI, a knowledgeable, professional circular economy consultant for Malaysian manufacturing, fabrication, and industrial businesses.
+{$contextStr}
+Answer the business user's question clearly, concisely, and practically with bullet points or step numbers where appropriate. Include references to Malaysian market practices (MYR prices, DOE standards, Act 672) when relevant.
+Do NOT say you cannot help. Keep your answer focused on sustainability, recycling, upcycling, compliance, or scrap valorization.
+
+User Question: {$userMessage}
+PROMPT;
+
+        $replyText = $this->callGemini($systemPrompt, 0.4);
+        if (empty($replyText)) {
+            return null;
+        }
+
+        $itemName = $contextItem['name'] ?? $contextItem['item_name'] ?? 'this material';
+
+        return [
+            'reply' => trim($replyText),
             'suggested_questions' => [
                 "What is the estimated market price for {$itemName}?",
                 "How should we store and prepare {$itemName} for pickup?",

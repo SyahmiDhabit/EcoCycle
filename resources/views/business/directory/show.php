@@ -281,10 +281,6 @@ $activeNav = 'overview';
     </div>
 
     <script>
-    function toggleSidebar() {
-        var sidebar = document.getElementById('dashboard-sidebar');
-        if (sidebar) sidebar.classList.toggle('open');
-    }
     function toggleNotificationMenu(e) {
         e.stopPropagation();
         var menu = document.getElementById('notification-dropdown');

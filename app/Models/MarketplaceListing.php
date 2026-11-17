@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'title',
     'name',
     'description',
-    'sku',
     'category',
     'quantity',
     'unit',
@@ -23,15 +22,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'listing_type',
     'reusability',
     'condition',
-    'minimum_threshold',
     'location_city',
     'location_state',
     'image_path',
     'image_1',
     'image_2',
     'image_3',
-    'image_4',
-    'image_5',
     'images',
     'status',
     'notes',
@@ -96,7 +92,7 @@ class MarketplaceListing extends Model
     }
 
     /**
-     * Return all image paths for this listing (referencing image_1 to image_5 columns).
+     * Return all image paths for this listing (up to 3 images: image_1 to image_3).
      *
      * @return array<int, string>
      */
@@ -106,23 +102,47 @@ class MarketplaceListing extends Model
             $this->image_1,
             $this->image_2,
             $this->image_3,
-            $this->image_4,
-            $this->image_5,
         ]);
 
-        if (!empty($explicit)) {
-            return array_values($explicit);
+        if (! empty($explicit)) {
+            return array_slice(array_values($explicit), 0, 3);
         }
 
-        if (!empty($this->images) && is_array($this->images)) {
-            return array_values(array_filter($this->images));
+        if (! empty($this->images) && is_array($this->images)) {
+            return array_slice(array_values(array_filter($this->images)), 0, 3);
         }
 
-        if (!empty($this->image_path)) {
+        if (! empty($this->image_path)) {
             return [$this->image_path];
         }
 
         return [];
+    }
+
+    /**
+     * Return exact 3-slot image array [slot1, slot2, slot3] preserving empty slots.
+     *
+     * @return array<int, string|null>
+     */
+    public function getImageSlots(): array
+    {
+        $slots = [
+            $this->image_1 ?: null,
+            $this->image_2 ?: null,
+            $this->image_3 ?: null,
+        ];
+
+        if (! empty(array_filter($slots))) {
+            return $slots;
+        }
+
+        $fallback = $this->getAllImages();
+
+        return [
+            $fallback[0] ?? null,
+            $fallback[1] ?? null,
+            $fallback[2] ?? null,
+        ];
     }
 
     /**

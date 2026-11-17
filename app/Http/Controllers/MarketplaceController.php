@@ -186,16 +186,17 @@ class MarketplaceController extends Controller
             'inventory_item_id' => ['nullable', 'exists:item,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'category' => ['required', 'string', 'max:60'],
+            'category' => ['required', 'string', 'max:100'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'unit' => ['required', 'string', 'max:20'],
             'listing_type' => ['required', 'in:buy,borrow,free'],
             'reusability' => ['required', 'in:reusable'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'condition' => ['nullable', 'string', 'max:40'],
-            'images' => ['nullable', 'array', 'max:5'],
+            'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ], [
+            'images.max' => 'You can upload a maximum of 3 photos.',
             'reusability.in' => 'Only reusable materials can be listed on the marketplace. Non-reusable items remain saved in your internal inventory only.',
         ]);
 
@@ -206,13 +207,13 @@ class MarketplaceController extends Controller
         $description = ! empty($validated['description']) ? $validated['description'] : 'Surplus material available for circular exchange on EcoCycle.';
         $condition = ! empty($validated['condition']) ? $validated['condition'] : 'Used - Good';
 
-        // Handle 1 to 5 uploaded images
+        // Handle 1 to 3 uploaded images
         $uploadedImages = [];
         if ($request->hasFile('images')) {
             $files = $request->file('images');
             if (is_array($files)) {
                 $disk = Storage::disk('public');
-                foreach (array_slice($files, 0, 5) as $file) {
+                foreach (array_slice($files, 0, 3) as $file) {
                     if ($file && $file->isValid()) {
                         $ext = $file->getClientOriginalExtension() ?: 'jpg';
                         $filename = 'listing_'.Str::random(24).'.'.$ext;
@@ -252,8 +253,6 @@ class MarketplaceController extends Controller
                 'image_1' => $uploadedImages[0] ?? $listing->image_1,
                 'image_2' => $uploadedImages[1] ?? $listing->image_2,
                 'image_3' => $uploadedImages[2] ?? $listing->image_3,
-                'image_4' => $uploadedImages[3] ?? $listing->image_4,
-                'image_5' => $uploadedImages[4] ?? $listing->image_5,
                 'images' => ! empty($uploadedImages) ? $uploadedImages : $listing->images,
             ]);
         } else {
@@ -274,8 +273,6 @@ class MarketplaceController extends Controller
                 'image_1' => $uploadedImages[0] ?? null,
                 'image_2' => $uploadedImages[1] ?? null,
                 'image_3' => $uploadedImages[2] ?? null,
-                'image_4' => $uploadedImages[3] ?? null,
-                'image_5' => $uploadedImages[4] ?? null,
                 'images' => $uploadedImages,
                 'location_city' => $business->city ?: 'Kuala Lumpur',
                 'location_state' => $business->state ?: 'Selangor',

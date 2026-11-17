@@ -74,8 +74,15 @@ $activeNav = 'inventory';
         .btn-filter:hover {
             background: #eef5eb;
         }
+        .toolbar-right-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
         .btn-add-primary {
-            padding: 9px 18px;
+            height: 38px;
+            padding: 0 18px;
             border: 1px solid var(--forest-bg);
             border-radius: 0;
             background: var(--forest-bg);
@@ -84,7 +91,9 @@ $activeNav = 'inventory';
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
             transition: background-color 0.15s ease;
         }
         .btn-add-primary:hover {
@@ -94,55 +103,85 @@ $activeNav = 'inventory';
             display: inline-flex;
             gap: 6px;
             align-items: center;
-            flex-wrap: wrap;
+            justify-content: flex-end;
+            flex-wrap: nowrap;
+        }
+        .action-stock-pair {
+            display: inline-flex;
+            align-items: center;
+        }
+        .btn-stock-in,
+        .btn-stock-out,
+        .btn-edit,
+        .btn-delete,
+        .btn-ai-advisor,
+        .btn-market-live {
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 0;
+            font: 600 11.5px var(--font-main);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            text-decoration: none;
+            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
         }
         .btn-stock-in {
-            padding: 4px 8px;
-            border: 1px solid #a3cfbb;
-            border-radius: 0;
-            background: #e8f5e9;
-            color: #1b5e20;
-            font: 600 11px var(--font-main);
-            cursor: pointer;
+            border: 1px solid #b5d6bc;
+            background: #f1f8f2;
+            color: #165b33;
         }
         .btn-stock-in:hover {
-            background: #c8e6c9;
+            background: #dff0e2;
+            border-color: #7eb88c;
         }
         .btn-stock-out {
-            padding: 4px 8px;
-            border: 1px solid #f5c6cb;
-            border-radius: 0;
-            background: #fff5f5;
-            color: #721c24;
-            font: 600 11px var(--font-main);
-            cursor: pointer;
+            border: 1px solid #e8c3c3;
+            border-left: none;
+            background: #fdf6f6;
+            color: #991b1b;
         }
         .btn-stock-out:hover {
-            background: #f8d7da;
+            background: #fae4e4;
+            border-color: #dc9a9a;
         }
         .btn-edit {
-            padding: 4px 8px;
-            border: 1px solid var(--input-border);
-            border-radius: 0;
+            border: 1px solid #c5d4c3;
             background: #ffffff;
-            color: #3b5042;
-            font: 600 11px var(--font-main);
-            cursor: pointer;
+            color: #243f30;
         }
         .btn-edit:hover {
-            background: #f4f8ef;
+            background: #f2f6f1;
+            border-color: #8fa98d;
         }
         .btn-delete {
-            padding: 4px 8px;
-            border: 1px solid #fecaca;
-            border-radius: 0;
+            border: 1px solid #f0c2c2;
             background: #ffffff;
-            color: #dc2626;
-            font: 600 11px var(--font-main);
-            cursor: pointer;
+            color: #b91c1c;
         }
         .btn-delete:hover {
-            background: #fee2e2;
+            background: #fef2f2;
+            border-color: #dc2626;
+        }
+        .btn-ai-advisor {
+            border: 1px solid #b8d0f5;
+            background: #f3f7fe;
+            color: #1e40af;
+        }
+        .btn-ai-advisor:hover {
+            background: #e1ecfd;
+            border-color: #60a5fa;
+        }
+        .btn-market-live {
+            border: 1px solid #143825;
+            background: #143825;
+            color: #ffffff;
+        }
+        .btn-market-live:hover {
+            background: #0d2b1b;
+            border-color: #0d2b1b;
         }
         .pagination-wrap {
             margin-top: 20px;
@@ -152,11 +191,12 @@ $activeNav = 'inventory';
 
         /* View Toggle Group */
         .view-switcher-wrap {
+            height: 38px;
             display: inline-flex;
             align-items: center;
             background: #eef3ed;
             border-radius: 0;
-            padding: 2px;
+            padding: 3px;
             gap: 2px;
             border: 1px solid var(--card-border);
         }
@@ -322,14 +362,103 @@ $activeNav = 'inventory';
             flex-wrap: wrap;
         }
 
-        /* Image Upload & Slots Preview */
+        /* Independent 3-Slot Image Uploader */
         .inv-slots-grid-3 {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 14px;
         }
+        .inv-slot-wrapper {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            border-radius: 0;
+        }
+        .inv-slot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: #f1f5f9;
+            border-bottom: 1px solid #cbd5e1;
+            font-size: 11px;
+            font-weight: 700;
+            color: #334155;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .inv-slot-preview-area {
+            position: relative;
+            height: 120px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .inv-slot-preview-area.empty-slot {
+            border: none;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 600;
+            gap: 6px;
+        }
+        .inv-slot-preview-area.empty-slot:hover {
+            background: #eef5eb;
+            color: #18422d;
+        }
+        .inv-slot-preview-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .inv-slot-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 1px solid #cbd5e1;
+            background: #ffffff;
+        }
+        .inv-slot-action-btn {
+            padding: 6px 8px;
+            border: none;
+            background: #ffffff;
+            color: #334155;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 0;
+        }
+        .inv-slot-action-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        .inv-slot-action-btn.btn-slot-remove {
+            border-left: 1px solid #cbd5e1;
+            color: #b91c1c;
+        }
+        .inv-slot-action-btn.btn-slot-remove:hover {
+            background: #fef2f2;
+        }
+        .inv-slot-action-btn.btn-slot-upload-full {
+            grid-column: 1 / -1;
+            color: #18422d;
+            font-weight: 700;
+        }
+        .inv-slot-action-btn.btn-slot-upload-full:hover {
+            background: #eef5eb;
+        }
         .inv-slots-grid-3 .inv-slot-card {
             height: 110px;
+        }
+        @media (max-width: 640px) {
+            .inv-slots-grid-3 {
+                grid-template-columns: 1fr !important;
+            }
         }
         .btn-owner-only {
             padding: 4px 8px;
@@ -342,40 +471,6 @@ $activeNav = 'inventory';
             align-items: center;
             gap: 4px;
             cursor: default;
-        }
-        .btn-ai-advisor {
-            padding: 4px 8px;
-            border: 1px solid #93c5fd;
-            border-radius: 0;
-            background: #eff6ff;
-            color: #1e40af;
-            font: 600 11px var(--font-main);
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            text-decoration: none;
-        }
-        .btn-ai-advisor:hover {
-            background: #dbeafe;
-            border-color: #60a5fa;
-        }
-        .btn-market-live {
-            padding: 4px 8px;
-            border: 1px solid #86efac;
-            border-radius: 0;
-            background: #f0fdf4;
-            color: #15803d;
-            font: 600 11px var(--font-main);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .btn-market-live:hover {
-            background: #dcfce7;
-            border-color: #4ade80;
-            color: #166534;
         }
 
         /* Spacious & Professional Rectangular Add Inventory Modal */
@@ -590,19 +685,15 @@ $activeNav = 'inventory';
             <div class="page-header">
                 <div>
                     <h1>Inventory management</h1>
-                    <p>Track materials, maintain safety thresholds, upload photos, and seamlessly list surplus to the marketplace.</p>
+                    <p>Track materials, upload photos, and manage reusable listings or recycling recommendations.</p>
                 </div>
-                <button type="button" class="btn-add-primary" onclick="openAddModal()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    <span>+ Add New Item</span>
-                </button>
             </div>
 
             <section class="panel" style="margin-top:20px;">
                 <div class="inventory-toolbar">
                     <form class="filter-form" method="GET" action="<?= route('business.inventory') ?>">
                         <input type="hidden" name="view" id="filter_view_input" value="<?= e($viewMode) ?>">
-                        <input class="filter-input" type="search" name="search" value="<?= e($search) ?>" placeholder="Search by item name or SKU...">
+                        <input class="filter-input" type="search" name="search" value="<?= e($search) ?>" placeholder="Search by item name...">
                         
                         <select class="filter-select" name="category">
                             <option value="">All Categories</option>
@@ -620,7 +711,6 @@ $activeNav = 'inventory';
                         <select class="filter-select" name="status">
                             <option value="">All Statuses</option>
                             <option value="in_stock" <?= $selectedStatus === 'in_stock' ? 'selected' : '' ?>>In stock</option>
-                            <option value="low_stock" <?= $selectedStatus === 'low_stock' ? 'selected' : '' ?>>Low stock</option>
                             <option value="out_of_stock" <?= $selectedStatus === 'out_of_stock' ? 'selected' : '' ?>>Out of stock</option>
                         </select>
 
@@ -630,14 +720,20 @@ $activeNav = 'inventory';
                         <?php endif; ?>
                     </form>
 
-                    <div class="view-switcher-wrap" role="group" aria-label="Inventory View Layout">
-                        <button type="button" class="view-toggle-btn <?= $viewMode !== 'catalog' ? 'active' : '' ?>" id="viewBtnTable" onclick="switchInventoryView('table')" title="Switch to Table View">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                            <span>Table</span>
-                        </button>
-                        <button type="button" class="view-toggle-btn <?= $viewMode === 'catalog' ? 'active' : '' ?>" id="viewBtnCatalog" onclick="switchInventoryView('catalog')" title="Switch to Catalog Grid View">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                            <span>Catalog Grid</span>
+                    <div class="toolbar-right-controls">
+                        <div class="view-switcher-wrap" role="group" aria-label="Inventory View Layout">
+                            <button type="button" class="view-toggle-btn <?= $viewMode !== 'catalog' ? 'active' : '' ?>" id="viewBtnTable" onclick="switchInventoryView('table')" title="Switch to Table View">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                                <span>Table</span>
+                            </button>
+                            <button type="button" class="view-toggle-btn <?= $viewMode === 'catalog' ? 'active' : '' ?>" id="viewBtnCatalog" onclick="switchInventoryView('catalog')" title="Switch to Catalog Grid View">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                <span>Catalog Grid</span>
+                            </button>
+                        </div>
+
+                        <button type="button" class="btn-add-primary" onclick="openAddModal()">
+                            <span>Add New Item</span>
                         </button>
                     </div>
                 </div>
@@ -648,18 +744,17 @@ $activeNav = 'inventory';
                             <thead>
                                 <tr>
                                     <th style="width:28%;">Material / Item</th>
-                                    <th style="width:14%;">Category</th>
+                                    <th style="width:16%;">Category</th>
                                     <th style="width:12%;">Reusability</th>
-                                    <th style="width:13%;">Stock Level</th>
-                                    <th style="width:11%;">Low Alert</th>
-                                    <th style="width:10%;">Status</th>
-                                    <th style="width:12%;">Actions</th>
+                                    <th style="width:11%;">Stock Level</th>
+                                    <th style="width:9%;">Status</th>
+                                    <th style="width:24%;text-align:right;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($items as $item): ?>
                                     <tr>
-                                        <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
+                                        <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
                                             <div style="display:flex;align-items:center;gap:12px;">
                                                 <?php if ($item->image_path): ?>
                                                     <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:0;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;" loading="lazy">
@@ -670,9 +765,6 @@ $activeNav = 'inventory';
                                                 <?php endif; ?>
                                                 <div>
                                                     <strong style="color:#123321;font-size:14px;"><?= e($item->name) ?></strong>
-                                                    <?php if ($item->sku): ?>
-                                                        <small style="display:block;color:#6f7b72;font-size:11px;">SKU: <?= e($item->sku) ?></small>
-                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </td>
@@ -687,39 +779,36 @@ $activeNav = 'inventory';
                                         <td data-label="Stock Level">
                                             <span style="font-size:14px;font-weight:700;color:#173e2c;"><?= (float) $item->quantity ?></span> <?= e($item->unit) ?>
                                         </td>
-                                        <td data-label="Threshold">
-                                            <?= $item->minimum_threshold !== null ? (float) $item->minimum_threshold . ' ' . e($item->unit) : '<span style="color:#8a9990;">None</span>' ?>
-                                        </td>
                                         <td data-label="Status">
-                                            <?php if ($item->status === 'out_of_stock'): ?>
+                                            <?php if ($item->status === 'out_of_stock' || (float) $item->quantity <= 0): ?>
                                                 <span class="status status-out-of-stock">Out of stock</span>
-                                            <?php elseif ($item->status === 'low_stock'): ?>
-                                                <span class="status status-low-stock">Low stock</span>
                                             <?php else: ?>
                                                 <span class="status status-in-stock">In stock</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td data-label="Actions">
+                                        <td data-label="Actions" style="text-align:right;">
                                             <div class="action-group">
-                                                <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
-                                                    + In
-                                                </button>
-                                                <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
-                                                    - Out
-                                                </button>
+                                                <div class="action-stock-pair">
+                                                    <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
+                                                        + In
+                                                    </button>
+                                                    <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
+                                                        - Out
+                                                    </button>
+                                                </div>
                                                 <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                                    <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="Automatically live on Marketplace & Business Directory. Click to view on Marketplace.">
+                                                    <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="View live listing on Marketplace">
                                                         On Market
                                                     </a>
                                                 <?php else: ?>
-                                                    <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Forward to EcoCycle Helper: Circular Economy Analysis & GPS Recycling Centres">
+                                                    <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Open in EcoCycle Helper">
                                                         EcoCycle Helper
                                                     </a>
                                                 <?php endif; ?>
-                                                <button type="button" class="btn-edit" title="Edit details & marketplace pricing" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                                <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
                                                     Edit
                                                 </button>
-                                                <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
+                                                <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;margin:0;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
                                                     <?= csrf_field() ?>
                                                     <?= method_field('DELETE') ?>
                                                     <button type="submit" class="btn-delete" title="Delete item">Delete</button>
@@ -735,7 +824,7 @@ $activeNav = 'inventory';
                     <div id="inventory-catalog-container" class="inventory-catalog-grid" style="display: <?= $viewMode === 'catalog' ? 'grid' : 'none' ?>;">
                         <?php foreach ($items as $item): ?>
                             <div class="catalog-card">
-                                <div class="catalog-card-header" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' title="Click to view/edit details">
+                                <div class="catalog-card-header" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' title="Click to view/edit details">
                                     <?php if ($item->image_path): ?>
                                         <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" class="catalog-card-img" loading="lazy">
                                     <?php else: ?>
@@ -752,8 +841,6 @@ $activeNav = 'inventory';
 
                                         <?php if ($item->status === 'out_of_stock' || (float)$item->quantity <= 0): ?>
                                             <span class="status status-out-of-stock" style="font-size:11px;">Out of stock</span>
-                                        <?php elseif ($item->status === 'low_stock' || ($item->minimum_threshold !== null && (float)$item->quantity <= (float)$item->minimum_threshold)): ?>
-                                            <span class="status status-low-stock" style="font-size:11px;">Low stock</span>
                                         <?php else: ?>
                                             <span class="status status-in-stock" style="font-size:11px;">In stock</span>
                                         <?php endif; ?>
@@ -761,11 +848,8 @@ $activeNav = 'inventory';
                                 </div>
 
                                 <div class="catalog-card-body">
-                                    <div class="catalog-card-title-row" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                    <div class="catalog-card-title-row" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
                                         <h4 class="catalog-card-title"><?= e($item->name) ?></h4>
-                                        <?php if ($item->sku): ?>
-                                            <span class="catalog-card-sku">SKU: <?= e($item->sku) ?></span>
-                                        <?php endif; ?>
                                     </div>
 
                                     <div class="catalog-meta-row">
@@ -780,29 +864,15 @@ $activeNav = 'inventory';
                                                 <span style="font-size:12px;font-weight:600;color:#556c5e;"><?= e($item->unit) ?></span>
                                             </div>
                                             <div style="font-size:11px;color:#6f7b72;">
-                                                <?php if ($item->minimum_threshold !== null): ?>
-                                                    Min Alert: <strong><?= (float) $item->minimum_threshold ?> <?= e($item->unit) ?></strong>
-                                                <?php else: ?>
-                                                    Min Alert: <em>None</em>
-                                                <?php endif; ?>
+                                                <?= (float) $item->quantity > 0 ? 'Available' : 'Out of stock' ?>
                                             </div>
                                         </div>
                                         <?php
                                             $qty = (float) $item->quantity;
-                                            $thresh = $item->minimum_threshold !== null ? (float) $item->minimum_threshold : null;
-                                            $barPct = 100;
-                                            $barColor = '#16a34a';
-                                            if ($qty <= 0) {
-                                                $barPct = 0;
-                                                $barColor = '#dc2626';
-                                            } elseif ($thresh !== null && $thresh > 0) {
-                                                $barPct = max(5, min(100, ($qty / ($thresh * 2)) * 100));
-                                                if ($qty <= $thresh) {
-                                                    $barColor = '#d97706';
-                                                }
-                                            }
+                                            $barPct = $qty > 0 ? 100 : 0;
+                                            $barColor = $qty > 0 ? '#16a34a' : '#dc2626';
                                         ?>
-                                        <div class="catalog-stock-bar-wrap" title="Stock availability ratio">
+                                        <div class="catalog-stock-bar-wrap" title="Stock availability">
                                             <div class="catalog-stock-bar" style="width: <?= $barPct ?>%; background: <?= $barColor ?>;"></div>
                                         </div>
                                     </div>
@@ -825,7 +895,7 @@ $activeNav = 'inventory';
                                 </div>
 
                                 <div class="catalog-card-actions">
-                                    <div style="display:inline-flex;gap:4px;">
+                                    <div class="action-stock-pair">
                                         <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
                                             + In
                                         </button>
@@ -834,22 +904,22 @@ $activeNav = 'inventory';
                                         </button>
                                     </div>
 
-                                    <div style="display:inline-flex;gap:4px;align-items:center;">
+                                    <div style="display:inline-flex;gap:5px;align-items:center;">
                                         <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                            <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="Automatically live on Marketplace & Business Directory">
+                                            <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="View on Marketplace">
                                                 Market
                                             </a>
                                         <?php else: ?>
-                                            <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Forward to EcoCycle Helper: Recommendations & Recycling Centres">
+                                            <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Open in EcoCycle Helper">
                                                 Helper
                                             </a>
                                         <?php endif; ?>
 
-                                        <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                        <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
                                             Edit
                                         </button>
 
-                                        <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
+                                        <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;margin:0;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
                                             <?= csrf_field() ?>
                                             <?= method_field('DELETE') ?>
                                             <button type="submit" class="btn-delete" title="Delete item">Delete</button>
@@ -868,12 +938,19 @@ $activeNav = 'inventory';
                         <span class="signin-brand-mark" style="margin:0 auto 12px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                         <h3 style="margin:0 0 6px;font-size:16px;color:#123321;">No materials found in inventory</h3>
                         <p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;">Add your secondary materials, production cutoffs, or durable assets with photos to manage stock and share with partners.</p>
-                        <button type="button" class="btn-add-primary" onclick="openAddModal()">+ Add New Item</button>
+                        <button type="button" class="btn-add-primary" onclick="openAddModal()">Add New Item</button>
                     </div>
                 <?php endif; ?>
             </section>
         </main>
     </div>
+
+<!-- Shared Dynamic Category Suggestions -->
+<datalist id="existing_categories_list">
+    <?php foreach ($categories as $cat): ?>
+        <option value="<?= e($cat) ?>"></option>
+    <?php endforeach; ?>
+</datalist>
 
 <!-- Add Inventory Modal -->
 <div class="modal-backdrop" id="add-modal" style="display:none;" onclick="if(event.target === this) closeAddModal()">
@@ -884,10 +961,10 @@ $activeNav = 'inventory';
         </div>
         <form method="POST" action="<?= route('business.inventory.store') ?>" id="add_inventory_form" enctype="multipart/form-data" onsubmit="return validateInventoryAddForm(this)">
             <?= csrf_field() ?>
-            <!-- Hidden inputs populated dynamically -->
+            <!-- Hidden inputs populated dynamically after Material Analysis -->
             <input type="hidden" name="saved_images" id="add_saved_images" value="">
+            <input type="hidden" name="saved_image_slots" id="add_saved_image_slots" value="">
             <input type="hidden" name="analysis_token" id="add_analysis_token" value="">
-            <input type="hidden" name="category" id="add_category_hidden" value="Other">
             <input type="hidden" name="reusability" id="add_reusability_hidden" value="">
             <input type="hidden" name="redirect_to" id="add_redirect_to" value="helper">
             <input type="hidden" name="publish_to_marketplace" id="add_publish_to_marketplace" value="0">
@@ -895,25 +972,22 @@ $activeNav = 'inventory';
             <div class="modal-body">
                 <!-- ==================== STAGE 1: Material Details & Photos ==================== -->
                 <div id="add_stage_1">
-                    <!-- 1. Material Photos (Min 1, Max 3) -->
+                    <!-- 1. Material Photos (3 Independent Slots: Image 1, Image 2, Image 3) -->
                     <div class="form-group" style="margin-bottom:20px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                             <label style="margin:0;font-size:13px;font-weight:700;color:#18422d;">
-                                Material Photos <span style="color:#b91c1c;">*</span> <span style="font-weight:500;color:#64748b;">(1 to 3 photos)</span>
+                                Material Photos <span style="color:#b91c1c;">*</span> <span style="font-weight:500;color:#64748b;">(1 to 3 images)</span>
                             </label>
                             <span id="add_img_counter" style="font-size:12px;font-weight:600;color:#64748b;">0 of 3 selected</span>
                         </div>
 
                         <div class="inv-photo-uploader-box" id="add_photo_uploader_box">
-                            <input type="file" id="add_images_form_input" name="images[]" multiple style="display:none;">
-                            <input type="file" id="add_images_picker" accept="image/png,image/jpeg,image/webp,image/jpg" multiple style="display:none;" onchange="handleNewAddImages(this)">
+                            <input type="file" id="add_slot_input_0" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(0, this)">
+                            <input type="file" id="add_slot_input_1" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(1, this)">
+                            <input type="file" id="add_slot_input_2" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(2, this)">
 
-                            <div class="inv-photo-top-bar">
-                                <button type="button" class="btn-choose-photos" id="btn_add_photos" onclick="document.getElementById('add_images_picker').click()">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                    <span>Upload Photos</span>
-                                </button>
-                                <span class="inv-photo-hint">Upload 1 to 3 photos. First photo is used as cover image.</span>
+                            <div class="inv-photo-hint" style="margin-bottom:12px;display:block;font-size:12px;color:#475569;">
+                                Upload up to 3 independent images. Each slot stores its own photo (Image 1 is the cover image).
                             </div>
 
                             <div class="inv-slots-grid-3" id="add_slots_grid">
@@ -921,7 +995,7 @@ $activeNav = 'inventory';
                             </div>
 
                             <div id="add_img_error" style="display:none;margin-top:10px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:600;">
-                                Please add at least 1 photo for this material (minimum 1, maximum 3 photos required).
+                                Please upload at least 1 photo for this material (maximum 3 photos).
                             </div>
                         </div>
                     </div>
@@ -968,18 +1042,30 @@ $activeNav = 'inventory';
                 <div id="add_stage_2" style="display:none;">
                     <!-- Material Analysis Result Container -->
                     <div class="add-rect-box" style="margin-bottom:20px;">
-                        <div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;">
                             <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Material Analysis</h4>
+                            <button type="button" id="btn_retry_analysis" class="add-btn-utility" onclick="startGeminiAnalysis()" style="display:none;">
+                                Retry Analysis
+                            </button>
+                        </div>
+
+                        <div id="ai_category_review_notice" style="display:none;margin-bottom:14px;padding:12px 14px;background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-size:12.5px;line-height:1.5;">
+                            The material category could not be confidently identified from the provided details. You may click <strong>Retry Analysis</strong> or enter the appropriate category below before continuing.
                         </div>
 
                         <div class="add-grid-2" style="margin-bottom:14px;">
                             <div class="add-rect-card">
-                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Material Category</div>
-                                <div id="ai_result_category" style="font-size:14px;font-weight:700;color:#0f172a;">-</div>
+                                <label for="add_category_input" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;">
+                                    Suggested Category <span style="color:#b91c1c;">*</span>
+                                </label>
+                                <input id="add_category_input" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter or confirm material category" class="add-input-field" style="font-weight:700;color:#0f172a;padding:8px 10px;font-size:13.5px;">
+                                <div id="ai_category_hint" style="font-size:11px;color:#64748b;margin-top:5px;">
+                                    Review and confirm or adjust the detected category before proceeding.
+                                </div>
                             </div>
                             <div class="add-rect-card">
-                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Classification</div>
-                                <div id="ai_result_classification" style="font-size:14px;font-weight:700;color:#18422d;">-</div>
+                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Classification</div>
+                                <div id="ai_result_classification" style="font-size:14px;font-weight:700;color:#18422d;padding-top:6px;">-</div>
                             </div>
                         </div>
 
@@ -1138,25 +1224,25 @@ $activeNav = 'inventory';
             <?= csrf_field() ?>
             <?= method_field('PUT') ?>
             <div class="modal-body">
-                <!-- Update Photos with Explicit Add Button & Slots -->
+                <!-- Update Photos: 3 Independent Image Slots -->
                 <div class="form-group">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                         <label style="margin:0;font-weight:700;color:#18422d;">
-                            Update Material Photos <small style="font-weight:500;color:#556c5e;">(1 to 3 images - Optional)</small>
+                            Material Photos <small style="font-weight:500;color:#556c5e;">(1 to 3 independent images)</small>
                         </label>
-                        <span id="edit_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">Leave empty to keep current photos</span>
+                        <span id="edit_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">0 of 3 images</span>
                     </div>
 
                     <div class="inv-photo-uploader-box" id="edit_photo_uploader_box">
-                        <input type="file" id="edit_images_form_input" name="images[]" multiple style="display:none;">
-                        <input type="file" id="edit_images_picker" accept="image/png,image/jpeg,image/webp,image/jpg" multiple style="display:none;" onchange="handleNewEditImages(this)">
+                        <input type="file" id="edit_slot_input_0" name="image_1" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleEditSlotFile(0, this)">
+                        <input type="file" id="edit_slot_input_1" name="image_2" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleEditSlotFile(1, this)">
+                        <input type="file" id="edit_slot_input_2" name="image_3" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleEditSlotFile(2, this)">
+                        <input type="hidden" id="edit_remove_image_0" name="remove_image_1" value="0">
+                        <input type="hidden" id="edit_remove_image_1" name="remove_image_2" value="0">
+                        <input type="hidden" id="edit_remove_image_2" name="remove_image_3" value="0">
 
-                        <div class="inv-photo-top-bar">
-                            <button type="button" class="btn-choose-photos" id="btn_edit_photos" onclick="document.getElementById('edit_images_picker').click()">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                <span>+ Add / Replace Photos</span>
-                            </button>
-                            <span class="inv-photo-hint">Upload new photos (up to 3) to replace current photos. Slot 1 is cover photo.</span>
+                        <div class="inv-photo-hint" style="margin-bottom:12px;display:block;font-size:12px;color:#475569;">
+                            Replace or remove individual image slots independently without affecting other slots.
                         </div>
 
                         <div class="inv-slots-grid-3" id="edit_slots_grid">
@@ -1176,22 +1262,12 @@ $activeNav = 'inventory';
                 </div>
                 <div class="form-row-2">
                     <div class="form-group">
-                        <label for="edit_sku">SKU / Code</label>
-                        <input id="edit_sku" name="sku" type="text">
+                        <label for="edit_category">Material Category *</label>
+                        <input id="edit_category" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter material category">
                     </div>
                     <div class="form-group">
-                        <label for="edit_category">Category *</label>
-                        <select id="edit_category" name="category" required>
-                            <option value="Packaging & paper">Packaging & paper</option>
-                            <option value="Furniture & wood products">Furniture & wood products</option>
-                            <option value="Textiles & apparel">Textiles & apparel</option>
-                            <option value="Electronics & electrical">Electronics & electrical</option>
-                            <option value="Metal & fabrication">Metal & fabrication</option>
-                            <option value="Plastics & rubber">Plastics & rubber</option>
-                            <option value="Chemicals & lubricants">Chemicals & lubricants</option>
-                            <option value="Food & beverage organic">Food & beverage organic</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <label for="edit_unit">Unit of Measure *</label>
+                        <input id="edit_unit" name="unit" type="text" required>
                     </div>
                 </div>
 
@@ -1252,16 +1328,6 @@ $activeNav = 'inventory';
                     </div>
                 </div>
 
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label for="edit_unit">Unit of Measure *</label>
-                        <input id="edit_unit" name="unit" type="text" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_threshold">Low Stock Threshold</label>
-                        <input id="edit_threshold" name="minimum_threshold" type="number" step="0.01" min="0">
-                    </div>
-                </div>
                 <div class="form-group">
                     <label for="edit_notes">Notes</label>
                     <textarea id="edit_notes" name="notes" rows="2"></textarea>
@@ -1328,11 +1394,11 @@ $activeNav = 'inventory';
                     From Inventory: <strong id="lm_source_name"></strong> &middot; Available Stock: <span id="lm_source_stock" style="color:#176b40;font-weight:700;"></span>
                 </p>
 
-                <!-- Photos Upload for Marketplace Listing with 5 slots & + Add Photos button -->
+                <!-- Photos Upload for Marketplace Listing (max 3 slots) -->
                 <div class="form-group">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                         <label style="margin:0;font-weight:700;color:#18422d;">
-                            Material Photos <small style="font-weight:500;color:#556c5e;">(1 to 5 images - Inherits inventory photos by default)</small>
+                            Material Photos <small style="font-weight:500;color:#556c5e;">(1 to 3 images - Inherits inventory photos by default)</small>
                         </label>
                         <span id="lm_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">Using inventory photos</span>
                     </div>
@@ -1344,12 +1410,12 @@ $activeNav = 'inventory';
                         <div class="inv-photo-top-bar">
                             <button type="button" class="btn-choose-photos" id="btn_lm_photos" onclick="document.getElementById('lm_images_picker').click()">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                <span>+ Add / Replace Photos</span>
+                                <span>Add / Replace Photos</span>
                             </button>
-                            <span class="inv-photo-hint">Add up to 5 photos. Slot 1 is the cover photo.</span>
+                            <span class="inv-photo-hint">Add up to 3 photos. Image 1 is the cover photo.</span>
                         </div>
 
-                        <div class="inv-slots-grid" id="lm_slots_grid">
+                        <div class="inv-slots-grid-3" id="lm_slots_grid">
                             <!-- Slots rendered dynamically -->
                         </div>
                     </div>
@@ -1363,17 +1429,7 @@ $activeNav = 'inventory';
                 <div class="form-row-2">
                     <div class="form-group">
                         <label for="lm_category">Category *</label>
-                        <select id="lm_category" name="category" required>
-                            <option value="Packaging & paper">Packaging &amp; paper</option>
-                            <option value="Furniture & wood products">Furniture &amp; wood products</option>
-                            <option value="Textiles & apparel">Textiles &amp; apparel</option>
-                            <option value="Electronics & electrical">Electronics &amp; electrical</option>
-                            <option value="Metal & fabrication">Metal &amp; fabrication</option>
-                            <option value="Plastics & rubber">Plastics &amp; rubber</option>
-                            <option value="Chemicals & lubricants">Chemicals &amp; lubricants</option>
-                            <option value="Food & beverage organic">Food &amp; beverage organic</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <input id="lm_category" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter material category">
                     </div>
 
                     <div class="form-group">
@@ -1526,9 +1582,15 @@ $activeNav = 'inventory';
 </div>
 
 <script>
-// DataTransfer stores for Add and Edit Modals
-var addPhotosTransfer = new DataTransfer();
-var editPhotosTransfer = new DataTransfer();
+// Independent 3-slot image state for Add Modal (Image 1, Image 2, Image 3)
+var addPhotoSlots = [null, null, null];
+var addPhotoPreviews = [null, null, null];
+
+// Independent 3-slot image state for Edit Modal (Image 1, Image 2, Image 3)
+var editSlotInitial = [null, null, null];
+var editSlotNewFiles = [null, null, null];
+var editSlotNewPreviews = [null, null, null];
+var editSlotRemoved = [false, false, false];
 
 function toggleReusabilityNotice(prefix, val) {
     var notice = document.getElementById(prefix + '_reusability_scrap_notice');
@@ -1601,9 +1663,25 @@ function setAddModalStageActions(stage) {
     }
 }
 
+function resetAddPhotoInputs() {
+    for (var i = 0; i < 3; i++) {
+        var inp = document.getElementById('add_slot_input_' + i);
+        if (inp) inp.value = '';
+    }
+}
+
+function getAddPhotoCount() {
+    var count = 0;
+    for (var i = 0; i < 3; i++) {
+        if (addPhotoSlots[i]) count++;
+    }
+    return count;
+}
+
 function openAddModal() {
-    addPhotosTransfer = new DataTransfer();
-    renderAddSlots();
+    addPhotoSlots = [null, null, null];
+    addPhotoPreviews = [null, null, null];
+    resetAddPhotoInputs();
     addAnalysisCompleted = false;
 
     var form = document.getElementById('add_inventory_form');
@@ -1612,11 +1690,20 @@ function openAddModal() {
     var savedImgInput = document.getElementById('add_saved_images');
     if (savedImgInput) savedImgInput.value = '';
 
+    var savedSlotsInput = document.getElementById('add_saved_image_slots');
+    if (savedSlotsInput) savedSlotsInput.value = '';
+
     var tokenInput = document.getElementById('add_analysis_token');
     if (tokenInput) tokenInput.value = '';
 
-    var catInput = document.getElementById('add_category_hidden');
-    if (catInput) catInput.value = 'Other';
+    var catInput = document.getElementById('add_category_input');
+    if (catInput) catInput.value = '';
+
+    var reviewNotice = document.getElementById('ai_category_review_notice');
+    if (reviewNotice) reviewNotice.style.display = 'none';
+
+    var retryBtn = document.getElementById('btn_retry_analysis');
+    if (retryBtn) retryBtn.style.display = 'none';
 
     var reusabilityInput = document.getElementById('add_reusability_hidden');
     if (reusabilityInput) reusabilityInput.value = '';
@@ -1626,6 +1713,8 @@ function openAddModal() {
 
     var redInput = document.getElementById('add_redirect_to');
     if (redInput) redInput.value = 'helper';
+
+    renderAddSlots();
 
     document.getElementById('add_stage_1').style.display = 'block';
     document.getElementById('add_stage_loading').style.display = 'none';
@@ -1646,114 +1735,119 @@ function closeAddModal() {
     document.body.style.overflow = '';
 }
 
+function triggerAddSlotInput(slotIndex) {
+    var inp = document.getElementById('add_slot_input_' + slotIndex);
+    if (inp) {
+        inp.value = '';
+        inp.click();
+    }
+}
+
+function handleAddSlotFile(slotIndex, input) {
+    if (!input.files || input.files.length === 0) return;
+    var file = input.files[0];
+
+    if (!file.type || !file.type.match('image.*')) {
+        alert('File "' + file.name + '" is not a valid image.');
+        input.value = '';
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File "' + file.name + '" exceeds the 5MB size limit.');
+        input.value = '';
+        return;
+    }
+
+    // Store ONLY in this exact slot without affecting any other slot
+    addPhotoSlots[slotIndex] = file;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        addPhotoPreviews[slotIndex] = e.target.result;
+        renderAddSlots();
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearAddPhotoSlot(slotIndex) {
+    addPhotoSlots[slotIndex] = null;
+    addPhotoPreviews[slotIndex] = null;
+    var inp = document.getElementById('add_slot_input_' + slotIndex);
+    if (inp) inp.value = '';
+    renderAddSlots();
+}
+
 function renderAddSlots() {
     var grid = document.getElementById('add_slots_grid');
     var counter = document.getElementById('add_img_counter');
-    var btn = document.getElementById('btn_add_photos');
     var err = document.getElementById('add_img_error');
     if (err) err.style.display = 'none';
 
-    var files = addPhotosTransfer.files;
-    var count = files.length;
-    var maxPhotos = 3;
-
+    var count = getAddPhotoCount();
     if (counter) {
-        counter.textContent = count + ' of ' + maxPhotos + ' selected' + (count === 0 ? ' (Min 1 required)' : '');
+        counter.textContent = count + ' of 3 selected' + (count === 0 ? ' (Min 1 required)' : '');
         counter.style.color = count >= 1 ? '#18422d' : '#b91c1c';
-    }
-
-    var formInput = document.getElementById('add_images_form_input');
-    if (formInput) {
-        formInput.files = addPhotosTransfer.files;
-    }
-
-    if (btn) {
-        btn.disabled = count >= maxPhotos;
-        btn.style.opacity = count >= maxPhotos ? '0.5' : '1';
-        btn.style.cursor = count >= maxPhotos ? 'not-allowed' : 'pointer';
     }
 
     if (!grid) return;
     grid.innerHTML = '';
 
-    for (var i = 0; i < count; i++) {
-        (function(index) {
-            var file = files[index];
-            var card = document.createElement('div');
-            card.className = 'inv-slot-card';
+    var slotLabels = ['Image 1 (Cover)', 'Image 2', 'Image 3'];
 
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
-                    (index === 0 ? '<span class="inv-slot-cover-badge">Cover Photo</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;font-weight:700;">#' + (index + 1) + '</span>') +
-                    '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeAddPhoto(' + index + ')">✕</button>';
-            };
-            reader.readAsDataURL(file);
-            grid.appendChild(card);
-        })(i);
+    for (var idx = 0; idx < 3; idx++) {
+        (function(slotIndex) {
+            var wrapper = document.createElement('div');
+            wrapper.className = 'inv-slot-wrapper';
+
+            var header = document.createElement('div');
+            header.className = 'inv-slot-header';
+            header.innerHTML = '<span>' + slotLabels[slotIndex] + '</span>' +
+                '<span style="font-weight:600;color:' + (addPhotoSlots[slotIndex] ? '#18422d' : '#94a3b8') + ';">' + (addPhotoSlots[slotIndex] ? 'Selected' : 'Empty') + '</span>';
+            wrapper.appendChild(header);
+
+            var preview = document.createElement('div');
+            if (addPhotoSlots[slotIndex] && addPhotoPreviews[slotIndex]) {
+                preview.className = 'inv-slot-preview-area';
+                preview.title = 'Click to replace ' + slotLabels[slotIndex];
+                preview.onclick = function() { triggerAddSlotInput(slotIndex); };
+                preview.innerHTML = '<img src="' + addPhotoPreviews[slotIndex] + '" alt="' + slotLabels[slotIndex] + '">';
+            } else {
+                preview.className = 'inv-slot-preview-area empty-slot';
+                preview.title = 'Click to upload ' + slotLabels[slotIndex];
+                preview.onclick = function() { triggerAddSlotInput(slotIndex); };
+                preview.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Select Image</span>';
+            }
+            wrapper.appendChild(preview);
+
+            var actions = document.createElement('div');
+            actions.className = 'inv-slot-actions';
+            if (addPhotoSlots[slotIndex]) {
+                var btnReplace = document.createElement('button');
+                btnReplace.type = 'button';
+                btnReplace.className = 'inv-slot-action-btn';
+                btnReplace.textContent = 'Replace';
+                btnReplace.onclick = function() { triggerAddSlotInput(slotIndex); };
+
+                var btnRemove = document.createElement('button');
+                btnRemove.type = 'button';
+                btnRemove.className = 'inv-slot-action-btn btn-slot-remove';
+                btnRemove.textContent = 'Remove';
+                btnRemove.onclick = function() { clearAddPhotoSlot(slotIndex); };
+
+                actions.appendChild(btnReplace);
+                actions.appendChild(btnRemove);
+            } else {
+                var btnUpload = document.createElement('button');
+                btnUpload.type = 'button';
+                btnUpload.className = 'inv-slot-action-btn btn-slot-upload-full';
+                btnUpload.textContent = 'Upload';
+                btnUpload.onclick = function() { triggerAddSlotInput(slotIndex); };
+                actions.appendChild(btnUpload);
+            }
+            wrapper.appendChild(actions);
+
+            grid.appendChild(wrapper);
+        })(idx);
     }
-
-    if (count < maxPhotos) {
-        var addSlot = document.createElement('div');
-        addSlot.className = 'inv-slot-card empty-slot';
-        addSlot.title = 'Click to add photo';
-        addSlot.onclick = function() {
-            document.getElementById('add_images_picker').click();
-        };
-        addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add Photo</span>';
-        grid.appendChild(addSlot);
-
-        for (var j = count + 1; j < maxPhotos; j++) {
-            var emptySlot = document.createElement('div');
-            emptySlot.className = 'inv-slot-card empty-slot';
-            emptySlot.style.opacity = '0.45';
-            emptySlot.style.cursor = 'pointer';
-            emptySlot.title = 'Empty slot ' + (j + 1) + ' (click to add)';
-            emptySlot.onclick = function() {
-                document.getElementById('add_images_picker').click();
-            };
-            emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (j + 1) + '</span>';
-            grid.appendChild(emptySlot);
-        }
-    }
-}
-
-function handleNewAddImages(picker) {
-    if (!picker.files || picker.files.length === 0) return;
-
-    var newFiles = picker.files;
-    var maxPhotos = 3;
-    for (var i = 0; i < newFiles.length; i++) {
-        if (addPhotosTransfer.files.length >= maxPhotos) {
-            alert('Maximum 3 photos allowed for 1 item. Additional photos were not added.');
-            break;
-        }
-        var file = newFiles[i];
-        if (!file.type.match('image.*')) {
-            alert('File "' + file.name + '" is not a valid image.');
-            continue;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-            alert('File "' + file.name + '" exceeds the 5MB size limit.');
-            continue;
-        }
-        addPhotosTransfer.items.add(file);
-    }
-
-    picker.value = '';
-    renderAddSlots();
-}
-
-function removeAddPhoto(indexToRemove) {
-    var newTransfer = new DataTransfer();
-    var files = addPhotosTransfer.files;
-    for (var i = 0; i < files.length; i++) {
-        if (i !== indexToRemove) {
-            newTransfer.items.add(files[i]);
-        }
-    }
-    addPhotosTransfer = newTransfer;
-    renderAddSlots();
 }
 
 function startGeminiAnalysis() {
@@ -1782,10 +1876,10 @@ function startGeminiAnalysis() {
         document.getElementById('add_unit').focus();
         return;
     }
-    if (addPhotosTransfer.files.length < 1) {
+    if (getAddPhotoCount() < 1) {
         var err = document.getElementById('add_img_error');
         if (err) err.style.display = 'block';
-        alert('Please add at least 1 photo for material analysis (minimum 1, maximum 3 photos).');
+        alert('Please upload at least 1 photo for material analysis (minimum 1, maximum 3 photos).');
         return;
     }
 
@@ -1803,8 +1897,11 @@ function startGeminiAnalysis() {
     formData.append('quantity', qty);
     formData.append('unit', unit);
 
-    for (var i = 0; i < addPhotosTransfer.files.length; i++) {
-        formData.append('images[]', addPhotosTransfer.files[i]);
+    // Send each populated slot under its independent slot key (image_1, image_2, image_3)
+    for (var i = 0; i < 3; i++) {
+        if (addPhotoSlots[i]) {
+            formData.append('image_' + (i + 1), addPhotoSlots[i]);
+        }
     }
 
     fetch('<?= route('business.inventory.ai-analyze') ?>', {
@@ -1835,19 +1932,35 @@ function startGeminiAnalysis() {
 
         addAnalysisCompleted = true;
 
+        // Store pre-saved slots cleanly (inputs have no name attribute so they are never re-uploaded on form submit)
         if (data.saved_images && data.saved_images.length > 0) {
             document.getElementById('add_saved_images').value = JSON.stringify(data.saved_images);
+        }
+        if (data.saved_image_slots && data.saved_image_slots.length === 3) {
+            document.getElementById('add_saved_image_slots').value = JSON.stringify(data.saved_image_slots);
         }
         if (data.analysis_token) {
             document.getElementById('add_analysis_token').value = data.analysis_token;
         }
 
         var analysis = data.analysis;
-        var cat = analysis.suggested_category || 'Other';
-        document.getElementById('add_category_hidden').value = cat;
+        var suggestedCat = (analysis.suggested_category || '').trim();
+        var needsReview = Boolean(analysis.needs_category_review) || analysis.category_confidence === 'low' || suggestedCat === '';
 
-        var catEl = document.getElementById('ai_result_category');
-        if (catEl) catEl.textContent = cat;
+        var catInput = document.getElementById('add_category_input');
+        if (catInput) {
+            catInput.value = suggestedCat;
+        }
+
+        var reviewNotice = document.getElementById('ai_category_review_notice');
+        if (reviewNotice) {
+            reviewNotice.style.display = needsReview ? 'block' : 'none';
+        }
+
+        var retryBtn = document.getElementById('btn_retry_analysis');
+        if (retryBtn) {
+            retryBtn.style.display = 'inline-block';
+        }
 
         var isReusable = (analysis.suggested_reusability === 'reusable');
         var classEl = document.getElementById('ai_result_classification');
@@ -1876,6 +1989,10 @@ function startGeminiAnalysis() {
         document.getElementById('add_stage_2').style.display = 'block';
         selectDecision(isReusable ? 'reusable' : 'not_reusable');
         setAddModalStageActions('stage_2');
+
+        if (needsReview && catInput) {
+            catInput.focus();
+        }
     })
     .catch(function(err) {
         document.getElementById('add_stage_loading').style.display = 'none';
@@ -1934,8 +2051,15 @@ function selectDecision(choice) {
 
 function proceedToListingDetails() {
     var name = document.getElementById('add_name').value.trim();
-    var cat = document.getElementById('add_category_hidden').value;
+    var catInput = document.getElementById('add_category_input');
+    var cat = catInput ? catInput.value.trim() : '';
     var qty = document.getElementById('add_quantity').value.trim();
+
+    if (!cat) {
+        alert('Please enter or confirm the Material Category before proceeding.');
+        if (catInput) catInput.focus();
+        return;
+    }
 
     document.getElementById('stage3_summary_name').textContent = name;
     document.getElementById('stage3_summary_category').textContent = cat;
@@ -2047,11 +2171,19 @@ function validateInventoryAddForm(form) {
         return false;
     }
 
+    var catInput = document.getElementById('add_category_input');
+    if (!catInput || !catInput.value.trim()) {
+        alert('Please enter or confirm the Material Category before saving.');
+        if (catInput) catInput.focus();
+        return false;
+    }
+
     var savedImagesVal = document.getElementById('add_saved_images') ? document.getElementById('add_saved_images').value : '';
-    if (addPhotosTransfer.files.length < 1 && !savedImagesVal) {
+    var savedSlotsVal = document.getElementById('add_saved_image_slots') ? document.getElementById('add_saved_image_slots').value : '';
+    if (getAddPhotoCount() < 1 && !savedImagesVal && !savedSlotsVal) {
         var err = document.getElementById('add_img_error');
         if (err) err.style.display = 'block';
-        alert('Please add at least 1 photo for this material (minimum 1, maximum 3 photos required).');
+        alert('Please upload at least 1 photo for this material (minimum 1, maximum 3 photos required).');
         return false;
     }
 
@@ -2082,16 +2214,12 @@ function validateInventoryAddForm(form) {
     return true;
 }
 
-// Edit Modal Functions
-var editInitialImages = [];
-
-function openEditModal(id, name, sku, category, unit, threshold, notes, reusability, description, existingImages, price, listingType, condition) {
+// Edit Modal Functions (3 Independent Image Slots)
+function openEditModal(id, name, category, unit, notes, reusability, description, existingImageSlots, price, listingType, condition) {
     document.getElementById('edit-form').action = '/business/inventory/' + id;
     document.getElementById('edit_name').value = name;
-    document.getElementById('edit_sku').value = sku || '';
-    document.getElementById('edit_category').value = category;
+    document.getElementById('edit_category').value = category || '';
     document.getElementById('edit_unit').value = unit;
-    document.getElementById('edit_threshold').value = (threshold !== null && threshold !== undefined && threshold !== 'null') ? threshold : '';
     document.getElementById('edit_notes').value = notes || '';
     if (document.getElementById('edit_description')) {
         document.getElementById('edit_description').value = description || '';
@@ -2117,8 +2245,20 @@ function openEditModal(id, name, sku, category, unit, threshold, notes, reusabil
         if (el2) el2.checked = true;
         toggleReusabilityNotice('edit', 'reusable');
     }
-    editPhotosTransfer = new DataTransfer();
-    editInitialImages = existingImages || [];
+
+    var slotsArr = Array.isArray(existingImageSlots) ? existingImageSlots : [];
+    editSlotInitial = [slotsArr[0] || null, slotsArr[1] || null, slotsArr[2] || null];
+    editSlotNewFiles = [null, null, null];
+    editSlotNewPreviews = [null, null, null];
+    editSlotRemoved = [false, false, false];
+
+    for (var i = 0; i < 3; i++) {
+        var fileInp = document.getElementById('edit_slot_input_' + i);
+        if (fileInp) fileInp.value = '';
+        var remInp = document.getElementById('edit_remove_image_' + i);
+        if (remInp) remInp.value = '0';
+    }
+
     renderEditSlots();
     var modal = document.getElementById('edit-modal');
     modal.style.display = 'flex';
@@ -2132,146 +2272,134 @@ function closeEditModal() {
     document.body.style.overflow = '';
 }
 
+function triggerEditSlotInput(slotIndex) {
+    var inp = document.getElementById('edit_slot_input_' + slotIndex);
+    if (inp) inp.click();
+}
+
+function handleEditSlotFile(slotIndex, input) {
+    if (!input.files || input.files.length === 0) return;
+    var file = input.files[0];
+
+    if (!file.type || !file.type.match('image.*')) {
+        alert('File "' + file.name + '" is not a valid image.');
+        input.value = '';
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File "' + file.name + '" exceeds the 5MB size limit.');
+        input.value = '';
+        return;
+    }
+
+    editSlotNewFiles[slotIndex] = file;
+    editSlotRemoved[slotIndex] = false;
+    var remInp = document.getElementById('edit_remove_image_' + slotIndex);
+    if (remInp) remInp.value = '0';
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        editSlotNewPreviews[slotIndex] = e.target.result;
+        renderEditSlots();
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearEditPhotoSlot(slotIndex) {
+    editSlotNewFiles[slotIndex] = null;
+    editSlotNewPreviews[slotIndex] = null;
+    editSlotRemoved[slotIndex] = true;
+
+    var fileInp = document.getElementById('edit_slot_input_' + slotIndex);
+    if (fileInp) fileInp.value = '';
+    var remInp = document.getElementById('edit_remove_image_' + slotIndex);
+    if (remInp) remInp.value = '1';
+
+    renderEditSlots();
+}
+
 function renderEditSlots() {
     var grid = document.getElementById('edit_slots_grid');
     var counter = document.getElementById('edit_img_counter');
-    var btn = document.getElementById('btn_edit_photos');
-    var files = editPhotosTransfer.files;
-    var count = files.length;
-
     if (!grid) return;
+
     grid.innerHTML = '';
+    var slotLabels = ['Image 1 (Cover)', 'Image 2', 'Image 3'];
+    var activeCount = 0;
 
-    if (count > 0) {
-        if (counter) {
-            counter.textContent = count + ' of 5 new photos selected';
-            counter.style.color = '#18422d';
-        }
-        for (var i = 0; i < count; i++) {
-            (function(index) {
-                var file = files[index];
-                var card = document.createElement('div');
-                card.className = 'inv-slot-card';
+    for (var idx = 0; idx < 3; idx++) {
+        (function(slotIndex) {
+            var previewUrl = null;
+            var statusLabel = 'Empty';
 
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
-                        (index === 0 ? '<span class="inv-slot-cover-badge">New Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:0;font-weight:700;">#' + (index + 1) + '</span>') +
-                        '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeEditPhoto(' + index + ')">✕</button>';
-                };
-                reader.readAsDataURL(file);
-                grid.appendChild(card);
-            })(i);
-        }
-
-        if (count < 3) {
-            var addSlot = document.createElement('div');
-            addSlot.className = 'inv-slot-card empty-slot';
-            addSlot.title = 'Click to add more photos';
-            addSlot.onclick = function() {
-                document.getElementById('edit_images_picker').click();
-            };
-            addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
-            grid.appendChild(addSlot);
-
-            for (var j = count + 1; j < 3; j++) {
-                var emptySlot = document.createElement('div');
-                emptySlot.className = 'inv-slot-card empty-slot';
-                emptySlot.style.opacity = '0.45';
-                emptySlot.style.cursor = 'pointer';
-                emptySlot.onclick = function() {
-                    document.getElementById('edit_images_picker').click();
-                };
-                emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (j + 1) + '</span>';
-                grid.appendChild(emptySlot);
+            if (editSlotNewFiles[slotIndex] && editSlotNewPreviews[slotIndex]) {
+                previewUrl = editSlotNewPreviews[slotIndex];
+                statusLabel = 'New';
+                activeCount++;
+            } else if (!editSlotRemoved[slotIndex] && editSlotInitial[slotIndex]) {
+                previewUrl = editSlotInitial[slotIndex];
+                statusLabel = 'Saved';
+                activeCount++;
             }
-        }
-    } else {
-        // Show current existing photos
-        var initCount = editInitialImages.length;
-        if (counter) {
-            counter.textContent = initCount > 0 ? initCount + ' current photos (upload below to replace)' : 'No photos yet';
-            counter.style.color = '#556c5e';
-        }
 
-        for (var k = 0; k < initCount; k++) {
-            var exCard = document.createElement('div');
-            exCard.className = 'inv-slot-card';
-            exCard.innerHTML = '<img src="' + editInitialImages[k] + '" alt="Photo ' + (k + 1) + '">' +
-                (k === 0 ? '<span class="inv-slot-cover-badge">Current Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:0;font-weight:700;">#' + (k + 1) + '</span>');
-            grid.appendChild(exCard);
-        }
+            var wrapper = document.createElement('div');
+            wrapper.className = 'inv-slot-wrapper';
 
-        if (initCount < 3) {
-            var addSlotInit = document.createElement('div');
-            addSlotInit.className = 'inv-slot-card empty-slot';
-            addSlotInit.title = 'Click to add photos';
-            addSlotInit.onclick = function() {
-                document.getElementById('edit_images_picker').click();
-            };
-            addSlotInit.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
-            grid.appendChild(addSlotInit);
+            var header = document.createElement('div');
+            header.className = 'inv-slot-header';
+            header.innerHTML = '<span>' + slotLabels[slotIndex] + '</span>' +
+                '<span style="font-weight:600;color:' + (previewUrl ? '#18422d' : '#94a3b8') + ';">' + statusLabel + '</span>';
+            wrapper.appendChild(header);
 
-            for (var m = initCount + 1; m < 3; m++) {
-                var emptySlotInit = document.createElement('div');
-                emptySlotInit.className = 'inv-slot-card empty-slot';
-                emptySlotInit.style.opacity = '0.45';
-                emptySlotInit.style.cursor = 'pointer';
-                emptySlotInit.onclick = function() {
-                    document.getElementById('edit_images_picker').click();
-                };
-                emptySlotInit.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (m + 1) + '</span>';
-                grid.appendChild(emptySlotInit);
+            var preview = document.createElement('div');
+            if (previewUrl) {
+                preview.className = 'inv-slot-preview-area';
+                preview.title = 'Click to replace ' + slotLabels[slotIndex];
+                preview.onclick = function() { triggerEditSlotInput(slotIndex); };
+                preview.innerHTML = '<img src="' + previewUrl + '" alt="' + slotLabels[slotIndex] + '">';
+            } else {
+                preview.className = 'inv-slot-preview-area empty-slot';
+                preview.title = 'Click to upload ' + slotLabels[slotIndex];
+                preview.onclick = function() { triggerEditSlotInput(slotIndex); };
+                preview.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Select Image</span>';
             }
-        }
+            wrapper.appendChild(preview);
+
+            var actions = document.createElement('div');
+            actions.className = 'inv-slot-actions';
+            if (previewUrl) {
+                var btnReplace = document.createElement('button');
+                btnReplace.type = 'button';
+                btnReplace.className = 'inv-slot-action-btn';
+                btnReplace.textContent = 'Replace';
+                btnReplace.onclick = function() { triggerEditSlotInput(slotIndex); };
+
+                var btnRemove = document.createElement('button');
+                btnRemove.type = 'button';
+                btnRemove.className = 'inv-slot-action-btn btn-slot-remove';
+                btnRemove.textContent = 'Remove';
+                btnRemove.onclick = function() { clearEditPhotoSlot(slotIndex); };
+
+                actions.appendChild(btnReplace);
+                actions.appendChild(btnRemove);
+            } else {
+                var btnUpload = document.createElement('button');
+                btnUpload.type = 'button';
+                btnUpload.className = 'inv-slot-action-btn btn-slot-upload-full';
+                btnUpload.textContent = 'Upload';
+                btnUpload.onclick = function() { triggerEditSlotInput(slotIndex); };
+                actions.appendChild(btnUpload);
+            }
+            wrapper.appendChild(actions);
+
+            grid.appendChild(wrapper);
+        })(idx);
     }
 
-    var formInput = document.getElementById('edit_images_form_input');
-    if (formInput) {
-        formInput.files = editPhotosTransfer.files;
+    if (counter) {
+        counter.textContent = activeCount + ' of 3 images';
+        counter.style.color = activeCount >= 1 ? '#18422d' : '#64748b';
     }
-
-    if (btn) {
-        btn.disabled = count >= 3;
-        btn.style.opacity = count >= 3 ? '0.5' : '1';
-    }
-}
-
-function handleNewEditImages(picker) {
-    if (!picker.files || picker.files.length === 0) return;
-
-    var newFiles = picker.files;
-    for (var i = 0; i < newFiles.length; i++) {
-        if (editPhotosTransfer.files.length >= 3) {
-            alert('Maximum 3 photos allowed.');
-            break;
-        }
-        var file = newFiles[i];
-        if (!file.type.match('image.*')) {
-            alert('File "' + file.name + '" is not an image.');
-            continue;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-            alert('File "' + file.name + '" exceeds the 5MB size limit.');
-            continue;
-        }
-        editPhotosTransfer.items.add(file);
-    }
-
-    picker.value = '';
-    renderEditSlots();
-}
-
-function removeEditPhoto(indexToRemove) {
-    var newTransfer = new DataTransfer();
-    var files = editPhotosTransfer.files;
-    for (var i = 0; i < files.length; i++) {
-        if (i !== indexToRemove) {
-            newTransfer.items.add(files[i]);
-        }
-    }
-    editPhotosTransfer = newTransfer;
-    renderEditSlots();
 }
 
 function openAdjustModal(id, name, unit, currentQty, defaultType) {
@@ -2342,7 +2470,7 @@ function renderLmSlots() {
 
     if (count > 0) {
         if (counter) {
-            counter.textContent = count + ' of 5 custom photos selected';
+            counter.textContent = count + ' of 3 custom photos selected';
             counter.style.color = '#18422d';
         }
 
@@ -2356,24 +2484,24 @@ function renderLmSlots() {
                 reader.onload = function(e) {
                     card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
                         (index === 0 ? '<span class="inv-slot-cover-badge">Listing Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:0;font-weight:700;">#' + (index + 1) + '</span>') +
-                        '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeLmPhoto(' + index + ')">✕</button>';
+                        '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeLmPhoto(' + index + ')">&times;</button>';
                 };
                 reader.readAsDataURL(file);
                 grid.appendChild(card);
             })(i);
         }
 
-        if (count < 5) {
+        if (count < 3) {
             var addSlot = document.createElement('div');
             addSlot.className = 'inv-slot-card empty-slot';
             addSlot.title = 'Click to add more photos';
             addSlot.onclick = function() {
                 document.getElementById('lm_images_picker').click();
             };
-            addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
+            addSlot.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Add</span>';
             grid.appendChild(addSlot);
 
-            for (var j = count + 1; j < 5; j++) {
+            for (var j = count + 1; j < 3; j++) {
                 var emptySlot = document.createElement('div');
                 emptySlot.className = 'inv-slot-card empty-slot';
                 emptySlot.style.opacity = '0.45';
@@ -2381,13 +2509,13 @@ function renderLmSlots() {
                 emptySlot.onclick = function() {
                     document.getElementById('lm_images_picker').click();
                 };
-                emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (j + 1) + '</span>';
+                emptySlot.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Image ' + (j + 1) + '</span>';
                 grid.appendChild(emptySlot);
             }
         }
     } else {
         // Show current inventory images
-        var initCount = lmInitialImages.length;
+        var initCount = Math.min(lmInitialImages.length, 3);
         if (counter) {
             counter.textContent = initCount > 0 ? 'Using ' + initCount + ' inventory photo(s)' : 'No photos in inventory item';
             counter.style.color = '#556c5e';
@@ -2401,17 +2529,17 @@ function renderLmSlots() {
             grid.appendChild(exCard);
         }
 
-        if (initCount < 5) {
+        if (initCount < 3) {
             var addSlotInit = document.createElement('div');
             addSlotInit.className = 'inv-slot-card empty-slot';
             addSlotInit.title = 'Click to add custom photos';
             addSlotInit.onclick = function() {
                 document.getElementById('lm_images_picker').click();
             };
-            addSlotInit.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>';
+            addSlotInit.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Add</span>';
             grid.appendChild(addSlotInit);
 
-            for (var m = initCount + 1; m < 5; m++) {
+            for (var m = initCount + 1; m < 3; m++) {
                 var emptySlotInit = document.createElement('div');
                 emptySlotInit.className = 'inv-slot-card empty-slot';
                 emptySlotInit.style.opacity = '0.45';
@@ -2419,7 +2547,7 @@ function renderLmSlots() {
                 emptySlotInit.onclick = function() {
                     document.getElementById('lm_images_picker').click();
                 };
-                emptySlotInit.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Slot ' + (m + 1) + '</span>';
+                emptySlotInit.innerHTML = '<span style="font-size:11px;color:#94a3b8;">Image ' + (m + 1) + '</span>';
                 grid.appendChild(emptySlotInit);
             }
         }
@@ -2431,8 +2559,8 @@ function renderLmSlots() {
     }
 
     if (btn) {
-        btn.disabled = count >= 5;
-        btn.style.opacity = count >= 5 ? '0.5' : '1';
+        btn.disabled = count >= 3;
+        btn.style.opacity = count >= 3 ? '0.5' : '1';
     }
 }
 
@@ -2441,8 +2569,8 @@ function handleNewLmImages(picker) {
 
     var newFiles = picker.files;
     for (var i = 0; i < newFiles.length; i++) {
-        if (lmPhotosTransfer.files.length >= 5) {
-            alert('Maximum 5 photos allowed. Additional photos were not added.');
+        if (lmPhotosTransfer.files.length >= 3) {
+            alert('Maximum 3 photos allowed. Additional photos were not added.');
             break;
         }
         var file = newFiles[i];

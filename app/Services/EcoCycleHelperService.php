@@ -138,13 +138,14 @@ class EcoCycleHelperService
             return null;
         }
 
-        $configuredModel = config('services.gemini.model', 'gemini-3.1-flash-lite');
-        $modelsToTry = array_unique([
+        $configuredModel = config('services.gemini.model', 'gemini-2.5-flash');
+        $modelsToTry = array_values(array_unique(array_filter([
             $configuredModel,
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
             'gemini-3.1-flash-lite',
-            'gemini-3.5-flash-lite',
             'gemini-flash-lite-latest',
-        ]);
+        ])));
 
         foreach ($modelsToTry as $model) {
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
@@ -190,42 +191,38 @@ class EcoCycleHelperService
     {
         $imageCount = count($images);
         $prompt = <<<PROMPT
-You are EcoCycle AI, an expert industrial circular economy specialist and material waste auditor in Malaysia.
-Analyze the following material submitted by an industrial business:
+You are an industrial circular economy specialist and material waste auditor in Malaysia.
+Analyze the uploaded photo(s) together with the material details submitted by a business:
 
 Material Name: {$name}
 Description: {$description}
 Quantity: {$quantity} {$unit}
 Image Count: {$imageCount}
 
-Evaluate this material thoroughly:
-1. Category must be chosen from ONE of these standard categories:
-   - "Packaging & paper"
-   - "Furniture & wood products"
-   - "Textiles & apparel"
-   - "Electronics & electrical"
-   - "Metal & fabrication"
-   - "Plastics & rubber"
-   - "Chemicals & lubricants"
-   - "Food & beverage organic"
-   - "Other"
+Evaluate this material thoroughly (note: names and descriptions may be in English or Bahasa Malaysia):
+1. Dynamic Material Category:
+   - Identify the most accurate, concise, professional material category directly from the visual evidence in the photo(s), the material name, and the description.
+   - DO NOT restrict yourself to a fixed list and DO NOT default to "Other" when the material can be identified.
+   - Use a clear Title Case category name (2 to 4 words, e.g., "Organic Food Waste", "Structural Steel", "Timber & Wood Pallets", "HDPE Plastic Containers", "Corrugated Cardboard Packaging", "Borosilicate Glass", "Cotton Fabric Offcuts", "Electronic Circuit Boards", "Rubber & Industrial Tyres", "Concrete & Masonry").
+   - Set "category_confidence" to "high" if the material is clearly identifiable, "medium" if reasonably identifiable with minor ambiguity, or "low" if the photo and text are too vague, unclear, or contradictory to identify confidently (in which case leave "suggested_category" as an empty string "").
 
 2. Reusability classification:
    - "reusable": If the material is structurally sound, clean, durable, multi-use, or can be directly reused, repurposed, or resold to other Malaysian businesses (e.g. wooden pallets, clean cardboard boxes, metal bars/sheets, working parts, surplus fabric rolls, reusable drums/containers).
-   - "not_reusable": If the material is single-use cutoffs, contaminated, shredded, slag, sludge, hazardous waste, or degraded scrap that cannot be directly reused without industrial recycling, smelting, granulation, composting, or licensed disposal.
+   - "not_reusable": If the material is single-use cutoffs, food/organic waste, contaminated, shredded, slag, sludge, hazardous waste, broken, or degraded scrap that cannot be directly reused without industrial recycling, smelting, granulation, composting, or licensed disposal.
 
-3. Provide a clear reason explaining why it is classified as reusable or non-reusable.
+3. Provide a clear, concise reason explaining both the identified category and why it is classified as Reusable or Non-Reusable.
 
-4. Provide 3 specific recommended actions.
+4. Provide 3 specific recommended next actions.
 
 5. Provide recycling and repurposing guidance.
 
 Return ONLY a valid JSON object matching this schema (no markdown backticks, no markdown formatting):
 {
-  "suggested_category": "Category name from list above",
+  "suggested_category": "Dynamic concise Title Case material category name",
+  "category_confidence": "high",
   "suggested_reusability": "reusable",
   "classification_label": "Reusable",
-  "reason": "Detailed, professional reason for this classification in Malaysian industrial context",
+  "reason": "Clear explanation of the identified material category and reusability classification",
   "recommended_actions": [
     "Recommended action 1",
     "Recommended action 2",
@@ -310,34 +307,32 @@ PROMPT;
         $reusability = $isNotReusable ? 'not_reusable' : 'reusable';
         $label = ($reusability === 'reusable') ? 'Reusable' : 'Non-Reusable';
 
-        // Normalize category to standard options
-        $rawCat = strtolower(trim((string) ($decoded['suggested_category'] ?? '')));
-        $category = 'Other';
-        if (preg_match('/(wood|timber|pallet|plank|lumber|plywood|sawdust|furniture|cedar|oak|pine|biomass)/i', $rawCat)) {
-            $category = 'Furniture & wood products';
-        } elseif (preg_match('/(paper|cardboard|carton|box|kraft|packaging|corrugated)/i', $rawCat)) {
-            $category = 'Packaging & paper';
-        } elseif (preg_match('/(steel|iron|metal|aluminum|aluminium|copper|brass|wire|offcut)/i', $rawCat)) {
-            $category = 'Metal & fabrication';
-        } elseif (preg_match('/(plastic|polymer|hdpe|ldpe|pp|pet|pvc|resin|rubber)/i', $rawCat)) {
-            $category = 'Plastics & rubber';
-        } elseif (preg_match('/(electronic|electrical|pcb|cable|battery|motor|circuit|e-waste)/i', $rawCat)) {
-            $category = 'Electronics & electrical';
-        } elseif (preg_match('/(textile|fabric|cotton|polyester|yarn|denim|rag|garment)/i', $rawCat)) {
-            $category = 'Textiles & apparel';
-        } elseif (preg_match('/(chemical|solvent|lubricant|oil|sludge|coolant|paint)/i', $rawCat)) {
-            $category = 'Chemicals & lubricants';
-        } elseif (preg_match('/(food|organic|spent grain|compost)/i', $rawCat)) {
-            $category = 'Food & beverage organic';
-        } elseif (! empty($decoded['suggested_category'])) {
-            $category = $decoded['suggested_category'];
+        // Preserve the dynamic category returned by Gemini without forcing a hardcoded list
+        $rawCategory = trim(preg_replace('/\s+/', ' ', (string) ($decoded['suggested_category'] ?? '')) ?? '');
+        $rawCategory = trim($rawCategory, " \t\n\r\0\x0B\"'");
+        $lowerCategory = mb_strtolower($rawCategory);
+
+        $invalidCategories = ['', 'other', 'unknown', 'unidentified', 'n/a', 'none', 'null', 'uncertain', 'general'];
+        $rawConfidence = strtolower(trim((string) ($decoded['category_confidence'] ?? 'high')));
+        if (! in_array($rawConfidence, ['high', 'medium', 'low'], true)) {
+            $rawConfidence = 'medium';
+        }
+
+        if (in_array($lowerCategory, $invalidCategories, true)) {
+            $category = '';
+            $confidence = 'low';
+        } else {
+            $category = mb_substr($rawCategory, 0, 100);
+            $confidence = $rawConfidence;
         }
 
         return [
             'suggested_category' => $category,
+            'category_confidence' => $confidence,
+            'needs_category_review' => ($confidence === 'low' || $category === ''),
             'suggested_reusability' => $reusability,
             'classification_label' => $label,
-            'reason' => $decoded['reason'] ?? 'Gemini analyzed the material specifications and concluded this classification.',
+            'reason' => $decoded['reason'] ?? 'Material evaluated based on uploaded photos and specifications.',
             'recommended_actions' => (array) ($decoded['recommended_actions'] ?? []),
             'recycling_recommendations' => $decoded['recycling_recommendations'] ?? 'Recycle with certified recovery partners.',
             'repurposing_ideas' => (array) ($decoded['repurposing_ideas'] ?? []),
@@ -347,35 +342,44 @@ PROMPT;
     }
 
     /**
-     * Fallback expert engine for material classification
+     * Fallback expert engine for material classification when external AI is unavailable.
      */
     private function classifyWithExpertEngine(string $name, string $description, float $quantity, string $unit, array $images = []): array
     {
         $text = mb_strtolower($name . ' ' . $description);
 
-        // 1. Category Detection
-        $category = 'Other';
-        if (preg_match('/(wood|timber|pallet|plank|lumber|plywood|sawdust|furniture|cedar|oak|pine)/i', $text)) {
-            $category = 'Furniture & wood products';
-        } elseif (preg_match('/(paper|cardboard|carton|box|kraft|packaging|corrugated|newspaper|pulp)/i', $text)) {
-            $category = 'Packaging & paper';
-        } elseif (preg_match('/(steel|iron|metal|aluminum|aluminium|copper|brass|wire|rod|sheet metal|offcut|scrap metal)/i', $text)) {
-            $category = 'Metal & fabrication';
-        } elseif (preg_match('/(plastic|polymer|hdpe|ldpe|pp|pet|pvc|resin|rubber|wrap|film|drum|container)/i', $text)) {
-            $category = 'Plastics & rubber';
-        } elseif (preg_match('/(electronic|electrical|pcb|cable|battery|motor|circuit|e-waste|gadget|wire harness)/i', $text)) {
-            $category = 'Electronics & electrical';
-        } elseif (preg_match('/(textile|fabric|cotton|polyester|yarn|denim|rag|garment|apparel|sewing)/i', $text)) {
-            $category = 'Textiles & apparel';
-        } elseif (preg_match('/(chemical|solvent|lubricant|oil|sludge|coolant|paint|coating)/i', $text)) {
-            $category = 'Chemicals & lubricants';
-        } elseif (preg_match('/(food|organic|spent grain|biomass|compost|coffee|peel|agricultural)/i', $text)) {
-            $category = 'Food & beverage organic';
+        // 1. Broad Multilingual Category Detection (English & Bahasa Malaysia) with strict word boundaries
+        $category = '';
+        $confidence = 'medium';
+        if (preg_match('/\b(sisa makanan|makanan|food|organic|organik|spent grain|biomass|compost|kompos|coffee|peel|vegetable|fruit|sayur|buah|agricultural|pertanian)\b/i', $text)) {
+            $category = 'Organic Food Waste';
+        } elseif (preg_match('/\b(wood|kayu|timber|pallet|pallets|palet|plank|planks|papan|lumber|plywood|sawdust|habuk kayu|furniture|perabot|cedar|oak|pine|bamboo|buluh)\b/i', $text)) {
+            $category = 'Timber & Wood Products';
+        } elseif (preg_match('/\b(paper|kertas|cardboard|kadbod|carton|cartons|kotak|box|boxes|kraft|packaging|pembungkusan|corrugated|newspaper|surat khabar|pulp)\b/i', $text)) {
+            $category = 'Packaging & Paper';
+        } elseif (preg_match('/\b(steel|keluli|iron|besi|metal|metals|logam|aluminum|aluminium|copper|tembaga|brass|wire|rod|rods|sheet metal|swarf|scrap metal)\b/i', $text)) {
+            $category = 'Metal & Fabrication';
+        } elseif (preg_match('/\b(plastic|plastics|plastik|polymer|polymers|hdpe|ldpe|pp|pet|pvc|resin|acrylic|polycarbonate|bottle|bottles|botol|wrap|film|drum|drums|container|containers)\b/i', $text)) {
+            $category = 'Plastics & Polymers';
+        } elseif (preg_match('/\b(rubber|getah|tyre|tyres|tire|tires|tayar|latex|silicone|gasket|gaskets)\b/i', $text)) {
+            $category = 'Rubber & Tyres';
+        } elseif (preg_match('/\b(glass|kaca|cermin|mirror|ceramic|ceramics|seramik|porcelain|borosilicate|jar|jars)\b/i', $text)) {
+            $category = 'Glass & Ceramics';
+        } elseif (preg_match('/\b(electronic|electronics|elektronik|electrical|elektrik|pcb|cable|cables|kabel|wayar|battery|batteries|bateri|motor|circuit|e-waste|solar|panel|laptop|computer)\b/i', $text)) {
+            $category = 'Electronics & Electrical';
+        } elseif (preg_match('/\b(textile|textiles|tekstil|fabric|fabrics|fabrik|kain|cotton|kapas|polyester|yarn|benang|denim|rag|rags|garment|garments|pakaian|apparel|sewing)\b/i', $text)) {
+            $category = 'Textiles & Apparel';
+        } elseif (preg_match('/\b(chemical|chemicals|kimia|solvent|solvents|pelarut|lubricant|lubricants|pelincir|oil|oils|minyak|sludge|coolant|paint|cat|coating|acid|alkali)\b/i', $text)) {
+            $category = 'Chemicals & Lubricants';
+        } elseif (preg_match('/\b(concrete|konkrit|cement|simen|brick|bricks|bata|masonry|gypsum|tile|tiles|jubin|stone|batu|gravel|sand|pasir|construction)\b/i', $text)) {
+            $category = 'Construction & Masonry';
+        } else {
+            $category = '';
+            $confidence = 'low';
         }
 
         // 2. Reusability Detection
-        // Clear indicators of non-reusable scrap
-        $scrapKeywords = ['scrap', 'slag', 'sludge', 'contaminated', 'broken', 'shredded', 'dust', 'residue', 'waste', 'single-use', 'damaged', 'chemical residue', 'crushed', 'spent', 'dirty', 'off-spec'];
+        $scrapKeywords = ['scrap', 'slag', 'sludge', 'contaminated', 'tercemar', 'broken', 'pecah', 'rosak', 'shredded', 'dust', 'habuk', 'residue', 'waste', 'sisa', 'sampah', 'single-use', 'damaged', 'chemical residue', 'crushed', 'spent', 'dirty', 'kotor', 'off-spec', 'food waste', 'sisa makanan', 'swarf', 'shavings'];
         $isNonReusable = false;
         foreach ($scrapKeywords as $kw) {
             if (str_contains($text, $kw)) {
@@ -385,7 +389,7 @@ PROMPT;
         }
 
         // Clear indicators of reusable durable items
-        $reusableKeywords = ['pallet', 'plank', 'timber', 'carton box', 'container', 'drum', 'clean', 'working', 'good condition', 'surplus', 'reclaimed', 'unopened', 'new', 'sheet', 'beam', 'bar'];
+        $reusableKeywords = ['pallet', 'palet', 'plank', 'timber', 'carton box', 'container', 'drum', 'clean', 'bersih', 'working', 'good condition', 'surplus', 'reclaimed', 'unopened', 'new', 'baru', 'sheet', 'beam', 'bar'];
         $hasReusableKw = false;
         foreach ($reusableKeywords as $kw) {
             if (str_contains($text, $kw)) {
@@ -394,7 +398,7 @@ PROMPT;
             }
         }
 
-        if ($hasReusableKw && ! str_contains($text, 'contaminated') && ! str_contains($text, 'broken')) {
+        if ($hasReusableKw && ! str_contains($text, 'contaminated') && ! str_contains($text, 'broken') && ! str_contains($text, 'sisa makanan')) {
             $isNonReusable = false;
         }
 
@@ -412,19 +416,21 @@ PROMPT;
             $repurposing = ["Remanufacture into secondary industrial products or crating", "Repurpose for internal facility fixtures or shipping supports"];
             $disposal = "Avoid landfill disposal entirely. This material retains substantial commercial and circular value.";
         } else {
-            $reason = "{$name} consists of single-use cutoffs, contaminated residues, or production scrap that cannot be safely reused in its current form without industrial processing.";
+            $reason = "{$name} consists of single-use cutoffs, organic waste, contaminated residues, or production scrap that cannot be safely reused in its current form without industrial processing.";
             $actions = [
                 "Forward to EcoCycle Helper to match with certified Malaysian recycling and recovery facilities.",
                 "Segregate from general refuse to maintain purity and maximize scrap recovery value.",
                 "Log into Waste Monitoring to measure diversion from Malaysian landfills under ESG / Act 672 benchmarks.",
             ];
-            $recycling = "Mechanical granulation, smelting, or chemical recycling through licensed Malaysian recovery operators (DOE SW certified if scheduled).";
+            $recycling = "Mechanical granulation, smelting, composting, or chemical recycling through licensed Malaysian recovery operators (DOE SW certified if scheduled).";
             $repurposing = ["Downcycle into lower-grade construction aggregate, filler, or composite materials", "Convert clean organic fraction into biogas or compost"];
             $disposal = "Strictly divert from municipal landfills. Send only to DOE-licensed industrial MRFs or recovery plants.";
         }
 
         return [
             'suggested_category' => $category,
+            'category_confidence' => $confidence,
+            'needs_category_review' => ($confidence === 'low' || $category === ''),
             'suggested_reusability' => $reusability,
             'classification_label' => $label,
             'reason' => $reason,
@@ -446,13 +452,14 @@ PROMPT;
             return null;
         }
 
-        $configuredModel = config('services.gemini.model', 'gemini-3.1-flash-lite');
-        $modelsToTry = array_unique([
+        $configuredModel = config('services.gemini.model', 'gemini-2.5-flash');
+        $modelsToTry = array_values(array_unique(array_filter([
             $configuredModel,
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
             'gemini-3.1-flash-lite',
-            'gemini-3.5-flash-lite',
             'gemini-flash-lite-latest',
-        ]);
+        ])));
 
         foreach ($modelsToTry as $model) {
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";

@@ -46,10 +46,7 @@ class InventoryController extends Controller
         $query = $business->inventoryItems()->latest();
 
         if ($search = trim((string) $request->input('search'))) {
-            $query->where(function ($q) use ($search): void {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%");
-            });
+            $query->where('name', 'like', "%{$search}%");
         }
 
         if ($category = $request->input('category')) {
@@ -59,8 +56,6 @@ class InventoryController extends Controller
         if ($status = $request->input('status')) {
             if ($status === 'in_stock') {
                 $query->whereIn('status', ['in_stock', 'active'])->where('quantity', '>', 0);
-            } elseif ($status === 'low_stock') {
-                $query->where('status', 'low_stock');
             } elseif ($status === 'out_of_stock') {
                 $query->where(function ($q) {
                     $q->whereIn('status', ['out_of_stock', 'sold'])->orWhere('quantity', '<=', 0);
@@ -102,43 +97,95 @@ class InventoryController extends Controller
     }
 
     /**
+     * Check whether an inventory image path is still referenced by another item row.
+     */
+    private function isImageStillReferenced(string $path, ?int $excludeItemId = null): bool
+    {
+        $query = InventoryItem::query()->where(function ($q) use ($path): void {
+            $q->where('image_path', $path)
+                ->orWhere('image_1', $path)
+                ->orWhere('image_2', $path)
+                ->orWhere('image_3', $path);
+        });
+
+        if ($excludeItemId !== null) {
+            $query->where('id', '!=', $excludeItemId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Store a single uploaded inventory image on public storage and return its URL path.
+     */
+    private function storeUploadedInventoryImage(\Illuminate\Http\UploadedFile $file): string
+    {
+        $disk = Storage::disk('public');
+        $ext = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = 'inv_'.Str::random(24).'.'.$ext;
+        $disk->putFileAs('inventory-images', $file, $filename);
+
+        return '/inventory-images/'.$filename;
+    }
+
+    /**
      * Material Analysis Endpoint
      * Analyzes uploaded material photos, name, and description.
-     * Suggests: category, reusability (reusable / not_reusable), reason, and recommended actions.
+     * Suggests: dynamic category, reusability (reusable / not_reusable), reason, and recommended actions.
      */
     public function aiAnalyze(Request $request, EcoCycleHelperService $helper): JsonResponse
     {
         $this->checkApproved();
 
-        $validated = $request->validate([
+        $hasExplicitSlots = $request->hasFile('image_1') || $request->hasFile('image_2') || $request->hasFile('image_3');
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'unit' => ['required', 'string', 'max:30'],
-            'images' => ['required', 'array', 'min:1', 'max:3'],
-            'images.*' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
-        ], [
+            'image_1' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_2' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_3' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ];
+
+        if ($hasExplicitSlots) {
+            $rules['images'] = ['nullable', 'array', 'max:3'];
+            $rules['images.*'] = ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'];
+        } else {
+            $rules['images'] = ['required', 'array', 'min:1', 'max:3'];
+            $rules['images.*'] = ['required', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'];
+        }
+
+        $validated = $request->validate($rules, [
             'images.required' => 'Please upload at least 1 photo for material analysis (minimum 1, maximum 3 photos).',
             'images.min' => 'Please upload at least 1 photo (minimum 1, maximum 3 photos).',
             'images.max' => 'You can upload a maximum of 3 photos.',
         ]);
 
-        // Save up to 3 uploaded images into public storage
-        $disk = Storage::disk('public');
-        $savedImages = [];
-        if ($request->hasFile('images')) {
+        // Save up to 3 independent image slots into public storage
+        $savedSlots = [null, null, null];
+        if ($hasExplicitSlots) {
+            for ($slot = 1; $slot <= 3; $slot++) {
+                $file = $request->file("image_{$slot}");
+                if ($file && $file->isValid()) {
+                    $savedSlots[$slot - 1] = $this->storeUploadedInventoryImage($file);
+                }
+            }
+        } elseif ($request->hasFile('images')) {
             $files = $request->file('images');
             if (is_array($files)) {
+                $slotIdx = 0;
                 foreach (array_slice($files, 0, 3) as $file) {
-                    if ($file && $file->isValid()) {
-                        $ext = $file->getClientOriginalExtension() ?: 'jpg';
-                        $filename = 'inv_'.Str::random(24).'.'.$ext;
-                        $disk->putFileAs('inventory-images', $file, $filename);
-                        $savedImages[] = '/inventory-images/'.$filename;
+                    if ($file && $file->isValid() && $slotIdx < 3) {
+                        $savedSlots[$slotIdx] = $this->storeUploadedInventoryImage($file);
+                        $slotIdx++;
                     }
                 }
             }
         }
+
+        $savedImages = array_values(array_filter($savedSlots));
 
         $analysis = $helper->classifyMaterial(
             $validated['name'],
@@ -160,6 +207,7 @@ class InventoryController extends Controller
             'analysis' => $analysis,
             'analysis_token' => $analysisToken,
             'saved_images' => $savedImages,
+            'saved_image_slots' => $savedSlots,
             'item_data' => [
                 'name' => $validated['name'],
                 'description' => $validated['description'],
@@ -189,12 +237,14 @@ class InventoryController extends Controller
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'unit' => ['required', 'string', 'max:30'],
             'reusability' => ['required', 'in:reusable,not_reusable'],
-            'category' => ['nullable', 'string', 'max:60'],
-            'sku' => ['nullable', 'string', 'max:100'],
-            'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
+            'category' => ['required', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'saved_images' => ['nullable', 'string'],
-            'images' => ['nullable', 'array', 'max:5'],
+            'saved_image_slots' => ['nullable', 'string'],
+            'image_1' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_2' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_3' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'listing_type' => ['nullable', 'in:buy,borrow,free'],
             'condition' => ['nullable', 'string', 'max:40'],
@@ -217,7 +267,8 @@ class InventoryController extends Controller
         }
 
         $validated = $request->validate($rules, [
-            'images.max' => 'You can upload a maximum of 5 photos.',
+            'category.required' => 'Please confirm or enter a valid Material Category.',
+            'images.max' => 'You can upload a maximum of 3 photos.',
             'price.required' => 'Price per unit (RM) is required when listing type is Sell.',
         ]);
 
@@ -237,41 +288,71 @@ class InventoryController extends Controller
             }
         }
 
-        // Process images (either pre-saved from AI analysis or newly uploaded)
-        $uploadedImages = [];
-        if (! empty($validated['saved_images'])) {
-            $decoded = json_decode($validated['saved_images'], true);
-            if (is_array($decoded)) {
-                $uploadedImages = array_slice($decoded, 0, 5);
-            }
-        }
+        // Resolve 3 independent image slots without ever duplicating pre-saved AI analysis images
+        $imageSlots = [null, null, null];
+        $usedPreSaved = false;
 
-        if ($request->hasFile('images')) {
-            $disk = Storage::disk('public');
-            $files = $request->file('images');
-            if (is_array($files)) {
-                foreach (array_slice($files, 0, max(0, 5 - count($uploadedImages))) as $file) {
-                    if ($file && $file->isValid()) {
-                        $ext = $file->getClientOriginalExtension() ?: 'jpg';
-                        $filename = 'inv_'.Str::random(24).'.'.$ext;
-                        $disk->putFileAs('inventory-images', $file, $filename);
-                        $uploadedImages[] = '/inventory-images/'.$filename;
+        if (! empty($validated['saved_image_slots'])) {
+            $decodedSlots = json_decode($validated['saved_image_slots'], true);
+            if (is_array($decodedSlots)) {
+                for ($i = 0; $i < 3; $i++) {
+                    $val = $decodedSlots[$i] ?? null;
+                    if (is_string($val) && trim($val) !== '') {
+                        $imageSlots[$i] = trim($val);
+                        $usedPreSaved = true;
                     }
                 }
             }
         }
+
+        if (! $usedPreSaved && ! empty($validated['saved_images'])) {
+            $decoded = json_decode($validated['saved_images'], true);
+            if (is_array($decoded)) {
+                $uniqueSaved = array_values(array_unique(array_filter(
+                    $decoded,
+                    fn ($v): bool => is_string($v) && trim($v) !== ''
+                )));
+                for ($i = 0; $i < min(3, count($uniqueSaved)); $i++) {
+                    $imageSlots[$i] = trim($uniqueSaved[$i]);
+                    $usedPreSaved = true;
+                }
+            }
+        }
+
+        // Only process uploaded file inputs if pre-saved images from aiAnalyze were NOT already provided
+        if (! $usedPreSaved) {
+            $hasExplicitSlots = $request->hasFile('image_1') || $request->hasFile('image_2') || $request->hasFile('image_3');
+            if ($hasExplicitSlots) {
+                for ($slot = 1; $slot <= 3; $slot++) {
+                    $file = $request->file("image_{$slot}");
+                    if ($file && $file->isValid()) {
+                        $imageSlots[$slot - 1] = $this->storeUploadedInventoryImage($file);
+                    }
+                }
+            } elseif ($request->hasFile('images')) {
+                $files = $request->file('images');
+                if (is_array($files)) {
+                    $slotIdx = 0;
+                    foreach (array_slice($files, 0, 3) as $file) {
+                        if ($file && $file->isValid() && $slotIdx < 3) {
+                            $imageSlots[$slotIdx] = $this->storeUploadedInventoryImage($file);
+                            $slotIdx++;
+                        }
+                    }
+                }
+            }
+        }
+
+        $uploadedImages = array_values(array_filter($imageSlots));
 
         if (empty($uploadedImages)) {
             return back()->withErrors(['images' => 'Please provide at least 1 photo for this material.'])->withInput();
         }
 
         $quantity = (float) $validated['quantity'];
-        $threshold = isset($validated['minimum_threshold']) && $validated['minimum_threshold'] !== null && $validated['minimum_threshold'] !== ''
-            ? (float) $validated['minimum_threshold']
-            : null;
 
         $reusability = $validated['reusability'];
-        $category = ! empty($validated['category']) ? $validated['category'] : 'Other';
+        $category = trim((string) $validated['category']);
         $listingType = $validated['listing_type'] ?? 'buy';
         $condition = $validated['condition'] ?? ($reusability === 'reusable' ? 'Used - Good' : 'Scrap');
         $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : 0);
@@ -294,18 +375,15 @@ class InventoryController extends Controller
             $status = 'out_of_stock';
         } elseif ($reusability === 'reusable') {
             $status = 'active';
-        } elseif ($threshold !== null && $quantity <= $threshold) {
-            $status = 'low_stock';
         }
 
         $createdItem = null;
-        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $threshold, $status, $uploadedImages, $reusability, $listingType, $price, $condition, $locationCity, $locationState, &$createdItem): void {
+        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $status, $imageSlots, $uploadedImages, $reusability, $listingType, $price, $condition, $locationCity, $locationState, &$createdItem): void {
             $createdItem = InventoryItem::create([
                 'business_id' => $business->id,
                 'name' => $validated['name'],
                 'title' => $validated['name'],
                 'description' => $description,
-                'sku' => $validated['sku'] ?? ('INV-' . strtoupper(Str::random(6))),
                 'category' => $category,
                 'quantity' => $quantity,
                 'unit' => $validated['unit'],
@@ -316,13 +394,10 @@ class InventoryController extends Controller
                 'location_city' => $locationCity,
                 'location_state' => $locationState,
                 'image_path' => $uploadedImages[0] ?? null,
-                'image_1' => $uploadedImages[0] ?? null,
-                'image_2' => $uploadedImages[1] ?? null,
-                'image_3' => $uploadedImages[2] ?? null,
-                'image_4' => $uploadedImages[3] ?? null,
-                'image_5' => $uploadedImages[4] ?? null,
+                'image_1' => $imageSlots[0],
+                'image_2' => $imageSlots[1],
+                'image_3' => $imageSlots[2],
                 'images' => $uploadedImages,
-                'minimum_threshold' => $threshold,
                 'status' => $status,
                 'notes' => $validated['notes'] ?? null,
             ]);
@@ -383,50 +458,73 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'sku' => ['nullable', 'string', 'max:100'],
-            'category' => ['required', 'string', 'max:60'],
+            'category' => ['required', 'string', 'max:100'],
             'unit' => ['required', 'string', 'max:20'],
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
             'listing_type' => ['nullable', 'in:buy,borrow,free'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'condition' => ['nullable', 'string', 'max:40'],
-            'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'image_1' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_2' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'image_3' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'remove_image_1' => ['nullable', 'boolean'],
+            'remove_image_2' => ['nullable', 'boolean'],
+            'remove_image_3' => ['nullable', 'boolean'],
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ], [
+            'images.max' => 'You can upload a maximum of 3 photos.',
         ]);
 
-        $uploadedImages = $item->getAllImages();
-        if ($request->hasFile('images')) {
+        $imageSlots = $item->getImageSlots();
+        $oldPathsToMaybeDelete = [];
+
+        $hasExplicitSlotOps = $request->hasFile('image_1') || $request->hasFile('image_2') || $request->hasFile('image_3')
+            || $request->boolean('remove_image_1') || $request->boolean('remove_image_2') || $request->boolean('remove_image_3');
+
+        if ($hasExplicitSlotOps) {
+            for ($slot = 1; $slot <= 3; $slot++) {
+                $idx = $slot - 1;
+                $file = $request->file("image_{$slot}");
+                if ($file && $file->isValid()) {
+                    if (! empty($imageSlots[$idx])) {
+                        $oldPathsToMaybeDelete[] = $imageSlots[$idx];
+                    }
+                    $imageSlots[$idx] = $this->storeUploadedInventoryImage($file);
+                } elseif ($request->boolean("remove_image_{$slot}")) {
+                    if (! empty($imageSlots[$idx])) {
+                        $oldPathsToMaybeDelete[] = $imageSlots[$idx];
+                    }
+                    $imageSlots[$idx] = null;
+                }
+            }
+        } elseif ($request->hasFile('images')) {
             $files = $request->file('images');
             if (is_array($files)) {
-                $disk = Storage::disk('public');
-                $newImages = [];
+                $newSlots = [null, null, null];
+                $slotIdx = 0;
                 foreach (array_slice($files, 0, 3) as $file) {
-                    if ($file && $file->isValid()) {
-                        $ext = $file->getClientOriginalExtension() ?: 'jpg';
-                        $filename = 'inv_'.Str::random(24).'.'.$ext;
-                        $disk->putFileAs('inventory-images', $file, $filename);
-                        $newImages[] = '/inventory-images/'.$filename;
+                    if ($file && $file->isValid() && $slotIdx < 3) {
+                        $newSlots[$slotIdx] = $this->storeUploadedInventoryImage($file);
+                        $slotIdx++;
                     }
                 }
-                if (! empty($newImages)) {
-                    $uploadedImages = $newImages;
+                if (! empty(array_filter($newSlots))) {
+                    foreach ($imageSlots as $oldPath) {
+                        if (! empty($oldPath)) {
+                            $oldPathsToMaybeDelete[] = $oldPath;
+                        }
+                    }
+                    $imageSlots = $newSlots;
                 }
             }
         }
 
-        $threshold = isset($validated['minimum_threshold']) && $validated['minimum_threshold'] !== null && $validated['minimum_threshold'] !== ''
-            ? (float) $validated['minimum_threshold']
-            : null;
+        $uploadedImages = array_values(array_filter($imageSlots));
 
         $quantity = (float) $item->quantity;
-        $status = 'in_stock';
-        if ($quantity <= 0) {
-            $status = 'out_of_stock';
-        } elseif ($threshold !== null && $quantity <= $threshold) {
-            $status = 'low_stock';
-        }
+        $status = $quantity <= 0 ? 'out_of_stock' : 'in_stock';
 
         $reusability = $validated['reusability'] ?? $item->reusability ?? 'reusable';
         $listingType = $validated['listing_type'] ?? $item->listing_type ?? 'buy';
@@ -436,24 +534,30 @@ class InventoryController extends Controller
         $item->update([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? $item->description,
-            'sku' => $validated['sku'] ?? null,
-            'category' => $validated['category'],
+            'category' => trim((string) $validated['category']),
             'unit' => $validated['unit'],
             'reusability' => $reusability,
             'listing_type' => $listingType,
             'price' => $price,
             'condition' => $condition,
             'image_path' => $uploadedImages[0] ?? null,
-            'image_1' => $uploadedImages[0] ?? null,
-            'image_2' => $uploadedImages[1] ?? null,
-            'image_3' => $uploadedImages[2] ?? null,
-            'image_4' => $uploadedImages[3] ?? null,
-            'image_5' => $uploadedImages[4] ?? null,
+            'image_1' => $imageSlots[0],
+            'image_2' => $imageSlots[1],
+            'image_3' => $imageSlots[2],
             'images' => $uploadedImages,
-            'minimum_threshold' => $threshold,
             'status' => $status,
             'notes' => $validated['notes'] ?? null,
         ]);
+
+        // Clean up replaced/removed image files only if no longer referenced anywhere
+        if (! empty($oldPathsToMaybeDelete)) {
+            $disk = Storage::disk('public');
+            foreach (array_unique($oldPathsToMaybeDelete) as $oldPath) {
+                if (str_starts_with($oldPath, '/inventory-images/') && ! $this->isImageStillReferenced($oldPath)) {
+                    $disk->delete('inventory-images/'.basename($oldPath));
+                }
+            }
+        }
 
         // Sync with marketplace
         static::syncInventoryToMarketplace($item, $validated);
@@ -485,13 +589,7 @@ class InventoryController extends Controller
         $newQty = $type === 'stock_in' ? ($currentQty + $adjQty) : ($currentQty - $adjQty);
         $change = $type === 'stock_in' ? $adjQty : -$adjQty;
 
-        $threshold = $item->minimum_threshold !== null ? (float) $item->minimum_threshold : null;
-        $status = 'in_stock';
-        if ($newQty <= 0) {
-            $status = 'out_of_stock';
-        } elseif ($threshold !== null && $newQty <= $threshold) {
-            $status = 'low_stock';
-        }
+        $status = $newQty <= 0 ? 'out_of_stock' : 'in_stock';
 
         DB::transaction(function () use ($item, $newQty, $status, $type, $change, $validated): void {
             $item->update([
@@ -524,7 +622,7 @@ class InventoryController extends Controller
 
         $disk = Storage::disk('public');
         foreach ($item->getAllImages() as $img) {
-            if (str_starts_with($img, '/inventory-images/')) {
+            if (str_starts_with($img, '/inventory-images/') && ! $this->isImageStillReferenced($img, $item->id)) {
                 $disk->delete('inventory-images/'.basename($img));
             }
         }

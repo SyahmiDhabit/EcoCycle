@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\EcoCycleHelperService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -332,5 +333,217 @@ class InventoryGeminiWorkflowTest extends TestCase
             'reusability' => 'reusable',
             'image_path' => '/inventory-images/pre_analyzed_1.jpg',
         ]);
+    }
+
+    public function test_single_image_upload_after_ai_analysis_does_not_duplicate_into_image_2(): void
+    {
+        $business = $this->createApprovedBusiness('Single Slot Sdn Bhd');
+
+        $photo = UploadedFile::fake()->image('single_photo.jpg', 500, 500);
+
+        $analysisResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Clean Steel Rods',
+            'description' => 'Unused mild steel rods stored indoors.',
+            'quantity' => 40,
+            'unit' => 'kg',
+            'image_1' => $photo,
+        ]);
+        $analysisResponse->assertOk();
+
+        $savedImages = $analysisResponse->json('saved_images');
+        $savedSlots = $analysisResponse->json('saved_image_slots');
+        $analysisToken = $analysisResponse->json('analysis_token');
+
+        $this->assertCount(1, $savedImages);
+        $this->assertNotNull($savedSlots[0]);
+        $this->assertNull($savedSlots[1]);
+        $this->assertNull($savedSlots[2]);
+
+        // Even if the client ALSO submits images[] alongside saved_images/saved_image_slots,
+        // the backend must NOT duplicate Image 1 into Image 2.
+        $storeResponse = $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Clean Steel Rods',
+            'description' => 'Unused mild steel rods stored indoors.',
+            'quantity' => 40,
+            'unit' => 'kg',
+            'reusability' => 'reusable',
+            'category' => 'Structural Steel',
+            'listing_type' => 'buy',
+            'price' => 12.00,
+            'condition' => 'Like New',
+            'available_quantity' => 40,
+            'pickup_location' => 'Shah Alam, Selangor',
+            'redirect_to' => 'marketplace',
+            'publish_to_marketplace' => 1,
+            'analysis_token' => $analysisToken,
+            'saved_images' => json_encode($savedImages),
+            'saved_image_slots' => json_encode($savedSlots),
+            'images' => [UploadedFile::fake()->image('single_photo.jpg', 500, 500)],
+        ]);
+
+        $storeResponse->assertRedirect(route('business.marketplace'));
+
+        $item = InventoryItem::where('name', 'Clean Steel Rods')->firstOrFail();
+        $this->assertSame($savedSlots[0], $item->image_1);
+        $this->assertNull($item->image_2);
+        $this->assertNull($item->image_3);
+        $this->assertCount(1, $item->getAllImages());
+    }
+
+    public function test_independent_image_slots_can_be_uploaded_replaced_and_removed_without_shifting(): void
+    {
+        $business = $this->createApprovedBusiness('Slot Independence Bhd');
+
+        $img1 = UploadedFile::fake()->image('slot1.jpg', 400, 400);
+        $img3 = UploadedFile::fake()->image('slot3.jpg', 400, 400);
+
+        $createResponse = $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Reclaimed Glass Sheets',
+            'description' => 'Tempered clear glass panels.',
+            'quantity' => 15,
+            'unit' => 'panels',
+            'reusability' => 'reusable',
+            'category' => 'Tempered Glass Panels',
+            'image_1' => $img1,
+            'image_3' => $img3,
+        ]);
+        $createResponse->assertSessionHasNoErrors();
+
+        $item = InventoryItem::where('name', 'Reclaimed Glass Sheets')->firstOrFail();
+        $originalImage1 = $item->image_1;
+        $originalImage3 = $item->image_3;
+
+        $this->assertNotNull($originalImage1);
+        $this->assertNull($item->image_2);
+        $this->assertNotNull($originalImage3);
+
+        // Remove Image 1 and replace Image 3 independently; Image 2 must remain null and Image 3 must stay in slot 3
+        $newImg3 = UploadedFile::fake()->image('slot3_new.jpg', 400, 400);
+        $updateResponse = $this->actingAs($business)->put(route('business.inventory.update', $item), [
+            'name' => 'Reclaimed Glass Sheets',
+            'description' => 'Tempered clear glass panels.',
+            'category' => 'Tempered Glass Panels',
+            'unit' => 'panels',
+            'reusability' => 'reusable',
+            'remove_image_1' => 1,
+            'image_3' => $newImg3,
+        ]);
+        $updateResponse->assertSessionHasNoErrors();
+
+        $item->refresh();
+        $this->assertNull($item->image_1);
+        $this->assertNull($item->image_2);
+        $this->assertNotNull($item->image_3);
+        $this->assertNotSame($originalImage3, $item->image_3);
+        $this->assertSame($item->image_3, $item->image_path);
+        $this->assertCount(1, $item->getAllImages());
+    }
+
+    public function test_dynamic_ai_category_detection_preserves_gemini_category_without_hardcoded_override(): void
+    {
+        config()->set('services.gemini.api_key', 'test-gemini-key');
+        config()->set('services.gemini.model', 'gemini-2.5-flash');
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    [
+                        'content' => [
+                            'parts' => [
+                                [
+                                    'text' => json_encode([
+                                        'suggested_category' => 'Borosilicate Laboratory Glass',
+                                        'category_confidence' => 'high',
+                                        'suggested_reusability' => 'reusable',
+                                        'classification_label' => 'Reusable',
+                                        'reason' => 'Intact heat-resistant borosilicate glass beakers suitable for laboratory reuse.',
+                                        'recommended_actions' => [
+                                            'List on Marketplace for educational or lab reuse.',
+                                        ],
+                                        'recycling_recommendations' => 'Separate from soda-lime glass before recycling.',
+                                        'repurposing_ideas' => ['Reuse in industrial testing labs'],
+                                        'disposal_method' => 'Send to specialized glass recovery center.',
+                                    ]),
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $business = $this->createApprovedBusiness('Lab Glass Sdn Bhd');
+
+        $analysisResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => '500ml Lab Beakers',
+            'description' => 'Clean heat-resistant borosilicate laboratory glassware in intact condition.',
+            'quantity' => 25,
+            'unit' => 'pieces',
+            'image_1' => UploadedFile::fake()->image('beakers.jpg', 500, 500),
+        ]);
+
+        $analysisResponse->assertOk();
+        $analysisResponse->assertJsonPath('analysis.suggested_category', 'Borosilicate Laboratory Glass');
+        $analysisResponse->assertJsonPath('analysis.category_confidence', 'high');
+        $analysisResponse->assertJsonPath('analysis.needs_category_review', false);
+
+        // Confirm and save the dynamic AI category verbatim
+        $storeResponse = $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => '500ml Lab Beakers',
+            'description' => 'Clean heat-resistant borosilicate laboratory glassware in intact condition.',
+            'quantity' => 25,
+            'unit' => 'pieces',
+            'reusability' => 'reusable',
+            'category' => $analysisResponse->json('analysis.suggested_category'),
+            'listing_type' => 'buy',
+            'price' => 15.00,
+            'condition' => 'Like New',
+            'available_quantity' => 25,
+            'pickup_location' => 'Shah Alam, Selangor',
+            'redirect_to' => 'marketplace',
+            'publish_to_marketplace' => 1,
+            'analysis_token' => $analysisResponse->json('analysis_token'),
+            'saved_image_slots' => json_encode($analysisResponse->json('saved_image_slots')),
+        ]);
+
+        $storeResponse->assertRedirect(route('business.marketplace'));
+        $this->assertDatabaseHas('item', [
+            'name' => '500ml Lab Beakers',
+            'category' => 'Borosilicate Laboratory Glass',
+        ]);
+    }
+
+    public function test_fallback_category_detection_supports_malay_food_waste_and_flags_low_confidence(): void
+    {
+        config()->set('services.gemini.api_key', '');
+
+        $business = $this->createApprovedBusiness('Catering Circular Bhd');
+
+        // 1. Malay food waste should be accurately identified as Organic Food Waste (Non-Reusable)
+        $foodResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Sisa Makanan',
+            'description' => 'Lebihan sayur dan sisa dapur harian dari kantin kilang.',
+            'quantity' => 50,
+            'unit' => 'kg',
+            'image_1' => UploadedFile::fake()->image('food_waste.jpg', 400, 400),
+        ]);
+
+        $foodResponse->assertOk();
+        $foodResponse->assertJsonPath('analysis.suggested_category', 'Organic Food Waste');
+        $foodResponse->assertJsonPath('analysis.suggested_reusability', 'not_reusable');
+
+        // 2. Unidentifiable material should NOT silently default to "Other" — it flags needs_category_review
+        $unknownResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Batch XYZ-999',
+            'description' => 'Unlabeled item from storage room B.',
+            'quantity' => 5,
+            'unit' => 'units',
+            'image_1' => UploadedFile::fake()->image('mystery.jpg', 400, 400),
+        ]);
+
+        $unknownResponse->assertOk();
+        $unknownResponse->assertJsonPath('analysis.suggested_category', '');
+        $unknownResponse->assertJsonPath('analysis.category_confidence', 'low');
+        $unknownResponse->assertJsonPath('analysis.needs_category_review', true);
     }
 }

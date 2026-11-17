@@ -595,7 +595,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <span class="signin-brand-mark" style="margin:0 auto 14px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                     <h3 style="margin:0 0 6px;font-size:17px;color:#123321;font-weight:700;">No material listings found</h3>
                     <p style="margin:0 0 20px;font-size:13px;color:var(--text-muted);max-width:500px;margin-inline:auto;line-height:1.5;">
-                        <?= $myListingsOnly ? 'You have not published any material listings yet. List surplus items with 1 to 5 photos to share them with verified Malaysian SMEs.' : 'No surplus materials matched your filter criteria. Try clearing filters or create a new listing.' ?>
+                        <?= $myListingsOnly ? 'You have not published any material listings yet. List surplus items with 1 to 3 photos to share them with verified Malaysian SMEs.' : 'No surplus materials matched your filter criteria. Try clearing filters or create a new listing.' ?>
                     </p>
                     <div style="display:flex;justify-content:center;gap:12px;">
                         <button type="button" class="btn-claim-action" onclick="openCreateListingModal()">
@@ -842,13 +842,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         </button>
                     </div>
 
-                    <!-- 1 to 5 Photos Upload Section -->
+                    <!-- 1 to 3 Photos Upload Section -->
                     <div class="form-group">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                             <label style="margin:0;font-weight:700;color:#143825;">
-                                Material Photos <span style="color:#b91c1c;">*</span> <small style="font-weight:500;color:#556c5e;">(Min 1, Max 5 photos)</small>
+                                Material Photos <span style="color:#b91c1c;">*</span> <small style="font-weight:500;color:#556c5e;">(Min 1, Max 3 photos)</small>
                             </label>
-                            <span id="mkt_img_counter" style="font-size:12px;font-weight:700;color:#143825;">0 of 5 selected</span>
+                            <span id="mkt_img_counter" style="font-size:12px;font-weight:700;color:#143825;">0 of 3 selected</span>
                         </div>
 
                         <div class="inv-photo-uploader-box" id="mkt_photo_uploader_box">
@@ -857,15 +857,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             <div class="inv-photo-top-bar">
                                 <button type="button" class="btn-choose-photos" id="btn_mkt_add_photos" onclick="triggerMktFileInput()">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                    <span>+ Add Photos</span>
+                                    <span>Add Photos</span>
                                 </button>
-                                <span class="inv-photo-hint">Click "+ Add Photos" or any empty slot to add 1 to 5 images. Slot 1 is the cover photo.</span>
+                                <span class="inv-photo-hint">Click "Add Photos" or any empty slot to add 1 to 3 images. Image 1 is the cover photo.</span>
                             </div>
 
-                            <div class="inv-slots-grid" id="mkt_slots_grid"></div>
+                            <div class="inv-slots-grid" id="mkt_slots_grid" style="grid-template-columns:repeat(3,1fr);"></div>
 
                             <div id="mkt_img_error" style="display:none;margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">
-                                Please select at least 1 photo for this listing (maximum 5 photos).
+                                Please select at least 1 photo for this listing (maximum 3 photos).
                             </div>
                         </div>
                     </div>
@@ -877,17 +877,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
                     <div class="form-group">
                         <label for="create_category">Category *</label>
-                        <select id="create_category" name="category" required>
-                            <option value="Packaging & paper">Packaging &amp; paper</option>
-                            <option value="Furniture & wood products">Furniture &amp; wood products</option>
-                            <option value="Textiles & apparel">Textiles &amp; apparel</option>
-                            <option value="Electronics & electrical">Electronics &amp; electrical</option>
-                            <option value="Metal & fabrication">Metal &amp; fabrication</option>
-                            <option value="Plastics & rubber">Plastics &amp; rubber</option>
-                            <option value="Chemicals & lubricants">Chemicals &amp; lubricants</option>
-                            <option value="Food & beverage organic">Food &amp; beverage organic</option>
-                            <option value="Other">Other surplus material</option>
-                        </select>
+                        <input type="text" id="create_category" name="category" list="mkt_categories_list" maxlength="100" required placeholder="e.g. Structural Steel, Timber &amp; Wood Products">
+                        <datalist id="mkt_categories_list">
+                            <?php if (isset($categories)): ?>
+                                <?php foreach ($categories as $cat): ?>
+                                    <option value="<?= e($cat) ?>"></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </datalist>
                     </div>
 
                     <!-- Reusability Classification: Strictly Reusable on Marketplace -->
@@ -1091,8 +1088,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
     // Trigger file chooser for marketplace listing
     function triggerMktFileInput() {
         var total = mktExistingImages.length + mktPhotosTransfer.files.length;
-        if (total >= 5) {
-            alert('Maximum of 5 photos reached. Remove a photo to add a different one.');
+        if (total >= 3) {
+            alert('Maximum of 3 photos reached. Remove a photo to add a different one.');
             return;
         }
         var input = document.getElementById('listing_images_form_input');
@@ -1111,16 +1108,16 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 if (!newFiles || newFiles.length === 0) return;
 
                 var currentTotal = mktExistingImages.length + mktPhotosTransfer.files.length;
-                var availableSlots = 5 - currentTotal;
+                var availableSlots = 3 - currentTotal;
 
                 if (availableSlots <= 0) {
-                    alert('Maximum of 5 photos allowed per listing.');
+                    alert('Maximum of 3 photos allowed per listing.');
                     return;
                 }
 
                 var filesToAdd = Array.from(newFiles).slice(0, availableSlots);
                 if (newFiles.length > availableSlots) {
-                    alert('Only ' + availableSlots + ' more photo(s) could be added to stay within the 5-photo limit.');
+                    alert('Only ' + availableSlots + ' more photo(s) could be added to stay within the 3-photo limit.');
                 }
 
                 filesToAdd.forEach(function(file) {
@@ -1132,20 +1129,20 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         }
     });
 
-    // Render 5 photo slots visually
+    // Render 3 photo slots visually
     function renderMktSlots() {
         var grid = document.getElementById('mkt_slots_grid');
         var counter = document.getElementById('mkt_img_counter');
         var err = document.getElementById('mkt_img_error');
         if (err) err.style.display = 'none';
 
-        var existingCount = mktExistingImages.length;
+        var existingCount = Math.min(mktExistingImages.length, 3);
         var newFiles = mktPhotosTransfer.files;
         var newCount = newFiles.length;
         var totalCount = existingCount + newCount;
 
         if (counter) {
-            counter.textContent = totalCount + ' of 5 selected' + (totalCount === 0 ? ' (At least 1 required)' : '');
+            counter.textContent = totalCount + ' of 3 selected' + (totalCount === 0 ? ' (At least 1 required)' : '');
             counter.style.color = totalCount >= 1 ? '#18422d' : '#b91c1c';
         }
 
@@ -1189,15 +1186,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             })(existingCount + j, j);
         }
 
-        // 3. Fill remaining slots up to 5 with empty placeholders
-        for (var k = totalCount; k < 5; k++) {
+        // 3. Fill remaining slots up to 3 with empty placeholders
+        for (var k = totalCount; k < 3; k++) {
             (function(slotNumber) {
                 var emptyCard = document.createElement('div');
                 emptyCard.className = 'inv-slot-card empty-slot';
                 emptyCard.onclick = triggerMktFileInput;
                 emptyCard.innerHTML = slotNumber === 0 ? 
-                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>+ Add</span>' : 
-                    '<span>Slot ' + (slotNumber + 1) + '</span>';
+                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Add</span>' : 
+                    '<span>Image ' + (slotNumber + 1) + '</span>';
                 grid.appendChild(emptyCard);
             })(k);
         }
@@ -1226,7 +1223,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         if (total < 1) {
             var err = document.getElementById('mkt_img_error');
             if (err) err.style.display = 'block';
-            alert('Please select at least 1 photo for this listing (maximum 5 photos).');
+            alert('Please select at least 1 photo for this listing (maximum 3 photos).');
             return false;
         }
         return true;
@@ -1277,8 +1274,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             banner.style.display = 'flex';
         }
 
-        // Preload Photos from inventory item
-        mktExistingImages = Array.isArray(images) ? images.slice(0, 5) : [];
+        // Preload Photos from inventory item (max 3)
+        mktExistingImages = Array.isArray(images) ? images.slice(0, 3) : [];
         mktPhotosTransfer = new DataTransfer();
         renderMktSlots();
 

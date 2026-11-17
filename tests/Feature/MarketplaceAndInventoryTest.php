@@ -52,7 +52,6 @@ class MarketplaceAndInventoryTest extends TestCase
                 'category' => 'Packaging & paper',
                 'quantity' => 150,
                 'unit' => 'units',
-                'minimum_threshold' => 20,
                 'reusability' => 'reusable',
                 'images' => $images,
             ]);
@@ -66,8 +65,6 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertNotNull($item->image_1);
         $this->assertNotNull($item->image_2);
         $this->assertNull($item->image_3);
-        $this->assertNull($item->image_4);
-        $this->assertNull($item->image_5);
         $this->assertCount(2, $item->getAllImages());
 
         // Test inventory image route returns 200
@@ -162,7 +159,7 @@ class MarketplaceAndInventoryTest extends TestCase
         ]);
     }
 
-    public function test_business_can_upload_one_to_five_images_for_marketplace_listing(): void
+    public function test_business_can_upload_one_to_three_images_for_marketplace_listing(): void
     {
         Storage::fake('public');
         $business = $this->createApprovedBusiness();
@@ -191,8 +188,6 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertNotNull($listing->image_1);
         $this->assertNotNull($listing->image_2);
         $this->assertNotNull($listing->image_3);
-        $this->assertNull($listing->image_4);
-        $this->assertNull($listing->image_5);
         $this->assertCount(3, $listing->getAllImages());
         $this->assertSame($listing->image_path, $listing->getAllImages()[0]);
 
@@ -201,59 +196,81 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->get('/listing-images/'.$firstFilename)->assertOk();
     }
 
-    public function test_can_upload_all_five_images_for_product_and_inventory(): void
+    public function test_enforces_maximum_three_images_for_product_and_inventory(): void
     {
         $business = $this->createApprovedBusiness();
 
-        $fiveImages = [
+        $fourImages = [
             UploadedFile::fake()->image('img1.jpg', 600, 400),
             UploadedFile::fake()->image('img2.jpg', 600, 400),
             UploadedFile::fake()->image('img3.jpg', 600, 400),
             UploadedFile::fake()->image('img4.jpg', 600, 400),
-            UploadedFile::fake()->image('img5.jpg', 600, 400),
         ];
 
-        // 1. Inventory with 5 images
-        $invResponse = $this->actingAs($business)
+        // Exceeding 3 images is rejected for inventory
+        $this->actingAs($business)
             ->from(route('business.inventory'))
             ->post(route('business.inventory.store'), [
-                'name' => 'Complete 5-Image Inventory Item',
+                'name' => 'Excess Image Inventory Item',
                 'category' => 'Metal & fabrication',
                 'quantity' => 100,
                 'unit' => 'kg',
                 'reusability' => 'reusable',
-                'images' => $fiveImages,
+                'images' => $fourImages,
+            ])->assertSessionHasErrors('images');
+
+        // Exceeding 3 images is rejected for marketplace
+        $this->actingAs($business)
+            ->post(route('business.marketplace.store'), [
+                'title' => 'Excess Image Listing',
+                'category' => 'Metal & fabrication',
+                'reusability' => 'reusable',
+                'listing_type' => 'buy',
+                'quantity' => 20,
+                'unit' => 'kg',
+                'price' => 50.00,
+                'images' => $fourImages,
+            ])->assertSessionHasErrors('images');
+
+        $threeImages = array_slice($fourImages, 0, 3);
+
+        // 1. Inventory with 3 images
+        $invResponse = $this->actingAs($business)
+            ->from(route('business.inventory'))
+            ->post(route('business.inventory.store'), [
+                'name' => 'Complete 3-Image Inventory Item',
+                'category' => 'Metal & fabrication',
+                'quantity' => 100,
+                'unit' => 'kg',
+                'reusability' => 'reusable',
+                'images' => $threeImages,
             ]);
         $invResponse->assertRedirect(route('business.inventory'));
 
-        $item = InventoryItem::where('name', 'Complete 5-Image Inventory Item')->firstOrFail();
+        $item = InventoryItem::where('name', 'Complete 3-Image Inventory Item')->firstOrFail();
         $this->assertNotNull($item->image_1);
         $this->assertNotNull($item->image_2);
         $this->assertNotNull($item->image_3);
-        $this->assertNotNull($item->image_4);
-        $this->assertNotNull($item->image_5);
-        $this->assertCount(5, $item->getAllImages());
+        $this->assertCount(3, $item->getAllImages());
 
-        // 2. Marketplace listing with 5 images
+        // 2. Marketplace listing with 3 images
         $mktResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
-            'title' => 'Complete 5-Image Listing',
+            'title' => 'Complete 3-Image Listing',
             'category' => 'Metal & fabrication',
             'reusability' => 'reusable',
             'listing_type' => 'buy',
             'quantity' => 20,
             'unit' => 'kg',
             'price' => 50.00,
-            'images' => $fiveImages,
+            'images' => $threeImages,
         ]);
         $mktResponse->assertRedirect();
 
-        $listing = MarketplaceListing::where('title', 'Complete 5-Image Listing')->firstOrFail();
+        $listing = MarketplaceListing::where('title', 'Complete 3-Image Listing')->firstOrFail();
         $this->assertNotNull($listing->image_1);
         $this->assertNotNull($listing->image_2);
         $this->assertNotNull($listing->image_3);
-        $this->assertNotNull($listing->image_4);
-        $this->assertNotNull($listing->image_5);
-        $this->assertCount(5, $listing->getAllImages());
+        $this->assertCount(3, $listing->getAllImages());
 
         // Test delete cleans up stored files
         $firstListingImage = basename($listing->image_1);

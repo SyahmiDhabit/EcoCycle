@@ -27,8 +27,19 @@ body.verification-page {
     font: 400 13.5px/1.5 var(--font-main);
     -webkit-font-smoothing: antialiased;
 }
-body.verification-page *:not(input[type="radio"]) {
+body.verification-page * {
     border-radius: 0 !important;
+}
+body.verification-page input[type="radio"],
+body.verification-page .brand-mark,
+body.verification-page .signin-brand-mark,
+body.verification-page .verification-brand img,
+body.verification-page .pending-brand img,
+body.verification-page .pending-avatar,
+body.verification-page .pending-avatar img,
+body.verification-page .company-profile-avatar-circle,
+body.verification-page .company-profile-avatar-circle img {
+    border-radius: 50% !important;
 }
 .verification-header {
     min-height: 68px;

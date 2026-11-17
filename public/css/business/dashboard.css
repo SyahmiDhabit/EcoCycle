@@ -130,7 +130,7 @@ h1, h2, h3, h4,
     display: grid;
     place-items: center;
     border: 1px solid #2e7d32;
-    border-radius: 0;
+    border-radius: 50%;
     background: #edf6ec;
 }
 
@@ -347,31 +347,30 @@ h1, h2, h3, h4,
     gap: 10px;
     text-decoration: none;
     color: #ffffff;
-    padding: 4px 12px 4px 4px;
-    border-radius: 0;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    padding: 2px 4px;
+    background: transparent;
+    border: none;
+    transition: opacity 0.15s ease;
     cursor: pointer;
 }
 
 .topbar-profile:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.32);
+    opacity: 0.9;
 }
 
 .topbar-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     background: #0f2e1e;
-    border: 1px solid #3f7b54;
+    border: 1.5px solid #3f7b54;
     color: #e5f5e7;
     font-size: 11px;
     font-weight: 700;
     display: grid;
     place-items: center;
     letter-spacing: 0.02em;
+    overflow: hidden;
 }
 
 .topbar-profile-info {
@@ -489,7 +488,7 @@ h1, h2, h3, h4,
 .sidebar-brand-mark {
     width: 34px;
     height: 34px;
-    border-radius: 0;
+    border-radius: 50%;
     background: #edf6ec;
     border: 1px solid #2e7d32;
     display: grid;
@@ -553,29 +552,26 @@ h1, h2, h3, h4,
     align-items: center;
     gap: 12px;
     text-decoration: none;
-    padding: 10px 12px;
-    background: #ffffff;
-    border: 1px solid var(--card-border);
-    border-radius: 0;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    padding: 4px 2px;
+    background: transparent;
+    border: none;
+    transition: opacity 0.15s ease;
 }
 
 .sidebar-user-pill:hover {
-    background: #eef6ec !important;
-    border-color: var(--brand-green) !important;
+    opacity: 0.85;
 }
 
 .sidebar-user-pill.active {
-    background: #e5f2e3 !important;
-    border-color: var(--brand-green) !important;
+    opacity: 1;
 }
 
 .sidebar-user-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
     background: var(--brand-green);
-    border: 1px solid #143825;
+    border: 1.5px solid #143825;
     color: #ffffff;
     display: grid;
     place-items: center;
@@ -2001,8 +1997,26 @@ h1, h2, h3, h4,
 }
 
 /* ---------------- UNIFIED SQUARE-CORNER ENFORCEMENT (BUSINESS WORKSPACE) ---------------- */
-body.business-dashboard-page *:not(input[type="radio"]) {
+body.business-dashboard-page * {
     border-radius: 0 !important;
+}
+
+/* Circular shape preserved strictly for Brand Logos, Profile Images/Avatars & Radio Inputs */
+body.business-dashboard-page input[type="radio"],
+body.business-dashboard-page .brand-mark,
+body.business-dashboard-page .signin-brand-mark,
+body.business-dashboard-page .sidebar-brand-mark,
+body.business-dashboard-page .topbar-avatar,
+body.business-dashboard-page .topbar-avatar img,
+body.business-dashboard-page .sidebar-user-avatar,
+body.business-dashboard-page .sidebar-user-avatar img,
+body.business-dashboard-page .branding-avatar-wrap,
+body.business-dashboard-page .branding-avatar-wrap img,
+body.business-dashboard-page .company-profile-avatar,
+body.business-dashboard-page .company-profile-avatar img,
+body.business-dashboard-page #modal-biz-avatar,
+body.business-dashboard-page #modal-biz-avatar img {
+    border-radius: 50% !important;
 }
 
 /* ---------------- RESPONSIVE BREAKPOINTS ---------------- */

@@ -71,15 +71,14 @@ $hasFormErrors = $errors->any();
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 4px 12px 4px 6px;
-            border: 1px solid var(--line);
-            border-radius: 0;
-            background: #fafbfa;
+            padding: 2px 4px;
+            border: none;
+            background: transparent;
         }
         .pending-avatar {
             width: 32px;
             height: 32px;
-            border-radius: 0;
+            border-radius: 50%;
             background: #eaf2e8;
             border: 1px solid var(--forest);
             display: grid;
@@ -389,7 +388,7 @@ $hasFormErrors = $errors->any();
 
             <!-- Company Profile Avatar & Identity Header -->
             <div class="company-profile-header-banner" style="display:flex;align-items:center;gap:18px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid #e2ede0;">
-                <div style="width:72px;height:72px;border-radius:0;overflow:hidden;background:#eef6ec;border:1px solid #285c44;display:grid;place-items:center;flex-shrink:0;">
+                <div class="company-profile-avatar-circle" style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#eef6ec;border:1px solid #285c44;display:grid;place-items:center;flex-shrink:0;">
                     <?php if ($business->profile_image) { ?>
                         <img src="<?= e($business->profile_image_url) ?>" alt="<?= e($business->business_name) ?>" style="width:100%;height:100%;object-fit:cover;">
                     <?php } else { ?>

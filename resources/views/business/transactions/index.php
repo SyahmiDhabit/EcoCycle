@@ -106,10 +106,18 @@
         ?>
 
         <main class="dashboard-main-content">
-            <header class="section-header">
+            <header class="section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                 <div class="section-header-title">
                     <h2>Transactions, Orders &amp; Invoicing</h2>
-                    <p>Manage sales, material claims, borrowing deposits, and invoice payment settlements between circular businesses.</p>
+                    <p>Manage Marketplace orders, Stripe payments (MYR), and official PDF invoices between verified businesses.</p>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <a href="<?= route('business.invoices.index', ['tab' => 'payments']) ?>" class="trx-tab-btn">
+                        Payment History
+                    </a>
+                    <a href="<?= route('business.invoices.index', ['tab' => 'invoices']) ?>" class="trx-tab-btn active">
+                        My Invoices
+                    </a>
                 </div>
             </header>
 
@@ -187,8 +195,12 @@
                                 $payLabel = match($payStatus) {
                                     'paid' => 'Paid',
                                     'requested' => 'Payment Requested',
+                                    'failed' => 'Payment Failed',
+                                    'cancelled' => 'Cancelled',
+                                    'borrow_pending' => 'Borrow Pending',
                                     default => 'Pending Payment',
                                 };
+                                $isBuyer = ! $isSeller;
                             ?>
                                 <tr>
                                     <td>
@@ -220,25 +232,34 @@
                                         <span class="pay-badge <?= $payClass ?>"><?= $payLabel ?></span>
                                     </td>
                                     <td style="text-align:right;">
-                                        <div style="display:inline-flex;gap:6px;align-items:center;">
+                                        <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap;">
+                                            <?php if ($isBuyer && $exchange->requiresStripePayment() && $payStatus !== 'paid'): ?>
+                                                <a href="<?= route('business.orders.checkout', $exchange) ?>" class="btn-action-sm" style="background:#143825;border:1px solid #143825;color:#ffffff;text-decoration:none;">
+                                                    Pay Now
+                                                </a>
+                                            <?php endif; ?>
+
                                             <?php if ($isSeller && $payStatus !== 'paid' && (float)$exchange->total_price > 0): ?>
                                                 <form method="POST" action="/business/transactions/<?= $exchange->id ?>/request-payment" style="margin:0;">
                                                     <?= csrf_field() ?>
-                                                    <button type="submit" class="btn-action-sm" style="background:#fff5f5;border:1px solid #fecaca;color:#b91c1c;" title="Send payment request & invoice to buyer">
-                                                        Minta Bayar
+                                                    <button type="submit" class="btn-action-sm" style="background:#fff5f5;border:1px solid #fecaca;color:#b91c1c;" title="Send payment request to buyer">
+                                                        Request Payment
                                                     </button>
                                                 </form>
                                             <?php endif; ?>
 
-                                            <?php if ($payStatus !== 'paid' && (float)$exchange->total_price > 0): ?>
-                                                <button type="button" class="btn-action-sm" style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;" onclick='openMarkPaidModal(<?= $exchange->id ?>, "<?= e($invNumber) ?>", <?= (float)$exchange->total_price ?>)'>
-                                                    Mark Paid
+                                            <?php if ($exchange->invoice): ?>
+                                                <a href="<?= route('business.invoices.show', $exchange->invoice) ?>" class="btn-action-sm" style="background:#f8fafc;border:1px solid #cbd5e1;color:#334155;text-decoration:none;">
+                                                    View Invoice
+                                                </a>
+                                                <a href="<?= route('business.invoices.pdf', $exchange->invoice) ?>" class="btn-action-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;text-decoration:none;">
+                                                    PDF
+                                                </a>
+                                            <?php else: ?>
+                                                <button type="button" class="btn-action-sm" style="background:#f8fafc;border:1px solid #cbd5e1;color:#334155;" onclick='openReceiptModal("<?= e($invNumber) ?>", "<?= e(addslashes($exchange->listing?->title ?? 'Material')) ?>", "<?= e(addslashes($counterpartName)) ?>", <?= (float)$exchange->quantity ?>, "<?= e($exchange->unit) ?>", <?= (float)$exchange->total_price ?>, "<?= e($payStatus) ?>", "<?= e($exchange->payment_reference ?? 'N/A') ?>", "<?= $exchange->created_at ? $exchange->created_at->format('d M Y') : '' ?>")'>
+                                                    Summary
                                                 </button>
                                             <?php endif; ?>
-
-                                            <button type="button" class="btn-action-sm" style="background:#f8fafc;border:1px solid #cbd5e1;color:#334155;" onclick='openReceiptModal("<?= e($invNumber) ?>", "<?= e(addslashes($exchange->listing?->title ?? 'Material')) ?>", "<?= e(addslashes($counterpartName)) ?>", <?= (float)$exchange->quantity ?>, "<?= e($exchange->unit) ?>", <?= (float)$exchange->total_price ?>, "<?= e($payStatus) ?>", "<?= e($exchange->payment_reference ?? 'N/A') ?>", "<?= $exchange->created_at ? $exchange->created_at->format('d M Y') : '' ?>")'>
-                                                Invois
-                                            </button>
                                         </div>
                                     </td>
                                 </tr>

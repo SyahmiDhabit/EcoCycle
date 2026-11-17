@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn (Request $request): string => route('login'));
         $middleware->web(append: [SetLocale::class]);
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/stripe',
+        ]);
         $middleware->alias([
             'business.approved' => EnsureBusinessIsApproved::class,
         ]);

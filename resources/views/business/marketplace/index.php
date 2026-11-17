@@ -1429,6 +1429,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             </div>
             <form id="exchange-order-form" method="POST" action="">
                 <?= csrf_field() ?>
+                <input type="hidden" id="order-proceed-checkout" name="proceed_to_checkout" value="0">
                 <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
                     <!-- Item summary box -->
                     <div style="display:flex;gap:14px;padding:12px;background:#f8faf6;border:1px solid var(--card-border);border-radius:0;align-items:center;">
@@ -1538,14 +1539,17 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
         var heading = document.getElementById('order-modal-heading');
         var submitBtn = document.getElementById('order-submit-btn');
+        var proceedCheckoutInput = document.getElementById('order-proceed-checkout');
 
         if (type === 'free') {
             heading.textContent = 'Claim Free Material';
             submitBtn.textContent = 'Claim Free Material';
+            if (proceedCheckoutInput) proceedCheckoutInput.value = '0';
             document.getElementById('order-unit-price').textContent = 'FREE';
         } else {
             heading.textContent = 'Purchase Material Order';
-            submitBtn.textContent = 'Confirm Order & Inquire';
+            submitBtn.textContent = 'Review Order & Pay Now';
+            if (proceedCheckoutInput) proceedCheckoutInput.value = '1';
             document.getElementById('order-unit-price').textContent = 'RM ' + price.toFixed(2) + ' / ' + unit;
         }
 

@@ -47,4 +47,14 @@ return [
         'model' => env('GEMINI_MODEL', 'gemini-3.1-flash-lite'),
     ],
 
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency' => strtolower((string) env('STRIPE_CURRENCY', 'myr')),
+        'api_base' => env('STRIPE_API_BASE', 'https://api.stripe.com/v1'),
+        'tax_rate' => env('STRIPE_TAX_RATE'),
+        'tax_label' => env('STRIPE_TAX_LABEL'),
+    ],
+
 ];

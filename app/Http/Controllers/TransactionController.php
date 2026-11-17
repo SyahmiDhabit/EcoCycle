@@ -7,6 +7,7 @@ use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\MaterialExchange;
 use App\Models\User;
+use App\Services\InvoiceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,9 @@ use Illuminate\View\View;
 
 class TransactionController extends Controller
 {
+    public function __construct(
+        private readonly InvoiceService $invoiceService,
+    ) {}
     private function checkApproved(): void
     {
         abort_unless(Auth::user()->account_status === 'approved', 403, 'Your business application must be approved first.');
@@ -31,7 +35,7 @@ class TransactionController extends Controller
 
         $viewType = $request->input('tab', 'all'); // all, sales, purchases
 
-        $query = MaterialExchange::with(['listing', 'provider', 'requester'])->latest();
+        $query = MaterialExchange::with(['listing', 'provider', 'requester', 'invoice', 'latestPayment'])->latest();
 
         if ($viewType === 'sales') {
             $query->where('provider_business_id', $business->id);
@@ -104,28 +108,45 @@ class TransactionController extends Controller
         ]);
 
         $orderQty = (float) $validated['quantity'];
-        $isFree = (bool) $listing->is_free || $listing->listing_type === 'free';
-        $totalPrice = $isFree ? 0.00 : round($orderQty * (float) $listing->price, 2);
-        $invoiceNumber = 'INV-'.date('Y').'-'.strtoupper(Str::random(6));
+        $listingType = $listing->listing_type ?: 'buy';
+        $isFree = (bool) $listing->is_free || $listingType === 'free';
+        $isBorrow = $listingType === 'borrow';
 
-        $exchange = DB::transaction(function () use ($listing, $business, $orderQty, $totalPrice, $invoiceNumber, $isFree, $validated) {
+        // Calculate price strictly on the backend (never trust client-submitted totals)
+        $unitPrice = $isFree ? 0.00 : round((float) ($listing->price ?? 0), 2);
+        $totals = $this->invoiceService->calculateTotals($orderQty, $unitPrice);
+        $totalPrice = $isFree ? 0.00 : $totals['total'];
+
+        $orderRef = 'ECO-ORD-'.date('Y').'-'.strtoupper(Str::random(6));
+        $invoiceNumber = $isFree ? ('FREE-'.date('Y').'-'.strtoupper(Str::random(6))) : $orderRef;
+
+        $initialPaymentStatus = match (true) {
+            $isFree => 'paid',
+            $isBorrow => 'borrow_pending',
+            default => 'pending_payment',
+        };
+
+        $exchange = DB::transaction(function () use ($listing, $business, $listingType, $orderQty, $unitPrice, $totalPrice, $orderRef, $invoiceNumber, $isFree, $initialPaymentStatus, $validated) {
             $exchange = MaterialExchange::create([
                 'invoice_number' => $invoiceNumber,
+                'order_reference' => $orderRef,
                 'item_id' => $listing->id,
                 'provider_business_id' => $listing->business_id,
                 'requester_business_id' => $business->id,
+                'listing_type' => $listingType,
                 'quantity' => $orderQty,
                 'unit' => $listing->unit,
+                'unit_price' => $unitPrice,
                 'total_price' => $totalPrice,
                 'status' => $isFree ? 'completed' : 'pending',
-                'payment_status' => $isFree ? 'paid' : 'pending_payment',
+                'payment_status' => $initialPaymentStatus,
                 'payment_reference' => $isFree ? 'FREE-GRANT' : null,
                 'paid_at' => $isFree ? now() : null,
                 'completed_at' => $isFree ? now() : null,
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            // If free claim, deduct stock immediately
+            // If free claim, deduct stock immediately without requiring Stripe payment
             if ($isFree) {
                 $newQty = max(0, (float) $listing->quantity - $orderQty);
                 $newStatus = $newQty <= 0 ? 'sold' : 'active';
@@ -140,7 +161,7 @@ class TransactionController extends Controller
                     'transaction_type' => 'stock_out',
                     'quantity_change' => -$orderQty,
                     'quantity_after' => $newQty,
-                    'notes' => "Free material claimed via Order #{$invoiceNumber}",
+                    'notes' => "Free material claimed via Order #{$orderRef}",
                 ]);
             }
 
@@ -151,7 +172,7 @@ class TransactionController extends Controller
         BusinessNotification::send(
             $listing->business_id,
             'New Material Order Received',
-            "{$business->business_name} ordered {$orderQty} {$listing->unit} of '{$listing->name}'. Order #{$invoiceNumber}.",
+            "{$business->business_name} ordered {$orderQty} {$listing->unit} of '{$listing->name}'. Order #{$orderRef}.",
             'exchange',
             '/business/transactions?tab=sales',
             'green'
@@ -160,14 +181,20 @@ class TransactionController extends Controller
         BusinessNotification::send(
             $business->id,
             'Material Order Placed',
-            "You placed Order #{$invoiceNumber} for {$orderQty} {$listing->unit} of '{$listing->name}'.",
+            "You placed Order #{$orderRef} for {$orderQty} {$listing->unit} of '{$listing->name}'.",
             'exchange',
             '/business/transactions?tab=purchases',
             'blue'
         );
 
+        // If buyer clicked Review & Pay Now on a Sell item, take them straight to the Order Review & Stripe Checkout screen
+        if ($request->boolean('proceed_to_checkout') && $exchange->requiresStripePayment()) {
+            return redirect()->route('business.orders.checkout', $exchange)
+                ->with('status', "Order {$orderRef} created. Please review the summary below and click Pay Now to complete payment via Stripe.");
+        }
+
         return redirect()->route('business.transactions', ['tab' => 'purchases'])
-            ->with('status', "Order #{$invoiceNumber} successfully placed! You can track payment and order status below.");
+            ->with('status', "Order #{$orderRef} successfully placed! You can review details and manage payment below.");
     }
 
     public function requestPayment(Request $request, MaterialExchange $exchange): RedirectResponse
@@ -217,6 +244,9 @@ class TransactionController extends Controller
             $exchange->invoice_number = 'INV-'.date('Y').'-'.str_pad((string) $exchange->id, 5, '0', STR_PAD_LEFT);
         }
         $exchange->save();
+
+        // Generate official invoice idempotently if paid
+        $this->invoiceService->generateForOrder($exchange);
 
         // Automatically deduct purchased quantity from the listing and inventory
         if ($listing = $exchange->listing) {

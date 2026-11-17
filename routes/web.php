@@ -10,10 +10,13 @@ use App\Http\Controllers\BusinessNotificationController;
 use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\EcoCycleHelperController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\MyListingController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StripePaymentController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WastageMonitoringController;
 use Illuminate\Support\Facades\Response;
@@ -21,6 +24,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 Route::view('/', 'main.mainpage')->name('home');
+
+// Stripe Webhook Endpoint (CSRF-exempt; verified strictly via Stripe-Signature HMAC-SHA256)
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
 
 // Business Pending Approval & Application Management (Accessible to unapproved business)
 Route::redirect('/business/verification', '/business/pending-approval');
@@ -55,10 +61,19 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::post('/business/waste-monitoring/from-inventory/{item}', [WastageMonitoringController::class, 'logFromInventory'])->name('business.waste.from-inventory');
     Route::delete('/business/waste-monitoring/{record}', [WastageMonitoringController::class, 'destroy'])->name('business.waste.destroy');
 
-    // Transactions & Invoicing Routes
+    // Transactions, Stripe Payments & Invoice Management
     Route::get('/business/transactions', [TransactionController::class, 'index'])->name('business.transactions');
     Route::post('/business/transactions/{exchange}/request-payment', [TransactionController::class, 'requestPayment'])->name('business.transactions.request-payment');
     Route::post('/business/transactions/{exchange}/mark-paid', [TransactionController::class, 'markPaid'])->name('business.transactions.mark-paid');
+
+    Route::get('/business/orders/{exchange}/checkout', [StripePaymentController::class, 'review'])->name('business.orders.checkout');
+    Route::post('/business/payments/stripe/checkout/{exchange}', [StripePaymentController::class, 'checkout'])->name('business.payments.stripe.checkout');
+    Route::get('/business/payments/stripe/success', [StripePaymentController::class, 'success'])->name('business.payments.stripe.success');
+    Route::get('/business/payments/stripe/cancel/{exchange}', [StripePaymentController::class, 'cancel'])->name('business.payments.stripe.cancel');
+
+    Route::get('/business/invoices', [InvoiceController::class, 'index'])->name('business.invoices.index');
+    Route::get('/business/invoices/{invoice}', [InvoiceController::class, 'show'])->name('business.invoices.show');
+    Route::get('/business/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('business.invoices.pdf');
 
     // My Listings & Reviews
     Route::get('/business/my-listings', [MyListingController::class, 'index'])->name('business.listings');

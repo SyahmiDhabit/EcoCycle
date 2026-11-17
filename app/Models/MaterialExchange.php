@@ -6,15 +6,20 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'invoice_number',
+    'order_reference',
     'item_id',
     'listing_id',
     'provider_business_id',
     'requester_business_id',
+    'listing_type',
     'quantity',
     'unit',
+    'unit_price',
     'total_price',
     'status',
     'payment_status',
@@ -54,11 +59,30 @@ class MaterialExchange extends Model
     {
         return [
             'quantity' => 'decimal:2',
+            'unit_price' => 'decimal:2',
             'total_price' => 'decimal:2',
             'payment_requested_at' => 'datetime',
             'paid_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
+    }
+
+    public function resolvedOrderReference(): string
+    {
+        return $this->order_reference
+            ?: ($this->invoice_number ?: 'ECO-ORD-'.date('Y').'-'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT));
+    }
+
+    public function resolvedListingType(): string
+    {
+        return $this->listing_type ?: ($this->listing?->listing_type ?: 'buy');
+    }
+
+    public function requiresStripePayment(): bool
+    {
+        $type = $this->resolvedListingType();
+
+        return $type === 'buy' && (float) $this->total_price > 0;
     }
 
     public function item(): BelongsTo
@@ -79,5 +103,20 @@ class MaterialExchange extends Model
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requester_business_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'material_exchange_id')->latest();
+    }
+
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class, 'material_exchange_id')->latestOfMany();
+    }
+
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class, 'material_exchange_id');
     }
 }

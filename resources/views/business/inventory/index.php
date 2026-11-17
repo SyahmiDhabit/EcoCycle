@@ -369,18 +369,19 @@ $activeNav = 'inventory';
         .inv-slots-grid-3 {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 14px;
         }
         .inv-slots-grid-3 .inv-slot-card {
-            height: 95px;
+            height: 110px;
         }
-        @keyframes aiPulse {
-            0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
-            70% { transform: scale(1.04); box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        .ai-pulse-badge {
-            animation: aiPulse 2s infinite ease-in-out;
+        .simple-spinner {
+            border: 3px solid #e2e8f0;
+            border-top-color: #18422d;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
         .inv-slot-card {
             position: relative;
@@ -599,6 +600,51 @@ $activeNav = 'inventory';
             align-items: center !important;
             justify-content: flex-end !important;
             gap: 10px !important;
+        }
+
+        /* Spacious & Professional Add Inventory Modal */
+        #add-modal .modal-dialog {
+            width: min(920px, 94vw) !important;
+            max-width: 920px !important;
+            min-height: min(580px, 88vh) !important;
+            max-height: min(92vh, 900px) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+        #add-modal .modal-header {
+            padding: 22px 32px !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            flex-shrink: 0 !important;
+        }
+        #add-modal .modal-body {
+            padding: 26px 32px !important;
+            gap: 18px !important;
+            overflow-y: auto !important;
+            flex: 1 1 auto !important;
+        }
+        #add-modal .modal-footer {
+            padding: 18px 32px !important;
+            border-top: 1px solid #e2e8f0 !important;
+            background: #fafcfb !important;
+            flex-shrink: 0 !important;
+        }
+        @media (max-width: 768px) {
+            #add-modal .modal-dialog {
+                width: 96vw !important;
+                max-width: 96vw !important;
+                max-height: 94vh !important;
+                min-height: auto !important;
+                margin: 8px auto !important;
+            }
+            #add-modal .modal-header,
+            #add-modal .modal-body,
+            #add-modal .modal-footer {
+                padding: 16px 20px !important;
+            }
         }
     </style>
 </head>
@@ -912,15 +958,12 @@ $activeNav = 'inventory';
         </main>
     </div>
 
-<!-- Add Inventory Modal (Upgraded with Gemini AI Analysis & 3 Photos Support) -->
+<!-- Add Inventory Modal -->
 <div class="modal-backdrop" id="add-modal" style="display:none;" onclick="if(event.target === this) closeAddModal()">
-    <div class="modal-dialog modal-dialog-large">
+    <div class="modal-dialog">
         <div class="modal-header">
-            <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:18px;">📦</span>
-                <h3 style="margin:0;">Add New Inventory Item</h3>
-            </div>
-            <button type="button" class="modal-close-btn" onclick="closeAddModal()">✕</button>
+            <h3 style="margin:0;font-size:18px;font-weight:700;color:#18422d;">Add New Inventory Item</h3>
+            <button type="button" class="modal-close-btn" onclick="closeAddModal()" aria-label="Close">✕</button>
         </div>
         <form method="POST" action="<?= route('business.inventory.store') ?>" id="add_inventory_form" enctype="multipart/form-data" onsubmit="return validateInventoryAddForm(this)">
             <?= csrf_field() ?>
@@ -931,15 +974,15 @@ $activeNav = 'inventory';
             <input type="hidden" name="redirect_to" id="add_redirect_to" value="marketplace">
 
             <div class="modal-body">
-                <!-- ==================== STAGE 1: Simple Initial Form ==================== -->
+                <!-- ==================== STAGE 1: Form Details ==================== -->
                 <div id="add_stage_1">
                     <!-- 1. Material Photos (Min 1, Max 3) -->
-                    <div class="form-group">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                            <label style="margin:0;font-weight:700;color:#18422d;">
-                                Material Photos <span style="color:#b91c1c;">*</span> <small style="font-weight:500;color:#556c5e;">(Min 1, Max 3 photos)</small>
+                    <div class="form-group" style="margin-bottom:20px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <label style="margin:0;font-size:13px;font-weight:700;color:#18422d;">
+                                Material Photos <span style="color:#b91c1c;">*</span> <span style="font-weight:500;color:#64748b;">(1 to 3 photos)</span>
                             </label>
-                            <span id="add_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">0 of 3 selected (Min 1 required)</span>
+                            <span id="add_img_counter" style="font-size:12px;font-weight:600;color:#64748b;">0 of 3 selected</span>
                         </div>
 
                         <div class="inv-photo-uploader-box" id="add_photo_uploader_box">
@@ -949,9 +992,9 @@ $activeNav = 'inventory';
                             <div class="inv-photo-top-bar">
                                 <button type="button" class="btn-choose-photos" id="btn_add_photos" onclick="document.getElementById('add_images_picker').click()">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                    <span>+ Add Photos</span>
+                                    <span>Upload Photos</span>
                                 </button>
-                                <span class="inv-photo-hint">Add 1 to 3 clear photos. First photo will be the cover image for AI inspection.</span>
+                                <span class="inv-photo-hint">Upload 1 to 3 photos. First photo is used as cover image.</span>
                             </div>
 
                             <div class="inv-slots-grid-3" id="add_slots_grid">
@@ -959,160 +1002,125 @@ $activeNav = 'inventory';
                             </div>
 
                             <div id="add_img_error" style="display:none;margin-top:10px;padding:8px 12px;border-radius:6px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:600;">
-                                ⚠️ Please add at least 1 photo for this material (minimum 1, maximum 3 photos required).
+                                Please add at least 1 photo for this material (minimum 1, maximum 3 photos required).
                             </div>
                         </div>
                     </div>
 
                     <!-- 2. Material Name -->
-                    <div class="form-group">
-                        <label for="add_name" style="font-weight:700;color:#18422d;">Material Name <span style="color:#b91c1c;">*</span></label>
-                        <input id="add_name" name="name" type="text" required placeholder="e.g. Clean Kiln-Dried Pine Planks, Industrial HDPE Offcuts">
+                    <div class="form-group" style="margin-bottom:18px;">
+                        <label for="add_name" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Name <span style="color:#b91c1c;">*</span></label>
+                        <input id="add_name" name="name" type="text" required placeholder="e.g. Pine Timber Planks, Industrial HDPE Offcuts" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;">
                     </div>
 
                     <!-- 3. Description -->
-                    <div class="form-group">
-                        <label for="add_description" style="font-weight:700;color:#18422d;">Description / Material Specifications <span style="color:#b91c1c;">*</span></label>
-                        <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, purity, cleanliness, source, or condition..."></textarea>
+                    <div class="form-group" style="margin-bottom:18px;">
+                        <label for="add_description" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Description <span style="color:#b91c1c;">*</span></label>
+                        <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, condition, or source..." style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;resize:vertical;"></textarea>
                     </div>
 
                     <!-- 4 & 5. Quantity & Unit of Measure -->
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label for="add_quantity" style="font-weight:700;color:#18422d;">Quantity <span style="color:#b91c1c;">*</span></label>
-                            <input id="add_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50">
+                    <div class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="add_quantity" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Quantity <span style="color:#b91c1c;">*</span></label>
+                            <input id="add_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;">
                         </div>
-                        <div class="form-group">
-                            <label for="add_unit" style="font-weight:700;color:#18422d;">Unit of Measure <span style="color:#b91c1c;">*</span></label>
-                            <input id="add_unit" name="unit" type="text" required placeholder="e.g. kg, pieces, boxes, pallets, tonnes">
-                        </div>
-                    </div>
-
-                    <!-- Informational Banner for Gemini AI Analysis -->
-                    <div style="margin-top:10px;padding:12px 14px;border-radius:8px;background:#f0fdf4;border:1.5px solid #86efac;display:flex;align-items:flex-start;gap:10px;">
-                        <span style="font-size:20px;line-height:1;">✨</span>
-                        <div style="font-size:12px;color:#166534;line-height:1.45;">
-                            <strong>AI Circular Analysis:</strong>
-                            When you click <em>Analyze Material with Gemini AI</em>, Google Gemini will evaluate your photos and material specifications to suggest its category, circular reusability (Reusable vs Non-Reusable), reason, and recommended actions.
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="add_unit" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Unit of Measure <span style="color:#b91c1c;">*</span></label>
+                            <input id="add_unit" name="unit" type="text" required placeholder="e.g. kg, pieces, boxes, pallets" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;">
                         </div>
                     </div>
                 </div>
 
-                <!-- ==================== LOADING STATE: Gemini AI Analyzing ==================== -->
-                <div id="add_stage_loading" style="display:none;padding:36px 20px;text-align:center;">
-                    <div class="ai-pulse-badge" style="width:60px;height:60px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(135deg, #10b981 0%, #0284c7 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(16,185,129,0.3);">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                    </div>
-                    <h4 style="font-size:17px;font-weight:700;color:#0f5132;margin:0 0 8px;">Analyzing Material with Google Gemini AI...</h4>
-                    <p style="font-size:13px;color:#475569;margin:0 auto;max-width:440px;line-height:1.5;">
-                        Analyzing photo visual features, material grade, and circular reusability potential. Please wait a moment...
+                <!-- ==================== LOADING STATE: Material Scanning ==================== -->
+                <div id="add_stage_loading" style="display:none;padding:50px 24px;text-align:center;">
+                    <div class="simple-spinner" style="width:42px;height:42px;margin:0 auto 18px;"></div>
+                    <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Scanning Material...</h4>
+                    <p style="font-size:13px;color:#64748b;margin:0 auto;max-width:420px;line-height:1.5;">
+                        Please wait while the material details and photos are being analyzed.
                     </p>
-                    <div style="margin-top:14px;display:inline-block;padding:4px 12px;background:#f1f5f9;border-radius:20px;font-size:11px;color:#64748b;font-weight:600;">
-                        ⚡ Powered by Gemini Multimodal API & Malaysian Circular Taxonomy
-                    </div>
                 </div>
 
-                <!-- ==================== STAGE 2: Gemini AI Analysis Results & Human Confirmation ==================== -->
+                <!-- ==================== STAGE 2: Analysis Results & Confirmation ==================== -->
                 <div id="add_stage_2" style="display:none;">
-                    <!-- AI Analysis Card -->
-                    <div style="background:linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);border:1.5px solid #86efac;border-radius:12px;padding:16px 18px;margin-bottom:16px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #dcfce7;padding-bottom:10px;">
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <span style="font-size:18px;">✨</span>
-                                <strong style="color:#0f5132;font-size:14px;">Gemini AI Material Analysis</strong>
-                                <span id="ai_source_badge" style="font-size:10px;padding:2px 8px;border-radius:12px;background:#dcfce7;color:#15803d;font-weight:700;">Google Gemini AI</span>
-                            </div>
-                            <button type="button" onclick="backToStage1()" style="background:none;border:none;color:#059669;font-size:12px;cursor:pointer;text-decoration:underline;font-weight:600;">
-                                ← Edit Material Details
+                    <!-- Simplified Material Scanning Results -->
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e2e8f0;">
+                            <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Material Analysis</h4>
+                            <button type="button" onclick="backToStage1()" style="background:none;border:none;color:#18422d;font-size:12px;cursor:pointer;font-weight:600;text-decoration:underline;padding:0;">
+                                Edit Details
                             </button>
                         </div>
 
-                        <!-- Category & Reusability Badges -->
-                        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
-                            <div style="background:#ffffff;border:1px solid #cbd5e1;padding:6px 12px;border-radius:8px;font-size:12px;">
-                                <span style="color:#64748b;font-weight:600;">Material Category:</span>
-                                <strong id="ai_result_category" style="color:#0f172a;margin-left:4px;">Wood & Timber</strong>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;">
+                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Material Category</div>
+                                <div id="ai_result_category" style="font-size:14px;font-weight:700;color:#0f172a;">-</div>
                             </div>
-                            <div id="ai_result_reusability_pill" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;">
-                                <!-- Dynamic pill -->
+                            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;">
+                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Classification</div>
+                                <div id="ai_result_classification" style="font-size:14px;font-weight:700;color:#18422d;">-</div>
                             </div>
                         </div>
 
-                        <!-- Reason -->
-                        <div style="margin-bottom:10px;">
-                            <div style="font-size:11px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
-                                Reason for Classification:
-                            </div>
-                            <p id="ai_result_reason" style="margin:0;font-size:12.5px;color:#1e293b;line-height:1.45;background:rgba(255,255,255,0.75);padding:8px 12px;border-radius:6px;border-left:3px solid #10b981;">
-                                Loading reason...
-                            </p>
+                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Reason</div>
+                            <p id="ai_result_reason" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
                         </div>
 
-                        <!-- Recommended Actions -->
-                        <div>
-                            <div style="font-size:11px;font-weight:700;color:#0f5132;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">
-                                Recommended Actions:
-                            </div>
-                            <ul id="ai_result_actions" style="margin:0;padding-left:18px;font-size:12px;color:#1e293b;line-height:1.5;">
-                                <!-- Actions list -->
-                            </ul>
+                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;">
+                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Recommendation</div>
+                            <p id="ai_result_recommendation" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
                         </div>
                     </div>
 
-                    <!-- Human Confirmation / Change Toggle -->
-                    <div class="form-group" style="margin-bottom:16px;">
-                        <label style="font-weight:700;color:#18422d;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <!-- Confirmation Selection -->
+                    <div class="form-group" style="margin-bottom:20px;">
+                        <label style="font-size:13px;font-weight:700;color:#18422d;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                             <span>Confirm or Change Classification <span style="color:#b91c1c;">*</span></span>
-                            <small style="font-weight:500;color:#64748b;">AI suggests, you have final decision</small>
                         </label>
-                        <div class="reusability-toggle-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                            <label class="reusability-toggle-card" id="card_choice_reusable" style="cursor:pointer;border:2px solid #cbd5e1;border-radius:10px;padding:12px;display:flex;align-items:flex-start;gap:10px;transition:all 0.2s;" onclick="selectDecision('reusable')">
+                        <div class="reusability-toggle-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                            <label class="reusability-toggle-card" id="card_choice_reusable" style="cursor:pointer;border:2px solid #cbd5e1;border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;transition:all 0.15s ease;" onclick="selectDecision('reusable')">
                                 <input type="radio" name="reusability_choice" value="reusable" id="radio_choice_reusable" style="margin-top:3px;">
                                 <div>
-                                    <span style="font-weight:700;color:#15803d;font-size:13px;display:block;">↻ Reusable Material</span>
-                                    <span style="font-size:11px;color:#475569;line-height:1.35;display:block;margin-top:2px;">
-                                        Multi-use circular material. Publish to Marketplace for other businesses to buy, borrow, or request.
+                                    <span style="font-weight:700;color:#18422d;font-size:13px;display:block;">Reusable</span>
+                                    <span style="font-size:12px;color:#64748b;line-height:1.4;display:block;margin-top:3px;">
+                                        Publish to the EcoCycle Marketplace for other businesses.
                                     </span>
                                 </div>
                             </label>
-                            <label class="reusability-toggle-card" id="card_choice_not_reusable" style="cursor:pointer;border:2px solid #cbd5e1;border-radius:10px;padding:12px;display:flex;align-items:flex-start;gap:10px;transition:all 0.2s;" onclick="selectDecision('not_reusable')">
+                            <label class="reusability-toggle-card" id="card_choice_not_reusable" style="cursor:pointer;border:2px solid #cbd5e1;border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;transition:all 0.15s ease;" onclick="selectDecision('not_reusable')">
                                 <input type="radio" name="reusability_choice" value="not_reusable" id="radio_choice_not_reusable" style="margin-top:3px;">
                                 <div>
-                                    <span style="font-weight:700;color:#475569;font-size:13px;display:block;">⊘ Non-Reusable Scrap</span>
-                                    <span style="font-size:11px;color:#475569;line-height:1.35;display:block;margin-top:2px;">
-                                        Single-use cutoffs or scrap. Forward to EcoCycle Helper for recycling recommendations & GPS locator.
+                                    <span style="font-weight:700;color:#334155;font-size:13px;display:block;">Non-Reusable</span>
+                                    <span style="font-size:12px;color:#64748b;line-height:1.4;display:block;margin-top:3px;">
+                                        Forward to EcoCycle Helper for recycling recommendations.
                                     </span>
                                 </div>
                             </label>
                         </div>
                     </div>
 
-                    <!-- ==================== STAGE 3A: If Reusable – Marketplace Listing Fields ==================== -->
-                    <div id="add_section_reusable" style="display:none;background:#f4fbf6;border:1.5px solid #bbf0cb;border-radius:10px;padding:16px;margin-bottom:14px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                            <span style="font-size:17px;">🛒</span>
-                            <strong style="color:#0f5132;font-size:14px;">Marketplace Listing Details (Reusable Material)</strong>
-                        </div>
-                        <p style="margin:0 0 14px;font-size:12px;color:#1e4620;line-height:1.45;">
-                            This item will be <strong>automatically published to the EcoCycle Marketplace</strong> so other registered businesses can browse, buy, borrow, or request it.
-                        </p>
+                    <!-- Stage 3A: Reusable Marketplace Fields -->
+                    <div id="add_section_reusable" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:18px;">
+                        <h4 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#18422d;">Marketplace Listing Details</h4>
 
-                        <div class="form-row-3" style="margin-bottom:12px;">
+                        <div class="form-row-3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_listing_type">Listing Type *</label>
-                                <select id="add_listing_type" name="listing_type" onchange="toggleAddPriceField(this.value)">
-                                    <option value="buy">Sell (For Sale)</option>
-                                    <option value="borrow">Lend (Borrow)</option>
-                                    <option value="free">Free (Donate / Giveaway)</option>
+                                <label for="add_listing_type" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Listing Type *</label>
+                                <select id="add_listing_type" name="listing_type" onchange="toggleAddPriceField(this.value)" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                                    <option value="buy">Sell</option>
+                                    <option value="borrow">Lend</option>
+                                    <option value="free">Free</option>
                                 </select>
                             </div>
                             <div class="form-group" id="add_price_group" style="margin-bottom:0;">
-                                <label for="add_price">Price per Unit (RM) <span style="color:#b91c1c;">*</span></label>
-                                <input id="add_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00">
+                                <label for="add_price" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Price per Unit (RM) <span style="color:#b91c1c;">*</span></label>
+                                <input id="add_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_condition">Material Condition *</label>
-                                <select id="add_condition" name="condition">
+                                <label for="add_condition" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Material Condition *</label>
+                                <select id="add_condition" name="condition" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
                                     <option value="Used - Good">Used - Good</option>
                                     <option value="Like New">Like New</option>
                                     <option value="Surplus Unopened">Surplus Unopened</option>
@@ -1122,48 +1130,33 @@ $activeNav = 'inventory';
                         </div>
 
                         <!-- Available Quantity & Pickup Location -->
-                        <div class="form-row-2" style="margin-bottom:0;">
+                        <div class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:0;">
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_available_quantity">Available Quantity for Listing *</label>
-                                <input id="add_available_quantity" name="available_quantity" type="number" step="0.01" min="0" placeholder="e.g. 50">
+                                <label for="add_available_quantity" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Available Quantity *</label>
+                                <input id="add_available_quantity" name="available_quantity" type="number" step="0.01" min="0" placeholder="e.g. 50" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_pickup_location">Pickup Location (Business Address or GPS)</label>
-                                <input id="add_pickup_location" name="pickup_location" type="text" placeholder="e.g. Shah Alam, Selangor">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button type="button" onclick="useGpsLocation()" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;">
-                                        📍 Use Live GPS
+                                <label for="add_pickup_location" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Pickup Location</label>
+                                <input id="add_pickup_location" name="pickup_location" type="text" placeholder="e.g. Shah Alam, Selangor" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                                <div style="display:flex;gap:8px;margin-top:6px;">
+                                    <button type="button" onclick="useGpsLocation()" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">
+                                        Use Current Location
                                     </button>
-                                    <button type="button" onclick="useProfileLocation()" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;">
-                                        🏢 Use Profile Location
+                                    <button type="button" onclick="useProfileLocation()" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">
+                                        Use Business Address
                                     </button>
                                 </div>
-                                <div id="gps_status_msg" style="font-size:11px;color:#0284c7;margin-top:4px;display:none;"></div>
+                                <div id="gps_status_msg" style="font-size:11px;color:#18422d;margin-top:4px;display:none;"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ==================== STAGE 3B: If Non-Reusable – EcoCycle Helper Forwarding Notice ==================== -->
-                    <div id="add_section_not_reusable" style="display:none;background:#fef7f6;border:1.5px solid #fecaca;border-radius:10px;padding:16px;margin-bottom:14px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                            <span style="font-size:17px;">🔒</span>
-                            <strong style="color:#7f1d1d;font-size:14px;">Forwarding to EcoCycle Helper (Non-Reusable Material)</strong>
-                        </div>
-                        <p style="margin:0 0 10px;font-size:12px;color:#991b1b;line-height:1.45;">
-                            This material will <strong>NOT</strong> appear on the public marketplace. Instead, it will be saved in your inventory and immediately forwarded to the <strong>EcoCycle Helper</strong>.
+                    <!-- Stage 3B: Non-Reusable Notice -->
+                    <div id="add_section_not_reusable" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;margin-bottom:18px;">
+                        <h4 style="margin:0 0 6px;font-size:14px;font-weight:700;color:#334155;">EcoCycle Helper</h4>
+                        <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
+                            This item will be saved in your inventory and forwarded to the EcoCycle Helper for recycling recommendations, repurposing suggestions, and disposal guidance.
                         </p>
-                        <div style="background:#fff;border:1px solid #fed7aa;border-radius:8px;padding:12px 14px;">
-                            <div style="font-size:12px;font-weight:700;color:#9a3412;margin-bottom:6px;">
-                                🤖 What happens next with EcoCycle Helper:
-                            </div>
-                            <ul style="margin:0;padding-left:18px;font-size:12px;color:#334155;line-height:1.5;">
-                                <li><strong>AI Recycling Guidance:</strong> Tailored methods to clean, segregate, and recycle this material.</li>
-                                <li><strong>Repurposing Ideas:</strong> Creative circular upcycling applications for industrial or secondary reuse.</li>
-                                <li><strong>Compliant Disposal:</strong> Certified DOE and local council disposal guidelines.</li>
-                                <li><strong>GPS Recycling Centre Locator:</strong> Real-time mapping to verified Malaysian facilities accepting this material type.</li>
-                                <li><strong>Interactive AI Chatbot:</strong> Ask follow-up questions about pricing, transport, or processing.</li>
-                            </ul>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1172,19 +1165,19 @@ $activeNav = 'inventory';
             <!-- Stage 1 Footer -->
             <div class="modal-footer" id="add_footer_stage_1">
                 <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
-                <button type="button" class="btn-save" id="btn_trigger_ai" onclick="startGeminiAnalysis()" style="background:linear-gradient(135deg, #059669 0%, #0284c7 100%);color:#fff;border:none;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
-                    <span>✨ Analyze Material with Gemini AI →</span>
+                <button type="button" class="btn-save" id="btn_trigger_ai" onclick="startGeminiAnalysis()" style="background:#18422d;color:#ffffff;border:none;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;">
+                    Analyze Material
                 </button>
             </div>
 
             <!-- Stage 2 Footer -->
             <div class="modal-footer" id="add_footer_stage_2" style="display:none;">
-                <button type="button" class="btn-cancel" onclick="backToStage1()">← Back to Details</button>
-                <button type="submit" class="btn-save" id="btn_submit_reusable" style="background:#15803d;display:inline-flex;align-items:center;gap:6px;">
-                    <span>🛒 Confirm & Publish to Marketplace →</span>
+                <button type="button" class="btn-cancel" onclick="backToStage1()">Back to Details</button>
+                <button type="submit" class="btn-save" id="btn_submit_reusable" style="background:#18422d;color:#ffffff;border:none;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;">
+                    Publish to Marketplace
                 </button>
-                <button type="submit" class="btn-save" id="btn_submit_helper" style="background:#1e40af;display:none;align-items:center;gap:6px;">
-                    <span>🤖 Confirm & Forward to EcoCycle Helper →</span>
+                <button type="submit" class="btn-save" id="btn_submit_helper" style="background:#18422d;color:#ffffff;border:none;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;display:none;">
+                    Forward to EcoCycle Helper
                 </button>
             </div>
         </form>
@@ -1828,7 +1821,7 @@ function startGeminiAnalysis() {
     if (addPhotosTransfer.files.length < 1) {
         var err = document.getElementById('add_img_error');
         if (err) err.style.display = 'block';
-        alert('Please add at least 1 photo for Gemini AI material analysis (minimum 1, maximum 3 photos).');
+        alert('Please add at least 1 photo for material analysis (minimum 1, maximum 3 photos).');
         return;
     }
 
@@ -1860,7 +1853,7 @@ function startGeminiAnalysis() {
     .then(function(res) {
         if (!res.ok) {
             return res.json().then(function(errData) {
-                var msg = (errData && errData.message) ? errData.message : 'AI analysis failed. Please try again.';
+                var msg = (errData && errData.message) ? errData.message : 'Material analysis could not be completed. Please try again.';
                 throw new Error(msg);
             });
         }
@@ -1869,7 +1862,7 @@ function startGeminiAnalysis() {
     .then(function(data) {
         document.getElementById('add_stage_loading').style.display = 'none';
         if (!data.success || !data.analysis) {
-            alert('AI analysis could not complete. Returning to details.');
+            alert('Material analysis could not complete. Returning to details.');
             backToStage1();
             return;
         }
@@ -1881,45 +1874,33 @@ function startGeminiAnalysis() {
         var analysis = data.analysis;
         var cat = analysis.suggested_category || 'Other';
         document.getElementById('add_category_hidden').value = cat;
-        document.getElementById('ai_result_category').textContent = cat;
 
-        var sourceBadge = document.getElementById('ai_source_badge');
-        if (sourceBadge) {
-            sourceBadge.textContent = analysis.ai_source === 'gemini_multimodal' ? 'Google Gemini AI' : 'EcoCycle Circular Engine';
+        var catEl = document.getElementById('ai_result_category');
+        if (catEl) catEl.textContent = cat;
+
+        var isReusable = (analysis.suggested_reusability === 'reusable');
+        var classEl = document.getElementById('ai_result_classification');
+        if (classEl) {
+            classEl.textContent = isReusable ? 'Reusable' : 'Non-Reusable';
+            classEl.style.color = isReusable ? '#15803d' : '#334155';
         }
 
-        var pill = document.getElementById('ai_result_reusability_pill');
-        var isReusable = (analysis.suggested_reusability === 'reusable');
-        if (pill) {
-            if (isReusable) {
-                pill.style.background = '#dcfce7';
-                pill.style.color = '#15803d';
-                pill.style.border = '1.5px solid #86efac';
-                pill.innerHTML = '✨ AI Suggested: <strong>↻ Reusable Material</strong>';
+        var reasonEl = document.getElementById('ai_result_reason');
+        if (reasonEl) {
+            reasonEl.textContent = analysis.reason || 'Material evaluated based on condition and composition.';
+        }
+
+        var recEl = document.getElementById('ai_result_recommendation');
+        if (recEl) {
+            var actions = analysis.recommended_actions || [];
+            if (Array.isArray(actions)) {
+                recEl.textContent = actions.join(' ') || (isReusable ? 'Publish to EcoCycle Marketplace for reuse or resale.' : 'Forward to EcoCycle Helper for recycling recommendations.');
+            } else if (typeof actions === 'string') {
+                recEl.textContent = actions;
             } else {
-                pill.style.background = '#fef3c7';
-                pill.style.color = '#92400e';
-                pill.style.border = '1.5px solid #fcd34d';
-                pill.innerHTML = '✨ AI Suggested: <strong>⊘ Non-Reusable Scrap</strong>';
+                recEl.textContent = isReusable ? 'Publish to EcoCycle Marketplace for reuse or resale.' : 'Forward to EcoCycle Helper for recycling recommendations.';
             }
         }
-
-        document.getElementById('ai_result_reason').textContent = analysis.reason || 'Material characteristics evaluated based on condition and composition.';
-
-        var actionsList = document.getElementById('ai_result_actions');
-        actionsList.innerHTML = '';
-        var actions = analysis.recommended_actions || [];
-        if (typeof actions === 'string') {
-            actions = [actions];
-        }
-        if (actions.length === 0) {
-            actions = [isReusable ? 'List on EcoCycle Marketplace for other businesses.' : 'Forward to EcoCycle Helper for recycling locator.'];
-        }
-        actions.forEach(function(act) {
-            var li = document.createElement('li');
-            li.textContent = act;
-            actionsList.appendChild(li);
-        });
 
         var availQty = document.getElementById('add_available_quantity');
         if (availQty) availQty.value = qty;
@@ -1950,16 +1931,16 @@ function selectDecision(choice) {
         if (radioReusable) radioReusable.checked = true;
         if (radioNotReusable) radioNotReusable.checked = false;
         if (cardReusable) {
-            cardReusable.style.borderColor = '#16a34a';
+            cardReusable.style.borderColor = '#18422d';
             cardReusable.style.background = '#f0fdf4';
         }
         if (cardNotReusable) {
             cardNotReusable.style.borderColor = '#cbd5e1';
-            cardNotReusable.style.background = '#fff';
+            cardNotReusable.style.background = '#ffffff';
         }
         if (secReusable) secReusable.style.display = 'block';
         if (secNotReusable) secNotReusable.style.display = 'none';
-        if (btnReusable) btnReusable.style.display = 'inline-flex';
+        if (btnReusable) btnReusable.style.display = 'inline-block';
         if (btnNotReusable) btnNotReusable.style.display = 'none';
 
         var priceInput = document.getElementById('add_price');
@@ -1972,16 +1953,16 @@ function selectDecision(choice) {
         if (radioNotReusable) radioNotReusable.checked = true;
         if (cardReusable) {
             cardReusable.style.borderColor = '#cbd5e1';
-            cardReusable.style.background = '#fff';
+            cardReusable.style.background = '#ffffff';
         }
         if (cardNotReusable) {
-            cardNotReusable.style.borderColor = '#ea580c';
-            cardNotReusable.style.background = '#fff7ed';
+            cardNotReusable.style.borderColor = '#18422d';
+            cardNotReusable.style.background = '#f8fafc';
         }
         if (secReusable) secReusable.style.display = 'none';
         if (secNotReusable) secNotReusable.style.display = 'block';
         if (btnReusable) btnReusable.style.display = 'none';
-        if (btnNotReusable) btnNotReusable.style.display = 'inline-flex';
+        if (btnNotReusable) btnNotReusable.style.display = 'inline-block';
 
         var priceInput2 = document.getElementById('add_price');
         if (priceInput2) priceInput2.required = false;
@@ -1996,8 +1977,8 @@ function useGpsLocation() {
     }
     if (status) {
         status.style.display = 'block';
-        status.textContent = '📍 Acquiring your live GPS coordinates...';
-        status.style.color = '#0284c7';
+        status.textContent = 'Acquiring GPS coordinates...';
+        status.style.color = '#18422d';
     }
     navigator.geolocation.getCurrentPosition(
         function(pos) {
@@ -2008,13 +1989,13 @@ function useGpsLocation() {
                 input.value = lat + ', ' + lng;
             }
             if (status) {
-                status.textContent = '✓ Live GPS acquired: ' + lat + ', ' + lng;
-                status.style.color = '#15803d';
+                status.textContent = 'GPS acquired: ' + lat + ', ' + lng;
+                status.style.color = '#18422d';
             }
         },
         function(err) {
             if (status) {
-                status.textContent = '⚠️ Could not acquire GPS (' + err.message + '). Please enter pickup address manually.';
+                status.textContent = 'Could not acquire GPS (' + err.message + '). Please enter pickup address manually.';
                 status.style.color = '#b91c1c';
             }
         },
@@ -2032,8 +2013,8 @@ function useProfileLocation() {
     var status = document.getElementById('gps_status_msg');
     if (status) {
         status.style.display = 'block';
-        status.textContent = '✓ Set to registered business profile address.';
-        status.style.color = '#15803d';
+        status.textContent = 'Set to registered business profile address.';
+        status.style.color = '#18422d';
     }
 }
 

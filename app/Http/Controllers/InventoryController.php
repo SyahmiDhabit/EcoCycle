@@ -94,8 +94,15 @@ class InventoryController extends Controller
         ]);
     }
 
+    public static function generateAnalysisToken(int $businessId, string $name, float $quantity): string
+    {
+        $payload = $businessId.'|'.trim($name).'|'.number_format($quantity, 2, '.', '');
+
+        return hash_hmac('sha256', $payload, (string) config('app.key'));
+    }
+
     /**
-     * Gemini AI Material Analysis Endpoint
+     * Material Analysis Endpoint
      * Analyzes uploaded material photos, name, and description.
      * Suggests: category, reusability (reusable / not_reusable), reason, and recommended actions.
      */
@@ -111,7 +118,7 @@ class InventoryController extends Controller
             'images' => ['required', 'array', 'min:1', 'max:3'],
             'images.*' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ], [
-            'images.required' => 'Please upload at least 1 photo for Gemini AI material analysis (minimum 1, maximum 3 photos).',
+            'images.required' => 'Please upload at least 1 photo for material analysis (minimum 1, maximum 3 photos).',
             'images.min' => 'Please upload at least 1 photo (minimum 1, maximum 3 photos).',
             'images.max' => 'You can upload a maximum of 3 photos.',
         ]);
@@ -141,9 +148,17 @@ class InventoryController extends Controller
             $savedImages
         );
 
+        $analysisToken = self::generateAnalysisToken(
+            (int) Auth::id(),
+            $validated['name'],
+            (float) $validated['quantity']
+        );
+        session()->put('inventory_analysis_token', $analysisToken);
+
         return response()->json([
             'success' => true,
             'analysis' => $analysis,
+            'analysis_token' => $analysisToken,
             'saved_images' => $savedImages,
             'item_data' => [
                 'name' => $validated['name'],
@@ -158,6 +173,15 @@ class InventoryController extends Controller
     {
         $this->checkApproved();
         $business = Auth::user();
+
+        $isPublishingRequest = $request->boolean('publish_to_marketplace') || $request->input('redirect_to') === 'marketplace';
+
+        // Enforce Non-Reusable publishing restriction strictly on backend
+        if ($request->input('reusability') === 'not_reusable' && $isPublishingRequest) {
+            return back()->withErrors([
+                'reusability' => 'Non-reusable materials cannot be published to the Marketplace.',
+            ])->withInput();
+        }
 
         $rules = [
             'name' => ['required', 'string', 'max:255'],
@@ -178,9 +202,17 @@ class InventoryController extends Controller
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'redirect_to' => ['nullable', 'string'],
+            'analysis_token' => ['nullable', 'string'],
+            'publish_to_marketplace' => ['nullable', 'boolean'],
         ];
 
-        if ($request->input('reusability') === 'reusable' && $request->input('listing_type') === 'buy' && $request->filled('price')) {
+        if ($request->input('reusability') === 'reusable' && $isPublishingRequest) {
+            $rules['listing_type'] = ['required', 'in:buy,borrow,free'];
+            $rules['condition'] = ['required', 'string', 'max:40'];
+            if ($request->input('listing_type') === 'buy') {
+                $rules['price'] = ['required', 'numeric', 'min:0'];
+            }
+        } elseif ($request->input('reusability') === 'reusable' && $request->input('listing_type') === 'buy' && $request->filled('price')) {
             $rules['price'] = ['required', 'numeric', 'min:0'];
         }
 
@@ -188,6 +220,22 @@ class InventoryController extends Controller
             'images.max' => 'You can upload a maximum of 5 photos.',
             'price.required' => 'Price per unit (RM) is required when listing type is Sell.',
         ]);
+
+        // Enforce mandatory material analysis before publishing to Marketplace
+        if ($isPublishingRequest && $validated['reusability'] === 'reusable') {
+            $expectedToken = self::generateAnalysisToken(
+                (int) $business->id,
+                $validated['name'],
+                (float) $validated['quantity']
+            );
+            $providedToken = (string) ($validated['analysis_token'] ?? '');
+
+            if ($providedToken === '' || ! hash_equals($expectedToken, $providedToken)) {
+                return back()->withErrors([
+                    'analysis_token' => 'Material analysis is required before publishing to the Marketplace. Please analyze the material first.',
+                ])->withInput();
+            }
+        }
 
         // Process images (either pre-saved from AI analysis or newly uploaded)
         $uploadedImages = [];

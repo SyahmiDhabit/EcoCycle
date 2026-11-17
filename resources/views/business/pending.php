@@ -73,15 +73,15 @@ $hasFormErrors = $errors->any();
             gap: 10px;
             padding: 4px 12px 4px 6px;
             border: 1px solid var(--line);
-            border-radius: 999px;
+            border-radius: 0;
             background: #fafbfa;
         }
         .pending-avatar {
             width: 32px;
             height: 32px;
-            border-radius: 50%;
+            border-radius: 0;
             background: #eaf2e8;
-            border: 1.5px solid var(--forest);
+            border: 1px solid var(--forest);
             display: grid;
             place-items: center;
             overflow: hidden;
@@ -114,7 +114,7 @@ $hasFormErrors = $errors->any();
         }
         .approval-notice-card {
             padding: 24px 28px;
-            border-radius: 12px;
+            border-radius: 0;
             display: flex;
             align-items: flex-start;
             gap: 18px;
@@ -128,7 +128,7 @@ $hasFormErrors = $errors->any();
         .approval-notice-icon {
             width: 44px;
             height: 44px;
-            border-radius: 50%;
+            border-radius: 0;
             background: #f7e6c4;
             display: grid;
             place-items: center;
@@ -282,13 +282,13 @@ $hasFormErrors = $errors->any();
                     </div>
                     <span class="status-pill status-rejected" style="font-size:11px;padding:4px 10px;">Action Required</span>
                 </div>
-                <div style="background:#fff;padding:14px 16px;border-radius:8px;border:1px solid #f2cfca;color:var(--ink);font-size:13px;line-height:1.6;">
+                <div style="background:#fff;padding:14px 16px;border-radius:0;border:1px solid #f2cfca;color:var(--ink);font-size:13px;line-height:1.6;">
                     <?= nl2br(e($business->review_note)) ?>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:4px;">
                     <span style="color:var(--muted);font-size:12px;">Update your details or replace SSM files in the form below, then submit for re-review.</span>
                     <a href="#modify-application" class="action-button-primary" style="font-size:12px;padding:6px 14px;" onclick="toggleEditForm(true)">
-                        <span>✎ Go to Edit Form &darr;</span>
+                        <span>Go to Edit Form &darr;</span>
                     </a>
                 </div>
             </section>
@@ -347,7 +347,7 @@ $hasFormErrors = $errors->any();
                     <span>
                         <strong>SSM registration certificate</strong>
                         <small>Official certificate of incorporation / registration</small>
-                        <em>✓ Uploaded</em>
+                        <em>Uploaded</em>
                     </span>
                     <?php if ($business->ssm_certificate_path) { ?>
                         <a class="outline-button download-link" href="<?= e(route('business.application.document', 'certificate')) ?>">Download</a>
@@ -359,7 +359,7 @@ $hasFormErrors = $errors->any();
                     <span>
                         <strong>SSM company / business profile</strong>
                         <small>Full profile including owners, directors and activities</small>
-                        <em>✓ Uploaded</em>
+                        <em>Uploaded</em>
                     </span>
                     <?php if ($business->ssm_profile_path) { ?>
                         <a class="outline-button download-link" href="<?= e(route('business.application.document', 'profile')) ?>">Download</a>
@@ -369,7 +369,7 @@ $hasFormErrors = $errors->any();
                 <p class="document-note">Documents are encrypted and stored privately. They are accessible only by you and EcoCycle administrators.</p>
                 <div class="document-actions">
                     <a class="outline-button inline-button" href="#modify-application" onclick="toggleEditForm(true)">
-                        <span>✎ Modify or replace documents</span>
+                        <span>Modify or replace documents</span>
                     </a>
                 </div>
             </section>
@@ -383,13 +383,13 @@ $hasFormErrors = $errors->any();
                     <p>The information submitted for your company profile and legitimacy check.</p>
                 </div>
                 <button type="button" class="action-button-primary" onclick="toggleEditForm(true)">
-                    <span>✎ Edit application</span>
+                    <span>Edit application</span>
                 </button>
             </div>
 
             <!-- Company Profile Avatar & Identity Header -->
             <div class="company-profile-header-banner" style="display:flex;align-items:center;gap:18px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid #e2ede0;">
-                <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#eef6ec;border:2.5px solid #285c44;display:grid;place-items:center;flex-shrink:0;box-shadow:0 2px 8px rgba(40,92,68,0.15);">
+                <div style="width:72px;height:72px;border-radius:0;overflow:hidden;background:#eef6ec;border:1px solid #285c44;display:grid;place-items:center;flex-shrink:0;">
                     <?php if ($business->profile_image) { ?>
                         <img src="<?= e($business->profile_image_url) ?>" alt="<?= e($business->business_name) ?>" style="width:100%;height:100%;object-fit:cover;">
                     <?php } else { ?>
@@ -590,7 +590,7 @@ $hasFormErrors = $errors->any();
                     <?= csrf_field() ?>
                     <?= method_field('DELETE') ?>
                     <button type="submit" class="outline-button" style="color:var(--red);border-color:#e0b2ac;background:#fff8f7;font-weight:600;">
-                        <span>🗑 Delete all application data &amp; restart</span>
+                        <span>Delete all application data &amp; restart</span>
                     </button>
                 </form>
             </section>

@@ -19,30 +19,17 @@ $activeNav = 'helper';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>EcoCycle Helper &amp; GPS Recycling Locator - EcoCycle</title>
+    <title>EcoCycle Helper &amp; GPS Recycling Locator &mdash; EcoCycle</title>
     <meta name="csrf-token" content="<?= csrf_token() ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
-        :root {
-            --brand-green: #235839;
-            --brand-green-hover: #1b452c;
-            --brand-dark: #123321;
-            --brand-light: #f6f8f5;
-            --accent-blue: #1e40af;
-            --accent-blue-bg: #eff6ff;
-            --border-line: #d8e2d7;
-            --text-dark: #1f2937;
-            --text-muted: #5f7166;
-        }
-
         .helper-grid {
             display: grid;
             grid-template-columns: 1.15fr 0.85fr;
             gap: 22px;
-            margin-top: 18px;
         }
 
         @media (max-width: 1024px) {
@@ -53,9 +40,8 @@ $activeNav = 'helper';
 
         .helper-card {
             background: #ffffff;
-            border: 1px solid var(--border-line);
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -63,8 +49,8 @@ $activeNav = 'helper';
 
         .helper-card-header {
             padding: 16px 20px;
-            background: #fbfdfa;
-            border-bottom: 1px solid var(--border-line);
+            background: var(--surface-subtle);
+            border-bottom: 1px solid var(--card-border);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -75,17 +61,17 @@ $activeNav = 'helper';
         .helper-card-title {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             font-size: 15px;
             font-weight: 700;
-            color: var(--brand-dark);
+            color: var(--text-primary);
             margin: 0;
         }
 
         .item-select-bar {
             padding: 14px 20px;
             background: #f4f8f3;
-            border-bottom: 1px solid var(--border-line);
+            border-bottom: 1px solid var(--card-border);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -96,16 +82,16 @@ $activeNav = 'helper';
             flex: 1;
             min-width: 220px;
             padding: 9px 12px;
-            border-radius: 8px;
-            border: 1.5px solid #cadbc9;
+            border-radius: 0;
+            border: 1px solid var(--input-border);
             font-size: 13px;
             background: #ffffff;
-            color: #123321;
+            color: var(--text-primary);
             font-weight: 600;
             cursor: pointer;
         }
 
-        /* AI Analysis Panel */
+        /* Analysis Panel */
         .analysis-panel {
             padding: 20px;
             display: flex;
@@ -119,18 +105,18 @@ $activeNav = 'helper';
             display: flex;
             align-items: flex-start;
             gap: 16px;
-            background: #fbfdfb;
-            border: 1px solid #e1ebe0;
+            background: var(--surface-subtle);
+            border: 1px solid var(--card-border);
             padding: 14px 16px;
-            border-radius: 10px;
+            border-radius: 0;
         }
 
         .analysis-img {
             width: 72px;
             height: 72px;
-            border-radius: 8px;
+            border-radius: 0;
             object-fit: cover;
-            border: 1px solid #d0ded0;
+            border: 1px solid var(--card-border);
             flex-shrink: 0;
         }
 
@@ -138,16 +124,16 @@ $activeNav = 'helper';
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11.5px;
+            padding: 3px 9px;
+            border-radius: 0;
+            font-size: 11px;
             font-weight: 700;
         }
 
         .metric-badge.green {
             background: #e8f5e9;
             color: #1b5e20;
-            border: 1px solid #c8e6c9;
+            border: 1px solid #c2dec0;
         }
 
         .metric-badge.amber {
@@ -163,9 +149,9 @@ $activeNav = 'helper';
         }
 
         .advice-section {
-            background: #fcfdfc;
-            border: 1px solid #e3ece1;
-            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 14px 16px;
         }
 
@@ -173,10 +159,7 @@ $activeNav = 'helper';
             margin: 0 0 8px;
             font-size: 13px;
             font-weight: 700;
-            color: var(--brand-dark);
-            display: flex;
-            align-items: center;
-            gap: 7px;
+            color: var(--text-primary);
         }
 
         .step-list {
@@ -195,7 +178,7 @@ $activeNav = 'helper';
         .chat-container {
             display: flex;
             flex-direction: column;
-            border-top: 1px solid var(--border-line);
+            border-top: 1px solid var(--card-border);
             background: #ffffff;
         }
 
@@ -207,13 +190,13 @@ $activeNav = 'helper';
             display: flex;
             flex-direction: column;
             gap: 12px;
-            background: #fafbfa;
+            background: var(--surface-subtle);
         }
 
         .chat-bubble {
             max-width: 82%;
             padding: 11px 15px;
-            border-radius: 12px;
+            border-radius: 0;
             font-size: 13px;
             line-height: 1.55;
             white-space: pre-wrap;
@@ -222,23 +205,21 @@ $activeNav = 'helper';
         .chat-bubble.assistant {
             align-self: flex-start;
             background: #ffffff;
-            border: 1px solid #dde5dd;
+            border: 1px solid var(--card-border);
             color: #1f2937;
-            border-bottom-left-radius: 2px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
 
         .chat-bubble.user {
             align-self: flex-end;
-            background: var(--brand-green);
+            background: var(--forest-bg);
             color: #ffffff;
-            border-bottom-right-radius: 2px;
+            border: 1px solid var(--forest-bg);
         }
 
         .chat-prompts {
             padding: 10px 16px;
             background: #f4f7f3;
-            border-top: 1px solid #e3ebe1;
+            border-top: 1px solid var(--card-border);
             display: flex;
             gap: 6px;
             overflow-x: auto;
@@ -246,15 +227,15 @@ $activeNav = 'helper';
         }
 
         .prompt-chip {
-            padding: 5px 11px;
-            border-radius: 16px;
+            padding: 6px 11px;
+            border-radius: 0;
             background: #ffffff;
-            border: 1px solid #cadbc9;
+            border: 1px solid var(--input-border);
             font-size: 11.5px;
             font-weight: 600;
-            color: var(--brand-dark);
+            color: var(--text-primary);
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
             flex-shrink: 0;
         }
 
@@ -269,14 +250,14 @@ $activeNav = 'helper';
             display: flex;
             gap: 8px;
             background: #ffffff;
-            border-top: 1px solid var(--border-line);
+            border-top: 1px solid var(--card-border);
         }
 
         .chat-input-bar input {
             flex: 1;
-            padding: 10px 14px;
-            border: 1.5px solid #d4ded3;
-            border-radius: 8px;
+            padding: 10px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 0;
             font-size: 13px;
             outline: none;
         }
@@ -286,13 +267,13 @@ $activeNav = 'helper';
         }
 
         .chat-send-btn {
-            background: var(--brand-green);
+            background: var(--forest-bg);
             color: #ffffff;
-            border: none;
+            border: 1px solid var(--forest-bg);
             padding: 0 18px;
-            border-radius: 8px;
+            border-radius: 0;
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -300,36 +281,36 @@ $activeNav = 'helper';
         }
 
         .chat-send-btn:hover {
-            background: var(--brand-green-hover);
+            background: #0d2b1b;
         }
 
         /* GPS Locator Panel */
         .gps-controls {
             padding: 14px 18px;
-            background: #f7faf6;
-            border-bottom: 1px solid var(--border-line);
+            background: var(--surface-subtle);
+            border-bottom: 1px solid var(--card-border);
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
 
         .gps-btn-live {
-            background: #1e3a8a;
+            background: var(--forest-bg);
             color: #ffffff;
-            border: none;
+            border: 1px solid var(--forest-bg);
             padding: 9px 14px;
-            border-radius: 8px;
+            border-radius: 0;
             font-size: 12.5px;
-            font-weight: 700;
+            font-weight: 600;
             display: inline-flex;
             align-items: center;
             gap: 8px;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: background-color 0.15s ease;
         }
 
         .gps-btn-live:hover {
-            background: #172554;
+            background: #0d2b1b;
         }
 
         .facility-list {
@@ -343,10 +324,10 @@ $activeNav = 'helper';
 
         .facility-card {
             background: #ffffff;
-            border: 1px solid #dce5dc;
-            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 14px 16px;
-            transition: all 0.15s ease;
+            transition: border-color 0.15s ease;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -354,7 +335,6 @@ $activeNav = 'helper';
 
         .facility-card:hover {
             border-color: var(--brand-green);
-            box-shadow: 0 3px 10px rgba(35,88,57,0.08);
         }
 
         .facility-header {
@@ -368,49 +348,50 @@ $activeNav = 'helper';
             font-size: 13.5px;
             font-weight: 700;
             color: #123321;
-            margin: 0;
+            margin: 0 0 4px;
             line-height: 1.3;
         }
 
         .distance-pill {
             background: #eef7ee;
             color: #1e6338;
-            border: 1px solid #c9e4c8;
+            border: 1px solid #c4dfc0;
             padding: 3px 9px;
-            border-radius: 12px;
-            font-size: 11.5px;
+            border-radius: 0;
+            font-size: 11px;
             font-weight: 700;
             white-space: nowrap;
         }
 
         .facility-meta {
             font-size: 12px;
-            color: var(--text-muted);
-            line-height: 1.45;
+            color: var(--text-secondary);
+            line-height: 1.5;
         }
 
         .btn-directions {
             margin-top: 4px;
             align-self: flex-start;
-            background: #235839;
+            background: var(--forest-bg);
             color: #ffffff;
+            border: 1px solid var(--forest-bg);
             text-decoration: none;
             font-size: 11.5px;
-            font-weight: 700;
-            padding: 6px 12px;
-            border-radius: 6px;
+            font-weight: 600;
+            padding: 7px 12px;
+            border-radius: 0;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: background 0.15s;
+            transition: background-color 0.15s ease;
         }
 
         .btn-directions:hover {
-            background: #173e27;
+            background: #0d2b1b;
         }
     </style>
 </head>
-<body class="dashboard-body">
+<body class="business-dashboard-page">
 
     <!-- Reusable Top Navigation Bar -->
     <?php include resource_path('views/business/partials/topbar.php'); ?>
@@ -419,51 +400,46 @@ $activeNav = 'helper';
         <!-- Reusable Left Navigation Sidebar -->
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
-        <main class="dashboard-content">
+        <main class="dashboard-main">
             <!-- Header Banner -->
-            <div class="page-header" style="margin-bottom: 8px;">
+            <div class="page-header">
                 <div>
-                    <h1 style="display:flex;align-items:center;gap:10px;">
-                        <span>💡 EcoCycle Helper</span>
-                        <span style="font-size:12px;background:#e8f4ec;color:#1e5e3a;padding:3px 10px;border-radius:12px;font-weight:700;">AI Circular Advisor &amp; GPS Locator</span>
-                    </h1>
-                    <p>Intelligent material analysis, circular repurposing strategies, scrap valuation, and live GPS matching to certified Malaysian recycling centres.</p>
+                    <h1>EcoCycle Helper</h1>
+                    <p>Material analysis, circular repurposing recommendations, disposal guidance, and GPS matching to certified Malaysian recycling centres.</p>
                 </div>
-                <div style="display:flex;gap:8px;">
-                    <a href="/business/inventory" class="btn-primary" style="background:#f4f8f3;color:#235839;border:1.5px solid #cadbc9;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
-                        <span>📦 View Inventory</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <a href="/business/inventory" class="btn-reset" style="display:inline-flex;align-items:center;">
+                        <span>View Inventory</span>
                     </a>
-                    <a href="/business/marketplace?tab=non_reusable" class="btn-primary" style="background:#235839;color:#ffffff;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
-                        <span>⊘ Non-Reusable Listings</span>
+                    <a href="/business/marketplace?tab=non_reusable" class="btn-search" style="text-decoration:none;">
+                        <span>Non-Reusable Listings</span>
                     </a>
                 </div>
             </div>
 
-            <!-- Main Helper Grid (AI Advisor + GPS Locator) -->
+            <!-- Main Helper Grid (Circular Advisor + GPS Locator) -->
             <div class="helper-grid">
-                <!-- Left Column: EcoCycle AI Chatbot & Material Analysis -->
+                <!-- Left Column: EcoCycle Helper & Material Analysis -->
                 <section class="helper-card">
                     <div class="helper-card-header">
                         <h2 class="helper-card-title">
-                            <span style="font-size:18px;">🤖</span>
-                            <span>Circular Material AI Advisor</span>
+                            <span>AI Circular Advisor</span>
                         </h2>
-                        <span id="ai-status-indicator" style="font-size:11.5px;color:#15803d;font-weight:700;display:flex;align-items:center;gap:5px;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
-                            AI Model Active
+                        <span id="ai-status-indicator" style="font-size:11px;color:#15803d;font-weight:700;background:#eef6ed;border:1px solid #c2dec0;padding:3px 9px;">
+                            Active
                         </span>
                     </div>
 
                     <!-- Material Selector -->
                     <div class="item-select-bar">
-                        <label for="item-selector" style="font-size:12px;font-weight:700;color:var(--brand-dark);white-space:nowrap;">Select Item to Analyze:</label>
+                        <label for="item-selector" style="font-size:12px;font-weight:700;color:var(--text-primary);white-space:nowrap;">Select Item to Analyze:</label>
                         <select id="item-selector" onchange="onSelectItem(this.value)">
                             <?php if ($items->isEmpty()) { ?>
                                 <option value="">No inventory items found. Add items in inventory first.</option>
                             <?php } else { ?>
                                 <?php foreach ($items as $it) { ?>
                                     <option value="<?= $it->id ?>" <?= $selectedItem && $selectedItem->id === $it->id ? 'selected' : '' ?>>
-                                        <?= ($it->reusability === 'not_reusable') ? '⊘ [Scrap] ' : '↻ [Reusable] ' ?>
+                                        <?= ($it->reusability === 'not_reusable') ? '[Non-Reusable] ' : '[Reusable] ' ?>
                                         <?= e($it->name ?: $it->title) ?> (<?= (float)$it->quantity ?> <?= e($it->unit) ?> &middot; <?= e($it->category) ?>)
                                     </option>
                                 <?php } ?>
@@ -479,13 +455,13 @@ $activeNav = 'helper';
                                 <?php if ($selectedItem->getPrimaryImage()) { ?>
                                     <img src="<?= e($selectedItem->getPrimaryImage()) ?>" alt="<?= e($selectedItem->name) ?>" class="analysis-img">
                                 <?php } else { ?>
-                                    <div class="analysis-img" style="background:#eef6ed;display:grid;place-items:center;font-size:24px;color:#235839;">📦</div>
+                                    <div class="analysis-img" style="background:#eef6ed;display:grid;place-items:center;font-size:11px;font-weight:700;color:#235839;">ITEM</div>
                                 <?php } ?>
                                 <div style="flex:1;min-width:0;">
-                                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
                                         <span class="metric-badge green"><?= e($selectedItem->category) ?></span>
                                         <span class="metric-badge <?= $selectedItem->reusability === 'not_reusable' ? 'amber' : 'blue' ?>">
-                                            <?= $selectedItem->reusability === 'not_reusable' ? '⊘ Non-Reusable Scrap' : '↻ Reusable Asset' ?>
+                                            <?= $selectedItem->reusability === 'not_reusable' ? 'Non-Reusable Scrap' : 'Reusable Asset' ?>
                                         </span>
                                         <span class="metric-badge blue"><?= (float)$selectedItem->quantity ?> <?= e($selectedItem->unit) ?></span>
                                     </div>
@@ -495,8 +471,8 @@ $activeNav = 'helper';
                             </div>
 
                             <!-- Circular Recommendation Strategy -->
-                            <div class="advice-section" style="border-left:4px solid var(--brand-green);">
-                                <h4>🎯 Primary Circular Strategy</h4>
+                            <div class="advice-section" style="border-left:3px solid var(--brand-green);">
+                                <h4>Primary Circular Strategy</h4>
                                 <p style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#183624;" id="analysis-strategy">
                                     <?= e($initialAnalysis['action_recommendation']) ?>
                                 </p>
@@ -507,7 +483,7 @@ $activeNav = 'helper';
 
                             <!-- Repurposing Ideas -->
                             <div class="advice-section">
-                                <h4>💡 Upcycling &amp; Practical Repurposing Options</h4>
+                                <h4>Upcycling &amp; Repurposing Options</h4>
                                 <ul class="step-list" id="analysis-repurpose">
                                     <?php foreach ($initialAnalysis['repurpose_ideas'] as $idea) { ?>
                                         <li><?= e($idea) ?></li>
@@ -517,7 +493,7 @@ $activeNav = 'helper';
 
                             <!-- Processing & Decontamination Checklist -->
                             <div class="advice-section">
-                                <h4>⚙️ Technical Pre-Processing Checklist</h4>
+                                <h4>Technical Pre-Processing Checklist</h4>
                                 <ol class="step-list" id="analysis-steps">
                                     <?php foreach ($initialAnalysis['recycling_steps'] as $step) { ?>
                                         <li><?= e($step) ?></li>
@@ -527,35 +503,32 @@ $activeNav = 'helper';
 
                             <!-- Economic & Carbon Metrics -->
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="analysis-metrics">
-                                <div style="background:#f4fbf5;border:1px solid #cce5c8;border-radius:8px;padding:12px 14px;">
-                                    <small style="display:block;font-size:10.5px;text-transform:uppercase;color:#2b6b3e;font-weight:700;">Scrap Market Benchmark</small>
+                                <div style="background:#f4fbf5;border:1px solid #c2dec0;border-radius:0;padding:12px 14px;">
+                                    <small style="display:block;font-size:10.5px;text-transform:uppercase;color:#1b5e20;font-weight:700;margin-bottom:2px;">Scrap Market Benchmark</small>
                                     <strong style="font-size:13px;color:#123321;" id="analysis-value"><?= e($initialAnalysis['estimated_value_myr']) ?></strong>
                                 </div>
-                                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;">
-                                    <small style="display:block;font-size:10.5px;text-transform:uppercase;color:#1d4ed8;font-weight:700;">Carbon Offset Potential</small>
+                                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:0;padding:12px 14px;">
+                                    <small style="display:block;font-size:10.5px;text-transform:uppercase;color:#1d4ed8;font-weight:700;margin-bottom:2px;">Carbon Offset Potential</small>
                                     <strong style="font-size:13px;color:#1e3a8a;" id="analysis-carbon"><?= e($initialAnalysis['carbon_saving_estimate']) ?></strong>
                                 </div>
                             </div>
                         <?php } else { ?>
                             <div style="text-align:center;padding:48px 20px;color:var(--text-muted);">
-                                <span style="font-size:36px;display:block;margin-bottom:8px;">📦</span>
                                 <h3 style="margin:0 0 6px;color:#123321;">No items selected</h3>
-                                <p style="font-size:13px;margin:0;">Select a material from the dropdown above to run automated circular AI analysis.</p>
+                                <p style="font-size:13px;margin:0;">Select a material from the dropdown above to view recycling and repurposing recommendations.</p>
                             </div>
                         <?php } ?>
                     </div>
 
                     <!-- Interactive Chatbot -->
                     <div class="chat-container">
-                        <div style="padding:10px 18px 4px;font-size:12px;font-weight:700;color:var(--brand-dark);display:flex;align-items:center;gap:6px;">
-                            <span>💬 Ask EcoCycle Helper Follow-Up Questions:</span>
+                        <div style="padding:10px 18px 6px;font-size:12px;font-weight:700;color:var(--text-primary);border-bottom:1px solid #edf2ec;">
+                            Ask EcoCycle Helper Follow-Up Questions
                         </div>
                         <div class="chat-messages" id="chat-messages">
-                            <div class="chat-bubble assistant">
-Hello <strong><?= e($companyName) ?></strong>! I am your <strong>EcoCycle Circular Economy Assistant</strong>. 
+                            <div class="chat-bubble assistant">Hello <strong><?= e($companyName) ?></strong>. I am your <strong>EcoCycle Circular Economy Assistant</strong>.
 
-You can ask me anything about material preparation, scrap prices in Malaysia, DOE licensing rules, or finding circular exchange buyers. Try clicking a suggested question below or type your own!
-                            </div>
+You can ask about material preparation, scrap prices in Malaysia, DOE licensing rules, or suitable disposal methods. Select a suggested question below or type your own.</div>
                         </div>
 
                         <!-- Quick Suggested Prompt Chips -->
@@ -571,7 +544,6 @@ You can ask me anything about material preparation, scrap prices in Malaysia, DO
                             <input type="text" id="chat-input" placeholder="Ask about preparation, market price, DOE compliance..." autocomplete="off">
                             <button type="submit" class="chat-send-btn" id="chat-send-btn">
                                 <span>Send</span>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                             </button>
                         </form>
                     </div>
@@ -581,11 +553,10 @@ You can ask me anything about material preparation, scrap prices in Malaysia, DO
                 <section class="helper-card">
                     <div class="helper-card-header">
                         <h2 class="helper-card-title">
-                            <span style="font-size:18px;">📍</span>
                             <span>GPS Recycling &amp; Disposal Locator</span>
                         </h2>
-                        <span id="gps-status-pill" style="font-size:11.5px;color:#1e40af;background:#eff6ff;padding:3px 9px;border-radius:12px;font-weight:700;">
-                            📍 <?= e($business->city ?: 'Shah Alam') ?>, <?= e($business->state ?: 'Selangor') ?>
+                        <span id="gps-status-pill" style="font-size:11px;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;padding:3px 9px;border-radius:0;font-weight:700;">
+                            <?= e($business->city ?: 'Shah Alam') ?>, <?= e($business->state ?: 'Selangor') ?>
                         </span>
                     </div>
 
@@ -593,13 +564,12 @@ You can ask me anything about material preparation, scrap prices in Malaysia, DO
                     <div class="gps-controls">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                             <button type="button" class="gps-btn-live" id="btn-request-gps" onclick="requestBrowserGPS()">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
                                 <span>Use My Current GPS Location</span>
                             </button>
 
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <label for="location-select" style="font-size:11.5px;font-weight:700;color:var(--brand-dark);">City:</label>
-                                <select id="location-select" onchange="onSelectCity(this.value)" style="padding:6px 10px;border-radius:6px;border:1px solid #cadbc9;font-size:12px;background:#fff;">
+                                <label for="location-select" style="font-size:11.5px;font-weight:700;color:var(--text-primary);">City:</label>
+                                <select id="location-select" onchange="onSelectCity(this.value)" style="padding:7px 10px;border-radius:0;border:1px solid var(--input-border);font-size:12px;background:#ffffff;">
                                     <option value="shah alam">Shah Alam, Selangor</option>
                                     <option value="petaling jaya">Petaling Jaya, Selangor</option>
                                     <option value="klang">Klang, Selangor</option>
@@ -616,9 +586,9 @@ You can ask me anything about material preparation, scrap prices in Malaysia, DO
                             </div>
                         </div>
 
-                        <!-- Material Filter Pills -->
+                        <!-- Material Filter Tabs -->
                         <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;" id="material-filter-pills">
-                            <button type="button" class="prompt-chip" style="background:var(--brand-green);color:#fff;border-color:var(--brand-green);" onclick="filterCentres('All', this)">All Facilities</button>
+                            <button type="button" class="prompt-chip" style="background:var(--forest-bg);color:#fff;border-color:var(--forest-bg);" onclick="filterCentres('All', this)">All Facilities</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Plastics', this)">Plastics</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Metals', this)">Metals &amp; Steel</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Packaging & paper', this)">Paper &amp; Cartons</button>
@@ -635,23 +605,22 @@ You can ask me anything about material preparation, scrap prices in Malaysia, DO
                                 <div class="facility-header">
                                     <div>
                                         <h3 class="facility-name"><?= e($centre['name']) ?></h3>
-                                        <span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;padding:2px 7px;border-radius:10px;font-weight:700;">
+                                        <span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;border:1px solid #c2dec0;padding:2px 7px;border-radius:0;font-weight:700;">
                                             <?= e($centre['license']) ?>
                                         </span>
                                     </div>
                                     <span class="distance-pill"><?= $centre['distance_km'] ?> km away</span>
                                 </div>
                                 <div class="facility-meta">
-                                    <div>📍 <?= e($centre['address']) ?></div>
-                                    <div style="margin-top:2px;">📞 <a href="tel:<?= e($centre['phone']) ?>" style="color:#1e3a8a;text-decoration:none;font-weight:600;"><?= e($centre['phone']) ?></a> &middot; ⏱ <?= e($centre['operating_hours']) ?></div>
-                                    <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">
+                                    <div><strong>Address:</strong> <?= e($centre['address']) ?></div>
+                                    <div style="margin-top:2px;"><strong>Phone:</strong> <a href="tel:<?= e($centre['phone']) ?>" style="color:#1e3a8a;text-decoration:none;font-weight:600;"><?= e($centre['phone']) ?></a> &middot; <strong>Hours:</strong> <?= e($centre['operating_hours']) ?></div>
+                                    <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">
                                         <?php foreach ($centre['subtypes'] as $sub) { ?>
-                                            <span style="font-size:10px;background:#f3f4f6;color:#4b5563;padding:1px 6px;border-radius:4px;"><?= e($sub) ?></span>
+                                            <span style="font-size:10px;background:#f3f4f6;color:#4b5563;border:1px solid #e2e8f0;padding:2px 6px;border-radius:0;"><?= e($sub) ?></span>
                                         <?php } ?>
                                     </div>
                                 </div>
                                 <a href="<?= e($centre['directions_url']) ?>" target="_blank" rel="noopener noreferrer" class="btn-directions">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
                                     <span>Get Directions on Google Maps &rarr;</span>
                                 </a>
                             </article>
@@ -668,7 +637,6 @@ var currentLng = <?= (float) $defaultCoords['lng'] ?>;
 var currentItemId = <?= $selectedItem ? (int)$selectedItem->id : 'null' ?>;
 var currentCategory = '<?= $selectedItem ? e(addslashes($selectedItem->category)) : "All" ?>';
 
-// On selecting an inventory item
 function onSelectItem(itemId) {
     if (!itemId) return;
     currentItemId = itemId;
@@ -722,11 +690,9 @@ function renderAnalysis(item, a) {
     var carbEl = document.getElementById('analysis-carbon');
     if (carbEl) carbEl.textContent = a.carbon_saving_estimate;
 
-    // Add assistant chat message introducing the item
-    appendAssistantBubble('I have loaded **' + item.name + '** (' + item.category + '). Best circular path: **' + a.action_recommendation + '**. How can I help you handle or trade this material?');
+    appendAssistantBubble('Loaded **' + item.name + '** (' + item.category + '). Recommended path: **' + a.action_recommendation + '**. How can I assist with handling or disposal?');
 }
 
-// Browser Geolocation
 function requestBrowserGPS() {
     var btn = document.getElementById('btn-request-gps');
     if (!navigator.geolocation) {
@@ -734,27 +700,26 @@ function requestBrowserGPS() {
         return;
     }
 
-    if (btn) btn.innerHTML = '<span>📡 Locating...</span>';
+    if (btn) btn.innerHTML = '<span>Locating...</span>';
 
     navigator.geolocation.getCurrentPosition(
         function(pos) {
             currentLat = pos.coords.latitude;
             currentLng = pos.coords.longitude;
             var pill = document.getElementById('gps-status-pill');
-            if (pill) pill.textContent = '📍 GPS: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4);
-            if (btn) btn.innerHTML = '<span>✓ Live GPS Connected</span>';
+            if (pill) pill.textContent = 'GPS: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4);
+            if (btn) btn.innerHTML = '<span>Live GPS Connected</span>';
 
             fetchNearbyCentres(currentLat, currentLng, currentCategory);
         },
         function(err) {
             alert('Unable to retrieve your location: ' + err.message + '. Defaulting to registered business city.');
-            if (btn) btn.innerHTML = '<span>📍 Use My Current GPS Location</span>';
+            if (btn) btn.innerHTML = '<span>Use My Current GPS Location</span>';
         },
         { enableHighAccuracy: true, timeout: 8000 }
     );
 }
 
-// Select city fallback
 function onSelectCity(city) {
     var coords = {
         'shah alam': { lat: 3.0738, lng: 101.5183 },
@@ -776,7 +741,7 @@ function onSelectCity(city) {
     currentLng = c.lng;
 
     var pill = document.getElementById('gps-status-pill');
-    if (pill) pill.textContent = '📍 ' + city.toUpperCase();
+    if (pill) pill.textContent = city.toUpperCase();
 
     fetchNearbyCentres(currentLat, currentLng, currentCategory);
 }
@@ -786,13 +751,13 @@ function filterCentres(cat, btn) {
     var pills = document.querySelectorAll('#material-filter-pills .prompt-chip');
     pills.forEach(function(p) {
         p.style.background = '#ffffff';
-        p.style.color = 'var(--brand-dark)';
-        p.style.borderColor = '#cadbc9';
+        p.style.color = 'var(--text-primary)';
+        p.style.borderColor = 'var(--input-border)';
     });
     if (btn) {
-        btn.style.background = 'var(--brand-green)';
+        btn.style.background = 'var(--forest-bg)';
         btn.style.color = '#ffffff';
-        btn.style.borderColor = 'var(--brand-green)';
+        btn.style.borderColor = 'var(--forest-bg)';
     }
 
     fetchNearbyCentres(currentLat, currentLng, cat === 'All' ? null : cat);
@@ -835,31 +800,29 @@ function renderNearbyCentres(centres) {
 
     container.innerHTML = centres.map(function(c) {
         var subtypesHtml = (c.subtypes || []).map(function(s) {
-            return '<span style="font-size:10px;background:#f3f4f6;color:#4b5563;padding:1px 6px;border-radius:4px;">' + escapeHtml(s) + '</span>';
+            return '<span style="font-size:10px;background:#f3f4f6;color:#4b5563;border:1px solid #e2e8f0;padding:2px 6px;border-radius:0;">' + escapeHtml(s) + '</span>';
         }).join(' ');
 
         return '<article class="facility-card">' +
             '<div class="facility-header">' +
                 '<div>' +
                     '<h3 class="facility-name">' + escapeHtml(c.name) + '</h3>' +
-                    '<span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;padding:2px 7px;border-radius:10px;font-weight:700;">' + escapeHtml(c.license) + '</span>' +
+                    '<span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;border:1px solid #c2dec0;padding:2px 7px;border-radius:0;font-weight:700;">' + escapeHtml(c.license) + '</span>' +
                 '</div>' +
                 '<span class="distance-pill">' + c.distance_km + ' km away</span>' +
             '</div>' +
             '<div class="facility-meta">' +
-                '<div>📍 ' + escapeHtml(c.address) + '</div>' +
-                '<div style="margin-top:2px;">📞 <a href="tel:' + escapeHtml(c.phone) + '" style="color:#1e3a8a;text-decoration:none;font-weight:600;">' + escapeHtml(c.phone) + '</a> &middot; ⏱ ' + escapeHtml(c.operating_hours) + '</div>' +
-                '<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">' + subtypesHtml + '</div>' +
+                '<div><strong>Address:</strong> ' + escapeHtml(c.address) + '</div>' +
+                '<div style="margin-top:2px;"><strong>Phone:</strong> <a href="tel:' + escapeHtml(c.phone) + '" style="color:#1e3a8a;text-decoration:none;font-weight:600;">' + escapeHtml(c.phone) + '</a> &middot; <strong>Hours:</strong> ' + escapeHtml(c.operating_hours) + '</div>' +
+                '<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">' + subtypesHtml + '</div>' +
             '</div>' +
             '<a href="' + escapeHtml(c.directions_url) + '" target="_blank" rel="noopener noreferrer" class="btn-directions">' +
-                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>' +
                 '<span>Get Directions on Google Maps &rarr;</span>' +
             '</a>' +
         '</article>';
     }).join('');
 }
 
-// Chat functions
 function handleChatSubmit(e) {
     if (e) e.preventDefault();
     var inp = document.getElementById('chat-input');
@@ -905,12 +868,12 @@ function sendChatMessage(msg) {
         }
     })
     .catch(function(err) {
-        appendAssistantBubble('I apologize, there was an issue processing your query. Please try again.');
+        appendAssistantBubble('There was an issue processing your query. Please try again.');
     })
     .finally(function() {
         if (sendBtn) {
             sendBtn.disabled = false;
-            sendBtn.innerHTML = '<span>Send</span> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
+            sendBtn.innerHTML = '<span>Send</span>';
         }
     });
 }

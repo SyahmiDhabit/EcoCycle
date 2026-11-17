@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wastage Monitoring & Recovery &middot; EcoCycle</title>
+    <title>Wastage Monitoring &amp; Recovery &middot; EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -17,37 +17,35 @@
         }
         .waste-kpi-card {
             background: #ffffff;
-            border: 1px solid #d8e5d6;
-            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 18px 20px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
         .waste-kpi-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
-            color: #556c5e;
+            color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
         .waste-kpi-value {
             font-size: 26px;
             font-weight: 800;
-            color: #123020;
+            color: var(--text-primary);
             font-family: var(--font-display);
         }
         .waste-kpi-sub {
             font-size: 11.5px;
-            color: #617769;
+            color: var(--text-muted);
         }
         .status-badge-pill {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            padding: 4px 10px;
-            border-radius: 20px;
+            padding: 3px 9px;
+            border-radius: 0;
             font-size: 11px;
             font-weight: 700;
         }
@@ -57,12 +55,12 @@
         .status-recycled { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
         .status-composted { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
         .btn-update-status {
-            padding: 4px 8px;
+            padding: 5px 10px;
             border: 1px solid #cbd5e1;
-            border-radius: 4px;
+            border-radius: 0;
             background: #ffffff;
             color: #334155;
-            font: 600 11px var(--font-main);
+            font: 600 11.5px var(--font-main);
             cursor: pointer;
         }
         .btn-update-status:hover {
@@ -80,21 +78,21 @@
         ?>
 
         <main class="dashboard-main-content">
-            <header class="section-header" style="margin-bottom:20px;">
+            <header class="section-header">
                 <div class="section-header-title">
                     <h2>Wastage Monitoring &amp; Scrap Recovery</h2>
                     <p>Track, manage, and divert industrial scrap and non-reusable byproducts away from landfills toward licensed Malaysian circular recyclers.</p>
                 </div>
                 <div>
-                    <button type="button" class="btn-create-listing" onclick="openAddWasteModal()" style="background:#15803d;color:#fff;border:none;padding:10px 18px;border-radius:8px;font:700 13px var(--font-main);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                    <button type="button" class="btn-search" onclick="openAddWasteModal()">
                         <span>+ Log Scrap Entry</span>
                     </button>
                 </div>
             </header>
 
             <?php if (session('status')): ?>
-                <div style="background:#edf7ed;border:1.5px solid #a3cfbb;color:#1e4620;padding:12px 18px;border-radius:8px;font-size:13px;margin-bottom:20px;font-weight:600;">
-                    ✓ <?= session('status') ?>
+                <div style="background:#eef6ed;border:1px solid #b9dec0;border-left:3px solid #176b40;color:#143825;padding:12px 18px;border-radius:0;font-size:13px;margin-bottom:20px;font-weight:600;">
+                    <?= session('status') ?>
                 </div>
             <?php endif; ?>
 
@@ -105,17 +103,17 @@
                     <span class="waste-kpi-value"><?= number_format((float) $totalScrapGeneratedKg, 1) ?> <small style="font-size:14px;font-weight:600;">kg</small></span>
                     <span class="waste-kpi-sub">Total non-reusable industrial cutoffs recorded</span>
                 </div>
-                <div class="waste-kpi-card" style="border-left:4px solid #16a34a;">
+                <div class="waste-kpi-card" style="border-left:3px solid #176b40;">
                     <span class="waste-kpi-title" style="color:#15803d;">Diverted to Recyclers</span>
                     <span class="waste-kpi-value" style="color:#15803d;"><?= number_format((float) $totalDivertedKg, 1) ?> <small style="font-size:14px;font-weight:600;">kg</small></span>
                     <span class="waste-kpi-sub">Processed through secondary recovery facilities</span>
                 </div>
-                <div class="waste-kpi-card" style="border-left:4px solid #eab308;">
+                <div class="waste-kpi-card" style="border-left:3px solid #a16207;">
                     <span class="waste-kpi-title" style="color:#a16207;">Pending In Storage / Pickup</span>
                     <span class="waste-kpi-value" style="color:#a16207;"><?= number_format((float) $totalPendingKg, 1) ?> <small style="font-size:14px;font-weight:600;">kg</small></span>
                     <span class="waste-kpi-sub">Awaiting scheduled circular logistics</span>
                 </div>
-                <div class="waste-kpi-card" style="border-left:4px solid #2563eb;">
+                <div class="waste-kpi-card" style="border-left:3px solid #1d4ed8;">
                     <span class="waste-kpi-title" style="color:#1d4ed8;">Landfill Diversion Rate</span>
                     <span class="waste-kpi-value" style="color:#1d4ed8;"><?= $diversionRate ?>%</span>
                     <span class="waste-kpi-sub">Proportion of scrap successfully recovered</span>
@@ -123,11 +121,11 @@
             </div>
 
             <!-- Filters -->
-            <div style="background:#ffffff;border:1px solid #d8e5d6;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                 <form method="GET" action="/business/waste-monitoring" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0;">
-                    <input type="text" name="search" value="<?= e($search) ?>" placeholder="Search scrap or facility..." style="padding:8px 12px;border:1px solid #cadbc9;border-radius:6px;font-size:13px;min-width:200px;">
+                    <input type="text" name="search" value="<?= e($search) ?>" placeholder="Search scrap or facility..." style="height:38px;padding:0 12px;border:1px solid var(--input-border);border-radius:0;font-size:13px;min-width:200px;">
                     
-                    <select name="status" style="padding:8px 12px;border:1px solid #cadbc9;border-radius:6px;font-size:13px;">
+                    <select name="status" style="height:38px;padding:0 12px;border:1px solid var(--input-border);border-radius:0;font-size:13px;">
                         <option value="">All Statuses</option>
                         <option value="in_storage" <?= $selectedStatus === 'in_storage' ? 'selected' : '' ?>>In Storage</option>
                         <option value="scheduled_pickup" <?= $selectedStatus === 'scheduled_pickup' ? 'selected' : '' ?>>Scheduled Pickup</option>
@@ -136,39 +134,39 @@
                         <option value="composted" <?= $selectedStatus === 'composted' ? 'selected' : '' ?>>Composted</option>
                     </select>
 
-                    <select name="waste_type" style="padding:8px 12px;border:1px solid #cadbc9;border-radius:6px;font-size:13px;">
+                    <select name="waste_type" style="height:38px;padding:0 12px;border:1px solid var(--input-border);border-radius:0;font-size:13px;">
                         <option value="">All Categories</option>
                         <?php foreach ($categories as $cat): ?>
                             <option value="<?= e($cat) ?>" <?= $selectedCategory === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
                         <?php endforeach; ?>
                     </select>
 
-                    <button type="submit" style="padding:8px 14px;background:#18422d;color:#ffffff;border:none;border-radius:6px;font-weight:700;font-size:12.5px;cursor:pointer;">
+                    <button type="submit" class="btn-search" style="height:38px;padding:0 16px;">
                         Filter
                     </button>
                     <?php if ($search || $selectedStatus || $selectedCategory): ?>
-                        <a href="/business/waste-monitoring" style="font-size:12px;color:#b91c1c;text-decoration:none;margin-left:4px;">Clear</a>
+                        <a href="/business/waste-monitoring" style="font-size:12.5px;color:#b91c1c;text-decoration:none;margin-left:4px;font-weight:600;">Clear</a>
                     <?php endif; ?>
                 </form>
 
-                <div style="font-size:12.5px;color:#526b5a;font-weight:600;">
+                <div style="font-size:12.5px;color:var(--text-secondary);font-weight:600;">
                     Showing <?= $records->total() ?> scrap logs
                 </div>
             </div>
 
             <!-- Wastage Table -->
-            <div style="background:#ffffff;border:1px solid #d8e5d6;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+            <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;overflow-x:auto;">
                 <?php if ($records->isNotEmpty()): ?>
-                    <table class="inventory-table" style="width:100%;border-collapse:collapse;">
+                    <table class="directory-table" style="margin-bottom:0;">
                         <thead>
-                            <tr style="background:#f4f8f3;border-bottom:1.5px solid #d8e5d6;text-align:left;font-size:12px;color:#18422d;">
-                                <th style="padding:14px 18px;">Material / Scrap Name</th>
-                                <th style="padding:14px 18px;">Category</th>
-                                <th style="padding:14px 18px;">Quantity</th>
-                                <th style="padding:14px 18px;">Status</th>
-                                <th style="padding:14px 18px;">Facility / Destination</th>
-                                <th style="padding:14px 18px;">Date</th>
-                                <th style="padding:14px 18px;text-align:right;">Actions</th>
+                            <tr>
+                                <th>Material / Scrap Name</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Status</th>
+                                <th>Facility / Destination</th>
+                                <th>Date</th>
+                                <th style="text-align:right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -182,39 +180,39 @@
                                 ];
                                 $label = $statusLabels[$record->status] ?? ucfirst(str_replace('_', ' ', $record->status));
                             ?>
-                                <tr style="border-bottom:1px solid #e5ede3;font-size:13px;">
-                                    <td style="padding:14px 18px;">
+                                <tr>
+                                    <td>
                                         <strong style="color:#113624;display:block;"><?= e($record->material_name) ?></strong>
                                         <?php if (!empty($record->ai_recommendation)): ?>
-                                            <small style="color:#2563eb;font-size:11px;" title="<?= e($record->ai_recommendation) ?>">💡 AI Advised</small>
+                                            <small style="color:#1d4ed8;font-size:11px;font-weight:600;" title="<?= e($record->ai_recommendation) ?>">EcoCycle Advised</small>
                                         <?php endif; ?>
                                     </td>
-                                    <td style="padding:14px 18px;color:#526b5a;"><?= e($record->waste_type) ?></td>
-                                    <td style="padding:14px 18px;font-weight:700;color:#123020;">
+                                    <td style="color:var(--text-secondary);"><?= e($record->waste_type) ?></td>
+                                    <td style="font-weight:700;color:#123020;">
                                         <?= number_format((float) $record->quantity, 2) ?> <?= e($record->unit) ?>
                                     </td>
-                                    <td style="padding:14px 18px;">
+                                    <td>
                                         <span class="status-badge-pill status-<?= e($record->status) ?>">
-                                            ● <?= e($label) ?>
+                                            <?= e($label) ?>
                                         </span>
                                     </td>
-                                    <td style="padding:14px 18px;color:#2f4637;">
+                                    <td style="color:#2f4637;">
                                         <strong><?= e($record->facility_name ?: 'Internal Holding Facility') ?></strong>
                                         <?php if (!empty($record->facility_location)): ?>
-                                            <span style="font-size:11.5px;color:#617769;display:block;"><?= e($record->facility_location) ?></span>
+                                            <span style="font-size:11.5px;color:var(--text-muted);display:block;"><?= e($record->facility_location) ?></span>
                                         <?php endif; ?>
                                     </td>
-                                    <td style="padding:14px 18px;color:#617769;font-size:12px;">
+                                    <td style="color:var(--text-muted);font-size:12px;">
                                         <?= $record->recorded_at ? $record->recorded_at->format('d M Y') : 'N/A' ?>
                                     </td>
-                                    <td style="padding:14px 18px;text-align:right;">
+                                    <td style="text-align:right;">
                                         <button type="button" class="btn-update-status" onclick='openUpdateStatusModal(<?= $record->id ?>, "<?= e($record->status) ?>", "<?= e(addslashes($record->facility_name ?? '')) ?>", "<?= e(addslashes($record->facility_location ?? '')) ?>")'>
                                             Update Status
                                         </button>
                                         <form method="POST" action="<?= route('business.waste.destroy', $record) ?>" style="display:inline;margin-left:4px;" onsubmit="return confirm('Delete this scrap monitoring entry?');">
                                             <?= csrf_field() ?>
                                             <?= method_field('DELETE') ?>
-                                            <button type="submit" style="background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:4px 7px;border-radius:4px;cursor:pointer;font-size:11px;" title="Delete">✕</button>
+                                            <button type="submit" style="background:#fff5f5;border:1px solid #fecaca;color:#991b1b;padding:5px 9px;border-radius:0;cursor:pointer;font-size:11.5px;font-weight:600;" title="Delete">Delete</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -227,12 +225,11 @@
                     </div>
                 <?php else: ?>
                     <div style="padding:48px 24px;text-align:center;">
-                        <div style="font-size:36px;margin-bottom:10px;">♻️</div>
-                        <h4 style="margin:0 0 6px;color:#18422d;font-size:16px;">No Wastage Records Found</h4>
-                        <p style="margin:0 0 16px;color:#556c5e;font-size:13px;max-width:420px;margin-left:auto;margin-right:auto;">
-                            Keep track of all non-reusable cutoffs and factory scrap. You can log manual entries or route scrap directly from your Inventory using the AI Scrap Advisor.
+                        <h4 style="margin:0 0 6px;color:#143825;font-size:16px;">No Wastage Records Found</h4>
+                        <p style="margin:0 0 18px;color:var(--text-secondary);font-size:13px;max-width:440px;margin-left:auto;margin-right:auto;">
+                            Keep track of all non-reusable cutoffs and factory scrap. You can log manual entries or route scrap directly from your Inventory using EcoCycle Helper.
                         </p>
-                        <button type="button" class="btn-create-listing" onclick="openAddWasteModal()" style="background:#15803d;color:#fff;border:none;padding:9px 18px;border-radius:6px;font:700 13px var(--font-main);cursor:pointer;">
+                        <button type="button" class="btn-search" onclick="openAddWasteModal()">
                             + Log First Scrap Entry
                         </button>
                     </div>
@@ -246,16 +243,16 @@
         <div class="modal-dialog" style="max-width:580px;">
             <div class="modal-header">
                 <h3>Log Non-Reusable Scrap Entry</h3>
-                <button type="button" class="modal-close-btn" onclick="closeAddWasteModal()">✕</button>
+                <button type="button" class="modal-close-btn" onclick="closeAddWasteModal()" aria-label="Close">&times;</button>
             </div>
             <form method="POST" action="<?= route('business.waste.store') ?>">
                 <?= csrf_field() ?>
                 <div class="modal-body">
                     <!-- Quick Autofill from Inventory -->
                     <?php if (isset($notReusableInventory) && $notReusableInventory->isNotEmpty()): ?>
-                        <div class="form-group" style="background:#f4f9f4;border:1px solid #cce5cc;border-radius:8px;padding:12px;">
+                        <div class="form-group" style="background:#f4f9f4;border:1px solid #cce5cc;border-radius:0;padding:12px;">
                             <label style="font-size:12px;font-weight:700;color:#1b5e20;margin-bottom:4px;display:block;">
-                                📦 Select from Not-Reusable Inventory (Quick Autofill)
+                                Select from Non-Reusable Inventory (Quick Autofill)
                             </label>
                             <select onchange="autofillWasteFromInventory(this)" style="font-size:13px;border-color:#a8cbb1;">
                                 <option value="">-- Choose inventory scrap or type custom below --</option>
@@ -276,21 +273,21 @@
 
                     <div class="form-group">
                         <label for="w_name">Scrap / Material Name *</label>
-                        <input type="text" id="w_name" name="material_name" required placeholder="e.g. Broken PVC Pipes & Cutoffs">
+                        <input type="text" id="w_name" name="material_name" required placeholder="e.g. Broken PVC Pipes &amp; Cutoffs">
                     </div>
 
                     <div class="form-row-2">
                         <div class="form-group">
                             <label for="w_type">Category *</label>
                             <select id="w_type" name="waste_type" required>
-                                <option value="Plastics & rubber">Plastics & rubber</option>
-                                <option value="Metal & fabrication">Metal & fabrication</option>
-                                <option value="Furniture & wood products">Furniture & wood products</option>
-                                <option value="Textiles & apparel">Textiles & apparel</option>
-                                <option value="Electronics & electrical">Electronics & electrical</option>
-                                <option value="Chemicals & lubricants">Chemicals & lubricants</option>
-                                <option value="Food & beverage organic">Food & beverage organic</option>
-                                <option value="Packaging & paper">Packaging & paper</option>
+                                <option value="Plastics & rubber">Plastics &amp; rubber</option>
+                                <option value="Metal & fabrication">Metal &amp; fabrication</option>
+                                <option value="Furniture & wood products">Furniture &amp; wood products</option>
+                                <option value="Textiles & apparel">Textiles &amp; apparel</option>
+                                <option value="Electronics & electrical">Electronics &amp; electrical</option>
+                                <option value="Chemicals & lubricants">Chemicals &amp; lubricants</option>
+                                <option value="Food & beverage organic">Food &amp; beverage organic</option>
+                                <option value="Packaging & paper">Packaging &amp; paper</option>
                                 <option value="Other">Other industrial scrap</option>
                             </select>
                         </div>
@@ -335,7 +332,7 @@
 
                     <div class="form-group">
                         <label for="w_date">Date Recorded *</label>
-                        <input type="date" id="w_date" name="recorded_at" value="<?= date('Y-m-d') ?>" required>
+                        <input type="date" id="w_date" name="recorded_at" value="<?= date('Y-m-d') ?>" required style="width:100%;padding:10px 12px;border:1px solid var(--input-border);border-radius:0;font-family:var(--font-main);font-size:13.5px;">
                     </div>
 
                     <div class="form-group">
@@ -356,7 +353,7 @@
         <div class="modal-dialog" style="max-width:500px;">
             <div class="modal-header">
                 <h3>Update Scrap Status</h3>
-                <button type="button" class="modal-close-btn" onclick="closeUpdateStatusModal()">✕</button>
+                <button type="button" class="modal-close-btn" onclick="closeUpdateStatusModal()" aria-label="Close">&times;</button>
             </div>
             <form id="update-status-form" method="POST" action="">
                 <?= csrf_field() ?>

@@ -28,7 +28,7 @@ $activeNav = 'overview';
         .company-profile-hero {
             background: #ffffff;
             border: 1px solid var(--card-border);
-            border-radius: 12px;
+            border-radius: 0;
             padding: 28px 32px;
             display: flex;
             align-items: flex-start;
@@ -36,7 +36,6 @@ $activeNav = 'overview';
             flex-wrap: wrap;
             gap: 20px;
             margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
         }
         .company-profile-main {
             display: flex;
@@ -46,9 +45,9 @@ $activeNav = 'overview';
         .company-profile-avatar {
             width: 72px;
             height: 72px;
-            border-radius: 50%;
+            border-radius: 0;
             background: #eef6ec;
-            border: 2px solid #b7deb0;
+            border: 1px solid #b7deb0;
             color: #176b40;
             font-size: 24px;
             font-weight: 700;
@@ -79,7 +78,7 @@ $activeNav = 'overview';
         .info-spec-card {
             background: #ffffff;
             border: 1px solid var(--card-border);
-            border-radius: 10px;
+            border-radius: 0;
             padding: 16px;
             display: flex;
             flex-direction: column;
@@ -207,7 +206,7 @@ $activeNav = 'overview';
             </section>
 
             <?php if (! empty($company->registered_address)) { ?>
-                <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:10px;padding:16px 20px;margin-bottom:28px;">
+                <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:16px 20px;margin-bottom:28px;">
                     <small style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:4px;">Registered Facility Address</small>
                     <span style="font-size:13px;color:#143324;"><?= e($company->registered_address) ?>, <?= e($company->city) ?>, <?= e($company->state) ?></span>
                 </div>
@@ -223,13 +222,13 @@ $activeNav = 'overview';
                 </div>
 
                 <?php if ($listings->isEmpty()) { ?>
-                    <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:12px;padding:48px 24px;text-align:center;">
+                    <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:48px 24px;text-align:center;">
                         <span class="signin-brand-mark" style="margin:0 auto 12px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                         <h3 style="margin:0 0 6px;font-size:15px;color:#123321;">No active listings at this time</h3>
                         <p style="margin:0 0 16px;font-size:12px;color:var(--text-muted);max-width:440px;margin-inline:auto;">
                             <?= e($companyName) ?> has not published surplus materials to the marketplace yet. You can still reach out via email to discuss material needs.
                         </p>
-                        <a href="mailto:<?= e($company->email) ?>" class="btn-reset" style="border:1px solid #cadbc9;border-radius:6px;padding:6px 14px;text-decoration:none;">
+                        <a href="mailto:<?= e($company->email) ?>" class="btn-reset" style="border:1px solid #cadbc9;border-radius:0;padding:8px 14px;text-decoration:none;">
                             Contact Company Directly &rarr;
                         </a>
                     </div>

@@ -40,64 +40,71 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         .marketplace-tabs {
             display: flex;
             align-items: center;
-            gap: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
             margin-bottom: 22px;
-            border-bottom: 1px solid #dce6db;
+            border-bottom: 1px solid var(--card-border);
             padding-bottom: 10px;
         }
         .mkt-tab-btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 18px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border: 1px solid var(--card-border);
+            border-radius: 0;
+            background: #ffffff;
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
             color: var(--text-secondary);
-            transition: all 0.15s ease;
+            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
         }
         .mkt-tab-btn:hover {
             color: var(--brand-green);
             background: #eef6ec;
+            border-color: var(--brand-green);
         }
         .mkt-tab-btn.active {
-            color: #0e291b;
-            background: #e2ede0;
+            color: #ffffff;
+            background: var(--forest-bg);
+            border-color: var(--forest-bg);
             font-weight: 700;
         }
         .mkt-tab-badge {
-            background: #ffffff;
+            background: #f1f5f0;
             color: #1a4d2e;
             padding: 1px 7px;
-            border-radius: 12px;
+            border-radius: 0;
             font-size: 11px;
             font-weight: 700;
             border: 1px solid #c4d9c0;
+        }
+        .mkt-tab-btn.active .mkt-tab-badge {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
         .marketplace-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-            gap: 22px;
+            gap: 20px;
         }
 
-        /* Professional Card Styling */
+        /* Professional Rectangular Card Styling */
         .listing-card {
             background: #ffffff;
-            border: 1px solid #d8e5d6;
-            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
-            box-shadow: 0 2px 6px rgba(18, 51, 33, 0.04);
+            transition: border-color 0.15s ease;
             position: relative;
         }
         .listing-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 14px 28px rgba(18, 51, 33, 0.09);
-            border-color: #a8cfab;
+            border-color: var(--brand-green);
         }
 
         /* Multi-Image Gallery Wrap */
@@ -105,14 +112,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             position: relative;
             height: 190px;
             width: 100%;
-            background: linear-gradient(135deg, #eef4ed, #e3ece1);
+            background: #eef4ed;
             overflow: hidden;
+            border-bottom: 1px solid var(--card-border);
         }
         .listing-img-slide {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: opacity 0.2s ease;
         }
         .listing-img-nav-btn {
             position: absolute;
@@ -120,19 +127,18 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             transform: translateY(-50%);
             width: 28px;
             height: 28px;
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
-            border-radius: 50%;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             color: #123321;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             display: grid;
             place-items: center;
             cursor: pointer;
             z-index: 4;
             opacity: 0;
-            transition: opacity 0.15s ease, background 0.15s ease;
+            transition: opacity 0.15s ease, background-color 0.15s ease;
         }
         .listing-card:hover .listing-img-nav-btn {
             opacity: 1;
@@ -152,34 +158,31 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             display: flex;
             gap: 4px;
             z-index: 4;
-            background: rgba(0, 0, 0, 0.35);
+            background: rgba(15, 23, 42, 0.55);
             padding: 3px 6px;
-            border-radius: 10px;
+            border-radius: 0;
         }
         .listing-dot {
             width: 6px;
-            height: 6px;
-            border-radius: 50%;
+            height: 4px;
+            border-radius: 0;
             background: rgba(255, 255, 255, 0.5);
-            transition: all 0.15s ease;
         }
         .listing-dot.active {
             background: #ffffff;
             width: 14px;
-            border-radius: 4px;
         }
 
         .img-count-badge {
             position: absolute;
             top: 10px;
             left: 10px;
-            background: rgba(14, 41, 27, 0.82);
-            backdrop-filter: blur(4px);
+            background: rgba(20, 56, 37, 0.88);
             color: #ffffff;
             font-size: 10px;
             font-weight: 700;
             padding: 3px 8px;
-            border-radius: 12px;
+            border-radius: 0;
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -214,8 +217,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             align-items: center;
             gap: 4px;
             padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+            border-radius: 0;
+            font-size: 10.5px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.03em;
@@ -242,7 +245,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             background: #f1f5f9;
             color: #475569;
             border: 1px solid #cbd5e1;
-            border-radius: 4px;
+            border-radius: 0;
             padding: 2px 6px;
         }
 
@@ -265,7 +268,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             align-items: center;
             gap: 6px;
             font-size: 12px;
-            color: #556c5e;
+            color: var(--text-secondary);
             margin-bottom: 10px;
         }
         .listing-company-row strong {
@@ -274,9 +277,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         }
 
         .listing-pricing-box {
-            background: #f8fbf7;
-            border: 1px solid #e3ede1;
-            border-radius: 8px;
+            background: var(--surface-subtle);
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 10px 12px;
             margin-bottom: 12px;
             display: flex;
@@ -290,43 +293,43 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             color: #15803d;
         }
         .price-main.borrow-price {
-            color: #0284c7;
+            color: #0369a1;
         }
         .price-main.free-price {
-            color: #16a34a;
+            color: #15803d;
         }
         .price-unit {
             font-size: 11px;
-            color: #617769;
+            color: var(--text-muted);
             font-weight: 500;
             margin-left: 4px;
         }
         .qty-badge {
             font-size: 11px;
             font-weight: 600;
-            color: #2e573a;
+            color: #1b5e20;
             background: #eaf3e8;
             padding: 2px 8px;
-            border-radius: 4px;
-            border: 1px solid #cfe1cd;
+            border-radius: 0;
+            border: 1px solid #c2dec0;
         }
 
         .listing-desc-excerpt {
-            font-size: 12px;
-            color: #5b6f63;
+            font-size: 12.5px;
+            color: var(--text-secondary);
             line-height: 1.45;
             margin: 0 0 14px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            min-height: 35px;
+            min-height: 36px;
         }
 
         .listing-card-footer {
             margin-top: auto;
             padding-top: 12px;
-            border-top: 1px solid #edf3eb;
+            border-top: 1px solid #e7eee6;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -335,31 +338,31 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
         .btn-view-quick {
             background: #ffffff;
-            border: 1px solid #cadbc9;
+            border: 1px solid var(--input-border);
             color: #244b32;
             padding: 7px 12px;
-            border-radius: 6px;
+            border-radius: 0;
             font: 600 12px var(--font-main);
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: background-color 0.15s ease, border-color 0.15s ease;
         }
         .btn-view-quick:hover {
             background: #eef6ec;
-            border-color: #9ecc9f;
+            border-color: var(--brand-green);
         }
 
         .btn-claim-action {
-            background: var(--brand-green);
-            border: 1px solid var(--brand-green);
+            background: var(--forest-bg);
+            border: 1px solid var(--forest-bg);
             color: #ffffff;
             padding: 7px 14px;
-            border-radius: 6px;
+            border-radius: 0;
             font: 600 12px var(--font-main);
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: background 0.15s ease;
+            transition: background-color 0.15s ease;
         }
         .btn-claim-action:hover {
             background: #0d281a;
@@ -367,13 +370,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
         /* Create Listing Modal Multi-Image Upload Area */
         .image-upload-dropzone {
-            border: 2px dashed #b9d8ba;
-            background: #f7fbf6;
-            border-radius: 10px;
+            border: 1px dashed #9fb3a0;
+            background: var(--surface-subtle);
+            border-radius: 0;
             padding: 20px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.15s ease;
         }
         .image-upload-dropzone:hover {
             border-color: var(--brand-green);
@@ -388,9 +390,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         .thumb-preview-card {
             position: relative;
             height: 72px;
-            border-radius: 6px;
+            border-radius: 0;
             overflow: hidden;
-            border: 1px solid #c2d8bf;
+            border: 1px solid var(--card-border);
             background: #ffffff;
         }
         .thumb-preview-card img {
@@ -403,7 +405,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(14, 41, 27, 0.85);
+            background: rgba(20, 56, 37, 0.9);
             color: #ffffff;
             font-size: 9px;
             font-weight: 700;
@@ -431,115 +433,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 grid-template-columns: repeat(3, 1fr);
             }
         }
-
-        .modal-backdrop,
-        .modal-overlay {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 1050 !important;
-            background: rgba(14, 38, 25, 0.72) !important;
-            backdrop-filter: blur(3px) !important;
-            align-items: flex-start !important;
-            justify-content: center !important;
-            padding: 24px 16px !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-        .modal-backdrop[style*="display: none"],
-        .modal-overlay[style*="display: none"] {
-            display: none !important;
-        }
-        .modal-backdrop[style*="display: flex"],
-        .modal-overlay[style*="display: flex"] {
-            display: flex !important;
-        }
-        .modal-dialog,
-        .modal-card,
-        .modal-dialog-large {
-            position: relative !important;
-            width: min(640px, 95vw) !important;
-            max-height: calc(100vh - 48px) !important;
-            height: auto !important;
-            display: flex !important;
-            flex-direction: column !important;
-            border-radius: 12px !important;
-            background: #ffffff !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
-            overflow: hidden !important;
-            margin: 0 auto !important;
-            flex-shrink: 0 !important;
-        }
-        .modal-dialog > form,
-        .modal-card > form,
-        .modal-dialog form,
-        .modal-card form {
-            display: flex !important;
-            flex-direction: column !important;
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            height: 100% !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-        }
-        .modal-dialog .modal-header,
-        .modal-card .modal-header,
-        .modal-header {
-            flex-shrink: 0 !important;
-            background: #ffffff !important;
-            border-bottom: 1px solid #e5ede3 !important;
-        }
-        .modal-dialog .modal-body,
-        .modal-card .modal-body,
-        .modal-body {
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            padding: 22px 24px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 16px !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: thin !important;
-            scrollbar-color: #176b40 #edf6ec !important;
-        }
-        .modal-dialog .modal-body::-webkit-scrollbar,
-        .modal-card .modal-body::-webkit-scrollbar,
-        .modal-body::-webkit-scrollbar {
-            width: 8px !important;
-            display: block !important;
-        }
-        .modal-dialog .modal-body::-webkit-scrollbar-track,
-        .modal-card .modal-body::-webkit-scrollbar-track,
-        .modal-body::-webkit-scrollbar-track {
-            background: #f0f5ee !important;
-            border-radius: 4px !important;
-        }
-        .modal-dialog .modal-body::-webkit-scrollbar-thumb,
-        .modal-card .modal-body::-webkit-scrollbar-thumb,
-        .modal-body::-webkit-scrollbar-thumb {
-            background: #176b40 !important;
-            border-radius: 4px !important;
-        }
-        .modal-dialog .modal-body::-webkit-scrollbar-thumb:hover,
-        .modal-card .modal-body::-webkit-scrollbar-thumb:hover,
-        .modal-body::-webkit-scrollbar-thumb:hover {
-            background: #0d3e24 !important;
-        }
-        .modal-dialog .modal-footer,
-        .modal-card .modal-footer,
-        .modal-footer {
-            flex-shrink: 0 !important;
-            padding: 14px 24px !important;
-            border-top: 1px solid #e5ede3 !important;
-            background: #fbfdfa !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-end !important;
-            gap: 10px !important;
-        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -559,12 +452,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         ? 'Industrial scrap, single-use residues, and manufacturing cutoffs separated from the normal reusable marketplace. Forward items directly to <strong>EcoCycle Helper</strong> for circular upcycling advice or find matching certified recyclers.' 
                         : 'Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. Reusable listings support <strong>Buy</strong>, <strong>Borrow</strong>, or <strong>Take for Free</strong>.' ?></p>
                 </div>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <a href="/business/helper" class="btn-create-listing" style="background:#1e3a8a;color:#fff;text-decoration:none;padding:10px 18px;border-radius:6px;font:600 13px var(--font-main);display:inline-flex;align-items:center;gap:8px;">
-                        <span>💡 EcoCycle Helper</span>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <a href="/business/helper" class="btn-reset" style="display:inline-flex;align-items:center;gap:8px;">
+                        <span>EcoCycle Helper</span>
                     </a>
-                    <button type="button" class="btn-create-listing" onclick="openCreateListingModal()" style="background:var(--brand-green);color:#fff;border:none;padding:10px 18px;border-radius:6px;font:600 13px var(--font-main);display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <button type="button" class="btn-search" onclick="openCreateListingModal()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         <span>+ Create New Listing</span>
                     </button>
                 </div>
@@ -572,15 +465,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
             <!-- Flash Status Messages -->
             <?php if (session('status')) { ?>
-                <div style="margin-bottom:18px;background:#e8f5e9;border:1px solid #c8e6c9;color:#1b5e20;padding:12px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div style="margin-bottom:18px;background:#e8f5e9;border:1px solid #c2dec0;border-left:3px solid #176b40;color:#1b5e20;padding:12px 16px;border-radius:0;font-size:13px;display:flex;align-items:center;gap:8px;font-weight:600;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span><?= e(session('status')) ?></span>
                 </div>
             <?php } ?>
 
             <?php if (session('error')) { ?>
-                <div style="margin-bottom:18px;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:12px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <div style="margin-bottom:18px;background:#fff5f5;border:1px solid #fecaca;border-left:3px solid #b91c1c;color:#991b1b;padding:12px 16px;border-radius:0;font-size:13px;display:flex;align-items:center;gap:8px;font-weight:600;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                     <span><?= e(session('error')) ?></span>
                 </div>
             <?php } ?>
@@ -588,30 +481,27 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <!-- View Tabs: Reusable vs Non-Reusable vs My Listings -->
             <div class="marketplace-tabs">
                 <a href="/business/marketplace?tab=reusable" class="mkt-tab-btn <?= $currentTab === 'reusable' ? 'active' : '' ?>">
-                    <span>🛒 ↻ Reusable Items</span>
+                    <span>Reusable Items</span>
                     <span class="mkt-tab-badge"><?= $reusableCount ?></span>
                 </a>
-                <a href="/business/marketplace?tab=non_reusable" class="mkt-tab-btn <?= $currentTab === 'non_reusable' ? 'active' : '' ?>" style="<?= $currentTab === 'non_reusable' ? 'border-color:#b45309;color:#92400e;background:#fef3c7;' : '' ?>">
-                    <span>⊘ Non-Reusable Items (Scrap &amp; Recovery)</span>
-                    <span class="mkt-tab-badge" style="<?= $currentTab === 'non_reusable' ? 'background:#b45309;color:#fff;' : '' ?>"><?= $nonReusableCount ?></span>
+                <a href="/business/marketplace?tab=non_reusable" class="mkt-tab-btn <?= $currentTab === 'non_reusable' ? 'active' : '' ?>">
+                    <span>Non-Reusable Items (Scrap &amp; Recovery)</span>
+                    <span class="mkt-tab-badge"><?= $nonReusableCount ?></span>
                 </a>
                 <a href="/business/marketplace?my_listings=1" class="mkt-tab-btn <?= $currentTab === 'my_listings' ? 'active' : '' ?>">
-                    <span>📋 My Listings</span>
+                    <span>My Listings</span>
                     <span class="mkt-tab-badge"><?= $myListingsCount ?></span>
                 </a>
             </div>
 
             <?php if ($currentTab === 'non_reusable') { ?>
-                <!-- Non-Reusable Dedicated Banner with Direct AI & GPS Link -->
-                <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <span style="font-size:26px;">💡</span>
-                        <div>
-                            <strong style="color:#92400e;font-size:13.5px;display:block;">Non-Reusable Scrap &amp; Waste Category</strong>
-                            <span style="color:#78350f;font-size:12.5px;">These materials are separated from the standard reusable marketplace. Click <strong>"Ask EcoCycle Helper"</strong> on any item to receive instant circular upcycling advice or locate matching certified recycling facilities via GPS.</span>
-                        </div>
+                <!-- Non-Reusable Dedicated Banner with Direct Helper Link -->
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;border-radius:0;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <strong style="color:#92400e;font-size:13.5px;display:block;">Non-Reusable Scrap &amp; Waste Category</strong>
+                        <span style="color:#78350f;font-size:12.5px;">These materials are separated from the standard reusable marketplace. Click <strong>"Ask Helper"</strong> on any item to receive recycling recommendations or locate certified recycling facilities via GPS.</span>
                     </div>
-                    <a href="/business/helper" style="background:#1e3a8a;color:#ffffff;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+                    <a href="/business/helper" class="btn-search" style="text-decoration:none;font-size:12.5px;padding:8px 16px;">
                         <span>Open EcoCycle Helper &rarr;</span>
                     </a>
                 </div>
@@ -646,9 +536,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             <label for="mkt-type">Listing Type</label>
                             <select id="mkt-type" name="listing_type">
                                 <option value="">All Types (Buy/Borrow/Free)</option>
-                                <option value="buy" <?= request('listing_type') === 'buy' ? 'selected' : '' ?>>🛒 Buy (For Sale)</option>
-                                <option value="borrow" <?= request('listing_type') === 'borrow' ? 'selected' : '' ?>>🤝 Borrow (Loan)</option>
-                                <option value="free" <?= request('listing_type') === 'free' ? 'selected' : '' ?>>🎁 Take for Free</option>
+                                <option value="buy" <?= request('listing_type') === 'buy' ? 'selected' : '' ?>>Buy (For Sale)</option>
+                                <option value="borrow" <?= request('listing_type') === 'borrow' ? 'selected' : '' ?>>Borrow (Loan)</option>
+                                <option value="free" <?= request('listing_type') === 'free' ? 'selected' : '' ?>>Take for Free</option>
                             </select>
                         </div>
 
@@ -657,8 +547,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             <label for="mkt-reusability">Reusability</label>
                             <select id="mkt-reusability" name="reusability">
                                 <option value="">All Reusability</option>
-                                <option value="reusable" <?= request('reusability') === 'reusable' ? 'selected' : '' ?>>↻ Reusable (Circular)</option>
-                                <option value="not_reusable" <?= request('reusability') === 'not_reusable' ? 'selected' : '' ?>>⊘ Not Reusable (Scrap)</option>
+                                <option value="reusable" <?= request('reusability') === 'reusable' ? 'selected' : '' ?>>Reusable (Circular)</option>
+                                <option value="not_reusable" <?= request('reusability') === 'not_reusable' ? 'selected' : '' ?>>Non-Reusable (Scrap)</option>
                             </select>
                         </div>
                         <?php } ?>
@@ -676,13 +566,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         <div class="filter-field" style="justify-content: flex-end;">
                             <label>&nbsp;</label>
                             <div style="display:flex;gap:6px;">
-                                <button type="submit" class="btn-search" style="height:38px;padding:0 14px;">
+                                <button type="submit" class="btn-search" style="height:40px;padding:0 14px;">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     <span>Filter</span>
                                 </button>
                                 <?php if (request()->hasAny(['q', 'category', 'location', 'listing_type', 'reusability'])) { ?>
-                                    <a href="<?= $myListingsOnly ? '/business/marketplace?my_listings=1' : '/business/marketplace' ?>" class="btn-back-directory" style="height:38px;padding:0 12px;display:grid;place-items:center;" title="Reset filters">
-                                        ✕
+                                    <a href="<?= $myListingsOnly ? '/business/marketplace?my_listings=1' : '/business/marketplace' ?>" class="btn-back-directory" style="height:40px;padding:0 12px;display:grid;place-items:center;" title="Reset filters">
+                                        Reset
                                     </a>
                                 <?php } ?>
                             </div>
@@ -701,7 +591,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
             <!-- Listings Grid -->
             <?php if ($listings->isEmpty()) { ?>
-                <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:14px;padding:52px 24px;text-align:center;margin-bottom:32px;">
+                <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:52px 24px;text-align:center;margin-bottom:32px;">
                     <span class="signin-brand-mark" style="margin:0 auto 14px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                     <h3 style="margin:0 0 6px;font-size:17px;color:#123321;font-weight:700;">No material listings found</h3>
                     <p style="margin:0 0 20px;font-size:13px;color:var(--text-muted);max-width:500px;margin-inline:auto;line-height:1.5;">
@@ -776,12 +666,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                     </div>
                                 <?php } ?>
 
-                                <!-- Reusability Top-Right Pill -->
+                                <!-- Reusability Top-Right Badge -->
                                 <div class="reusability-corner-badge">
                                     <?php if ($isReusable) { ?>
-                                        <span class="badge-reusable" style="box-shadow:0 2px 6px rgba(0,0,0,0.12);background:#ffffff;font-size:11px;">↻ Reusable</span>
+                                        <span class="badge-reusable" style="background:#ffffff;font-size:11px;">Reusable</span>
                                     <?php } else { ?>
-                                        <span class="badge-not-reusable" style="box-shadow:0 2px 6px rgba(0,0,0,0.12);background:#ffffff;font-size:11px;">⊘ Not Reusable</span>
+                                        <span class="badge-not-reusable" style="background:#ffffff;font-size:11px;">Non-Reusable</span>
                                     <?php } ?>
                                 </div>
                             </div>
@@ -791,11 +681,11 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                 <div class="card-badges-row">
                                     <!-- Offer type badge -->
                                     <?php if ($listingType === 'free') { ?>
-                                        <span class="offer-type-badge free">🎁 Free Surplus</span>
+                                        <span class="offer-type-badge free">Free Surplus</span>
                                     <?php } elseif ($listingType === 'borrow') { ?>
-                                        <span class="offer-type-badge borrow">🤝 Borrow</span>
+                                        <span class="offer-type-badge borrow">Borrow</span>
                                     <?php } else { ?>
-                                        <span class="offer-type-badge buy">🛒 Buy</span>
+                                        <span class="offer-type-badge buy">Buy</span>
                                     <?php } ?>
 
                                     <span class="category-tag"><?= e($item->category) ?></span>
@@ -837,22 +727,22 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
                                     <?php if ($isOwner) { ?>
                                         <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation();">
-                                            <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:4px 8px;border-radius:4px;border:1px solid #bbf7d0;">Your Listing</span>
+                                            <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:4px 8px;border-radius:0;border:1px solid #bbf7d0;">Your Listing</span>
                                             <form method="POST" action="/business/marketplace/<?= $item->id ?>" onsubmit="return confirm('Are you sure you want to remove this listing?');" style="margin:0;" onclick="event.stopPropagation();">
                                                 <input type="hidden" name="_token" value="<?= csrf_token() ?>">
                                                 <input type="hidden" name="_method" value="DELETE">
-                                                <button type="submit" style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:5px 9px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;" title="Delete listing">
-                                                    ✕ Delete
+                                                <button type="submit" style="background:#fff5f5;border:1px solid #fca5a5;color:#991b1b;padding:5px 9px;border-radius:0;font-size:11px;font-weight:600;cursor:pointer;" title="Delete listing">
+                                                    Delete
                                                 </button>
                                             </form>
                                         </div>
                                     <?php } elseif (! $isReusable) { ?>
-                                        <a href="/business/helper?item_id=<?= $item->id ?>" class="btn-claim-action" style="background:#1e3a8a;color:#ffffff;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 14px;" onclick="event.stopPropagation();" title="Forward non-reusable item to EcoCycle Helper for AI advice & GPS recycler locator">
-                                            <span>💡 Ask Helper</span>
+                                        <a href="/business/helper?item_id=<?= $item->id ?>" class="btn-claim-action" style="background:#1e3a8a;border-color:#1e3a8a;color:#ffffff;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 14px;" onclick="event.stopPropagation();" title="Forward non-reusable item to EcoCycle Helper">
+                                            <span>Ask Helper</span>
                                         </a>
                                     <?php } else { ?>
                                         <button type="button" class="btn-claim-action" onclick="event.stopPropagation(); openExchangeOrderModal(<?= $item->id ?>)">
-                                            <?= $listingType === 'free' ? '🎁 Claim Free' : ($listingType === 'borrow' ? '🤝 Borrow' : 'Inquire &rarr;') ?>
+                                            <?= $listingType === 'free' ? 'Claim Free' : ($listingType === 'borrow' ? 'Borrow' : 'Inquire &rarr;') ?>
                                         </button>
                                     <?php } ?>
                                 </div>
@@ -864,7 +754,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         </main>
     </div>
 
-    <!-- Step 1: Inventory Item Picker Modal (Click Reusable Item First, Then Listing Modal Pops Out) -->
+    <!-- Step 1: Inventory Item Picker Modal -->
     <div class="modal-overlay" id="select-inventory-modal" style="display:none;" onclick="if(event.target===this)closeSelectInventoryModal()">
         <div class="modal-card" style="max-width:680px;">
             <div class="modal-header">
@@ -872,15 +762,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <h3 style="margin:0;">Select Reusable Item from Inventory</h3>
                     <small style="color:#526b5a;font-size:12px;">Choose a verified reusable material from your inventory to create a marketplace listing:</small>
                 </div>
-                <button type="button" class="modal-close-btn" onclick="closeSelectInventoryModal()">&times;</button>
+                <button type="button" class="modal-close-btn" onclick="closeSelectInventoryModal()" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <?php if (! isset($myInventoryItems) || $myInventoryItems->isEmpty()) { ?>
                     <div style="text-align:center;padding:36px 16px;">
-                        <div style="font-size:42px;margin-bottom:10px;">📦</div>
-                        <h4 style="margin:0 0 6px;color:#18422d;font-size:16px;">No Reusable Inventory Found</h4>
+                        <h4 style="margin:0 0 6px;color:#143825;font-size:16px;">No Reusable Inventory Found</h4>
                         <p style="margin:0 0 18px;color:#556c5e;font-size:13px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.5;">
-                            Public marketplace listings are strictly for verified reusable circular materials. (Non-reusable scrap items remain safely stored in your private owner account).
+                            Public marketplace listings are strictly for verified reusable circular materials. Non-reusable scrap items remain stored in your private account.
                         </p>
                         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
                             <a href="/business/inventory" class="btn-choose-photos" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
@@ -906,7 +795,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                     <div class="inv-pick-meta"><?= e($inv->category) ?></div>
                                     <div class="inv-pick-stock">
                                         <span class="inv-stock-badge"><?= (float) $inv->quantity ?> <?= e($inv->unit) ?></span>
-                                        <span class="inv-reuse-tag">↻ Reusable</span>
+                                        <span class="inv-reuse-tag">Reusable</span>
                                     </div>
                                 </div>
                                 <div class="inv-pick-arrow">&rarr;</div>
@@ -927,7 +816,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         </div>
     </div>
 
-    <!-- Step 2: Create Listing Modal (Pops Out with Pre-filled Item Details and 1 to 5 Photos) -->
+    <!-- Step 2: Create Listing Modal -->
     <div class="modal-overlay" id="create-listing-modal" style="display:none;" onclick="if(event.target===this)closeCreateListingModal()">
         <div class="modal-card" style="max-width:640px;">
             <div class="modal-header">
@@ -935,7 +824,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <h3 style="margin:0;">List Material on Marketplace</h3>
                     <small style="color:#526b5a;font-size:12px;">Publish surplus material for verified SMEs to buy, borrow, or take for free.</small>
                 </div>
-                <button type="button" class="modal-close-btn" onclick="closeCreateListingModal()">&times;</button>
+                <button type="button" class="modal-close-btn" onclick="closeCreateListingModal()" aria-label="Close">&times;</button>
             </div>
             <form method="POST" action="/business/marketplace" enctype="multipart/form-data" onsubmit="return validateListingForm(this)">
                 <input type="hidden" name="_token" value="<?= csrf_token() ?>">
@@ -943,30 +832,26 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 
                 <div class="modal-body">
                     <!-- Sourced from Inventory Banner -->
-                    <div id="mkt_sourced_banner" style="display:none;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:2px;align-items:center;justify-content:space-between;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <span style="font-size:20px;">📦</span>
-                            <div>
-                                <strong style="color:#15803d;font-size:13px;display:block;" id="mkt_sourced_name">Sourced from Inventory</strong>
-                                <small style="color:#4b6354;font-size:11.5px;" id="mkt_sourced_stock">Stock Available: 0</small>
-                            </div>
+                    <div id="mkt_sourced_banner" style="display:none;background:#f0fdf4;border:1px solid #b9dec0;border-radius:0;padding:10px 14px;margin-bottom:2px;align-items:center;justify-content:space-between;">
+                        <div>
+                            <strong style="color:#15803d;font-size:13px;display:block;" id="mkt_sourced_name">Sourced from Inventory</strong>
+                            <small style="color:#4b6354;font-size:11.5px;" id="mkt_sourced_stock">Stock Available: 0</small>
                         </div>
-                        <button type="button" onclick="changeInventoryItemForListing()" style="background:#ffffff;border:1px solid #86efac;color:#15803d;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
-                            ✎ Change Item
+                        <button type="button" onclick="changeInventoryItemForListing()" style="background:#ffffff;border:1px solid #86efac;color:#15803d;padding:5px 12px;border-radius:0;font-size:12px;font-weight:700;cursor:pointer;">
+                            Change Item
                         </button>
                     </div>
 
-                    <!-- 1 to 5 Photos Upload Section with Explicit Add Button & Slots -->
+                    <!-- 1 to 5 Photos Upload Section -->
                     <div class="form-group">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                            <label style="margin:0;font-weight:700;color:#18422d;">
+                            <label style="margin:0;font-weight:700;color:#143825;">
                                 Material Photos <span style="color:#b91c1c;">*</span> <small style="font-weight:500;color:#556c5e;">(Min 1, Max 5 photos)</small>
                             </label>
-                            <span id="mkt_img_counter" style="font-size:12px;font-weight:700;color:#18422d;">0 of 5 selected</span>
+                            <span id="mkt_img_counter" style="font-size:12px;font-weight:700;color:#143825;">0 of 5 selected</span>
                         </div>
 
                         <div class="inv-photo-uploader-box" id="mkt_photo_uploader_box">
-                            <!-- Hidden Real Form File Input (synchronized via DataTransfer) -->
                             <input type="file" id="listing_images_form_input" name="images[]" multiple accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;">
 
                             <div class="inv-photo-top-bar">
@@ -977,13 +862,10 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                 <span class="inv-photo-hint">Click "+ Add Photos" or any empty slot to add 1 to 5 images. Slot 1 is the cover photo.</span>
                             </div>
 
-                            <!-- 5 Photo Slots Grid -->
-                            <div class="inv-slots-grid" id="mkt_slots_grid">
-                                <!-- Rendered dynamically by renderMktSlots() -->
-                            </div>
+                            <div class="inv-slots-grid" id="mkt_slots_grid"></div>
 
                             <div id="mkt_img_error" style="display:none;margin-top:8px;color:#dc2626;font-size:12px;font-weight:600;">
-                                ⚠ Please select at least 1 photo for this listing (maximum 5 photos).
+                                Please select at least 1 photo for this listing (maximum 5 photos).
                             </div>
                         </div>
                     </div>
@@ -996,14 +878,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <div class="form-group">
                         <label for="create_category">Category *</label>
                         <select id="create_category" name="category" required>
-                            <option value="Packaging & paper">Packaging & paper</option>
-                            <option value="Furniture & wood products">Furniture & wood products</option>
-                            <option value="Textiles & apparel">Textiles & apparel</option>
-                            <option value="Electronics & electrical">Electronics & electrical</option>
-                            <option value="Metal & fabrication">Metal & fabrication</option>
-                            <option value="Plastics & rubber">Plastics & rubber</option>
-                            <option value="Chemicals & lubricants">Chemicals & lubricants</option>
-                            <option value="Food & beverage organic">Food & beverage organic</option>
+                            <option value="Packaging & paper">Packaging &amp; paper</option>
+                            <option value="Furniture & wood products">Furniture &amp; wood products</option>
+                            <option value="Textiles & apparel">Textiles &amp; apparel</option>
+                            <option value="Electronics & electrical">Electronics &amp; electrical</option>
+                            <option value="Metal & fabrication">Metal &amp; fabrication</option>
+                            <option value="Plastics & rubber">Plastics &amp; rubber</option>
+                            <option value="Chemicals & lubricants">Chemicals &amp; lubricants</option>
+                            <option value="Food & beverage organic">Food &amp; beverage organic</option>
                             <option value="Other">Other surplus material</option>
                         </select>
                     </div>
@@ -1012,12 +894,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <input type="hidden" name="reusability" value="reusable">
                     <div class="form-group">
                         <label>Reusability Classification</label>
-                        <div style="padding:10px 14px;border-radius:8px;background:#f0f7ef;border:1.5px solid #b8dab4;display:flex;align-items:center;gap:10px;">
-                            <span style="font-size:20px;color:#15803d;">↻</span>
-                            <div>
-                                <strong style="display:block;font-size:13px;color:#15803d;">Reusable Circular Material</strong>
-                                <small style="color:#526b5a;font-size:11px;">Public marketplace listings are strictly for reusable items. Non-reusable scrap items remain securely stored in your owner inventory account only.</small>
-                            </div>
+                        <div style="padding:10px 14px;border-radius:0;background:#f0f7ef;border:1px solid #b8dab4;">
+                            <strong style="display:block;font-size:13px;color:#15803d;">Reusable Circular Material</strong>
+                            <small style="color:#526b5a;font-size:11.5px;">Public marketplace listings are strictly for reusable items. Non-reusable scrap items remain stored in your inventory account.</small>
                         </div>
                     </div>
 
@@ -1027,19 +906,16 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         <div class="offer-toggle-grid">
                             <label class="offer-toggle-card">
                                 <input type="radio" name="listing_type" value="buy" checked onchange="handleModalOfferChange('buy')">
-                                <span class="offer-icon">🛒</span>
                                 <span class="offer-label">Buy (Sell)</span>
                                 <span class="offer-sub">Set RM price</span>
                             </label>
                             <label class="offer-toggle-card">
                                 <input type="radio" name="listing_type" value="borrow" onchange="handleModalOfferChange('borrow')">
-                                <span class="offer-icon">🤝</span>
                                 <span class="offer-label">Borrow</span>
                                 <span class="offer-sub">Loan / deposit</span>
                             </label>
                             <label class="offer-toggle-card">
                                 <input type="radio" name="listing_type" value="free" onchange="handleModalOfferChange('free')">
-                                <span class="offer-icon">🎁</span>
                                 <span class="offer-label">Free Surplus</span>
                                 <span class="offer-sub">RM 0.00 Giveaway</span>
                             </label>
@@ -1085,7 +961,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     </div>
 
                     <div class="form-group">
-                        <label for="create_desc">Material Description & Exchange Terms</label>
+                        <label for="create_desc">Material Description &amp; Exchange Terms</label>
                         <textarea id="create_desc" name="description" rows="3" placeholder="Condition, pickup location, return expectations if borrowed, or handling details..."></textarea>
                     </div>
                 </div>
@@ -1096,8 +972,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             </form>
         </div>
     </div>
-        </div>
-    </div>
 
     <!-- Quick View / Detail Modal with Photo Gallery -->
     <div class="modal-overlay" id="listing-detail-modal" style="display:none;" onclick="if(event.target===this)closeListingDetailModal()">
@@ -1105,13 +979,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <div class="modal-header">
                 <div style="display:flex;align-items:center;gap:8px;">
                     <span id="modal-detail-offer-badge" class="offer-type-badge buy">Buy</span>
-                    <span id="modal-detail-reusable-badge" class="badge-reusable">↻ Reusable</span>
+                    <span id="modal-detail-reusable-badge" class="badge-reusable">Reusable</span>
                 </div>
-                <button type="button" class="modal-close-btn" onclick="closeListingDetailModal()">&times;</button>
+                <button type="button" class="modal-close-btn" onclick="closeListingDetailModal()" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <!-- Large Image Viewer + Thumbnails -->
-                <div style="background:#f1f5f0;border-radius:10px;overflow:hidden;position:relative;height:280px;display:flex;align-items:center;justify-content:center;">
+                <div style="background:#f1f5f0;border:1px solid var(--card-border);border-radius:0;overflow:hidden;position:relative;height:280px;display:flex;align-items:center;justify-content:center;">
                     <img id="modal-detail-main-img" src="" alt="Material photo" style="width:100%;height:100%;object-fit:cover;display:none;">
                     <div id="modal-detail-no-img" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
                         <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
@@ -1146,15 +1020,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 </div>
 
                 <div>
-                    <h4 style="margin:0 0 6px;font-size:12px;text-transform:uppercase;color:#556c5e;letter-spacing:0.04em;">Description & Exchange Terms</h4>
-                    <p id="modal-detail-desc" style="margin:0;font-size:13px;color:#2e4436;line-height:1.6;background:#fbfdfa;border:1px solid #e1e9df;padding:12px;border-radius:8px;"></p>
+                    <h4 style="margin:0 0 6px;font-size:12px;text-transform:uppercase;color:#556c5e;letter-spacing:0.04em;">Description &amp; Exchange Terms</h4>
+                    <p id="modal-detail-desc" style="margin:0;font-size:13px;color:#2e4436;line-height:1.6;background:#fbfdfa;border:1px solid var(--card-border);padding:12px;border-radius:0;"></p>
                 </div>
             </div>
             <div class="modal-footer" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
                 <div style="display:flex;gap:8px;">
                     <button type="button" class="btn-cancel" onclick="closeListingDetailModal()">Close</button>
-                    <a id="modal-detail-helper-link" href="/business/helper" class="btn-claim-action" style="background:#1e3a8a;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 14px;">
-                        <span>💡 Ask EcoCycle Helper</span>
+                    <a id="modal-detail-helper-link" href="/business/helper" class="btn-view-quick" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:8px 14px;">
+                        <span>Ask EcoCycle Helper</span>
                     </a>
                 </div>
                 <button type="button" class="btn-claim-action" id="modal-detail-action-btn" onclick="executeClaimFromModal()">
@@ -1521,15 +1395,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         var offerBadge = document.getElementById('modal-detail-offer-badge');
         var type = card.dataset.type;
         offerBadge.className = 'offer-type-badge ' + type;
-        offerBadge.textContent = type === 'free' ? '🎁 Free Surplus' : (type === 'borrow' ? '🤝 Available to Borrow' : '🛒 For Sale');
+        offerBadge.textContent = type === 'free' ? 'Free Surplus' : (type === 'borrow' ? 'Available to Borrow' : 'For Sale');
 
         var reusableBadge = document.getElementById('modal-detail-reusable-badge');
         if (card.dataset.reusability === 'reusable') {
             reusableBadge.className = 'badge-reusable';
-            reusableBadge.textContent = '↻ Reusable';
+            reusableBadge.textContent = 'Reusable';
         } else {
             reusableBadge.className = 'badge-not-reusable';
-            reusableBadge.textContent = '⊘ Not Reusable';
+            reusableBadge.textContent = 'Non-Reusable';
         }
 
         document.getElementById('modal-detail-title').textContent = card.dataset.title;
@@ -1544,7 +1418,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.getElementById('modal-detail-desc').textContent = card.dataset.desc || 'No additional terms specified.';
 
         var actionBtn = document.getElementById('modal-detail-action-btn');
-        actionBtn.textContent = type === 'free' ? '🎁 Claim Free Material' : (type === 'borrow' ? '🤝 Request to Borrow' : 'Inquire to Buy &rarr;');
+        actionBtn.textContent = type === 'free' ? 'Claim Free Material' : (type === 'borrow' ? 'Request to Borrow' : 'Inquire to Buy');
 
         var helperLink = document.getElementById('modal-detail-helper-link');
         if (helperLink) {
@@ -1562,23 +1436,24 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.getElementById('listing-detail-modal').style.display = 'none';
         document.body.style.overflow = '';
     }
+    </script>
 
     <!-- REAL MATERIAL EXCHANGE / ORDER MODAL -->
     <div class="modal-overlay" id="exchange-order-modal" style="display:none;" onclick="if(event.target===this)closeExchangeOrderModal()">
         <div class="modal-card" style="max-width:540px;">
             <div class="modal-header">
                 <div>
-                    <h3 id="order-modal-heading" style="margin:0;font-size:18px;color:#123321;">Request Material Exchange</h3>
+                    <h3 id="order-modal-heading" style="margin:0;font-size:17px;color:#123321;">Request Material Exchange</h3>
                     <small style="color:#526b5a;font-size:12px;">Initiate a verified circular exchange with this SME.</small>
                 </div>
-                <button type="button" class="modal-close-btn" onclick="closeExchangeOrderModal()">&times;</button>
+                <button type="button" class="modal-close-btn" onclick="closeExchangeOrderModal()" aria-label="Close">&times;</button>
             </div>
             <form id="exchange-order-form" method="POST" action="">
                 <?= csrf_field() ?>
                 <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
                     <!-- Item summary box -->
-                    <div style="display:flex;gap:14px;padding:12px;background:#f8faf6;border:1px solid #dbe6d7;border-radius:8px;align-items:center;">
-                        <img id="order-modal-img" src="" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #cadbc9;">
+                    <div style="display:flex;gap:14px;padding:12px;background:#f8faf6;border:1px solid var(--card-border);border-radius:0;align-items:center;">
+                        <img id="order-modal-img" src="" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:0;border:1px solid var(--card-border);">
                         <div style="flex:1;min-width:0;">
                             <strong id="order-modal-title" style="display:block;font-size:14px;color:#123321;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Item Name</strong>
                             <span id="order-modal-provider" style="display:block;font-size:12px;color:#45604e;">Provider</span>
@@ -1591,12 +1466,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         <label for="order-quantity" style="display:block;font-size:12px;font-weight:700;color:#123321;margin-bottom:6px;">
                             Quantity to Request (<span id="order-unit-label">units</span>) *
                         </label>
-                        <input type="number" id="order-quantity" name="quantity" class="modal-field-input" step="any" min="0.01" required oninput="calculateOrderTotal()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cadbc9;border-radius:6px;font-size:14px;">
+                        <input type="number" id="order-quantity" name="quantity" class="modal-field-input" step="any" min="0.01" required oninput="calculateOrderTotal()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--input-border);border-radius:0;font-size:14px;">
                         <small id="order-max-hint" style="color:#6b8070;font-size:11px;margin-top:4px;display:block;">Available in stock: 0</small>
                     </div>
 
                     <!-- Live Price Summary -->
-                    <div style="background:#eaf3e8;border:1px solid #c0d8bd;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
+                    <div style="background:#eaf3e8;border:1px solid #c0d8bd;border-radius:0;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
                         <div>
                             <span style="display:block;font-size:11px;color:#45604e;font-weight:600;">Unit Rate</span>
                             <strong id="order-unit-price" style="font-size:13px;color:#123321;">RM 0.00</strong>
@@ -1612,12 +1487,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         <label for="order-notes" style="display:block;font-size:12px;font-weight:700;color:#123321;margin-bottom:6px;">
                             Order Notes / Delivery or Pickup Instructions (Optional)
                         </label>
-                        <textarea id="order-notes" name="notes" rows="2" placeholder="e.g., We will arrange our own logistics, or please ship to our warehouse address..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cadbc9;border-radius:6px;font-size:12px;resize:vertical;"></textarea>
+                        <textarea id="order-notes" name="notes" rows="2" placeholder="e.g., We will arrange our own logistics, or please ship to our warehouse address..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--input-border);border-radius:0;font-size:12.5px;resize:vertical;"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer" style="padding:14px 20px;border-top:1px solid #e1e9df;display:flex;justify-content:flex-end;gap:10px;background:#ffffff;border-radius:0 0 12px 12px;">
-                    <button type="button" class="btn-cancel" onclick="closeExchangeOrderModal()" style="padding:8px 16px;border:1px solid #cadbc9;background:#ffffff;border-radius:6px;cursor:pointer;">Cancel</button>
-                    <button type="submit" id="order-submit-btn" class="btn-submit" style="padding:8px 18px;background:#176b40;color:#ffffff;border:none;border-radius:6px;font-weight:700;cursor:pointer;">Confirm Order &rarr;</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeExchangeOrderModal()">Cancel</button>
+                    <button type="submit" id="order-submit-btn" class="btn-save">Confirm Order &rarr;</button>
                 </div>
             </form>
         </div>
@@ -1686,15 +1561,15 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         var submitBtn = document.getElementById('order-submit-btn');
 
         if (type === 'free') {
-            heading.textContent = '🎁 Claim Free Material';
+            heading.textContent = 'Claim Free Material';
             submitBtn.textContent = 'Claim Free Material';
             document.getElementById('order-unit-price').textContent = 'FREE';
         } else if (type === 'borrow') {
-            heading.textContent = '🤝 Request to Borrow Material';
+            heading.textContent = 'Request to Borrow Material';
             submitBtn.textContent = 'Submit Borrow Request';
             document.getElementById('order-unit-price').textContent = price > 0 ? ('RM ' + price.toFixed(2) + ' deposit') : 'Free Loan';
         } else {
-            heading.textContent = '🛒 Purchase Material Order';
+            heading.textContent = 'Purchase Material Order';
             submitBtn.textContent = 'Confirm Order & Inquire';
             document.getElementById('order-unit-price').textContent = 'RM ' + price.toFixed(2) + ' / ' + unit;
         }

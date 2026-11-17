@@ -29,19 +29,18 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
         }
         .profile-panel-card {
             background: #ffffff;
-            border: 1px solid #dbe6da;
-            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 26px 28px;
-            box-shadow: 0 2px 10px rgba(18, 51, 33, 0.04);
             margin-bottom: 24px;
         }
         .profile-card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 18px;
+            padding-bottom: 16px;
             margin-bottom: 22px;
-            border-bottom: 1.5px solid #edf4ec;
+            border-bottom: 1px solid var(--card-border);
         }
         .profile-card-header h2,
         .profile-card-header h3 {
@@ -54,7 +53,7 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
         .profile-card-header p {
             margin: 0;
             font-size: 12.5px;
-            color: #556c5e;
+            color: var(--text-secondary);
         }
 
         /* Branding Hero Banner */
@@ -63,23 +62,22 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
             align-items: center;
             gap: 20px;
             padding: 20px 22px;
-            background: #f7faf6;
-            border: 1.5px dashed #c8dac5;
-            border-radius: 12px;
+            background: var(--surface-subtle);
+            border: 1px dashed #b5cab3;
+            border-radius: 0;
             margin-bottom: 24px;
         }
         .branding-avatar-wrap {
             position: relative;
-            width: 84px;
-            height: 84px;
-            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            border-radius: 0;
             background: #edf6ec;
-            border: 3px solid #176b40;
+            border: 1px solid #176b40;
             overflow: hidden;
             display: grid;
             place-items: center;
             flex-shrink: 0;
-            box-shadow: 0 3px 10px rgba(23, 107, 64, 0.15);
         }
         .branding-avatar-wrap img {
             width: 100%;
@@ -96,15 +94,15 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 14px;
-            border-radius: 6px;
+            padding: 7px 14px;
+            border-radius: 0;
             background: #ffffff;
-            border: 1.5px solid #176b40;
+            border: 1px solid #176b40;
             color: #176b40;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
         .btn-upload-logo-pill:hover {
             background: #176b40;
@@ -119,8 +117,8 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
             display: block;
             margin-bottom: 5px;
             font-size: 13px;
-            font-weight: 700;
-            color: #18422d;
+            font-weight: 600;
+            color: #143825;
             letter-spacing: -0.01em;
         }
         .prof-field-group input[type="text"],
@@ -129,27 +127,26 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
         .prof-field-group input[type="password"],
         .prof-field-group select {
             width: 100%;
-            padding: 10px 14px;
-            border: 1.5px solid #c2d8bf;
-            border-radius: 8px;
+            padding: 10px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 0;
             font-size: 13.5px;
             font-family: var(--font-main);
             color: #123321;
             background-color: #ffffff;
-            transition: border-color 0.15s, box-shadow 0.15s;
+            transition: border-color 0.15s ease;
             box-sizing: border-box;
         }
         .prof-field-group input:focus,
         .prof-field-group select:focus {
             outline: none;
             border-color: #176b40;
-            box-shadow: 0 0 0 3.5px rgba(23, 107, 64, 0.12);
         }
         .prof-field-group small.field-hint {
             display: block;
             margin-top: 4px;
             font-size: 11.5px;
-            color: #617769;
+            color: var(--text-muted);
         }
         .prof-grid-2 {
             display: grid;
@@ -179,7 +176,7 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
         }
         .btn-toggle-pwd {
             position: absolute;
-            right: 10px;
+            right: 8px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
@@ -189,83 +186,82 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
             padding: 6px;
             display: grid;
             place-items: center;
-            border-radius: 4px;
+            border-radius: 0;
         }
         .btn-toggle-pwd:hover {
-            color: #18422d;
+            color: #143825;
             background: #f1f5f9;
         }
 
         /* Primary Action Buttons */
         .btn-save-profile {
             width: 100%;
-            padding: 12px 20px;
-            background: #176b40;
+            padding: 11px 20px;
+            background: #143825;
             color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
+            border: 1px solid #143825;
+            border-radius: 0;
+            font-size: 13.5px;
+            font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: background 0.15s ease, box-shadow 0.15s ease;
-            box-shadow: 0 2px 6px rgba(23, 107, 64, 0.2);
+            transition: background-color 0.15s ease;
         }
         .btn-save-profile:hover {
-            background: #104e2e;
-            box-shadow: 0 4px 12px rgba(23, 107, 64, 0.3);
+            background: #0d2b1b;
         }
 
         .btn-update-pwd {
             width: 100%;
-            padding: 12px 20px;
-            background: #0f4c2e;
+            padding: 11px 20px;
+            background: #143825;
             color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
+            border: 1px solid #143825;
+            border-radius: 0;
+            font-size: 13.5px;
+            font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: background 0.15s ease;
+            transition: background-color 0.15s ease;
         }
         .btn-update-pwd:hover {
-            background: #09331e;
+            background: #0d2b1b;
         }
 
         /* Security Checklist */
         .pwd-checklist {
-            background: #f8faf7;
-            border: 1px solid #dce8db;
-            border-radius: 8px;
+            background: var(--surface-subtle);
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 12px 16px;
             margin-bottom: 20px;
         }
         .pwd-checklist-title {
             font-size: 12px;
             font-weight: 700;
-            color: #18422d;
+            color: #143825;
             margin-bottom: 6px;
         }
         .pwd-checklist-list {
             margin: 0;
             padding-left: 18px;
             font-size: 11.5px;
-            color: #556c5e;
+            color: var(--text-secondary);
             line-height: 1.5;
         }
 
         /* Accreditation Card */
         .accreditation-box {
-            background: linear-gradient(135deg, #f0f7ef 0%, #eaf4e8 100%);
-            border: 1.5px solid #bdd7b9;
-            border-radius: 10px;
+            background: #eef6ed;
+            border: 1px solid #c2dec0;
+            border-left: 3px solid #176b40;
+            border-radius: 0;
             padding: 18px 20px;
             margin-top: 24px;
         }
@@ -292,7 +288,7 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
                     </p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="background:#eaf5ea;color:#185a36;border:1px solid #b7deb4;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                    <span style="background:#eaf5ea;color:#185a36;border:1px solid #b7deb4;padding:6px 14px;border-radius:0;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         Verified Malaysian SME
                     </span>
@@ -301,14 +297,14 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
 
             <!-- Flash Status Messages -->
             <?php if (session('status')): ?>
-                <div class="dashboard-alert success" role="status" style="margin-bottom:20px;padding:14px 18px;border-radius:8px;background:#eaf3e8;border:1.5px solid #a3cfbb;color:#176b40;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;">
+                <div class="dashboard-alert success" role="status" style="margin-bottom:20px;padding:14px 18px;border-radius:0;background:#eaf3e8;border:1px solid #a3cfbb;border-left:3px solid #176b40;color:#176b40;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span><?= e(session('status')) ?></span>
                 </div>
             <?php endif; ?>
 
             <?php if ($errors->any()): ?>
-                <div class="dashboard-alert error" role="alert" style="margin-bottom:20px;padding:14px 18px;border-radius:8px;background:#fff5f4;border:1.5px solid #fecaca;color:#b91c1c;font-size:13px;font-weight:600;">
+                <div class="dashboard-alert error" role="alert" style="margin-bottom:20px;padding:14px 18px;border-radius:0;background:#fff5f4;border:1px solid #fecaca;border-left:3px solid #b91c1c;color:#b91c1c;font-size:13px;font-weight:600;">
                     <strong style="display:block;margin-bottom:6px;">Please correct the following errors:</strong>
                     <ul style="margin:0;padding-left:20px;font-size:12.5px;font-weight:500;line-height:1.5;">
                         <?php foreach ($errors->all() as $error): ?>
@@ -327,8 +323,8 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
                             <h2>Company Profile &amp; Branding</h2>
                             <p>Information displayed to partners across the marketplace and directory.</p>
                         </div>
-                        <span style="font-size:11.5px;color:#176b40;font-weight:700;background:#eef6ec;padding:4px 10px;border-radius:6px;border:1px solid #cce5c8;">
-                            ● Active Profile
+                        <span style="font-size:11.5px;color:#176b40;font-weight:700;background:#eef6ec;padding:4px 10px;border-radius:0;border:1px solid #cce5c8;">
+                            Active Profile
                         </span>
                     </div>
 
@@ -351,7 +347,7 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
                                     <?= e($companyName) ?>
                                 </strong>
                                 <span style="display:block;font-size:12px;color:#556c5e;margin-bottom:10px;">
-                                    Username: <code style="background:#eaf0e9;padding:2px 6px;border-radius:4px;color:#176b40;font-weight:600;">@<?= e($business->name) ?></code> &middot; SSM: <?= e($business->business_registration_number ?: ($business->registration_number ?? 'Verified')) ?>
+                                    Username: <code style="background:#eaf0e9;padding:2px 6px;border-radius:0;color:#176b40;font-weight:600;">@<?= e($business->name) ?></code> &middot; SSM: <?= e($business->business_registration_number ?: ($business->registration_number ?? 'Verified')) ?>
                                 </span>
                                 <div>
                                     <label class="btn-upload-logo-pill">
@@ -458,7 +454,6 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
                                 <h3>Account Security &amp; Password</h3>
                                 <p>Update your password to keep your company account secure.</p>
                             </div>
-                            <span style="font-size:16px;">🔐</span>
                         </div>
 
                         <form method="POST" action="/business/profile/password">
@@ -518,8 +513,8 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
                     <!-- B2B Accreditation & Verification Badge -->
                     <div class="accreditation-box">
                         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                            <div style="width:36px;height:36px;border-radius:50%;background:#176b40;color:#fff;display:grid;place-items:center;flex-shrink:0;font-size:16px;">
-                                🛡️
+                            <div style="width:34px;height:34px;border-radius:0;background:#143825;color:#fff;display:grid;place-items:center;flex-shrink:0;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                             </div>
                             <div>
                                 <strong style="font-size:14px;color:#113624;display:block;">Verified Malaysian B2B Enterprise</strong>

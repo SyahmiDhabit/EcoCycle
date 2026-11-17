@@ -126,7 +126,7 @@ $activeNav = 'overview';
                 </div>
 
                 <?php if (empty($businesses)) { ?>
-                    <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:12px;padding:48px 24px;text-align:center;margin-bottom:32px;">
+                    <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:48px 24px;text-align:center;margin-bottom:32px;">
                         <span class="signin-brand-mark" style="margin:0 auto 14px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                         <h3 style="margin:0 0 6px;font-size:16px;color:#123321;">No other approved businesses found yet</h3>
                         <p style="margin:0;font-size:13px;color:var(--text-muted);max-width:480px;margin-inline:auto;line-height:1.5;">
@@ -250,7 +250,7 @@ $activeNav = 'overview';
         <div class="modal-dialog">
             <div class="modal-header">
                 <div style="display:flex;align-items:center;gap:14px;">
-                    <div id="modal-biz-avatar" style="width:46px;height:46px;border-radius:50%;overflow:hidden;background:#eef6ec;border:2px solid #285c44;display:grid;place-items:center;flex-shrink:0;">
+                    <div id="modal-biz-avatar" style="width:46px;height:46px;border-radius:0;overflow:hidden;background:#eef6ec;border:1px solid #285c44;display:grid;place-items:center;flex-shrink:0;">
                         <span style="font-size:15px;font-weight:700;color:#185a36;">EC</span>
                     </div>
                     <div>
@@ -295,7 +295,7 @@ $activeNav = 'overview';
                     </div>
                 </div>
 
-                <div style="background:#edf6ec;border:1px solid #cce5c8;border-radius:8px;padding:12px 14px;">
+                <div style="background:#edf6ec;border:1px solid #cce5c8;border-radius:0;padding:12px 14px;">
                     <strong style="display:block;font-size:12px;color:#185e35;margin-bottom:4px;">Surplus &amp; Exchange Materials</strong>
                     <span id="modal-biz-materials" style="font-size:12px;color:#284f37;">-</span>
                 </div>
@@ -310,7 +310,7 @@ $activeNav = 'overview';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-reset" onclick="closeProfileModal()">Close</button>
-                <a id="modal-contact-link" href="#" class="btn-reset" style="border:1px solid #cadbc9;border-radius:6px;text-decoration:none;padding:8px 14px;">
+                <a id="modal-contact-link" href="#" class="btn-reset" style="border:1px solid #cadbc9;border-radius:0;text-decoration:none;padding:8px 14px;">
                     <span>Contact Email</span>
                 </a>
                 <a id="modal-full-page-link" href="#" class="btn-search" style="text-decoration:none;">
@@ -363,7 +363,7 @@ $activeNav = 'overview';
             countBadge.textContent = biz.listings.length;
             biz.listings.forEach(function(item) {
                 var card = document.createElement('div');
-                card.style.cssText = 'border:1px solid #e1e9df;border-radius:8px;padding:10px 12px;background:#fbfdfa;display:flex;justify-content:space-between;align-items:center;gap:12px;';
+                card.style.cssText = 'border:1px solid #d4dfd2;border-radius:0;padding:10px 12px;background:#fbfdfa;display:flex;justify-content:space-between;align-items:center;gap:12px;';
                 card.innerHTML = '<div>' +
                     '<strong style="display:block;font-size:12px;color:#143324;">' + (item.title || 'Surplus Item') + '</strong>' +
                     '<span style="font-size:11px;color:#526658;">' + (item.quantity || '') + ' ' + (item.unit || '') + ' &middot; ' + (item.category || '') + ' &middot; ' + (item.condition || '') + '</span>' +
@@ -376,7 +376,7 @@ $activeNav = 'overview';
             });
         } else {
             countBadge.textContent = '0';
-            listingsContainer.innerHTML = '<div style="padding:14px;background:#f7faf5;border-radius:6px;border:1px dashed #cadbc9;text-align:center;font-size:11px;color:#758a7b;">This business has no active marketplace listings published yet.</div>';
+            listingsContainer.innerHTML = '<div style="padding:14px;background:#f7faf5;border-radius:0;border:1px dashed #cadbc9;text-align:center;font-size:11px;color:#758a7b;">This business has no active marketplace listings published yet.</div>';
         }
 
         document.getElementById('profile-modal').style.display = 'flex';

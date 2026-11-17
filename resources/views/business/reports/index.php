@@ -11,11 +11,10 @@
     <style>
         .report-section-card {
             background: #ffffff;
-            border: 1px solid #d8e5d6;
-            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 24px;
             margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
         .report-metric-row {
             display: grid;
@@ -24,16 +23,17 @@
             margin-top: 16px;
         }
         .report-metric-box {
-            background: #fbfdfa;
-            border: 1px solid #e2ece0;
-            border-radius: 10px;
+            background: var(--surface-subtle);
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 16px;
         }
         .report-metric-box small {
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            color: #556c5e;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
             display: block;
             margin-bottom: 4px;
         }
@@ -41,7 +41,7 @@
             font-size: 24px;
             font-weight: 800;
             font-family: var(--font-display);
-            color: #123020;
+            color: var(--text-primary);
         }
         .cat-bar-item {
             margin-bottom: 12px;
@@ -55,15 +55,15 @@
             margin-bottom: 4px;
         }
         .cat-bar-track {
-            height: 10px;
+            height: 8px;
             background: #eef4ed;
-            border-radius: 5px;
+            border-radius: 0;
             overflow: hidden;
         }
         .cat-bar-fill {
             height: 100%;
-            background: #15803d;
-            border-radius: 5px;
+            background: #176b40;
+            border-radius: 0;
         }
         @media print {
             .topbar, .dashboard-sidebar, .btn-print-report {
@@ -94,20 +94,20 @@
                     <p>Verified analytics on trading revenue, material procurement savings, and circular scrap diversion metrics.</p>
                 </div>
                 <div>
-                    <button type="button" class="btn-print-report" onclick="window.print()" style="background:#18422d;color:#fff;border:none;padding:10px 18px;border-radius:8px;font:700 13px var(--font-main);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-                        <span>🖨 Print / Export PDF</span>
+                    <button type="button" class="btn-print-report" onclick="window.print()" style="background:#143825;color:#fff;border:1px solid #143825;padding:10px 18px;border-radius:0;font:600 13px var(--font-main);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                        <span>Print / Export PDF</span>
                     </button>
                 </div>
             </header>
 
             <!-- 1. Financial Analytics -->
             <div class="report-section-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #eef4ed;padding-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--card-border);padding-bottom:12px;">
                     <div>
-                        <h3 style="margin:0 0 4px;color:#123020;font-size:18px;">1. Financial Performance &amp; Savings Summary</h3>
+                        <h3 style="margin:0 0 4px;color:#123020;font-size:17px;">1. Financial Performance &amp; Savings Summary</h3>
                         <p style="margin:0;font-size:12.5px;color:#556c5e;">Revenue generated from surplus materials sold vs expenditure on secondary materials.</p>
                     </div>
-                    <span style="background:#f0fdf4;color:#15803d;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid #bbf7d0;">
+                    <span style="background:#f0fdf4;color:#15803d;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:0;border:1px solid #bbf7d0;">
                         Fiscal Year 2026
                     </span>
                 </div>
@@ -135,12 +135,12 @@
 
             <!-- 2. Wastage & Circular Environmental Impact -->
             <div class="report-section-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #eef4ed;padding-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--card-border);padding-bottom:12px;">
                     <div>
-                        <h3 style="margin:0 0 4px;color:#123020;font-size:18px;">2. Circular Materials &amp; Landfill Diversion Metrics</h3>
+                        <h3 style="margin:0 0 4px;color:#123020;font-size:17px;">2. Circular Materials &amp; Landfill Diversion Metrics</h3>
                         <p style="margin:0;font-size:12.5px;color:#556c5e;">Classification of reusable materials vs non-reusable industrial scrap recovered.</p>
                     </div>
-                    <span style="background:#eff6ff;color:#1d4ed8;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid #bfdbfe;">
+                    <span style="background:#eff6ff;color:#1d4ed8;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:0;border:1px solid #bfdbfe;">
                         Circularity Rate: <?= $circularityRate ?>%
                     </span>
                 </div>

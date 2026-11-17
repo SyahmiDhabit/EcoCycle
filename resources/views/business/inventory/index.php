@@ -45,27 +45,30 @@ $activeNav = 'inventory';
             flex-wrap: wrap;
         }
         .filter-input {
-            padding: 8px 12px;
-            border: 1px solid #cadbc9;
-            border-radius: 6px;
+            height: 38px;
+            padding: 0 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 0;
             font: 400 13px var(--font-main);
-            background: #fff;
+            background: #ffffff;
             min-width: 220px;
         }
         .filter-select {
-            padding: 8px 12px;
-            border: 1px solid #cadbc9;
-            border-radius: 6px;
+            height: 38px;
+            padding: 0 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 0;
             font: 400 13px var(--font-main);
-            background: #fff;
+            background: #ffffff;
         }
         .btn-filter {
-            padding: 8px 14px;
-            border: 1px solid #78aa84;
-            border-radius: 6px;
-            background: #fff;
+            height: 38px;
+            padding: 0 14px;
+            border: 1px solid var(--brand-green);
+            border-radius: 0;
+            background: #ffffff;
             color: var(--brand-green);
-            font: 600 12px var(--font-main);
+            font: 600 12.5px var(--font-main);
             cursor: pointer;
         }
         .btn-filter:hover {
@@ -73,19 +76,19 @@ $activeNav = 'inventory';
         }
         .btn-add-primary {
             padding: 9px 18px;
-            border: 1px solid var(--brand-green);
-            border-radius: 6px;
-            background: var(--brand-green);
-            color: #fff;
+            border: 1px solid var(--forest-bg);
+            border-radius: 0;
+            background: var(--forest-bg);
+            color: #ffffff;
             font: 600 13px var(--font-main);
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            transition: background 0.15s ease;
+            transition: background-color 0.15s ease;
         }
         .btn-add-primary:hover {
-            background: #11502f;
+            background: #0d2b1b;
         }
         .action-group {
             display: inline-flex;
@@ -96,7 +99,7 @@ $activeNav = 'inventory';
         .btn-stock-in {
             padding: 4px 8px;
             border: 1px solid #a3cfbb;
-            border-radius: 4px;
+            border-radius: 0;
             background: #e8f5e9;
             color: #1b5e20;
             font: 600 11px var(--font-main);
@@ -108,7 +111,7 @@ $activeNav = 'inventory';
         .btn-stock-out {
             padding: 4px 8px;
             border: 1px solid #f5c6cb;
-            border-radius: 4px;
+            border-radius: 0;
             background: #fff5f5;
             color: #721c24;
             font: 600 11px var(--font-main);
@@ -119,9 +122,9 @@ $activeNav = 'inventory';
         }
         .btn-edit {
             padding: 4px 8px;
-            border: 1px solid #cadbc9;
-            border-radius: 4px;
-            background: #fff;
+            border: 1px solid var(--input-border);
+            border-radius: 0;
+            background: #ffffff;
             color: #3b5042;
             font: 600 11px var(--font-main);
             cursor: pointer;
@@ -132,8 +135,8 @@ $activeNav = 'inventory';
         .btn-delete {
             padding: 4px 8px;
             border: 1px solid #fecaca;
-            border-radius: 4px;
-            background: #fff;
+            border-radius: 0;
+            background: #ffffff;
             color: #dc2626;
             font: 600 11px var(--font-main);
             cursor: pointer;
@@ -152,10 +155,10 @@ $activeNav = 'inventory';
             display: inline-flex;
             align-items: center;
             background: #eef3ed;
-            border-radius: 8px;
-            padding: 3px;
+            border-radius: 0;
+            padding: 2px;
             gap: 2px;
-            border: 1px solid #d4dfd2;
+            border: 1px solid var(--card-border);
         }
         .view-toggle-btn {
             display: inline-flex;
@@ -166,18 +169,17 @@ $activeNav = 'inventory';
             background: transparent;
             color: #4a5c4e;
             font: 600 12px var(--font-main);
-            border-radius: 6px;
+            border-radius: 0;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
         .view-toggle-btn:hover {
             color: #123321;
-            background: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.7);
         }
         .view-toggle-btn.active {
             background: #ffffff;
-            color: #18422d;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            color: #143825;
             font-weight: 700;
         }
 
@@ -190,19 +192,16 @@ $activeNav = 'inventory';
         }
         .catalog-card {
             background: #ffffff;
-            border: 1px solid #dbe6da;
-            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 2px 6px rgba(18, 51, 33, 0.04);
-            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            transition: border-color 0.15s ease;
             position: relative;
         }
         .catalog-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(18, 51, 33, 0.08);
-            border-color: #b7ceb4;
+            border-color: var(--brand-green);
         }
         .catalog-card-header {
             position: relative;
@@ -210,15 +209,12 @@ $activeNav = 'inventory';
             background: #f1f6f0;
             overflow: hidden;
             cursor: pointer;
+            border-bottom: 1px solid var(--card-border);
         }
         .catalog-card-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.25s ease;
-        }
-        .catalog-card:hover .catalog-card-img {
-            transform: scale(1.03);
         }
         .catalog-card-badges-top {
             position: absolute;
@@ -263,8 +259,9 @@ $activeNav = 'inventory';
         .catalog-cat-pill {
             background: #eef5eb;
             color: #1f5033;
+            border: 1px solid #c9e2c6;
             padding: 3px 8px;
-            border-radius: 4px;
+            border-radius: 0;
             font-weight: 600;
             font-size: 11px;
         }
@@ -272,15 +269,15 @@ $activeNav = 'inventory';
             background: #f4f7f4;
             color: #4a5c4e;
             padding: 3px 8px;
-            border-radius: 4px;
+            border-radius: 0;
             font-weight: 500;
             font-size: 11px;
-            border: 1px solid #e1ebe0;
+            border: 1px solid var(--card-border);
         }
         .catalog-stock-row {
-            background: #f9fbf8;
-            border: 1px solid #e8f0e6;
-            border-radius: 8px;
+            background: var(--surface-subtle);
+            border: 1px solid var(--card-border);
+            border-radius: 0;
             padding: 10px 12px;
             display: flex;
             flex-direction: column;
@@ -294,17 +291,17 @@ $activeNav = 'inventory';
         .catalog-stock-number {
             font-size: 16px;
             font-weight: 800;
-            color: #18422d;
+            color: #143825;
         }
         .catalog-stock-bar-wrap {
             height: 6px;
             background: #e2ede0;
-            border-radius: 999px;
+            border-radius: 0;
             overflow: hidden;
         }
         .catalog-stock-bar {
             height: 100%;
-            border-radius: 999px;
+            border-radius: 0;
         }
         .catalog-price-tag {
             display: flex;
@@ -312,12 +309,12 @@ $activeNav = 'inventory';
             gap: 4px;
             font-size: 13px;
             font-weight: 700;
-            color: #18422d;
+            color: #143825;
         }
         .catalog-card-actions {
             padding: 10px 14px;
-            border-top: 1px solid #eef3ed;
-            background: #fcfdfa;
+            border-top: 1px solid var(--card-border);
+            background: var(--surface-subtle);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -326,46 +323,6 @@ $activeNav = 'inventory';
         }
 
         /* Image Upload & Slots Preview */
-        .inv-photo-uploader-box {
-            border: 1.5px solid #c2d8bf;
-            background: #fbfdfa;
-            border-radius: 10px;
-            padding: 16px;
-            transition: border-color 0.15s ease;
-        }
-        .inv-photo-top-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-        .btn-choose-photos {
-            padding: 8px 16px;
-            border-radius: 6px;
-            background: #18422d;
-            color: #ffffff;
-            font: 700 12px var(--font-main);
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: background 0.15s ease;
-        }
-        .btn-choose-photos:hover {
-            background: #103322;
-        }
-        .inv-photo-hint {
-            font-size: 11px;
-            color: #556c5e;
-        }
-        .inv-slots-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-        }
         .inv-slots-grid-3 {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -374,86 +331,10 @@ $activeNav = 'inventory';
         .inv-slots-grid-3 .inv-slot-card {
             height: 110px;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .simple-spinner {
-            border: 3px solid #e2e8f0;
-            border-top-color: #18422d;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        .inv-slot-card {
-            position: relative;
-            height: 80px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1.5px solid #c2d8bf;
-            background: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .inv-slot-card.empty-slot {
-            border: 1.5px dashed #cbd5e1;
-            background: #f8fafc;
-            cursor: pointer;
-            flex-direction: column;
-            gap: 4px;
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 600;
-            transition: all 0.15s ease;
-        }
-        .inv-slot-card.empty-slot:hover {
-            border-color: #18422d;
-            background: #eef6ec;
-            color: #18422d;
-        }
-        .inv-slot-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .inv-slot-remove-btn {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.7);
-            color: #ffffff;
-            border: none;
-            font-size: 11px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s ease;
-            z-index: 5;
-        }
-        .inv-slot-remove-btn:hover {
-            background: #dc2626;
-        }
-        .inv-slot-cover-badge {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(14, 41, 27, 0.9);
-            color: #ffffff;
-            font-size: 9px;
-            font-weight: 700;
-            text-align: center;
-            padding: 3px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
         .btn-owner-only {
             padding: 4px 8px;
             border: 1px solid #cbd5e1;
-            border-radius: 4px;
+            border-radius: 0;
             background: #f8fafc;
             color: #64748b;
             font: 600 11px var(--font-main);
@@ -465,15 +346,15 @@ $activeNav = 'inventory';
         .btn-ai-advisor {
             padding: 4px 8px;
             border: 1px solid #93c5fd;
-            border-radius: 4px;
+            border-radius: 0;
             background: #eff6ff;
             color: #1e40af;
-            font: 700 11px var(--font-main);
+            font: 600 11px var(--font-main);
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            transition: all 0.15s ease;
+            text-decoration: none;
         }
         .btn-ai-advisor:hover {
             background: #dbeafe;
@@ -482,141 +363,56 @@ $activeNav = 'inventory';
         .btn-market-live {
             padding: 4px 8px;
             border: 1px solid #86efac;
-            border-radius: 4px;
+            border-radius: 0;
             background: #f0fdf4;
             color: #15803d;
-            font: 700 11px var(--font-main);
+            font: 600 11px var(--font-main);
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            transition: all 0.15s ease;
         }
         .btn-market-live:hover {
             background: #dcfce7;
             border-color: #4ade80;
             color: #166534;
         }
-        .modal-backdrop,
-        .modal-overlay {
-            position: fixed !important;
-            inset: 0 !important;
-            z-index: 1050 !important;
-            background: rgba(14, 38, 25, 0.72) !important;
-            backdrop-filter: blur(3px) !important;
-            align-items: flex-start !important;
-            justify-content: center !important;
-            padding: 24px 16px !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-        .modal-backdrop[style*="display: none"],
-        .modal-overlay[style*="display: none"] {
-            display: none !important;
-        }
-        .modal-backdrop[style*="display: flex"],
-        .modal-overlay[style*="display: flex"] {
-            display: flex !important;
-        }
-        .modal-dialog,
-        .modal-card,
-        .modal-dialog-large {
-            position: relative !important;
-            width: min(640px, 95vw) !important;
-            max-height: calc(100vh - 48px) !important;
-            height: auto !important;
-            display: flex !important;
-            flex-direction: column !important;
-            border-radius: 12px !important;
-            background: #ffffff !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
-            overflow: hidden !important;
-            margin: 0 auto !important;
-            flex-shrink: 0 !important;
-        }
-        .modal-dialog > form,
-        .modal-card > form,
-        .modal-dialog form,
-        .modal-card form {
-            display: flex !important;
-            flex-direction: column !important;
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            height: 100% !important;
-            overflow: hidden !important;
-            margin: 0 !important;
-        }
-        .modal-dialog .modal-header,
-        .modal-card .modal-header,
-        .modal-header {
-            flex-shrink: 0 !important;
-            background: #ffffff !important;
-            border-bottom: 1px solid #e5ede3 !important;
-        }
-        .modal-dialog .modal-body,
-        .modal-card .modal-body,
-        .modal-body {
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            padding: 22px 24px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 16px !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: thin !important;
-            scrollbar-color: #176b40 #edf6ec !important;
-        }
-        .modal-dialog .modal-body::-webkit-scrollbar,
-        .modal-body::-webkit-scrollbar {
-            width: 8px !important;
-            display: block !important;
-        }
-        .modal-dialog .modal-body::-webkit-scrollbar-track,
-        .modal-body::-webkit-scrollbar-track {
-            background: #f0f5ee !important;
-            border-radius: 4px !important;
-        }
-        .modal-dialog .modal-body::-webkit-scrollbar-thumb,
-        .modal-body::-webkit-scrollbar-thumb {
-            background: #176b40 !important;
-            border-radius: 4px !important;
-        }
-        .modal-dialog .modal-body::-webkit-scrollbar-thumb:hover,
-        .modal-body::-webkit-scrollbar-thumb:hover {
-            background: #0d3e24 !important;
-        }
-        .modal-dialog .modal-footer,
-        .modal-card .modal-footer,
-        .modal-footer {
-            flex-shrink: 0 !important;
-            padding: 14px 24px !important;
-            border-top: 1px solid #e5ede3 !important;
-            background: #fbfdfa !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-end !important;
-            gap: 10px !important;
-        }
 
-        /* Spacious & Professional Add Inventory Modal */
+        /* Spacious & Professional Rectangular Add Inventory Modal */
         #add-modal .modal-dialog {
             width: min(920px, 94vw) !important;
             max-width: 920px !important;
-            min-height: min(580px, 88vh) !important;
+            min-height: min(560px, 86vh) !important;
             max-height: min(92vh, 900px) !important;
-            border-radius: 12px !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            border-radius: 0 !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18) !important;
             display: flex !important;
             flex-direction: column !important;
             overflow: hidden !important;
+            background: #ffffff !important;
+        }
+        #add-modal .modal-dialog *,
+        #add-modal .modal-header,
+        #add-modal .modal-body,
+        #add-modal .modal-footer,
+        #add-modal input,
+        #add-modal textarea,
+        #add-modal select,
+        #add-modal button,
+        #add-modal .inv-photo-uploader-box,
+        #add-modal .inv-slot-card,
+        #add-modal .inv-slot-remove-btn,
+        #add-modal .inv-slot-cover-badge,
+        #add-modal .reusability-toggle-card {
+            border-radius: 0 !important;
+        }
+        #add-modal input[type="radio"] {
+            border-radius: 50% !important;
         }
         #add-modal .modal-header {
-            padding: 22px 32px !important;
-            border-bottom: 1px solid #e2e8f0 !important;
+            padding: 20px 32px !important;
+            border-bottom: 1px solid #cbd5e1 !important;
             background: #ffffff !important;
             flex-shrink: 0 !important;
         }
@@ -625,12 +421,129 @@ $activeNav = 'inventory';
             gap: 18px !important;
             overflow-y: auto !important;
             flex: 1 1 auto !important;
+            background: #ffffff !important;
         }
         #add-modal .modal-footer {
             padding: 18px 32px !important;
-            border-top: 1px solid #e2e8f0 !important;
-            background: #fafcfb !important;
+            border-top: 1px solid #cbd5e1 !important;
+            background: #f8fafc !important;
             flex-shrink: 0 !important;
+            justify-content: space-between !important;
+        }
+        #add-modal .modal-close-btn {
+            border-radius: 0 !important;
+            border: 1px solid #cbd5e1 !important;
+            background: #ffffff !important;
+            color: #334155 !important;
+            width: 32px !important;
+            height: 32px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        #add-modal .modal-close-btn:hover {
+            background: #f1f5f9 !important;
+            border-color: #94a3b8 !important;
+        }
+        #add-modal .inv-photo-uploader-box {
+            border: 1px solid #cbd5e1 !important;
+            background: #f8fafc !important;
+            padding: 16px !important;
+        }
+        #add-modal .inv-slot-card {
+            border: 1px solid #cbd5e1 !important;
+        }
+        #add-modal .inv-slot-card.empty-slot {
+            border: 1px dashed #94a3b8 !important;
+        }
+        #add-modal .add-rect-box {
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            padding: 20px;
+        }
+        #add-modal .add-rect-card {
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            padding: 14px 16px;
+        }
+        #add-modal .add-input-field {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        #add-modal .add-input-field:focus {
+            border-color: #18422d;
+            outline: none;
+        }
+        #add-modal .add-btn-primary {
+            background: #18422d;
+            color: #ffffff;
+            border: 1px solid #18422d;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 10px 22px;
+            cursor: pointer;
+        }
+        #add-modal .add-btn-primary:hover {
+            background: #103322;
+            border-color: #103322;
+        }
+        #add-modal .add-btn-secondary {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 10px 18px;
+            cursor: pointer;
+        }
+        #add-modal .add-btn-secondary:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        #add-modal .add-btn-utility {
+            background: #f8fafc;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #add-modal .add-btn-utility:hover {
+            background: #e2e8f0;
+        }
+        @keyframes rectProgressSlide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+        #add-modal .rect-loading-track {
+            width: 240px;
+            height: 4px;
+            background: #e2e8f0;
+            margin: 0 auto 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        #add-modal .rect-loading-bar {
+            width: 35%;
+            height: 100%;
+            background: #18422d;
+            animation: rectProgressSlide 1.1s linear infinite;
+        }
+        #add-modal .add-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        #add-modal .add-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
         }
         @media (max-width: 768px) {
             #add-modal .modal-dialog {
@@ -644,6 +557,10 @@ $activeNav = 'inventory';
             #add-modal .modal-body,
             #add-modal .modal-footer {
                 padding: 16px 20px !important;
+            }
+            #add-modal .add-grid-2,
+            #add-modal .add-grid-3 {
+                grid-template-columns: 1fr !important;
             }
         }
     </style>
@@ -659,12 +576,12 @@ $activeNav = 'inventory';
 
         <main class="dashboard-main">
             <?php if (session('status')): ?>
-                <div class="dashboard-alert success" role="status" style="margin-bottom:16px;padding:12px 16px;border-radius:8px;background:#eaf3e8;border:1px solid #c7dbc5;color:#176b40;font-size:13px;font-weight:600;">
+                <div class="dashboard-alert success" role="status" style="margin-bottom:16px;padding:12px 16px;border-radius:0;background:#eaf3e8;border:1px solid #c7dbc5;border-left:3px solid #176b40;color:#176b40;font-size:13px;font-weight:600;">
                     <?= e(session('status')) ?>
                 </div>
             <?php endif; ?>
             <?php if ($errors->any()): ?>
-                <div class="dashboard-alert error" role="alert" style="margin-bottom:16px;padding:12px 16px;border-radius:8px;background:#fff5f4;border:1px solid #fed7d2;color:#b91c1c;font-size:13px;font-weight:600;">
+                <div class="dashboard-alert error" role="alert" style="margin-bottom:16px;padding:12px 16px;border-radius:0;background:#fff5f4;border:1px solid #fed7d2;border-left:3px solid #b91c1c;color:#b91c1c;font-size:13px;font-weight:600;">
                     <?= e($errors->first()) ?>
                 </div>
             <?php endif; ?>
@@ -696,8 +613,8 @@ $activeNav = 'inventory';
 
                         <select class="filter-select" name="reusability">
                             <option value="">All Reusability</option>
-                            <option value="reusable" <?= $selectedReusability === 'reusable' ? 'selected' : '' ?>>↻ Reusable</option>
-                            <option value="not_reusable" <?= $selectedReusability === 'not_reusable' ? 'selected' : '' ?>>⊘ Not Reusable</option>
+                            <option value="reusable" <?= $selectedReusability === 'reusable' ? 'selected' : '' ?>>Reusable</option>
+                            <option value="not_reusable" <?= $selectedReusability === 'not_reusable' ? 'selected' : '' ?>>Non-Reusable</option>
                         </select>
 
                         <select class="filter-select" name="status">
@@ -745,10 +662,10 @@ $activeNav = 'inventory';
                                         <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
                                             <div style="display:flex;align-items:center;gap:12px;">
                                                 <?php if ($item->image_path): ?>
-                                                    <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.06);" loading="lazy">
+                                                    <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:0;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;" loading="lazy">
                                                 <?php else: ?>
-                                                    <div style="width:44px;height:44px;border-radius:8px;background:#eef6ec;border:1px solid #cce5c8;display:grid;place-items:center;flex-shrink:0;color:#235839;font-weight:700;font-size:16px;">
-                                                        📦
+                                                    <div style="width:44px;height:44px;border-radius:0;background:#eef6ec;border:1px solid #cce5c8;display:grid;place-items:center;flex-shrink:0;color:#235839;font-weight:700;font-size:10px;">
+                                                        ITEM
                                                     </div>
                                                 <?php endif; ?>
                                                 <div>
@@ -762,9 +679,9 @@ $activeNav = 'inventory';
                                         <td data-label="Category"><?= e($item->category) ?></td>
                                         <td data-label="Reusability">
                                             <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                                <span class="badge-reusable" title="Reusable circular material - automatically published to Marketplace & Directory">↻ Reusable</span>
+                                                <span class="badge-reusable" title="Reusable circular material - automatically published to Marketplace & Directory">Reusable</span>
                                             <?php else: ?>
-                                                <span class="badge-not-reusable" title="Single-use scrap - private internal inventory only">⊘ Scrap</span>
+                                                <span class="badge-not-reusable" title="Single-use scrap - private internal inventory only">Non-Reusable</span>
                                             <?php endif; ?>
                                         </td>
                                         <td data-label="Stock Level">
@@ -792,11 +709,11 @@ $activeNav = 'inventory';
                                                 </button>
                                                 <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
                                                     <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="Automatically live on Marketplace & Business Directory. Click to view on Marketplace.">
-                                                        🛒 On Market
+                                                        On Market
                                                     </a>
                                                 <?php else: ?>
                                                     <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Forward to EcoCycle Helper: Circular Economy Analysis & GPS Recycling Centres">
-                                                        💡 EcoCycle Helper
+                                                        EcoCycle Helper
                                                     </a>
                                                 <?php endif; ?>
                                                 <button type="button" class="btn-edit" title="Edit details & marketplace pricing" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->sku ?? "") ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= $item->minimum_threshold ?? "null" ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
@@ -805,7 +722,7 @@ $activeNav = 'inventory';
                                                 <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
                                                     <?= csrf_field() ?>
                                                     <?= method_field('DELETE') ?>
-                                                    <button type="submit" class="btn-delete" title="Delete item">✕</button>
+                                                    <button type="submit" class="btn-delete" title="Delete item">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -822,23 +739,23 @@ $activeNav = 'inventory';
                                     <?php if ($item->image_path): ?>
                                         <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" class="catalog-card-img" loading="lazy">
                                     <?php else: ?>
-                                        <div style="width:100%;height:100%;display:grid;place-items:center;background:#edf5eb;color:#235839;font-size:38px;">
-                                            📦
+                                        <div style="width:100%;height:100%;display:grid;place-items:center;background:#edf5eb;color:#235839;font-size:13px;font-weight:700;letter-spacing:0.05em;">
+                                            NO PHOTO
                                         </div>
                                     <?php endif; ?>
                                     <div class="catalog-card-badges-top">
                                         <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                            <span class="badge-reusable" style="font-size:11px;padding:3px 8px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">↻ Reusable</span>
+                                            <span class="badge-reusable" style="font-size:11px;padding:3px 8px;">Reusable</span>
                                         <?php else: ?>
-                                            <span class="badge-not-reusable" style="font-size:11px;padding:3px 8px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">⊘ Scrap</span>
+                                            <span class="badge-not-reusable" style="font-size:11px;padding:3px 8px;">Non-Reusable</span>
                                         <?php endif; ?>
 
                                         <?php if ($item->status === 'out_of_stock' || (float)$item->quantity <= 0): ?>
-                                            <span class="status status-out-of-stock" style="font-size:11px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">Out of stock</span>
+                                            <span class="status status-out-of-stock" style="font-size:11px;">Out of stock</span>
                                         <?php elseif ($item->status === 'low_stock' || ($item->minimum_threshold !== null && (float)$item->quantity <= (float)$item->minimum_threshold)): ?>
-                                            <span class="status status-low-stock" style="font-size:11px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">Low stock</span>
+                                            <span class="status status-low-stock" style="font-size:11px;">Low stock</span>
                                         <?php else: ?>
-                                            <span class="status status-in-stock" style="font-size:11px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">In stock</span>
+                                            <span class="status status-in-stock" style="font-size:11px;">In stock</span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -895,7 +812,7 @@ $activeNav = 'inventory';
                                             <?php if (($item->listing_type ?? 'buy') === 'free'): ?>
                                                 <span style="color:#16a34a;font-weight:800;">FREE</span>
                                             <?php elseif (($item->listing_type ?? 'buy') === 'borrow'): ?>
-                                                <span style="color:#2563eb;font-weight:700;">🤝 Borrow</span>
+                                                <span style="color:#2563eb;font-weight:700;">Borrow</span>
                                                 <?php if ((float) ($item->price ?? 0) > 0): ?>
                                                     <span style="font-size:11px;color:#64748b;">(RM <?= number_format((float) $item->price, 2) ?>)</span>
                                                 <?php endif; ?>
@@ -920,11 +837,11 @@ $activeNav = 'inventory';
                                     <div style="display:inline-flex;gap:4px;align-items:center;">
                                         <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
                                             <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="Automatically live on Marketplace & Business Directory">
-                                                🛒 Market
+                                                Market
                                             </a>
                                         <?php else: ?>
-                                            <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Forward to EcoCycle Helper: AI Circular Recommendations & GPS Recycling Centres">
-                                                💡 Helper
+                                            <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Forward to EcoCycle Helper: Recommendations & Recycling Centres">
+                                                Helper
                                             </a>
                                         <?php endif; ?>
 
@@ -935,7 +852,7 @@ $activeNav = 'inventory';
                                         <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
                                             <?= csrf_field() ?>
                                             <?= method_field('DELETE') ?>
-                                            <button type="submit" class="btn-delete" title="Delete item">✕</button>
+                                            <button type="submit" class="btn-delete" title="Delete item">Delete</button>
                                         </form>
                                     </div>
                                 </div>
@@ -963,18 +880,20 @@ $activeNav = 'inventory';
     <div class="modal-dialog">
         <div class="modal-header">
             <h3 style="margin:0;font-size:18px;font-weight:700;color:#18422d;">Add New Inventory Item</h3>
-            <button type="button" class="modal-close-btn" onclick="closeAddModal()" aria-label="Close">✕</button>
+            <button type="button" class="modal-close-btn" onclick="closeAddModal()" aria-label="Close">&times;</button>
         </div>
         <form method="POST" action="<?= route('business.inventory.store') ?>" id="add_inventory_form" enctype="multipart/form-data" onsubmit="return validateInventoryAddForm(this)">
             <?= csrf_field() ?>
             <!-- Hidden inputs populated dynamically -->
             <input type="hidden" name="saved_images" id="add_saved_images" value="">
+            <input type="hidden" name="analysis_token" id="add_analysis_token" value="">
             <input type="hidden" name="category" id="add_category_hidden" value="Other">
-            <input type="hidden" name="reusability" id="add_reusability_hidden" value="reusable">
-            <input type="hidden" name="redirect_to" id="add_redirect_to" value="marketplace">
+            <input type="hidden" name="reusability" id="add_reusability_hidden" value="">
+            <input type="hidden" name="redirect_to" id="add_redirect_to" value="helper">
+            <input type="hidden" name="publish_to_marketplace" id="add_publish_to_marketplace" value="0">
 
             <div class="modal-body">
-                <!-- ==================== STAGE 1: Form Details ==================== -->
+                <!-- ==================== STAGE 1: Material Details & Photos ==================== -->
                 <div id="add_stage_1">
                     <!-- 1. Material Photos (Min 1, Max 3) -->
                     <div class="form-group" style="margin-bottom:20px;">
@@ -1001,7 +920,7 @@ $activeNav = 'inventory';
                                 <!-- Rendered dynamically via renderAddSlots() -->
                             </div>
 
-                            <div id="add_img_error" style="display:none;margin-top:10px;padding:8px 12px;border-radius:6px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:600;">
+                            <div id="add_img_error" style="display:none;margin-top:10px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:600;">
                                 Please add at least 1 photo for this material (minimum 1, maximum 3 photos required).
                             </div>
                         </div>
@@ -1010,117 +929,147 @@ $activeNav = 'inventory';
                     <!-- 2. Material Name -->
                     <div class="form-group" style="margin-bottom:18px;">
                         <label for="add_name" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Name <span style="color:#b91c1c;">*</span></label>
-                        <input id="add_name" name="name" type="text" required placeholder="e.g. Pine Timber Planks, Industrial HDPE Offcuts" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;">
+                        <input id="add_name" name="name" type="text" required placeholder="e.g. Pine Timber Planks, Industrial HDPE Offcuts" class="add-input-field">
                     </div>
 
                     <!-- 3. Description -->
                     <div class="form-group" style="margin-bottom:18px;">
                         <label for="add_description" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Description <span style="color:#b91c1c;">*</span></label>
-                        <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, condition, or source..." style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;resize:vertical;"></textarea>
+                        <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, condition, or source..." class="add-input-field" style="resize:vertical;"></textarea>
                     </div>
 
                     <!-- 4 & 5. Quantity & Unit of Measure -->
-                    <div class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="add-grid-2">
                         <div class="form-group" style="margin-bottom:0;">
                             <label for="add_quantity" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Quantity <span style="color:#b91c1c;">*</span></label>
-                            <input id="add_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;">
+                            <input id="add_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50" class="add-input-field">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label for="add_unit" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Unit of Measure <span style="color:#b91c1c;">*</span></label>
-                            <input id="add_unit" name="unit" type="text" required placeholder="e.g. kg, pieces, boxes, pallets" style="width:100%;padding:10px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;">
+                            <input id="add_unit" name="unit" type="text" required placeholder="e.g. kg, pieces, boxes, pallets" class="add-input-field">
                         </div>
                     </div>
                 </div>
 
                 <!-- ==================== LOADING STATE: Material Scanning ==================== -->
-                <div id="add_stage_loading" style="display:none;padding:50px 24px;text-align:center;">
-                    <div class="simple-spinner" style="width:42px;height:42px;margin:0 auto 18px;"></div>
-                    <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Scanning Material...</h4>
-                    <p style="font-size:13px;color:#64748b;margin:0 auto;max-width:420px;line-height:1.5;">
-                        Please wait while the material details and photos are being analyzed.
-                    </p>
+                <div id="add_stage_loading" style="display:none;">
+                    <div class="add-rect-box" style="padding:56px 24px;text-align:center;">
+                        <div class="rect-loading-track">
+                            <div class="rect-loading-bar"></div>
+                        </div>
+                        <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Scanning Material...</h4>
+                        <p style="font-size:13px;color:#64748b;margin:0 auto;max-width:420px;line-height:1.5;">
+                            Please wait while the material details and photos are being analyzed.
+                        </p>
+                    </div>
                 </div>
 
-                <!-- ==================== STAGE 2: Analysis Results & Confirmation ==================== -->
+                <!-- ==================== STAGE 2: Material Analysis Result & Confirmation ==================== -->
                 <div id="add_stage_2" style="display:none;">
-                    <!-- Simplified Material Scanning Results -->
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #e2e8f0;">
+                    <!-- Material Analysis Result Container -->
+                    <div class="add-rect-box" style="margin-bottom:20px;">
+                        <div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;">
                             <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Material Analysis</h4>
-                            <button type="button" onclick="backToStage1()" style="background:none;border:none;color:#18422d;font-size:12px;cursor:pointer;font-weight:600;text-decoration:underline;padding:0;">
-                                Edit Details
-                            </button>
                         </div>
 
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-                            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;">
+                        <div class="add-grid-2" style="margin-bottom:14px;">
+                            <div class="add-rect-card">
                                 <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Material Category</div>
                                 <div id="ai_result_category" style="font-size:14px;font-weight:700;color:#0f172a;">-</div>
                             </div>
-                            <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;">
+                            <div class="add-rect-card">
                                 <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Classification</div>
                                 <div id="ai_result_classification" style="font-size:14px;font-weight:700;color:#18422d;">-</div>
                             </div>
                         </div>
 
-                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+                        <div class="add-rect-card" style="margin-bottom:14px;">
                             <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Reason</div>
                             <p id="ai_result_reason" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
                         </div>
 
-                        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;">
+                        <div class="add-rect-card">
                             <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Recommendation</div>
                             <p id="ai_result_recommendation" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
                         </div>
                     </div>
 
-                    <!-- Confirmation Selection -->
+                    <!-- Classification Confirmation -->
                     <div class="form-group" style="margin-bottom:20px;">
-                        <label style="font-size:13px;font-weight:700;color:#18422d;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                            <span>Confirm or Change Classification <span style="color:#b91c1c;">*</span></span>
+                        <label style="font-size:13px;font-weight:700;color:#18422d;display:block;margin-bottom:8px;">
+                            Confirm Classification <span style="color:#b91c1c;">*</span>
                         </label>
-                        <div class="reusability-toggle-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                            <label class="reusability-toggle-card" id="card_choice_reusable" style="cursor:pointer;border:2px solid #cbd5e1;border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;transition:all 0.15s ease;" onclick="selectDecision('reusable')">
+                        <div class="add-grid-2">
+                            <label class="reusability-toggle-card" id="card_choice_reusable" style="cursor:pointer;border:1px solid #cbd5e1;padding:16px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;" onclick="selectDecision('reusable')">
                                 <input type="radio" name="reusability_choice" value="reusable" id="radio_choice_reusable" style="margin-top:3px;">
                                 <div>
                                     <span style="font-weight:700;color:#18422d;font-size:13px;display:block;">Reusable</span>
-                                    <span style="font-size:12px;color:#64748b;line-height:1.4;display:block;margin-top:3px;">
-                                        Publish to the EcoCycle Marketplace for other businesses.
+                                    <span style="font-size:12px;color:#64748b;line-height:1.45;display:block;margin-top:4px;">
+                                        Proceed to listing details to publish this item to the Marketplace.
                                     </span>
                                 </div>
                             </label>
-                            <label class="reusability-toggle-card" id="card_choice_not_reusable" style="cursor:pointer;border:2px solid #cbd5e1;border-radius:10px;padding:14px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;transition:all 0.15s ease;" onclick="selectDecision('not_reusable')">
+                            <label class="reusability-toggle-card" id="card_choice_not_reusable" style="cursor:pointer;border:1px solid #cbd5e1;padding:16px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;" onclick="selectDecision('not_reusable')">
                                 <input type="radio" name="reusability_choice" value="not_reusable" id="radio_choice_not_reusable" style="margin-top:3px;">
                                 <div>
                                     <span style="font-weight:700;color:#334155;font-size:13px;display:block;">Non-Reusable</span>
-                                    <span style="font-size:12px;color:#64748b;line-height:1.4;display:block;margin-top:3px;">
-                                        Forward to EcoCycle Helper for recycling recommendations.
+                                    <span style="font-size:12px;color:#64748b;line-height:1.45;display:block;margin-top:4px;">
+                                        Save in inventory and forward to EcoCycle Helper for recycling and disposal guidance.
                                     </span>
                                 </div>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Stage 3A: Reusable Marketplace Fields -->
-                    <div id="add_section_reusable" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:18px;">
-                        <h4 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#18422d;">Marketplace Listing Details</h4>
+                    <!-- Non-Reusable Restriction Notice -->
+                    <div id="add_section_not_reusable" class="add-rect-box" style="display:none;">
+                        <h4 style="margin:0 0 6px;font-size:14px;font-weight:700;color:#334155;">EcoCycle Helper</h4>
+                        <p style="margin:0;font-size:13px;color:#475569;line-height:1.5;">
+                            Non-reusable items cannot be published to the Marketplace. This item will be saved in your inventory and forwarded to EcoCycle Helper for recycling, repurposing, and disposal guidance.
+                        </p>
+                    </div>
+                </div>
 
-                        <div class="form-row-3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+                <!-- ==================== STAGE 3: Marketplace Listing Details (Reusable Only) ==================== -->
+                <div id="add_stage_3_reusable" style="display:none;">
+                    <!-- Confirmed Material Summary Bar -->
+                    <div class="add-rect-box" style="margin-bottom:20px;padding:14px 18px;">
+                        <div class="add-grid-3">
+                            <div>
+                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Material</div>
+                                <div id="stage3_summary_name" style="font-size:13px;font-weight:700;color:#0f172a;">-</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Material Category</div>
+                                <div id="stage3_summary_category" style="font-size:13px;font-weight:700;color:#0f172a;">-</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Classification</div>
+                                <div style="font-size:13px;font-weight:700;color:#18422d;">Reusable</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Listing Details Form Box -->
+                    <div class="add-rect-card" style="padding:20px;">
+                        <h4 style="margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;font-size:14px;font-weight:700;color:#18422d;">Marketplace Listing Details</h4>
+
+                        <div class="add-grid-3" style="margin-bottom:16px;">
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_listing_type" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Listing Type *</label>
-                                <select id="add_listing_type" name="listing_type" onchange="toggleAddPriceField(this.value)" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                                <label for="add_listing_type" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Listing Type <span style="color:#b91c1c;">*</span></label>
+                                <select id="add_listing_type" name="listing_type" onchange="toggleAddPriceField(this.value); checkListingDetailsComplete();" class="add-input-field">
                                     <option value="buy">Sell</option>
                                     <option value="borrow">Lend</option>
                                     <option value="free">Free</option>
                                 </select>
                             </div>
                             <div class="form-group" id="add_price_group" style="margin-bottom:0;">
-                                <label for="add_price" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Price per Unit (RM) <span style="color:#b91c1c;">*</span></label>
-                                <input id="add_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                                <label for="add_price" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Price per Unit (RM) <span style="color:#b91c1c;">*</span></label>
+                                <input id="add_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00" oninput="checkListingDetailsComplete()" class="add-input-field">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_condition" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Material Condition *</label>
-                                <select id="add_condition" name="condition" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                                <label for="add_condition" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Condition <span style="color:#b91c1c;">*</span></label>
+                                <select id="add_condition" name="condition" onchange="checkListingDetailsComplete()" class="add-input-field">
                                     <option value="Used - Good">Used - Good</option>
                                     <option value="Like New">Like New</option>
                                     <option value="Surplus Unopened">Surplus Unopened</option>
@@ -1130,55 +1079,49 @@ $activeNav = 'inventory';
                         </div>
 
                         <!-- Available Quantity & Pickup Location -->
-                        <div class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:0;">
+                        <div class="add-grid-2">
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_available_quantity" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Available Quantity *</label>
-                                <input id="add_available_quantity" name="available_quantity" type="number" step="0.01" min="0" placeholder="e.g. 50" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                                <label for="add_available_quantity" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Available Quantity <span style="color:#b91c1c;">*</span></label>
+                                <input id="add_available_quantity" name="available_quantity" type="number" step="0.01" min="0.01" placeholder="e.g. 50" oninput="checkListingDetailsComplete()" class="add-input-field">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_pickup_location" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:4px;display:block;">Pickup Location</label>
-                                <input id="add_pickup_location" name="pickup_location" type="text" placeholder="e.g. Shah Alam, Selangor" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;">
-                                <div style="display:flex;gap:8px;margin-top:6px;">
-                                    <button type="button" onclick="useGpsLocation()" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">
+                                <label for="add_pickup_location" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Pickup Location <span style="color:#b91c1c;">*</span></label>
+                                <input id="add_pickup_location" name="pickup_location" type="text" placeholder="e.g. Shah Alam, Selangor" oninput="checkListingDetailsComplete()" class="add-input-field">
+                                <div style="display:flex;gap:8px;margin-top:8px;">
+                                    <button type="button" onclick="useGpsLocation()" class="add-btn-utility">
                                         Use Current Location
                                     </button>
-                                    <button type="button" onclick="useProfileLocation()" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">
+                                    <button type="button" onclick="useProfileLocation()" class="add-btn-utility">
                                         Use Business Address
                                     </button>
                                 </div>
-                                <div id="gps_status_msg" style="font-size:11px;color:#18422d;margin-top:4px;display:none;"></div>
+                                <div id="gps_status_msg" style="font-size:11px;color:#18422d;margin-top:6px;display:none;"></div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Stage 3B: Non-Reusable Notice -->
-                    <div id="add_section_not_reusable" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;margin-bottom:18px;">
-                        <h4 style="margin:0 0 6px;font-size:14px;font-weight:700;color:#334155;">EcoCycle Helper</h4>
-                        <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
-                            This item will be saved in your inventory and forwarded to the EcoCycle Helper for recycling recommendations, repurposing suggestions, and disposal guidance.
-                        </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Modal Footers -->
-            <!-- Stage 1 Footer -->
-            <div class="modal-footer" id="add_footer_stage_1">
-                <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
-                <button type="button" class="btn-save" id="btn_trigger_ai" onclick="startGeminiAnalysis()" style="background:#18422d;color:#ffffff;border:none;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;">
-                    Analyze Material
-                </button>
-            </div>
-
-            <!-- Stage 2 Footer -->
-            <div class="modal-footer" id="add_footer_stage_2" style="display:none;">
-                <button type="button" class="btn-cancel" onclick="backToStage1()">Back to Details</button>
-                <button type="submit" class="btn-save" id="btn_submit_reusable" style="background:#18422d;color:#ffffff;border:none;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;">
-                    Publish to Marketplace
-                </button>
-                <button type="submit" class="btn-save" id="btn_submit_helper" style="background:#18422d;color:#ffffff;border:none;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;display:none;">
-                    Forward to EcoCycle Helper
-                </button>
+            <!-- Modal Footer -->
+            <div class="modal-footer" id="add_modal_footer">
+                <button type="button" class="add-btn-secondary" onclick="closeAddModal()">Cancel</button>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button type="button" class="add-btn-primary" id="btn_trigger_ai" onclick="startGeminiAnalysis()">
+                        Analyze Material
+                    </button>
+                    <button type="button" class="add-btn-primary" id="btn_proceed_listing" onclick="proceedToListingDetails()" style="display:none;">
+                        Continue to Listing Details
+                    </button>
+                    <button type="submit" class="add-btn-primary" id="btn_submit_helper" style="display:none;">
+                        Save &amp; Proceed to EcoCycle Helper
+                    </button>
+                    <span id="listing_incomplete_hint" style="display:none;font-size:12px;color:#64748b;font-weight:600;">
+                        Complete all required listing details to publish.
+                    </span>
+                    <button type="submit" class="add-btn-primary" id="btn_submit_reusable" style="display:none;">
+                        Publish to Marketplace
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -1189,7 +1132,7 @@ $activeNav = 'inventory';
     <div class="modal-dialog modal-dialog-large">
         <div class="modal-header">
             <h3>Edit Item Details</h3>
-            <button type="button" class="modal-close-btn" onclick="closeEditModal()">✕</button>
+            <button type="button" class="modal-close-btn" onclick="closeEditModal()" aria-label="Close">&times;</button>
         </div>
         <form id="edit-form" method="POST" action="" enctype="multipart/form-data">
             <?= csrf_field() ?>
@@ -1258,24 +1201,23 @@ $activeNav = 'inventory';
                         <label class="reusability-toggle-card">
                             <input type="radio" name="reusability" id="edit_reusability_reusable" value="reusable" onchange="toggleReusabilityNotice('edit', this.value)">
                             <div class="toggle-card-content">
-                                <span class="toggle-title" style="color:#15803d;">↻ Reusable</span>
-                                <span class="toggle-desc">Durable, multi-use, circular (Synced with Marketplace & Directory)</span>
+                                <span class="toggle-title" style="color:#15803d;">Reusable</span>
+                                <span class="toggle-desc">Durable, multi-use, circular (Synced with Marketplace &amp; Directory)</span>
                             </div>
                         </label>
                         <label class="reusability-toggle-card">
                             <input type="radio" name="reusability" id="edit_reusability_not_reusable" value="not_reusable" onchange="toggleReusabilityNotice('edit', this.value)">
                             <div class="toggle-card-content">
-                                <span class="toggle-title" style="color:#475569;">⊘ Not Reusable</span>
+                                <span class="toggle-title" style="color:#475569;">Non-Reusable</span>
                                 <span class="toggle-desc">Single-use scrap / cutoffs (Private internal inventory)</span>
                             </div>
                         </label>
                     </div>
 
                     <!-- Marketplace & Directory Trade Settings (Automatic Sync for Reusable) -->
-                    <div id="edit_marketplace_trade_panel" style="margin-top:12px;background:#f4fbf6;border:1.5px solid #bbf0cb;border-radius:8px;padding:14px 16px;">
-                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-                            <span style="font-size:16px;">🛒</span>
-                            <strong style="color:#0f5132;font-size:13px;">Marketplace & Directory Publication Settings</strong>
+                    <div id="edit_marketplace_trade_panel" style="margin-top:12px;background:#f4fbf6;border:1px solid #b9dec0;border-radius:0;padding:14px 16px;">
+                        <div style="margin-bottom:8px;">
+                            <strong style="color:#0f5132;font-size:13px;">Marketplace &amp; Directory Publication Settings</strong>
                         </div>
                         <div class="form-row-3" style="margin-bottom:0;">
                             <div class="form-group" style="margin-bottom:0;">
@@ -1302,12 +1244,11 @@ $activeNav = 'inventory';
                         </div>
                     </div>
 
-                    <div id="edit_reusability_scrap_notice" style="display:none;margin-top:12px;padding:12px 14px;border-radius:8px;background:#fef7f6;border:1.5px solid #fecaca;color:#991b1b;font-size:12px;line-height:1.45;">
-                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-                            <span style="font-size:15px;">🔒</span>
+                    <div id="edit_reusability_scrap_notice" style="display:none;margin-top:12px;padding:12px 14px;border-radius:0;background:#fef7f6;border:1px solid #fecaca;color:#991b1b;font-size:12px;line-height:1.45;">
+                        <div style="margin-bottom:4px;">
                             <strong style="color:#7f1d1d;">Internal Scrap Only (Unlisted from Marketplace)</strong>
                         </div>
-                        Marking this item as Non-Reusable scrap will remove it from the public marketplace and business directory. It stays saved in your private inventory for waste monitoring and AI Scrap Advisor suggestions.
+                        Marking this item as Non-Reusable removes it from the public marketplace and business directory. It remains in your inventory for waste monitoring and EcoCycle Helper recommendations.
                     </div>
                 </div>
 
@@ -1339,7 +1280,7 @@ $activeNav = 'inventory';
     <div class="modal-dialog">
         <div class="modal-header">
             <h3 id="adjust-modal-title">Adjust Stock Level</h3>
-            <button type="button" class="modal-close-btn" onclick="closeAdjustModal()">✕</button>
+            <button type="button" class="modal-close-btn" onclick="closeAdjustModal()" aria-label="Close">&times;</button>
         </div>
         <form id="adjust-form" method="POST" action="">
             <?= csrf_field() ?>
@@ -1377,13 +1318,13 @@ $activeNav = 'inventory';
     <div class="modal-dialog modal-dialog-large">
         <div class="modal-header">
             <h3>List Material on Marketplace</h3>
-            <button type="button" class="modal-close-btn" onclick="closeListMarketModal()">✕</button>
+            <button type="button" class="modal-close-btn" onclick="closeListMarketModal()" aria-label="Close">&times;</button>
         </div>
         <form method="POST" action="<?= route('business.marketplace.store') ?>" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" id="lm_inventory_item_id" name="inventory_item_id" value="">
             <div class="modal-body">
-                <p style="margin:0 0 14px;padding:10px 12px;border-radius:6px;background:#f0f6ee;border:1px solid #cce5c8;font-size:12px;color:#173e2c;">
+                <p style="margin:0 0 14px;padding:10px 12px;border-radius:0;background:#f0f6ee;border:1px solid #cce5c8;font-size:12px;color:#173e2c;">
                     From Inventory: <strong id="lm_source_name"></strong> &middot; Available Stock: <span id="lm_source_stock" style="color:#176b40;font-weight:700;"></span>
                 </p>
 
@@ -1423,14 +1364,14 @@ $activeNav = 'inventory';
                     <div class="form-group">
                         <label for="lm_category">Category *</label>
                         <select id="lm_category" name="category" required>
-                            <option value="Packaging & paper">Packaging & paper</option>
-                            <option value="Furniture & wood products">Furniture & wood products</option>
-                            <option value="Textiles & apparel">Textiles & apparel</option>
-                            <option value="Electronics & electrical">Electronics & electrical</option>
-                            <option value="Metal & fabrication">Metal & fabrication</option>
-                            <option value="Plastics & rubber">Plastics & rubber</option>
-                            <option value="Chemicals & lubricants">Chemicals & lubricants</option>
-                            <option value="Food & beverage organic">Food & beverage organic</option>
+                            <option value="Packaging & paper">Packaging &amp; paper</option>
+                            <option value="Furniture & wood products">Furniture &amp; wood products</option>
+                            <option value="Textiles & apparel">Textiles &amp; apparel</option>
+                            <option value="Electronics & electrical">Electronics &amp; electrical</option>
+                            <option value="Metal & fabrication">Metal &amp; fabrication</option>
+                            <option value="Plastics & rubber">Plastics &amp; rubber</option>
+                            <option value="Chemicals & lubricants">Chemicals &amp; lubricants</option>
+                            <option value="Food & beverage organic">Food &amp; beverage organic</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
@@ -1453,19 +1394,16 @@ $activeNav = 'inventory';
                     <div class="offer-toggle-grid">
                         <label class="offer-toggle-card">
                             <input type="radio" name="listing_type" id="lm_type_buy" value="buy" checked onchange="handleListingTypeChange('buy', 'lm')">
-                            <span class="offer-icon">🛒</span>
-                            <span class="offer-label">Buy (Sell)</span>
+                            <span class="offer-label">Sell</span>
                             <span class="offer-sub">Set RM price</span>
                         </label>
                         <label class="offer-toggle-card">
                             <input type="radio" name="listing_type" id="lm_type_borrow" value="borrow" onchange="handleListingTypeChange('borrow', 'lm')">
-                            <span class="offer-icon">🤝</span>
                             <span class="offer-label">Borrow (Loan)</span>
                             <span class="offer-sub">Deposit / rental</span>
                         </label>
                         <label class="offer-toggle-card">
                             <input type="radio" name="listing_type" id="lm_type_free" value="free" onchange="handleListingTypeChange('free', 'lm')">
-                            <span class="offer-icon">🎁</span>
                             <span class="offer-label">Take for Free</span>
                             <span class="offer-sub">RM 0.00 Giveaway</span>
                         </label>
@@ -1476,12 +1414,9 @@ $activeNav = 'inventory';
                 <input type="hidden" name="reusability" value="reusable">
                 <div class="form-group">
                     <label>Reusability Classification</label>
-                    <div style="padding:10px 14px;border-radius:8px;background:#f0f7ef;border:1.5px solid #b8dab4;display:flex;align-items:center;gap:10px;">
-                        <span style="font-size:18px;color:#15803d;">↻</span>
-                        <div>
-                            <strong style="display:block;font-size:13px;color:#15803d;">Reusable Circular Material</strong>
-                            <small style="color:#526b5a;font-size:11px;">Only reusable materials can be listed on the public marketplace for other businesses.</small>
-                        </div>
+                    <div style="padding:10px 14px;border-radius:0;background:#f0f7ef;border:1px solid #b8dab4;">
+                        <strong style="display:block;font-size:13px;color:#15803d;">Reusable Circular Material</strong>
+                        <small style="color:#526b5a;font-size:11.5px;">Only reusable materials can be listed on the public marketplace for other businesses.</small>
                     </div>
                 </div>
 
@@ -1516,42 +1451,36 @@ $activeNav = 'inventory';
     </div>
 </div>
 
-<!-- AI Circular Scrap Advisor Modal (Smart AI Recommendations for Not-Reusable Materials) -->
+<!-- Circular Scrap Advisor Modal -->
 <div class="modal-backdrop" id="ai-scrap-advisor-modal" style="display:none;" onclick="if(event.target === this) closeAiAdvisorModal()">
     <div class="modal-dialog modal-dialog-large" style="max-width:640px;">
-        <div class="modal-header" style="background:#f0f7ff;border-bottom:1px solid #bfdbfe;">
-            <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:36px;height:36px;border-radius:8px;background:#2563eb;color:#fff;display:grid;place-items:center;font-size:18px;">💡</div>
-                <div>
-                    <h3 style="color:#1e3a8a;margin:0;">EcoCycle AI Scrap Advisor</h3>
-                    <small style="color:#3b82f6;font-size:11.5px;font-weight:600;">Circular Valorization & Licensed Facility Matcher</small>
-                </div>
+        <div class="modal-header" style="background:#f8fafc;border-bottom:1px solid #cbd5e1;">
+            <div>
+                <h3 style="color:#143825;margin:0;">EcoCycle Scrap Advisor</h3>
+                <small style="color:#526658;font-size:11.5px;font-weight:600;">Circular Recovery &amp; Licensed Facility Matcher</small>
             </div>
-            <button type="button" class="modal-close-btn" onclick="closeAiAdvisorModal()">✕</button>
+            <button type="button" class="modal-close-btn" onclick="closeAiAdvisorModal()" aria-label="Close">&times;</button>
         </div>
         <form id="ai-advisor-form" method="POST" action="">
             <?= csrf_field() ?>
             <div class="modal-body" style="gap:14px;">
                 <!-- Target Material Header -->
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:0;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
                     <div>
                         <strong id="ai_scrap_item_name" style="font-size:14px;color:#0f172a;display:block;">Scrap Material</strong>
-                        <span id="ai_scrap_meta" style="font-size:12px;color:#64748b;">Category · 0 kg in inventory</span>
+                        <span id="ai_scrap_meta" style="font-size:12px;color:#64748b;">Category &middot; 0 kg in inventory</span>
                     </div>
-                    <span style="font-size:11px;font-weight:700;background:#fef2f2;color:#b91c1c;padding:3px 8px;border-radius:4px;border:1px solid #fecaca;">⊘ Not Reusable Scrap</span>
+                    <span style="font-size:11px;font-weight:700;background:#fef2f2;color:#b91c1c;padding:3px 8px;border-radius:0;border:1px solid #fecaca;">Non-Reusable</span>
                 </div>
 
-                <!-- AI Analysis Card -->
-                <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:14px 16px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                        <span style="font-size:16px;">⚡</span>
-                        <h4 style="margin:0;font-size:13px;color:#1e40af;">AI Circular Recommendation Engine</h4>
-                    </div>
-                    <p id="ai_treatment_strategy" style="margin:0 0 10px;font-size:12.5px;color:#1e3a8a;line-height:1.5;">
+                <!-- Analysis Card -->
+                <div style="background:#f8fafc;border:1px solid #cbd5e1;border-left:3px solid #143825;border-radius:0;padding:14px 16px;">
+                    <h4 style="margin:0 0 8px;font-size:13px;color:#143825;">Recovery Recommendation</h4>
+                    <p id="ai_treatment_strategy" style="margin:0 0 10px;font-size:12.5px;color:#334155;line-height:1.5;">
                         Analyzing material composition and industrial recovery paths...
                     </p>
-                    <div style="background:#ffffff;border-radius:6px;padding:10px 12px;border:1px solid #bfdbfe;font-size:12px;">
-                        <strong style="color:#1d4ed8;display:block;margin-bottom:4px;">📜 Recommended Action & Circular Process:</strong>
+                    <div style="background:#ffffff;border-radius:0;padding:10px 12px;border:1px solid #cbd5e1;font-size:12px;">
+                        <strong style="color:#143825;display:block;margin-bottom:4px;">Recommended Action &amp; Circular Process:</strong>
                         <span id="ai_compliance_note" style="color:#334155;">Compliant with Malaysian Environmental Quality Act 1974. Scheduled for licensed secondary recovery.</span>
                     </div>
                 </div>
@@ -1559,7 +1488,7 @@ $activeNav = 'inventory';
                 <!-- Recommended Destination Recyclers -->
                 <div>
                     <label style="font-weight:700;color:#1e293b;margin-bottom:6px;display:block;font-size:12.5px;">
-                        📍 Recommended Licensed Recovery Destinations in Malaysia:
+                        Recommended Licensed Recovery Destinations in Malaysia:
                     </label>
                     <div id="ai_destinations_container" style="display:flex;flex-direction:column;gap:8px;">
                         <!-- Rendered by JS -->
@@ -1567,13 +1496,10 @@ $activeNav = 'inventory';
                 </div>
 
                 <!-- Action: Log to Wastage Monitoring -->
-                <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 14px;">
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                        <span style="font-size:16px;">📊</span>
-                        <strong style="font-size:12.5px;color:#15803d;">Track in Wastage Monitoring Module</strong>
-                    </div>
+                <div style="background:#f0fdf4;border:1px solid #b9dec0;border-radius:0;padding:12px 14px;">
+                    <strong style="display:block;font-size:12.5px;color:#15803d;margin-bottom:6px;">Track in Wastage Monitoring Module</strong>
                     <p style="margin:0 0 10px;font-size:11.5px;color:#33533e;line-height:1.4;">
-                        Log this scrap directly into your official <strong>Wastage Monitoring</strong> tracker so you can monitor quantities, scheduled collection, and ESG diversion analytics.
+                        Log this scrap directly into your official <strong>Wastage Monitoring</strong> tracker so you can monitor quantities, scheduled collection, and diversion analytics.
                     </p>
                     <div class="form-row-2">
                         <div class="form-group">
@@ -1591,8 +1517,8 @@ $activeNav = 'inventory';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeAiAdvisorModal()">Close</button>
-                <button type="submit" class="btn-save" style="background:#16a34a;border-color:#15803d;">
-                    📊 Log to Wastage Monitoring &rarr;
+                <button type="submit" class="btn-save">
+                    Log to Wastage Monitoring &rarr;
                 </button>
             </div>
         </form>
@@ -1644,18 +1570,69 @@ function toggleEditPriceField(val) {
     }
 }
 
+var addAnalysisCompleted = false;
+
+function setAddModalStageActions(stage) {
+    var btnAi = document.getElementById('btn_trigger_ai');
+    var btnProceed = document.getElementById('btn_proceed_listing');
+    var btnHelper = document.getElementById('btn_submit_helper');
+    var hint = document.getElementById('listing_incomplete_hint');
+    var btnPublish = document.getElementById('btn_submit_reusable');
+
+    if (btnAi) btnAi.style.display = 'none';
+    if (btnProceed) btnProceed.style.display = 'none';
+    if (btnHelper) btnHelper.style.display = 'none';
+    if (hint) hint.style.display = 'none';
+    if (btnPublish) btnPublish.style.display = 'none';
+
+    if (stage === 'stage_1') {
+        if (btnAi) btnAi.style.display = 'inline-block';
+    } else if (stage === 'loading') {
+        // Loading: only single Cancel button remains visible
+    } else if (stage === 'stage_2') {
+        var reusability = document.getElementById('add_reusability_hidden') ? document.getElementById('add_reusability_hidden').value : '';
+        if (reusability === 'reusable') {
+            if (btnProceed) btnProceed.style.display = 'inline-block';
+        } else {
+            if (btnHelper) btnHelper.style.display = 'inline-block';
+        }
+    } else if (stage === 'stage_3') {
+        checkListingDetailsComplete();
+    }
+}
+
 function openAddModal() {
     addPhotosTransfer = new DataTransfer();
     renderAddSlots();
-    backToStage1();
+    addAnalysisCompleted = false;
+
     var form = document.getElementById('add_inventory_form');
     if (form) form.reset();
+
     var savedImgInput = document.getElementById('add_saved_images');
     if (savedImgInput) savedImgInput.value = '';
+
+    var tokenInput = document.getElementById('add_analysis_token');
+    if (tokenInput) tokenInput.value = '';
+
     var catInput = document.getElementById('add_category_hidden');
     if (catInput) catInput.value = 'Other';
+
     var reusabilityInput = document.getElementById('add_reusability_hidden');
-    if (reusabilityInput) reusabilityInput.value = 'reusable';
+    if (reusabilityInput) reusabilityInput.value = '';
+
+    var pubInput = document.getElementById('add_publish_to_marketplace');
+    if (pubInput) pubInput.value = '0';
+
+    var redInput = document.getElementById('add_redirect_to');
+    if (redInput) redInput.value = 'helper';
+
+    document.getElementById('add_stage_1').style.display = 'block';
+    document.getElementById('add_stage_loading').style.display = 'none';
+    document.getElementById('add_stage_2').style.display = 'none';
+    document.getElementById('add_stage_3_reusable').style.display = 'none';
+
+    setAddModalStageActions('stage_1');
 
     var modal = document.getElementById('add-modal');
     modal.style.display = 'flex';
@@ -1667,19 +1644,6 @@ function openAddModal() {
 function closeAddModal() {
     document.getElementById('add-modal').style.display = 'none';
     document.body.style.overflow = '';
-}
-
-function backToStage1() {
-    var sLoading = document.getElementById('add_stage_loading');
-    var s2 = document.getElementById('add_stage_2');
-    var s1 = document.getElementById('add_stage_1');
-    var f1 = document.getElementById('add_footer_stage_1');
-    var f2 = document.getElementById('add_footer_stage_2');
-    if (sLoading) sLoading.style.display = 'none';
-    if (s2) s2.style.display = 'none';
-    if (s1) s1.style.display = 'block';
-    if (f1) f1.style.display = 'flex';
-    if (f2) f2.style.display = 'none';
 }
 
 function renderAddSlots() {
@@ -1721,7 +1685,7 @@ function renderAddSlots() {
             var reader = new FileReader();
             reader.onload = function(e) {
                 card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
-                    (index === 0 ? '<span class="inv-slot-cover-badge">Cover Photo</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (index + 1) + '</span>') +
+                    (index === 0 ? '<span class="inv-slot-cover-badge">Cover Photo</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;font-weight:700;">#' + (index + 1) + '</span>') +
                     '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeAddPhoto(' + index + ')">✕</button>';
             };
             reader.readAsDataURL(file);
@@ -1828,8 +1792,9 @@ function startGeminiAnalysis() {
     // Switch to Loading View
     document.getElementById('add_stage_1').style.display = 'none';
     document.getElementById('add_stage_loading').style.display = 'block';
-    document.getElementById('add_footer_stage_1').style.display = 'none';
-    document.getElementById('add_footer_stage_2').style.display = 'none';
+    document.getElementById('add_stage_2').style.display = 'none';
+    document.getElementById('add_stage_3_reusable').style.display = 'none';
+    setAddModalStageActions('loading');
 
     var formData = new FormData();
     formData.append('_token', '<?= csrf_token() ?>');
@@ -1863,12 +1828,18 @@ function startGeminiAnalysis() {
         document.getElementById('add_stage_loading').style.display = 'none';
         if (!data.success || !data.analysis) {
             alert('Material analysis could not complete. Returning to details.');
-            backToStage1();
+            document.getElementById('add_stage_1').style.display = 'block';
+            setAddModalStageActions('stage_1');
             return;
         }
 
+        addAnalysisCompleted = true;
+
         if (data.saved_images && data.saved_images.length > 0) {
             document.getElementById('add_saved_images').value = JSON.stringify(data.saved_images);
+        }
+        if (data.analysis_token) {
+            document.getElementById('add_analysis_token').value = data.analysis_token;
         }
 
         var analysis = data.analysis;
@@ -1882,7 +1853,7 @@ function startGeminiAnalysis() {
         var classEl = document.getElementById('ai_result_classification');
         if (classEl) {
             classEl.textContent = isReusable ? 'Reusable' : 'Non-Reusable';
-            classEl.style.color = isReusable ? '#15803d' : '#334155';
+            classEl.style.color = isReusable ? '#18422d' : '#334155';
         }
 
         var reasonEl = document.getElementById('ai_result_reason');
@@ -1902,17 +1873,15 @@ function startGeminiAnalysis() {
             }
         }
 
-        var availQty = document.getElementById('add_available_quantity');
-        if (availQty) availQty.value = qty;
-
         document.getElementById('add_stage_2').style.display = 'block';
-        document.getElementById('add_footer_stage_2').style.display = 'flex';
-        selectDecision(analysis.suggested_reusability === 'not_reusable' ? 'not_reusable' : 'reusable');
+        selectDecision(isReusable ? 'reusable' : 'not_reusable');
+        setAddModalStageActions('stage_2');
     })
     .catch(function(err) {
         document.getElementById('add_stage_loading').style.display = 'none';
         alert('Notice: ' + err.message);
-        backToStage1();
+        document.getElementById('add_stage_1').style.display = 'block';
+        setAddModalStageActions('stage_1');
     });
 }
 
@@ -1922,50 +1891,102 @@ function selectDecision(choice) {
     var radioNotReusable = document.getElementById('radio_choice_not_reusable');
     var cardReusable = document.getElementById('card_choice_reusable');
     var cardNotReusable = document.getElementById('card_choice_not_reusable');
-    var secReusable = document.getElementById('add_section_reusable');
     var secNotReusable = document.getElementById('add_section_not_reusable');
-    var btnReusable = document.getElementById('btn_submit_reusable');
-    var btnNotReusable = document.getElementById('btn_submit_helper');
+    var btnProceedListing = document.getElementById('btn_proceed_listing');
+    var btnSubmitHelper = document.getElementById('btn_submit_helper');
 
     if (choice === 'reusable') {
         if (radioReusable) radioReusable.checked = true;
         if (radioNotReusable) radioNotReusable.checked = false;
         if (cardReusable) {
-            cardReusable.style.borderColor = '#18422d';
+            cardReusable.style.border = '2px solid #18422d';
             cardReusable.style.background = '#f0fdf4';
         }
         if (cardNotReusable) {
-            cardNotReusable.style.borderColor = '#cbd5e1';
+            cardNotReusable.style.border = '1px solid #cbd5e1';
             cardNotReusable.style.background = '#ffffff';
         }
-        if (secReusable) secReusable.style.display = 'block';
         if (secNotReusable) secNotReusable.style.display = 'none';
-        if (btnReusable) btnReusable.style.display = 'inline-block';
-        if (btnNotReusable) btnNotReusable.style.display = 'none';
+        if (btnProceedListing) btnProceedListing.style.display = 'inline-block';
+        if (btnSubmitHelper) btnSubmitHelper.style.display = 'none';
 
-        var priceInput = document.getElementById('add_price');
-        var listingType = document.getElementById('add_listing_type');
-        if (listingType && listingType.value === 'buy' && priceInput) {
-            priceInput.required = true;
-        }
+        document.getElementById('add_publish_to_marketplace').value = '1';
+        document.getElementById('add_redirect_to').value = 'marketplace';
     } else {
         if (radioReusable) radioReusable.checked = false;
         if (radioNotReusable) radioNotReusable.checked = true;
         if (cardReusable) {
-            cardReusable.style.borderColor = '#cbd5e1';
+            cardReusable.style.border = '1px solid #cbd5e1';
             cardReusable.style.background = '#ffffff';
         }
         if (cardNotReusable) {
-            cardNotReusable.style.borderColor = '#18422d';
+            cardNotReusable.style.border = '2px solid #18422d';
             cardNotReusable.style.background = '#f8fafc';
         }
-        if (secReusable) secReusable.style.display = 'none';
         if (secNotReusable) secNotReusable.style.display = 'block';
-        if (btnReusable) btnReusable.style.display = 'none';
-        if (btnNotReusable) btnNotReusable.style.display = 'inline-block';
+        if (btnProceedListing) btnProceedListing.style.display = 'none';
+        if (btnSubmitHelper) btnSubmitHelper.style.display = 'inline-block';
 
-        var priceInput2 = document.getElementById('add_price');
-        if (priceInput2) priceInput2.required = false;
+        document.getElementById('add_publish_to_marketplace').value = '0';
+        document.getElementById('add_redirect_to').value = 'helper';
+    }
+}
+
+function proceedToListingDetails() {
+    var name = document.getElementById('add_name').value.trim();
+    var cat = document.getElementById('add_category_hidden').value;
+    var qty = document.getElementById('add_quantity').value.trim();
+
+    document.getElementById('stage3_summary_name').textContent = name;
+    document.getElementById('stage3_summary_category').textContent = cat;
+
+    var availQty = document.getElementById('add_available_quantity');
+    if (availQty && (!availQty.value || parseFloat(availQty.value) <= 0)) {
+        availQty.value = qty;
+    }
+
+    document.getElementById('add_stage_2').style.display = 'none';
+    document.getElementById('add_stage_3_reusable').style.display = 'block';
+    setAddModalStageActions('stage_3');
+
+    var modal = document.getElementById('add-modal');
+    var body = modal.querySelector('.modal-body');
+    if (body) body.scrollTop = 0;
+}
+
+function checkListingDetailsComplete() {
+    var listingType = document.getElementById('add_listing_type').value;
+    var condition = document.getElementById('add_condition').value;
+    var availQty = document.getElementById('add_available_quantity').value.trim();
+    var price = document.getElementById('add_price').value.trim();
+    var pickupLoc = document.getElementById('add_pickup_location').value.trim();
+
+    var isComplete = true;
+
+    if (!listingType || !condition) {
+        isComplete = false;
+    }
+    if (!availQty || parseFloat(availQty) <= 0) {
+        isComplete = false;
+    }
+    if (!pickupLoc) {
+        isComplete = false;
+    }
+    if (listingType === 'buy') {
+        if (!price || isNaN(price) || parseFloat(price) < 0) {
+            isComplete = false;
+        }
+    }
+
+    var btnPublish = document.getElementById('btn_submit_reusable');
+    var hint = document.getElementById('listing_incomplete_hint');
+
+    if (isComplete) {
+        if (btnPublish) btnPublish.style.display = 'inline-block';
+        if (hint) hint.style.display = 'none';
+    } else {
+        if (btnPublish) btnPublish.style.display = 'none';
+        if (hint) hint.style.display = 'inline-block';
     }
 }
 
@@ -1992,6 +2013,7 @@ function useGpsLocation() {
                 status.textContent = 'GPS acquired: ' + lat + ', ' + lng;
                 status.style.color = '#18422d';
             }
+            checkListingDetailsComplete();
         },
         function(err) {
             if (status) {
@@ -2016,9 +2038,15 @@ function useProfileLocation() {
         status.textContent = 'Set to registered business profile address.';
         status.style.color = '#18422d';
     }
+    checkListingDetailsComplete();
 }
 
 function validateInventoryAddForm(form) {
+    if (!addAnalysisCompleted) {
+        alert('Material analysis is mandatory before saving or publishing. Please click Analyze Material first.');
+        return false;
+    }
+
     var savedImagesVal = document.getElementById('add_saved_images') ? document.getElementById('add_saved_images').value : '';
     if (addPhotosTransfer.files.length < 1 && !savedImagesVal) {
         var err = document.getElementById('add_img_error');
@@ -2038,7 +2066,19 @@ function validateInventoryAddForm(form) {
                 return false;
             }
         }
+        var availQty = document.getElementById('add_available_quantity').value;
+        if (!availQty || parseFloat(availQty) <= 0) {
+            alert('Please enter a valid Available Quantity.');
+            document.getElementById('add_available_quantity').focus();
+            return false;
+        }
+        document.getElementById('add_publish_to_marketplace').value = '1';
+        document.getElementById('add_redirect_to').value = 'marketplace';
+    } else {
+        document.getElementById('add_publish_to_marketplace').value = '0';
+        document.getElementById('add_redirect_to').value = 'helper';
     }
+
     return true;
 }
 
@@ -2116,7 +2156,7 @@ function renderEditSlots() {
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
-                        (index === 0 ? '<span class="inv-slot-cover-badge">New Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (index + 1) + '</span>') +
+                        (index === 0 ? '<span class="inv-slot-cover-badge">New Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:0;font-weight:700;">#' + (index + 1) + '</span>') +
                         '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeEditPhoto(' + index + ')">✕</button>';
                 };
                 reader.readAsDataURL(file);
@@ -2158,7 +2198,7 @@ function renderEditSlots() {
             var exCard = document.createElement('div');
             exCard.className = 'inv-slot-card';
             exCard.innerHTML = '<img src="' + editInitialImages[k] + '" alt="Photo ' + (k + 1) + '">' +
-                (k === 0 ? '<span class="inv-slot-cover-badge">Current Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (k + 1) + '</span>');
+                (k === 0 ? '<span class="inv-slot-cover-badge">Current Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:0;font-weight:700;">#' + (k + 1) + '</span>');
             grid.appendChild(exCard);
         }
 
@@ -2315,7 +2355,7 @@ function renderLmSlots() {
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     card.innerHTML = '<img src="' + e.target.result + '" alt="Photo ' + (index + 1) + '">' +
-                        (index === 0 ? '<span class="inv-slot-cover-badge">Listing Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (index + 1) + '</span>') +
+                        (index === 0 ? '<span class="inv-slot-cover-badge">Listing Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:0;font-weight:700;">#' + (index + 1) + '</span>') +
                         '<button type="button" class="inv-slot-remove-btn" title="Remove photo" onclick="removeLmPhoto(' + index + ')">✕</button>';
                 };
                 reader.readAsDataURL(file);
@@ -2357,7 +2397,7 @@ function renderLmSlots() {
             var exCard = document.createElement('div');
             exCard.className = 'inv-slot-card';
             exCard.innerHTML = '<img src="' + lmInitialImages[k] + '" alt="Photo ' + (k + 1) + '">' +
-                (k === 0 ? '<span class="inv-slot-cover-badge">Inherited Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">#' + (k + 1) + '</span>');
+                (k === 0 ? '<span class="inv-slot-cover-badge">Inherited Cover</span>' : '<span style="position:absolute;bottom:2px;left:4px;background:rgba(0,0,0,0.65);color:#fff;font-size:9px;padding:1px 5px;border-radius:0;font-weight:700;">#' + (k + 1) + '</span>');
             grid.appendChild(exCard);
         }
 
@@ -2505,15 +2545,15 @@ function openAiAdvisorModal(id, name, category, quantity, unit, notes) {
 
     destinations.forEach(function(dest, i) {
         var card = document.createElement('div');
-        card.style.cssText = 'border:1.5px solid #cbd5e1;background:#ffffff;border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color 0.15s;';
+        card.style.cssText = 'border:1px solid #cbd5e1;background:#ffffff;border-radius:0;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color 0.15s;';
         card.innerHTML = '<div>' +
             '<div style="display:flex;align-items:center;gap:6px;">' +
                 '<strong style="font-size:12.5px;color:#0f172a;">' + dest.name + '</strong>' +
-                '<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">' + dest.badge + '</span>' +
+                '<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 6px;border-radius:0;">' + dest.badge + '</span>' +
             '</div>' +
-            '<span style="font-size:11.5px;color:#64748b;">📍 ' + dest.loc + ' · ' + dest.type + '</span>' +
+            '<span style="font-size:11.5px;color:#64748b;">' + dest.loc + ' &middot; ' + dest.type + '</span>' +
         '</div>' +
-        '<button type="button" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#1e293b;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Select</button>';
+        '<button type="button" style="background:#f8fafc;border:1px solid #cbd5e1;color:#1e293b;padding:4px 10px;border-radius:0;font-size:11px;font-weight:700;cursor:pointer;">Select</button>';
         
         card.onclick = function() {
             document.getElementById('ai_facility_name').value = dest.name;

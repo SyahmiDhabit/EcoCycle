@@ -45,7 +45,7 @@ $avatarInitials = strtoupper(substr($companyName, 0, 2));
             <span class="sidebar-user-info">
                 <strong class="sidebar-user-name"><?= e($companyName) ?></strong>
                 <span class="sidebar-user-status"><?= e(match ($business?->account_status) {
-                    'approved' => '✓ Verified SME',
+                    'approved' => 'Verified SME',
                     'rejected' => 'Changes Required',
                     default => 'Verification Pending',
                 }) ?></span>
@@ -83,7 +83,7 @@ $avatarInitials = strtoupper(substr($companyName, 0, 2));
                     <path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7"></path>
                     <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
-                <span>Waste monitoring</span>
+                <span>Waste Monitoring</span>
             </a>
 
             <a href="/business/marketplace" class="sidebar-link <?= $activeNav === 'marketplace' ? 'active' : '' ?>" title="Surplus Materials Marketplace">
@@ -95,13 +95,13 @@ $avatarInitials = strtoupper(substr($companyName, 0, 2));
                 <span>Marketplace</span>
             </a>
 
-            <a href="/business/helper" class="sidebar-link <?= $activeNav === 'helper' ? 'active' : '' ?>" title="AI Circular Scrap Advisor & GPS Recycling Centre Locator">
+            <a href="/business/helper" class="sidebar-link <?= $activeNav === 'helper' ? 'active' : '' ?>" title="EcoCycle Helper & Recycling Centre Locator">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path d="M12 2a10 10 0 1 0 10 10"></path>
                     <polygon points="12 8 8 12 12 16 16 12 12 8"></polygon>
                 </svg>
-                <span>EcoCycle Helper (AI)</span>
+                <span>EcoCycle Helper</span>
             </a>
 
             <a href="/business/my-listings" class="sidebar-link <?= $activeNav === 'listings' ? 'active' : '' ?>" title="View your listings, item status, and buyer feedback">

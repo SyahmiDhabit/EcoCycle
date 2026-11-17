@@ -108,6 +108,7 @@ class InventoryGeminiWorkflowTest extends TestCase
                 'reason',
                 'recommended_actions',
             ],
+            'analysis_token',
             'saved_images',
             'item_data' => [
                 'name',
@@ -119,6 +120,7 @@ class InventoryGeminiWorkflowTest extends TestCase
 
         $data = $response->json();
         $this->assertTrue($data['success']);
+        $this->assertNotEmpty($data['analysis_token']);
         $this->assertNotEmpty($data['saved_images']);
         $this->assertCount(2, $data['saved_images']);
         $this->assertContains($data['analysis']['suggested_reusability'], ['reusable', 'not_reusable']);
@@ -131,6 +133,17 @@ class InventoryGeminiWorkflowTest extends TestCase
         $images = [
             UploadedFile::fake()->image('pallet1.jpg', 600, 400),
         ];
+
+        $analysisResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Standard Heavy-Duty Wooden Pallets',
+            'description' => 'Heavy duty standard euro wooden pallets in good structural condition.',
+            'quantity' => 80,
+            'unit' => 'pallets',
+            'images' => $images,
+        ]);
+        $analysisResponse->assertOk();
+        $analysisToken = $analysisResponse->json('analysis_token');
+        $savedImages = $analysisResponse->json('saved_images');
 
         $response = $this->actingAs($business)->post(route('business.inventory.store'), [
             'name' => 'Standard Heavy-Duty Wooden Pallets',
@@ -145,7 +158,9 @@ class InventoryGeminiWorkflowTest extends TestCase
             'available_quantity' => 80,
             'pickup_location' => 'Shah Alam, Selangor',
             'redirect_to' => 'marketplace',
-            'images' => $images,
+            'publish_to_marketplace' => 1,
+            'analysis_token' => $analysisToken,
+            'saved_images' => json_encode($savedImages),
         ]);
 
         $response->assertRedirect(route('business.marketplace'));
@@ -167,6 +182,79 @@ class InventoryGeminiWorkflowTest extends TestCase
         $marketplaceResponse->assertSee('Standard Heavy-Duty Wooden Pallets');
     }
 
+    public function test_unanalysed_item_cannot_be_published_to_marketplace(): void
+    {
+        $business = $this->createApprovedBusiness('Unanalysed Test Sdn Bhd');
+
+        $images = [
+            UploadedFile::fake()->image('pallet1.jpg', 600, 400),
+        ];
+
+        $response = $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Unanalysed Timber Lot',
+            'description' => 'Attempting to publish without running material analysis.',
+            'quantity' => 50,
+            'unit' => 'kg',
+            'reusability' => 'reusable',
+            'category' => 'Furniture & wood products',
+            'listing_type' => 'buy',
+            'price' => 20.00,
+            'condition' => 'Used - Good',
+            'available_quantity' => 50,
+            'pickup_location' => 'Shah Alam, Selangor',
+            'redirect_to' => 'marketplace',
+            'publish_to_marketplace' => 1,
+            'images' => $images,
+        ]);
+
+        $response->assertSessionHasErrors('analysis_token');
+        $this->assertDatabaseMissing('item', [
+            'name' => 'Unanalysed Timber Lot',
+        ]);
+    }
+
+    public function test_non_reusable_item_cannot_be_published_to_marketplace_even_with_manual_request(): void
+    {
+        $business = $this->createApprovedBusiness('Scrap Control Bhd');
+
+        $images = [
+            UploadedFile::fake()->image('scrap1.jpg', 600, 400),
+        ];
+
+        $analysisResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Contaminated Oily Rags',
+            'description' => 'Used industrial rags soaked in machine oil.',
+            'quantity' => 30,
+            'unit' => 'kg',
+            'images' => $images,
+        ]);
+        $analysisResponse->assertOk();
+        $analysisToken = $analysisResponse->json('analysis_token');
+        $savedImages = $analysisResponse->json('saved_images');
+
+        // Attempt to force publishing a Non-Reusable item to the Marketplace
+        $response = $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Contaminated Oily Rags',
+            'description' => 'Used industrial rags soaked in machine oil.',
+            'quantity' => 30,
+            'unit' => 'kg',
+            'reusability' => 'not_reusable',
+            'category' => 'Textiles & apparel',
+            'listing_type' => 'buy',
+            'price' => 5.00,
+            'condition' => 'Used - Fair',
+            'redirect_to' => 'marketplace',
+            'publish_to_marketplace' => 1,
+            'analysis_token' => $analysisToken,
+            'saved_images' => json_encode($savedImages),
+        ]);
+
+        $response->assertSessionHasErrors('reusability');
+        $this->assertDatabaseMissing('item', [
+            'name' => 'Contaminated Oily Rags',
+        ]);
+    }
+
     public function test_store_non_reusable_item_forwards_to_ecocycle_helper(): void
     {
         $business = $this->createApprovedBusiness('Metal Works Enterprise');
@@ -182,6 +270,8 @@ class InventoryGeminiWorkflowTest extends TestCase
             'unit' => 'kg',
             'reusability' => 'not_reusable',
             'category' => 'Metal & fabrication',
+            'redirect_to' => 'helper',
+            'publish_to_marketplace' => 0,
             'images' => $images,
         ]);
 
@@ -211,9 +301,14 @@ class InventoryGeminiWorkflowTest extends TestCase
     {
         $business = $this->createApprovedBusiness();
 
-        // Simulate photos saved during aiAnalyze
+        // Simulate photos saved during aiAnalyze and valid analysis token
         Storage::disk('public')->put('inventory-images/pre_analyzed_1.jpg', 'fake-image-binary');
         $savedImages = ['/inventory-images/pre_analyzed_1.jpg'];
+        $analysisToken = \App\Http\Controllers\InventoryController::generateAnalysisToken(
+            $business->id,
+            'High Purity HDPE Granules',
+            200.0
+        );
 
         $response = $this->actingAs($business)->post(route('business.inventory.store'), [
             'name' => 'High Purity HDPE Granules',
@@ -225,6 +320,8 @@ class InventoryGeminiWorkflowTest extends TestCase
             'listing_type' => 'free',
             'condition' => 'Surplus Unopened',
             'redirect_to' => 'marketplace',
+            'publish_to_marketplace' => 1,
+            'analysis_token' => $analysisToken,
             'saved_images' => json_encode($savedImages),
         ]);
 

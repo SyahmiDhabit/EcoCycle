@@ -11,10 +11,10 @@ class EcoCycleHelperService
     /**
      * Analyze an item or material and produce structured circular economy recommendations.
      *
-     * @param  array<string, mixed>|Item  $item
+     * @param  array<string, mixed>|\Illuminate\Database\Eloquent\Model  $item
      * @return array<string, mixed>
      */
-    public function analyze(array|Item $item): array
+    public function analyze(array|\Illuminate\Database\Eloquent\Model $item): array
     {
         $name = is_array($item) ? ($item['name'] ?? $item['title'] ?? 'Material') : ($item->name ?: $item->title ?: 'Material');
         $category = is_array($item) ? ($item['category'] ?? 'General') : ($item->category ?? 'General');
@@ -23,7 +23,7 @@ class EcoCycleHelperService
         $quantity = (float) (is_array($item) ? ($item['quantity'] ?? 1) : ($item->quantity ?? 1));
         $unit = is_array($item) ? ($item['unit'] ?? 'units') : ($item->unit ?? 'units');
         $reusability = is_array($item) ? ($item['reusability'] ?? 'reusable') : ($item->reusability ?? 'reusable');
-        $images = is_array($item) ? ($item['images'] ?? []) : ($item->getAllImages() ?? []);
+        $images = is_array($item) ? ($item['images'] ?? []) : (method_exists($item, 'getAllImages') ? $item->getAllImages() : []);
 
         $normCategory = mb_strtolower(trim($category));
         $normName = mb_strtolower(trim($name));
@@ -138,34 +138,46 @@ class EcoCycleHelperService
             return null;
         }
 
-        $model = config('services.gemini.model', 'gemini-2.5-flash');
-        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+        $configuredModel = config('services.gemini.model', 'gemini-3.1-flash-lite');
+        $modelsToTry = array_unique([
+            $configuredModel,
+            'gemini-3.1-flash-lite',
+            'gemini-3.5-flash-lite',
+            'gemini-flash-lite-latest',
+        ]);
 
-        try {
-            $response = Http::timeout(6)->post($endpoint, [
-                'contents' => [
-                    [
-                        'role' => 'user',
-                        'parts' => $parts,
+        foreach ($modelsToTry as $model) {
+            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+            try {
+                $response = Http::timeout(10)->post($endpoint, [
+                    'contents' => [
+                        [
+                            'role' => 'user',
+                            'parts' => $parts,
+                        ],
                     ],
-                ],
-                'generationConfig' => [
-                    'temperature' => $temperature,
-                    'maxOutputTokens' => 1500,
-                ],
-            ]);
+                    'generationConfig' => [
+                        'temperature' => $temperature,
+                        'maxOutputTokens' => 1500,
+                    ],
+                ]);
 
-            if ($response->successful()) {
-                $data = $response->json();
-                return $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                    if (! empty($text)) {
+                        return $text;
+                    }
+                }
+
+                Log::warning("Gemini multimodal model {$model} returned non-200 status", [
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 300),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning("Gemini multimodal model {$model} failed: " . $e->getMessage());
             }
-
-            Log::warning('Gemini Multimodal API call returned non-200 status', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('Gemini Multimodal API call failed: ' . $e->getMessage());
         }
 
         return null;
@@ -282,15 +294,47 @@ PROMPT;
         $cleaned = trim($cleaned);
 
         $decoded = json_decode($cleaned, true);
-        if (! is_array($decoded) || ! isset($decoded['suggested_reusability'])) {
+        if (! is_array($decoded)) {
             return null;
         }
 
-        $reusability = ($decoded['suggested_reusability'] === 'reusable') ? 'reusable' : 'not_reusable';
+        $rawReus = strtolower(trim((string) ($decoded['suggested_reusability'] ?? '')));
+        $isNotReusable = (
+            str_contains($rawReus, 'not')
+            || str_contains($rawReus, 'non')
+            || str_contains($rawReus, 'scrap')
+            || str_contains($rawReus, 'low')
+            || $rawReus === 'no'
+            || $rawReus === 'false'
+        );
+        $reusability = $isNotReusable ? 'not_reusable' : 'reusable';
         $label = ($reusability === 'reusable') ? 'Reusable' : 'Non-Reusable';
 
+        // Normalize category to standard options
+        $rawCat = strtolower(trim((string) ($decoded['suggested_category'] ?? '')));
+        $category = 'Other';
+        if (preg_match('/(wood|timber|pallet|plank|lumber|plywood|sawdust|furniture|cedar|oak|pine|biomass)/i', $rawCat)) {
+            $category = 'Furniture & wood products';
+        } elseif (preg_match('/(paper|cardboard|carton|box|kraft|packaging|corrugated)/i', $rawCat)) {
+            $category = 'Packaging & paper';
+        } elseif (preg_match('/(steel|iron|metal|aluminum|aluminium|copper|brass|wire|offcut)/i', $rawCat)) {
+            $category = 'Metal & fabrication';
+        } elseif (preg_match('/(plastic|polymer|hdpe|ldpe|pp|pet|pvc|resin|rubber)/i', $rawCat)) {
+            $category = 'Plastics & rubber';
+        } elseif (preg_match('/(electronic|electrical|pcb|cable|battery|motor|circuit|e-waste)/i', $rawCat)) {
+            $category = 'Electronics & electrical';
+        } elseif (preg_match('/(textile|fabric|cotton|polyester|yarn|denim|rag|garment)/i', $rawCat)) {
+            $category = 'Textiles & apparel';
+        } elseif (preg_match('/(chemical|solvent|lubricant|oil|sludge|coolant|paint)/i', $rawCat)) {
+            $category = 'Chemicals & lubricants';
+        } elseif (preg_match('/(food|organic|spent grain|compost)/i', $rawCat)) {
+            $category = 'Food & beverage organic';
+        } elseif (! empty($decoded['suggested_category'])) {
+            $category = $decoded['suggested_category'];
+        }
+
         return [
-            'suggested_category' => $decoded['suggested_category'] ?? 'Other',
+            'suggested_category' => $category,
             'suggested_reusability' => $reusability,
             'classification_label' => $label,
             'reason' => $decoded['reason'] ?? 'Gemini analyzed the material specifications and concluded this classification.',
@@ -402,36 +446,48 @@ PROMPT;
             return null;
         }
 
-        $model = config('services.gemini.model', 'gemini-2.5-flash');
-        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+        $configuredModel = config('services.gemini.model', 'gemini-3.1-flash-lite');
+        $modelsToTry = array_unique([
+            $configuredModel,
+            'gemini-3.1-flash-lite',
+            'gemini-3.5-flash-lite',
+            'gemini-flash-lite-latest',
+        ]);
 
-        try {
-            $response = Http::timeout(5)->post($endpoint, [
-                'contents' => [
-                    [
-                        'role' => 'user',
-                        'parts' => [
-                            ['text' => $prompt],
+        foreach ($modelsToTry as $model) {
+            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+            try {
+                $response = Http::timeout(10)->post($endpoint, [
+                    'contents' => [
+                        [
+                            'role' => 'user',
+                            'parts' => [
+                                ['text' => $prompt],
+                            ],
                         ],
                     ],
-                ],
-                'generationConfig' => [
-                    'temperature' => $temperature,
-                    'maxOutputTokens' => 1500,
-                ],
-            ]);
+                    'generationConfig' => [
+                        'temperature' => $temperature,
+                        'maxOutputTokens' => 1500,
+                    ],
+                ]);
 
-            if ($response->successful()) {
-                $data = $response->json();
-                return $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                    if (! empty($text)) {
+                        return $text;
+                    }
+                }
+
+                Log::warning("Gemini text model {$model} returned non-200 status", [
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 300),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning("Gemini text model {$model} failed: " . $e->getMessage());
             }
-
-            Log::warning('Gemini API call returned non-200 status', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('Gemini API call failed: ' . $e->getMessage());
         }
 
         return null;

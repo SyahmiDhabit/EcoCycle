@@ -450,7 +450,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <h1><?= $currentTab === 'non_reusable' ? 'Non-reusable items category' : ($myListingsOnly ? 'My marketplace listings' : 'Reusable materials marketplace') ?></h1>
                     <p><?= $currentTab === 'non_reusable' 
                         ? 'Industrial scrap, single-use residues, and manufacturing cutoffs separated from the normal reusable marketplace. Forward items directly to <strong>EcoCycle Helper</strong> for circular upcycling advice or find matching certified recyclers.' 
-                        : 'Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. Reusable listings support <strong>Buy</strong>, <strong>Borrow</strong>, or <strong>Take for Free</strong>.' ?></p>
+                        : 'Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. Reusable listings support <strong>Sell</strong> and <strong>Free</strong>.' ?></p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                     <a href="/business/helper" class="btn-reset" style="display:inline-flex;align-items:center;gap:8px;">
@@ -535,10 +535,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         <div class="filter-field">
                             <label for="mkt-type">Listing Type</label>
                             <select id="mkt-type" name="listing_type">
-                                <option value="">All Types (Buy/Borrow/Free)</option>
-                                <option value="buy" <?= request('listing_type') === 'buy' ? 'selected' : '' ?>>Buy (For Sale)</option>
-                                <option value="borrow" <?= request('listing_type') === 'borrow' ? 'selected' : '' ?>>Borrow (Loan)</option>
-                                <option value="free" <?= request('listing_type') === 'free' ? 'selected' : '' ?>>Take for Free</option>
+                                <option value="">All Types (Sell / Free)</option>
+                                <option value="buy" <?= request('listing_type') === 'buy' ? 'selected' : '' ?>>Sell</option>
+                                <option value="free" <?= request('listing_type') === 'free' ? 'selected' : '' ?>>Free</option>
                             </select>
                         </div>
 
@@ -622,7 +621,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             style="cursor: pointer;"
                             data-title="<?= e($item->title) ?>"
                             data-category="<?= e($item->category) ?>"
-                            data-condition="<?= e($item->condition ?? 'Used - Good') ?>"
+                            data-condition="<?= e($item->condition ?? 'Used') ?>"
                             data-type="<?= e($listingType) ?>"
                             data-reusability="<?= e($item->reusability) ?>"
                             data-price="<?= (float) $item->price ?>"
@@ -681,15 +680,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                 <div class="card-badges-row">
                                     <!-- Offer type badge -->
                                     <?php if ($listingType === 'free') { ?>
-                                        <span class="offer-type-badge free">Free Surplus</span>
-                                    <?php } elseif ($listingType === 'borrow') { ?>
-                                        <span class="offer-type-badge borrow">Borrow</span>
+                                        <span class="offer-type-badge free">Free</span>
                                     <?php } else { ?>
-                                        <span class="offer-type-badge buy">Buy</span>
+                                        <span class="offer-type-badge buy">Sell</span>
                                     <?php } ?>
 
                                     <span class="category-tag"><?= e($item->category) ?></span>
-                                    <span class="condition-pill"><?= e($item->condition ?? 'Used - Good') ?></span>
+                                    <span class="condition-pill"><?= e($item->condition ?? 'Used') ?></span>
                                 </div>
 
                                 <h3 class="listing-title" title="<?= e($item->title) ?>"><?= e($item->title) ?></h3>
@@ -705,9 +702,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                         <?php if ($listingType === 'free') { ?>
                                             <span class="price-main free-price">FREE</span>
                                             <span class="price-unit">(RM 0.00)</span>
-                                        <?php } elseif ($listingType === 'borrow') { ?>
-                                            <span class="price-main borrow-price">RM <?= number_format((float) $item->price, 2) ?></span>
-                                            <span class="price-unit"><?= (float) $item->price > 0 ? 'deposit / loan rate' : 'free loan' ?></span>
                                         <?php } else { ?>
                                             <span class="price-main">RM <?= number_format((float) $item->price, 2) ?></span>
                                             <span class="price-unit">/ <?= e($item->unit) ?></span>
@@ -742,7 +736,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                         </a>
                                     <?php } else { ?>
                                         <button type="button" class="btn-claim-action" onclick="event.stopPropagation(); openExchangeOrderModal(<?= $item->id ?>)">
-                                            <?= $listingType === 'free' ? 'Claim Free' : ($listingType === 'borrow' ? 'Borrow' : 'Inquire &rarr;') ?>
+                                            <?= $listingType === 'free' ? 'Claim Free' : 'Inquire &rarr;' ?>
                                         </button>
                                     <?php } ?>
                                 </div>
@@ -822,7 +816,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <div class="modal-header">
                 <div>
                     <h3 style="margin:0;">List Material on Marketplace</h3>
-                    <small style="color:#526b5a;font-size:12px;">Publish surplus material for verified SMEs to buy, borrow, or take for free.</small>
+                    <small style="color:#526b5a;font-size:12px;">Publish surplus material for verified SMEs to buy or claim for free.</small>
                 </div>
                 <button type="button" class="modal-close-btn" onclick="closeCreateListingModal()" aria-label="Close">&times;</button>
             </div>
@@ -897,23 +891,18 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         </div>
                     </div>
 
-                    <!-- Listing Offer Type: Buy, Borrow, or Free -->
+                    <!-- Listing Option: Sell or Free -->
                     <div class="form-group">
-                        <label>Listing Offer Option *</label>
-                        <div class="offer-toggle-grid">
+                        <label>Listing Option *</label>
+                        <div class="offer-toggle-grid" style="grid-template-columns:1fr 1fr;">
                             <label class="offer-toggle-card">
                                 <input type="radio" name="listing_type" value="buy" checked onchange="handleModalOfferChange('buy')">
-                                <span class="offer-label">Buy (Sell)</span>
+                                <span class="offer-label">Sell</span>
                                 <span class="offer-sub">Set RM price</span>
                             </label>
                             <label class="offer-toggle-card">
-                                <input type="radio" name="listing_type" value="borrow" onchange="handleModalOfferChange('borrow')">
-                                <span class="offer-label">Borrow</span>
-                                <span class="offer-sub">Loan / deposit</span>
-                            </label>
-                            <label class="offer-toggle-card">
                                 <input type="radio" name="listing_type" value="free" onchange="handleModalOfferChange('free')">
-                                <span class="offer-label">Free Surplus</span>
+                                <span class="offer-label">Free</span>
                                 <span class="offer-sub">RM 0.00 Giveaway</span>
                             </label>
                         </div>
@@ -938,13 +927,11 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
                         <div class="form-group">
-                            <label for="create_condition">Condition</label>
+                            <label for="create_condition">Material Condition</label>
                             <select id="create_condition" name="condition">
-                                <option value="Used - Good">Used - Good</option>
-                                <option value="New / Surplus">New / Surplus</option>
-                                <option value="Like New">Like New</option>
-                                <option value="Used - Fair">Used - Fair</option>
-                                <option value="Recyclable Scrap">Recyclable Scrap</option>
+                                <option value="New">New</option>
+                                <option value="Used" selected>Used</option>
+                                <option value="Unused">Unused</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -959,7 +946,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
                     <div class="form-group">
                         <label for="create_desc">Material Description &amp; Exchange Terms</label>
-                        <textarea id="create_desc" name="description" rows="3" placeholder="Condition, pickup location, return expectations if borrowed, or handling details..."></textarea>
+                        <textarea id="create_desc" name="description" rows="3" placeholder="Condition, pickup location, or handling details..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1330,11 +1317,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             priceInput.readOnly = true;
             priceInput.style.background = '#f1f5f9';
             priceLabel.textContent = 'Price (Free)';
-        } else if (type === 'borrow') {
-            priceInput.readOnly = false;
-            priceInput.style.background = '#ffffff';
-            priceLabel.textContent = 'Deposit / Rate (RM)';
-            if (priceInput.value === '0.00') priceInput.value = '0.00';
         } else {
             priceInput.readOnly = false;
             priceInput.style.background = '#ffffff';
@@ -1390,9 +1372,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
         // Badges
         var offerBadge = document.getElementById('modal-detail-offer-badge');
-        var type = card.dataset.type;
+        var type = card.dataset.type === 'free' ? 'free' : 'buy';
         offerBadge.className = 'offer-type-badge ' + type;
-        offerBadge.textContent = type === 'free' ? 'Free Surplus' : (type === 'borrow' ? 'Available to Borrow' : 'For Sale');
+        offerBadge.textContent = type === 'free' ? 'Free' : 'Sell';
 
         var reusableBadge = document.getElementById('modal-detail-reusable-badge');
         if (card.dataset.reusability === 'reusable') {
@@ -1407,7 +1389,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.getElementById('modal-detail-company-loc').textContent = card.dataset.company + ' · ' + card.dataset.city + ', ' + card.dataset.state;
         
         var price = parseFloat(card.dataset.price || 0);
-        var priceText = type === 'free' ? 'FREE (RM 0.00)' : (type === 'borrow' ? (price > 0 ? 'RM ' + price.toFixed(2) + ' deposit' : 'Free Loan') : 'RM ' + price.toFixed(2) + ' / ' + card.dataset.unit);
+        var priceText = type === 'free' ? 'FREE (RM 0.00)' : 'RM ' + price.toFixed(2) + ' / ' + card.dataset.unit;
         document.getElementById('modal-detail-price').textContent = priceText;
         document.getElementById('modal-detail-qty').textContent = card.dataset.qty + ' ' + card.dataset.unit;
         document.getElementById('modal-detail-condition').textContent = card.dataset.condition;
@@ -1415,7 +1397,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.getElementById('modal-detail-desc').textContent = card.dataset.desc || 'No additional terms specified.';
 
         var actionBtn = document.getElementById('modal-detail-action-btn');
-        actionBtn.textContent = type === 'free' ? 'Claim Free Material' : (type === 'borrow' ? 'Request to Borrow' : 'Inquire to Buy');
+        actionBtn.textContent = type === 'free' ? 'Claim Free Material' : 'Inquire to Buy';
 
         var helperLink = document.getElementById('modal-detail-helper-link');
         if (helperLink) {
@@ -1561,10 +1543,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             heading.textContent = 'Claim Free Material';
             submitBtn.textContent = 'Claim Free Material';
             document.getElementById('order-unit-price').textContent = 'FREE';
-        } else if (type === 'borrow') {
-            heading.textContent = 'Request to Borrow Material';
-            submitBtn.textContent = 'Submit Borrow Request';
-            document.getElementById('order-unit-price').textContent = price > 0 ? ('RM ' + price.toFixed(2) + ' deposit') : 'Free Loan';
         } else {
             heading.textContent = 'Purchase Material Order';
             submitBtn.textContent = 'Confirm Order & Inquire';
@@ -1586,11 +1564,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
         if (currentExchangeItem.type === 'free') {
             totalEl.textContent = 'RM 0.00 (Free)';
-            return;
-        }
-
-        if (currentExchangeItem.type === 'borrow') {
-            totalEl.textContent = currentExchangeItem.price > 0 ? ('RM ' + (currentExchangeItem.price * reqQty).toFixed(2)) : 'RM 0.00 (Free Loan)';
             return;
         }
 

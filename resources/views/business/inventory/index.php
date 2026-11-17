@@ -754,7 +754,7 @@ $activeNav = 'inventory';
                             <tbody>
                                 <?php foreach ($items as $item): ?>
                                     <tr>
-                                        <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
+                                        <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
                                             <div style="display:flex;align-items:center;gap:12px;">
                                                 <?php if ($item->image_path): ?>
                                                     <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:0;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;" loading="lazy">
@@ -805,7 +805,7 @@ $activeNav = 'inventory';
                                                         EcoCycle Helper
                                                     </a>
                                                 <?php endif; ?>
-                                                <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                                <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
                                                     Edit
                                                 </button>
                                                 <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;margin:0;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
@@ -824,7 +824,7 @@ $activeNav = 'inventory';
                     <div id="inventory-catalog-container" class="inventory-catalog-grid" style="display: <?= $viewMode === 'catalog' ? 'grid' : 'none' ?>;">
                         <?php foreach ($items as $item): ?>
                             <div class="catalog-card">
-                                <div class="catalog-card-header" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)' title="Click to view/edit details">
+                                <div class="catalog-card-header" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)' title="Click to view/edit details">
                                     <?php if ($item->image_path): ?>
                                         <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" class="catalog-card-img" loading="lazy">
                                     <?php else: ?>
@@ -848,13 +848,13 @@ $activeNav = 'inventory';
                                 </div>
 
                                 <div class="catalog-card-body">
-                                    <div class="catalog-card-title-row" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                    <div class="catalog-card-title-row" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
                                         <h4 class="catalog-card-title"><?= e($item->name) ?></h4>
                                     </div>
 
                                     <div class="catalog-meta-row">
                                         <span class="catalog-cat-pill"><?= e($item->category) ?></span>
-                                        <span class="catalog-condition-pill"><?= e($item->condition ?? 'Used - Good') ?></span>
+                                        <span class="catalog-condition-pill"><?= e($item->condition ?? 'Used') ?></span>
                                     </div>
 
                                     <div class="catalog-stock-row">
@@ -881,11 +881,6 @@ $activeNav = 'inventory';
                                         <div class="catalog-price-tag">
                                             <?php if (($item->listing_type ?? 'buy') === 'free'): ?>
                                                 <span style="color:#16a34a;font-weight:800;">FREE</span>
-                                            <?php elseif (($item->listing_type ?? 'buy') === 'borrow'): ?>
-                                                <span style="color:#2563eb;font-weight:700;">Borrow</span>
-                                                <?php if ((float) ($item->price ?? 0) > 0): ?>
-                                                    <span style="font-size:11px;color:#64748b;">(RM <?= number_format((float) $item->price, 2) ?>)</span>
-                                                <?php endif; ?>
                                             <?php else: ?>
                                                 <span>RM <?= number_format((float) ($item->price ?? 0), 2) ?></span>
                                                 <span style="font-size:11px;font-weight:500;color:#6a7c6f;">/ <?= e($item->unit) ?></span>
@@ -915,7 +910,7 @@ $activeNav = 'inventory';
                                             </a>
                                         <?php endif; ?>
 
-                                        <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used - Good") ?>)'>
+                                        <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
                                             Edit
                                         </button>
 
@@ -1145,7 +1140,6 @@ $activeNav = 'inventory';
                                 <label for="add_listing_type" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Listing Type <span style="color:#b91c1c;">*</span></label>
                                 <select id="add_listing_type" name="listing_type" onchange="toggleAddPriceField(this.value); checkListingDetailsComplete();" class="add-input-field">
                                     <option value="buy">Sell</option>
-                                    <option value="borrow">Lend</option>
                                     <option value="free">Free</option>
                                 </select>
                             </div>
@@ -1156,10 +1150,9 @@ $activeNav = 'inventory';
                             <div class="form-group" style="margin-bottom:0;">
                                 <label for="add_condition" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Condition <span style="color:#b91c1c;">*</span></label>
                                 <select id="add_condition" name="condition" onchange="checkListingDetailsComplete()" class="add-input-field">
-                                    <option value="Used - Good">Used - Good</option>
-                                    <option value="Like New">Like New</option>
-                                    <option value="Surplus Unopened">Surplus Unopened</option>
-                                    <option value="Used - Fair">Used - Fair</option>
+                                    <option value="New">New</option>
+                                    <option value="Used" selected>Used</option>
+                                    <option value="Unused">Unused</option>
                                 </select>
                             </div>
                         </div>
@@ -1299,9 +1292,8 @@ $activeNav = 'inventory';
                             <div class="form-group" style="margin-bottom:0;">
                                 <label for="edit_listing_type">Listing Type *</label>
                                 <select id="edit_listing_type" name="listing_type" onchange="toggleEditPriceField(this.value)">
-                                    <option value="buy">Sell (For Sale)</option>
-                                    <option value="borrow">Lend (Borrow)</option>
-                                    <option value="free">Free (Donate / Giveaway)</option>
+                                    <option value="buy">Sell</option>
+                                    <option value="free">Free</option>
                                 </select>
                             </div>
                             <div class="form-group" id="edit_price_group" style="margin-bottom:0;">
@@ -1311,10 +1303,9 @@ $activeNav = 'inventory';
                             <div class="form-group" style="margin-bottom:0;">
                                 <label for="edit_condition">Material Condition</label>
                                 <select id="edit_condition" name="condition">
-                                    <option value="Used - Good">Used - Good</option>
-                                    <option value="Like New">Like New</option>
-                                    <option value="Surplus Unopened">Surplus Unopened</option>
-                                    <option value="Used - Fair">Used - Fair</option>
+                                    <option value="New">New</option>
+                                    <option value="Used">Used</option>
+                                    <option value="Unused">Unused</option>
                                 </select>
                             </div>
                         </div>
@@ -1435,32 +1426,25 @@ $activeNav = 'inventory';
                     <div class="form-group">
                         <label for="lm_condition">Material Condition *</label>
                         <select id="lm_condition" name="condition" required>
-                            <option value="Used - Good" selected>Used - Good</option>
-                            <option value="Brand New">Brand New</option>
-                            <option value="Like New">Like New</option>
-                            <option value="Surplus Material">Surplus Material</option>
-                            <option value="Scrap / Recyclable">Scrap / Recyclable</option>
+                            <option value="New">New</option>
+                            <option value="Used" selected>Used</option>
+                            <option value="Unused">Unused</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Listing Option (Offer Type) with Segmented Cards -->
+                <!-- Listing Option (Sell or Free) -->
                 <div class="form-group">
-                    <label>Listing Offer Option *</label>
-                    <div class="offer-toggle-grid">
+                    <label>Listing Option *</label>
+                    <div class="offer-toggle-grid" style="grid-template-columns:1fr 1fr;">
                         <label class="offer-toggle-card">
                             <input type="radio" name="listing_type" id="lm_type_buy" value="buy" checked onchange="handleListingTypeChange('buy', 'lm')">
                             <span class="offer-label">Sell</span>
                             <span class="offer-sub">Set RM price</span>
                         </label>
                         <label class="offer-toggle-card">
-                            <input type="radio" name="listing_type" id="lm_type_borrow" value="borrow" onchange="handleListingTypeChange('borrow', 'lm')">
-                            <span class="offer-label">Borrow (Loan)</span>
-                            <span class="offer-sub">Deposit / rental</span>
-                        </label>
-                        <label class="offer-toggle-card">
                             <input type="radio" name="listing_type" id="lm_type_free" value="free" onchange="handleListingTypeChange('free', 'lm')">
-                            <span class="offer-label">Take for Free</span>
+                            <span class="offer-label">Free</span>
                             <span class="offer-sub">RM 0.00 Giveaway</span>
                         </label>
                     </div>
@@ -2225,16 +2209,26 @@ function openEditModal(id, name, category, unit, notes, reusability, description
         document.getElementById('edit_description').value = description || '';
     }
 
+    var normalizedListingType = (listingType === 'free') ? 'free' : 'buy';
     if (document.getElementById('edit_listing_type')) {
-        document.getElementById('edit_listing_type').value = listingType || 'buy';
+        document.getElementById('edit_listing_type').value = normalizedListingType;
     }
     if (document.getElementById('edit_price')) {
         document.getElementById('edit_price').value = (price !== null && price !== undefined && parseFloat(price) > 0) ? price : '';
     }
     if (document.getElementById('edit_condition')) {
-        document.getElementById('edit_condition').value = condition || 'Used - Good';
+        var rawCond = (condition || '').trim();
+        var mappedCond = 'Used';
+        if (rawCond === 'New' || rawCond === 'Used' || rawCond === 'Unused') {
+            mappedCond = rawCond;
+        } else if (rawCond.toLowerCase().indexOf('unopened') !== -1 || rawCond.toLowerCase().indexOf('unused') !== -1) {
+            mappedCond = 'Unused';
+        } else if (rawCond.toLowerCase().indexOf('new') !== -1) {
+            mappedCond = 'New';
+        }
+        document.getElementById('edit_condition').value = mappedCond;
     }
-    toggleEditPriceField(listingType || 'buy');
+    toggleEditPriceField(normalizedListingType);
 
     if (reusability === 'not_reusable') {
         var el = document.getElementById('edit_reusability_not_reusable');

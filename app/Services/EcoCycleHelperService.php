@@ -19,7 +19,7 @@ class EcoCycleHelperService
         $name = is_array($item) ? ($item['name'] ?? $item['title'] ?? 'Material') : ($item->name ?: $item->title ?: 'Material');
         $category = is_array($item) ? ($item['category'] ?? 'General') : ($item->category ?? 'General');
         $description = is_array($item) ? ($item['description'] ?? '') : ($item->description ?? '');
-        $condition = is_array($item) ? ($item['condition'] ?? 'Used - Good') : ($item->condition ?? 'Used - Good');
+        $condition = is_array($item) ? ($item['condition'] ?? 'Used') : ($item->condition ?? 'Used');
         $quantity = (float) (is_array($item) ? ($item['quantity'] ?? 1) : ($item->quantity ?? 1));
         $unit = is_array($item) ? ($item['unit'] ?? 'units') : ($item->unit ?? 'units');
         $reusability = is_array($item) ? ($item['reusability'] ?? 'reusable') : ($item->reusability ?? 'reusable');
@@ -408,7 +408,7 @@ PROMPT;
         if ($reusability === 'reusable') {
             $reason = "{$name} exhibits durable structural characteristics and uniform condition suitable for direct multi-use reuse, remanufacturing, or exchange between Malaysian businesses.";
             $actions = [
-                "Publish to EcoCycle Surplus Marketplace for other industrial businesses to purchase, borrow, or claim.",
+                "Publish to EcoCycle Surplus Marketplace for other industrial businesses to purchase or claim.",
                 "Ensure standard warehouse storage to preserve material integrity prior to pickup.",
                 "Set clear pickup terms and condition ratings so prospective buyers have high confidence.",
             ];

@@ -91,16 +91,17 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertNull($listing->image_3);
     }
 
-    public function test_business_can_create_marketplace_listing_with_buy_borrow_or_free(): void
+    public function test_business_can_create_marketplace_listing_with_sell_or_free_and_valid_conditions(): void
     {
         $business = $this->createApprovedBusiness();
 
-        // 1. Buy listing
+        // 1. Sell listing with New condition
         $buyResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
             'title' => 'Treated Timber Offcuts',
             'category' => 'Furniture & wood products',
             'reusability' => 'reusable',
             'listing_type' => 'buy',
+            'condition' => 'New',
             'price' => 45.00,
             'quantity' => 50,
             'unit' => 'kg',
@@ -112,37 +113,47 @@ class MarketplaceAndInventoryTest extends TestCase
             'business_id' => $business->id,
             'title' => 'Treated Timber Offcuts',
             'listing_type' => 'buy',
+            'condition' => 'New',
             'reusability' => 'reusable',
             'is_free' => false,
             'price' => 45.00,
         ]);
 
-        // 2. Borrow listing
+        // 2. Borrow listing type is rejected (only Sell and Free allowed)
         $borrowResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
             'title' => 'Heavy Duty Reusable Crates',
             'category' => 'Packaging & paper',
             'reusability' => 'reusable',
             'listing_type' => 'borrow',
-            'price' => 10.00, // deposit
+            'condition' => 'Used',
+            'price' => 10.00,
             'quantity' => 30,
             'unit' => 'crates',
             'location_city' => 'Shah Alam',
             'location_state' => 'Selangor',
         ]);
-        $borrowResponse->assertRedirect();
-        $this->assertDatabaseHas('item', [
-            'business_id' => $business->id,
-            'title' => 'Heavy Duty Reusable Crates',
-            'listing_type' => 'borrow',
-            'reusability' => 'reusable',
-        ]);
+        $borrowResponse->assertSessionHasErrors('listing_type');
 
-        // 3. Free listing (Take for free)
+        // 3. Invalid condition is rejected (only New, Used, Unused allowed)
+        $invalidCondResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'title' => 'Invalid Condition Crate',
+            'category' => 'Packaging & paper',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'condition' => 'Like New',
+            'price' => 10.00,
+            'quantity' => 10,
+            'unit' => 'crates',
+        ]);
+        $invalidCondResponse->assertSessionHasErrors('condition');
+
+        // 4. Free listing with Unused condition
         $freeResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
             'title' => 'Clean Shredded Cardboard',
             'category' => 'Packaging & paper',
             'reusability' => 'reusable',
             'listing_type' => 'free',
+            'condition' => 'Unused',
             'price' => 0.00,
             'quantity' => 200,
             'unit' => 'kg',
@@ -154,6 +165,7 @@ class MarketplaceAndInventoryTest extends TestCase
             'business_id' => $business->id,
             'title' => 'Clean Shredded Cardboard',
             'listing_type' => 'free',
+            'condition' => 'Unused',
             'is_free' => true,
             'price' => 0.00,
         ]);
@@ -285,11 +297,11 @@ class MarketplaceAndInventoryTest extends TestCase
 
         MarketplaceListing::create([
             'business_id' => $business->id,
-            'title' => 'Item Reusable Borrow',
-            'description' => 'Test durable borrowing item',
+            'title' => 'Item Reusable Sell',
+            'description' => 'Test durable sell item',
             'category' => 'Packaging & paper',
             'reusability' => 'reusable',
-            'listing_type' => 'borrow',
+            'listing_type' => 'buy',
             'quantity' => 10,
             'unit' => 'pcs',
             'price' => 5,
@@ -315,18 +327,18 @@ class MarketplaceAndInventoryTest extends TestCase
             'status' => 'active',
         ]);
 
-        // Filter by borrow for other business
+        // Filter by buy (Sell) for other business
         $this->actingAs($otherBusiness)
-            ->get(route('business.marketplace', ['listing_type' => 'borrow']))
+            ->get(route('business.marketplace', ['listing_type' => 'buy']))
             ->assertOk()
-            ->assertSee('Item Reusable Borrow')
+            ->assertSee('Item Reusable Sell')
             ->assertDontSee('Item Not Reusable Free');
 
         // Other business on marketplace should ONLY see reusable items, not_reusable is hidden
         $this->actingAs($otherBusiness)
             ->get(route('business.marketplace'))
             ->assertOk()
-            ->assertSee('Item Reusable Borrow')
+            ->assertSee('Item Reusable Sell')
             ->assertDontSee('Item Not Reusable Free');
 
         // Owner viewing their own listings can view their internal listings
@@ -463,7 +475,7 @@ class MarketplaceAndInventoryTest extends TestCase
                 'reusability' => 'reusable',
                 'listing_type' => 'buy',
                 'price' => 35.50,
-                'condition' => 'Used - Good',
+                'condition' => 'Used',
                 'images' => [$image],
             ]);
 

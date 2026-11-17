@@ -189,10 +189,10 @@ class MarketplaceController extends Controller
             'category' => ['required', 'string', 'max:100'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'unit' => ['required', 'string', 'max:20'],
-            'listing_type' => ['required', 'in:buy,borrow,free'],
+            'listing_type' => ['required', 'in:buy,free'],
             'reusability' => ['required', 'in:reusable'],
             'price' => ['nullable', 'numeric', 'min:0'],
-            'condition' => ['nullable', 'string', 'max:40'],
+            'condition' => ['nullable', 'in:New,Used,Unused'],
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ], [
@@ -205,7 +205,7 @@ class MarketplaceController extends Controller
         $isFree = $listingType === 'free';
         $price = $isFree ? 0 : (isset($validated['price']) ? (float) $validated['price'] : null);
         $description = ! empty($validated['description']) ? $validated['description'] : 'Surplus material available for circular exchange on EcoCycle.';
-        $condition = ! empty($validated['condition']) ? $validated['condition'] : 'Used - Good';
+        $condition = ! empty($validated['condition']) ? $validated['condition'] : 'Used';
 
         // Handle 1 to 3 uploaded images
         $uploadedImages = [];
@@ -295,7 +295,6 @@ class MarketplaceController extends Controller
         }
 
         $typeLabel = match ($listingType) {
-            'borrow' => 'for Borrowing',
             'free' => 'for Free Claim',
             default => 'for Sale',
         };

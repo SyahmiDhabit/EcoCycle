@@ -246,8 +246,8 @@ class InventoryController extends Controller
             'image_3' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
-            'listing_type' => ['nullable', 'in:buy,borrow,free'],
-            'condition' => ['nullable', 'string', 'max:40'],
+            'listing_type' => ['nullable', 'in:buy,free'],
+            'condition' => ['nullable', 'in:New,Used,Unused'],
             'available_quantity' => ['nullable', 'numeric', 'min:0'],
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
@@ -257,8 +257,8 @@ class InventoryController extends Controller
         ];
 
         if ($request->input('reusability') === 'reusable' && $isPublishingRequest) {
-            $rules['listing_type'] = ['required', 'in:buy,borrow,free'];
-            $rules['condition'] = ['required', 'string', 'max:40'];
+            $rules['listing_type'] = ['required', 'in:buy,free'];
+            $rules['condition'] = ['required', 'in:New,Used,Unused'];
             if ($request->input('listing_type') === 'buy') {
                 $rules['price'] = ['required', 'numeric', 'min:0'];
             }
@@ -354,7 +354,7 @@ class InventoryController extends Controller
         $reusability = $validated['reusability'];
         $category = trim((string) $validated['category']);
         $listingType = $validated['listing_type'] ?? 'buy';
-        $condition = $validated['condition'] ?? ($reusability === 'reusable' ? 'Used - Good' : 'Scrap');
+        $condition = $validated['condition'] ?? 'Used';
         $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : 0);
         $description = ! empty($validated['description']) ? $validated['description'] : "Material specifications for {$validated['name']}.";
 
@@ -461,9 +461,9 @@ class InventoryController extends Controller
             'category' => ['required', 'string', 'max:100'],
             'unit' => ['required', 'string', 'max:20'],
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
-            'listing_type' => ['nullable', 'in:buy,borrow,free'],
+            'listing_type' => ['nullable', 'in:buy,free'],
             'price' => ['nullable', 'numeric', 'min:0'],
-            'condition' => ['nullable', 'string', 'max:40'],
+            'condition' => ['nullable', 'in:New,Used,Unused'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'image_1' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'image_2' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
@@ -528,7 +528,7 @@ class InventoryController extends Controller
 
         $reusability = $validated['reusability'] ?? $item->reusability ?? 'reusable';
         $listingType = $validated['listing_type'] ?? $item->listing_type ?? 'buy';
-        $condition = $validated['condition'] ?? $item->condition ?? 'Used - Good';
+        $condition = $validated['condition'] ?? $item->condition ?? 'Used';
         $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : ($item->price ?? 0));
 
         $item->update([
@@ -647,7 +647,7 @@ class InventoryController extends Controller
 
         if (($item->reusability ?? 'reusable') === 'reusable') {
             $listingType = $extraData['listing_type'] ?? $item->listing_type ?? 'buy';
-            if (! in_array($listingType, ['buy', 'borrow', 'free'], true)) {
+            if (! in_array($listingType, ['buy', 'free'], true)) {
                 $listingType = 'buy';
             }
             $isFree = $listingType === 'free';
@@ -655,7 +655,7 @@ class InventoryController extends Controller
                 ? (float) $extraData['price']
                 : ($item->price ? (float) $item->price : 0));
 
-            $condition = $extraData['condition'] ?? $item->condition ?? 'Used - Good';
+            $condition = $extraData['condition'] ?? $item->condition ?? 'Used';
             $qty = (float) $item->quantity;
             $status = $qty > 0 ? 'active' : 'sold';
 

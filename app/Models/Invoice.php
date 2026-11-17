@@ -13,26 +13,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'payment_id',
     'seller_business_id',
     'buyer_business_id',
-    'order_reference',
-    'currency',
+    'buyer_business_name',
+    'seller_business_name',
     'item_name',
-    'item_description',
     'quantity',
     'unit',
-    'unit_price',
-    'subtotal',
-    'tax_label',
-    'tax_rate',
-    'tax_amount',
     'total_amount',
-    'payment_status',
-    'payment_method',
-    'payment_reference',
+    'currency',
     'pickup_address',
+    'payment_status',
     'issued_at',
-    'paid_at',
-    'seller_snapshot',
-    'buyer_snapshot',
 ])]
 class Invoice extends Model
 {
@@ -44,15 +34,8 @@ class Invoice extends Model
     {
         return [
             'quantity' => 'decimal:2',
-            'unit_price' => 'decimal:2',
-            'subtotal' => 'decimal:2',
-            'tax_rate' => 'decimal:2',
-            'tax_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
             'issued_at' => 'datetime',
-            'paid_at' => 'datetime',
-            'seller_snapshot' => 'array',
-            'buyer_snapshot' => 'array',
         ];
     }
 
@@ -86,18 +69,22 @@ class Invoice extends Model
         return 'RM '.number_format((float) $this->total_amount, 2);
     }
 
-    public function formattedSubtotal(): string
+    public function formattedQuantity(): string
     {
-        return 'RM '.number_format((float) $this->subtotal, 2);
+        $qty = rtrim(rtrim(number_format((float) $this->quantity, 2, '.', ''), '0'), '.');
+
+        return trim($qty.' '.$this->unit);
     }
 
-    public function formattedUnitPrice(): string
+    public function statusLabel(): string
     {
-        return 'RM '.number_format((float) $this->unit_price, 2);
-    }
-
-    public function formattedTaxAmount(): string
-    {
-        return 'RM '.number_format((float) $this->tax_amount, 2);
+        return match (strtolower((string) $this->payment_status)) {
+            'free' => 'Free',
+            'refunded' => 'Refunded',
+            'failed' => 'Failed',
+            'cancelled' => 'Cancelled',
+            'pending' => 'Pending',
+            default => 'Paid',
+        };
     }
 }

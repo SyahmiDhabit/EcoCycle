@@ -926,7 +926,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
                         <div class="form-group" id="modal_price_group">
                             <label for="create_price" id="modal_price_label">Price (RM) *</label>
-                            <input type="number" step="0.01" min="0" id="create_price" name="price" value="0.00" required>
+                            <input type="number" step="0.01" min="0.01" id="create_price" name="price" placeholder="e.g. 25.00" required>
                         </div>
                     </div>
 
@@ -1349,12 +1349,19 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         var priceInput = document.getElementById('create_price');
         var priceLabel = document.getElementById('modal_price_label');
         if (type === 'free') {
+            priceInput.min = '0';
             priceInput.value = '0.00';
             priceInput.readOnly = true;
+            priceInput.required = false;
             priceInput.style.background = '#f1f5f9';
-            priceLabel.textContent = 'Price (Free)';
+            priceLabel.textContent = 'Price (RM 0.00 - Free)';
         } else {
+            priceInput.min = '0.01';
+            if (priceInput.value === '0.00' || priceInput.value === '0') {
+                priceInput.value = '';
+            }
             priceInput.readOnly = false;
+            priceInput.required = true;
             priceInput.style.background = '#ffffff';
             priceLabel.textContent = 'Price (RM) *';
         }

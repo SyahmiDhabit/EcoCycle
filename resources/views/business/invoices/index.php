@@ -33,6 +33,7 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
         .status-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .status-failed { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
         .status-cancelled { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .status-refunded { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
         .type-tag {
             display: inline-flex;
             align-items: center;
@@ -129,21 +130,16 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
                                 $isFree = ($order->resolvedListingType() === 'free') || (float) $order->total_price <= 0;
                                 $typeLabel = $isFree ? 'Free' : 'Sell';
                                 $qtyFormatted = rtrim(rtrim(number_format((float) $order->quantity, 2, '.', ''), '0'), '.');
-                                $itemTitle = $order->item?->name ?: ($order->item?->title ?: 'Material #' . $order->item_id);
+                                $itemTitle = $order->invoice?->item_name ?: ($order->item?->name ?: ($order->item?->title ?: 'Material #' . $order->item_id));
 
-                                $rawStatus = strtolower((string) ($order->payment_status ?: ($isFree ? 'free' : 'pending_payment')));
-                                $statusLabel = match (true) {
-                                    $isFree || $rawStatus === 'free' => 'Free',
-                                    $rawStatus === 'paid' => 'Paid',
-                                    $rawStatus === 'failed' => 'Failed',
-                                    $rawStatus === 'cancelled' => 'Cancelled',
-                                    default => 'Pending',
-                                };
-                                $statusClass = match (true) {
-                                    $isFree || $rawStatus === 'free' => 'status-free',
-                                    $rawStatus === 'paid' => 'status-paid',
-                                    $rawStatus === 'failed' => 'status-failed',
-                                    $rawStatus === 'cancelled' => 'status-cancelled',
+                                $rawStatus = $order->normalizedPaymentStatus();
+                                $statusLabel = $order->paymentStatusLabel();
+                                $statusClass = match ($rawStatus) {
+                                    'free' => 'status-free',
+                                    'paid' => 'status-paid',
+                                    'failed' => 'status-failed',
+                                    'cancelled' => 'status-cancelled',
+                                    'refunded' => 'status-refunded',
                                     default => 'status-pending',
                                 };
                                 $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $order->total_price, 2);
@@ -168,7 +164,7 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
                                     </td>
                                     <td style="text-align:right;">
                                         <div style="display:inline-flex;gap:6px;align-items:center;">
-                                            <?php if ($isBuyer && ! $isFree && $order->requiresStripePayment() && $rawStatus !== 'paid'): ?>
+                                            <?php if ($isBuyer && ! $isFree && $order->requiresStripePayment() && ! in_array($rawStatus, ['paid', 'refunded'], true)): ?>
                                                 <a href="<?= route('business.orders.checkout', $order) ?>" class="btn-rect-primary">
                                                     Pay Now
                                                 </a>

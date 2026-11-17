@@ -279,10 +279,10 @@ class InventoryController extends Controller
             $rules['listing_type'] = ['required', 'in:buy,free'];
             $rules['condition'] = ['required', Rule::in(Item::ALLOWED_CONDITIONS)];
             if ($request->input('listing_type') === 'buy') {
-                $rules['price'] = ['required', 'numeric', 'min:0'];
+                $rules['price'] = ['required', 'numeric', 'gt:0'];
             }
-        } elseif ($request->input('reusability') === 'reusable' && $request->input('listing_type') === 'buy' && $request->filled('price')) {
-            $rules['price'] = ['required', 'numeric', 'min:0'];
+        } elseif ($request->filled('price') && $request->input('listing_type') === 'buy') {
+            $rules['price'] = ['numeric', 'gt:0'];
         }
 
         $validated = $request->validate($rules, [
@@ -290,7 +290,8 @@ class InventoryController extends Controller
             'condition.in' => 'Please select a valid Material Condition (New, Damaged, or Used).',
             'category.required' => 'Please confirm or enter a valid Material Category.',
             'images.max' => 'You can upload a maximum of 3 photos.',
-            'price.required' => 'Price per unit (RM) is required when listing type is Sell.',
+            'price.required' => 'Price (RM) is required when listing type is Sell.',
+            'price.gt' => 'Sell listings must have a valid Price (RM) greater than RM 0.00.',
         ]);
 
         // Enforce mandatory material analysis before publishing to Marketplace
@@ -375,8 +376,12 @@ class InventoryController extends Controller
         $reusability = $validated['reusability'];
         $category = trim((string) $validated['category']);
         $listingType = $validated['listing_type'] ?? 'buy';
+        $isFree = $listingType === 'free';
         $condition = $validated['condition'] ?? 'Used';
-        $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : 0);
+        // Price is optional during initial inventory creation (null until configured for Marketplace Sell; 0.00 for Free)
+        $price = $isFree
+            ? 0.00
+            : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : null);
         $description = ! empty($validated['description']) ? $validated['description'] : "Material specifications for {$validated['name']}.";
 
         // Location resolution (use user entered or GPS or business profile location)
@@ -407,10 +412,9 @@ class InventoryController extends Controller
         }
 
         $createdItem = null;
-        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $status, $imageSlots, $uploadedImages, $reusability, $listingType, $price, $condition, $locationCity, $locationState, $resolvedPickupAddress, $isPublishingRequest, &$createdItem): void {
+        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $status, $imageSlots, $uploadedImages, $reusability, $listingType, $isFree, $price, $condition, $locationCity, $locationState, $resolvedPickupAddress, $isPublishingRequest, &$createdItem): void {
             $createdItem = InventoryItem::create([
                 'business_id' => $business->id,
-                'inventory_item_id' => null,
                 'name' => $validated['name'],
                 'title' => $validated['name'],
                 'description' => $description,
@@ -419,6 +423,7 @@ class InventoryController extends Controller
                 'unit' => $validated['unit'],
                 'reusability' => $reusability,
                 'listing_type' => $listingType,
+                'is_free' => $isFree,
                 'price' => $price,
                 'condition' => $condition,
                 'location_city' => $locationCity,
@@ -488,20 +493,52 @@ class InventoryController extends Controller
         return redirect()->route('business.inventory')->with('status', "Material '{$validated['name']}' has been added to your inventory.");
     }
 
+    /**
+     * Show dedicated Edit Inventory Details page (Step 4: update details, quantity, Sell/Free, Price (RM), Pickup Address).
+     */
+    public function edit(InventoryItem $item): View
+    {
+        $this->checkApproved();
+        abort_unless($item->business_id === Auth::id(), 403);
+
+        /** @var User $business */
+        $business = Auth::user();
+        $categories = $business->inventoryItems()->distinct()->pluck('category')->filter()->values();
+
+        return view('business.inventory.edit', [
+            'business' => $business,
+            'item' => $item,
+            'categories' => $categories,
+        ]);
+    }
+
     public function update(Request $request, InventoryItem $item): RedirectResponse
     {
         $this->checkApproved();
         abort_unless($item->business_id === Auth::id(), 403);
 
+        $wasPublished = $item->isPublishedToMarketplace();
+        $targetReusability = (string) ($request->input('reusability') ?: ($item->reusability ?? 'reusable'));
+        $targetListingType = (string) ($request->input('listing_type') ?: ($item->listing_type ?? 'buy'));
+
+        $priceRules = ['nullable', 'numeric', 'min:0'];
+        if ($targetReusability === 'reusable' && $targetListingType === 'buy') {
+            if ($wasPublished || $request->filled('price') || $request->boolean('require_sell_price')) {
+                $priceRules = ['required', 'numeric', 'gt:0'];
+            }
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category' => ['required', 'string', 'max:100'],
+            'quantity' => ['nullable', 'numeric', 'min:0'],
             'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
             'listing_type' => ['nullable', 'in:buy,free'],
-            'price' => ['nullable', 'numeric', 'min:0'],
+            'price' => $priceRules,
             'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
+            'pickup_address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'image_1' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'image_2' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
@@ -514,6 +551,8 @@ class InventoryController extends Controller
         ], [
             'unit.in' => 'Please select a valid Unit of Measurement from the dropdown.',
             'condition.in' => 'Please select a valid Material Condition (New, Damaged, or Used).',
+            'price.required' => 'Please enter a valid Price (RM) greater than RM 0.00 when Listing Type is Sell.',
+            'price.gt' => 'Price (RM) must be greater than RM 0.00 when Listing Type is Sell.',
             'images.max' => 'You can upload a maximum of 3 photos.',
         ]);
 
@@ -563,32 +602,78 @@ class InventoryController extends Controller
 
         $uploadedImages = array_values(array_filter($imageSlots));
 
-        $wasPublished = $item->isPublishedToMarketplace();
-        $quantity = (float) $item->quantity;
-        $status = $quantity <= 0 ? 'out_of_stock' : ($wasPublished && ($validated['reusability'] ?? $item->reusability) === 'reusable' ? 'active' : 'in_stock');
+        $oldQty = (float) $item->quantity;
+        $quantity = array_key_exists('quantity', $validated) && $validated['quantity'] !== null
+            ? (float) $validated['quantity']
+            : $oldQty;
 
         $reusability = $validated['reusability'] ?? $item->reusability ?? 'reusable';
         $listingType = $validated['listing_type'] ?? $item->listing_type ?? 'buy';
         $condition = $validated['condition'] ?? $item->condition ?? 'Used';
-        $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : ($item->price ?? 0));
+        $pickupAddress = array_key_exists('pickup_address', $validated)
+            ? (trim((string) $validated['pickup_address']) ?: null)
+            : $item->pickup_address;
 
-        $item->update([
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? $item->description,
-            'category' => trim((string) $validated['category']),
-            'unit' => $validated['unit'],
-            'reusability' => $reusability,
-            'listing_type' => $listingType,
-            'price' => $price,
-            'condition' => $condition,
-            'image_path' => $uploadedImages[0] ?? null,
-            'image_1' => $imageSlots[0],
-            'image_2' => $imageSlots[1],
-            'image_3' => $imageSlots[2],
-            'images' => $uploadedImages,
-            'status' => $status,
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        if ($reusability === 'not_reusable') {
+            $isFree = false;
+            $price = null;
+            $status = $quantity <= 0 ? 'out_of_stock' : 'in_stock';
+        } elseif ($listingType === 'free') {
+            $isFree = true;
+            $price = 0.00;
+            $status = $quantity <= 0
+                ? ($wasPublished ? 'sold' : 'out_of_stock')
+                : ($wasPublished ? 'active' : 'in_stock');
+        } else {
+            $isFree = false;
+            $price = (array_key_exists('price', $validated) && $validated['price'] !== null && $validated['price'] !== '')
+                ? (float) $validated['price']
+                : ($wasPublished ? (float) $item->price : ($request->has('price') ? null : $item->price));
+            $status = $quantity <= 0
+                ? ($wasPublished ? 'sold' : 'out_of_stock')
+                : ($wasPublished ? 'active' : 'in_stock');
+        }
+
+        DB::transaction(function () use ($item, $validated, $quantity, $oldQty, $reusability, $listingType, $isFree, $price, $condition, $pickupAddress, $uploadedImages, $imageSlots, $status, $wasPublished): void {
+            $item->update([
+                'name' => $validated['name'],
+                'title' => $validated['name'],
+                'description' => $validated['description'] ?? $item->description,
+                'category' => trim((string) $validated['category']),
+                'quantity' => $quantity,
+                'unit' => $validated['unit'],
+                'reusability' => $reusability,
+                'listing_type' => $listingType,
+                'is_free' => $isFree,
+                'price' => $price,
+                'condition' => $condition,
+                'pickup_address' => $pickupAddress,
+                'image_path' => $uploadedImages[0] ?? null,
+                'image_1' => $imageSlots[0],
+                'image_2' => $imageSlots[1],
+                'image_3' => $imageSlots[2],
+                'images' => $uploadedImages,
+                'status' => $status,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            if (abs($quantity - $oldQty) > 0.0001) {
+                $delta = $quantity - $oldQty;
+                InventoryTransaction::create([
+                    'business_id' => $item->business_id,
+                    'inventory_item_id' => $item->id,
+                    'transaction_type' => $delta > 0 ? 'stock_in' : 'stock_out',
+                    'quantity_change' => $delta,
+                    'quantity_after' => $quantity,
+                    'notes' => 'Quantity updated via Edit Inventory Details',
+                ]);
+            }
+
+            // Only keep Marketplace synced if item was ALREADY published, or unpublish if switched to non-reusable
+            if ($wasPublished || $reusability === 'not_reusable') {
+                static::syncInventoryToMarketplace($item, $validated);
+            }
+        });
 
         // Clean up replaced/removed image files only if no longer referenced anywhere
         if (! empty($oldPathsToMaybeDelete)) {
@@ -600,12 +685,80 @@ class InventoryController extends Controller
             }
         }
 
-        // Only keep Marketplace synced if item was ALREADY published, or unpublish if switched to non-reusable
-        if ($wasPublished || $reusability === 'not_reusable') {
-            static::syncInventoryToMarketplace($item, $validated);
+        if ($request->input('redirect_to') === 'edit') {
+            return redirect()->route('business.inventory.edit', $item)
+                ->with('status', "Changes saved for '{$item->name}'.");
         }
 
         return back()->with('status', "Item '{$item->name}' updated successfully.");
+    }
+
+    /**
+     * Separate explicit action: Publish a confirmed Reusable inventory item to the Marketplace.
+     */
+    public function publish(Request $request, InventoryItem $item): RedirectResponse
+    {
+        $this->checkApproved();
+        abort_unless($item->business_id === Auth::id(), 403);
+
+        if (($item->reusability ?? 'not_reusable') !== 'reusable') {
+            return back()->withErrors([
+                'reusability' => 'Only confirmed Reusable items can be published to the Marketplace. Non-Reusable items remain in Inventory.',
+            ]);
+        }
+
+        if ((float) $item->quantity <= 0) {
+            return back()->withErrors([
+                'quantity' => 'Available quantity must be greater than 0 before publishing to the Marketplace.',
+            ]);
+        }
+
+        $listingType = (string) ($request->input('listing_type') ?: ($item->listing_type ?: 'buy'));
+        $rawPrice = $request->has('price') ? $request->input('price') : $item->price;
+        $pickupAddress = $request->has('pickup_address')
+            ? trim((string) $request->input('pickup_address'))
+            : trim((string) ($item->pickup_address ?? ''));
+
+        if (! in_array($listingType, ['buy', 'free'], true)) {
+            return back()->withErrors([
+                'listing_type' => 'Only Sell and Free listing types are supported on the Marketplace.',
+            ]);
+        }
+
+        $isFree = $listingType === 'free';
+        if ($isFree) {
+            $price = 0.00;
+        } else {
+            if ($rawPrice === null || $rawPrice === '' || ! is_numeric($rawPrice) || (float) $rawPrice <= 0) {
+                return back()->withErrors([
+                    'price' => 'Sell items must have a valid Price (RM) greater than RM 0.00 before publishing. Please update the price in Edit Details.',
+                ]);
+            }
+            $price = round((float) $rawPrice, 2);
+        }
+
+        $item->update([
+            'title' => $item->name,
+            'listing_type' => $listingType,
+            'is_free' => $isFree,
+            'price' => $price,
+            'pickup_address' => $pickupAddress !== '' ? $pickupAddress : $item->pickup_address,
+            'status' => 'active',
+        ]);
+
+        $typeLabel = $isFree ? 'for Free (RM 0.00)' : 'for Sale (RM '.number_format($price, 2).')';
+
+        BusinessNotification::send(
+            $item->business_id,
+            'Material Published to Marketplace',
+            "'{$item->name}' is now published on the EcoCycle Marketplace {$typeLabel}.",
+            'marketplace_listing',
+            '/business/marketplace',
+            'green'
+        );
+
+        return redirect()->route('business.marketplace')
+            ->with('status', "Material '{$item->name}' published to the Marketplace {$typeLabel}.");
     }
 
     public function adjust(Request $request, InventoryItem $item): RedirectResponse
@@ -676,19 +829,15 @@ class InventoryController extends Controller
             }
         }
 
-        // Delete any linked marketplace listing
-        MarketplaceListing::where('inventory_item_id', $item->id)->delete();
-
         $name = $item->name;
         $item->delete();
 
-        return back()->with('status', "Inventory item '{$name}' and its marketplace listing deleted.");
+        return back()->with('status', "Inventory item '{$name}' deleted.");
     }
 
     /**
-     * Synchronize an inventory item with the public marketplace listings.
-     * - Reusable materials automatically become active marketplace listings (and appear on directory profile).
-     * - Non-reusable scrap materials remain private internal inventory and are removed from the marketplace.
+     * Synchronize an already-published inventory item with its Marketplace state,
+     * or unpublish it if switched to Non-Reusable.
      */
     public static function syncInventoryToMarketplace(InventoryItem $item, array $extraData = []): ?MarketplaceListing
     {
@@ -700,9 +849,9 @@ class InventoryController extends Controller
                 $listingType = 'buy';
             }
             $isFree = $listingType === 'free';
-            $price = $isFree ? 0 : (isset($extraData['price']) && $extraData['price'] !== '' && $extraData['price'] !== null
+            $price = $isFree ? 0.00 : (isset($extraData['price']) && $extraData['price'] !== '' && $extraData['price'] !== null
                 ? (float) $extraData['price']
-                : ($item->price ? (float) $item->price : 0));
+                : ($item->price !== null ? (float) $item->price : null));
 
             $condition = $extraData['condition'] ?? $item->condition ?? 'Used';
             $qty = (float) $item->quantity;
@@ -719,15 +868,15 @@ class InventoryController extends Controller
                 'location_city' => $item->location_city ?: ($business?->city ?: 'Kuala Lumpur'),
                 'location_state' => $item->location_state ?: ($business?->state ?: 'Selangor'),
                 'status' => $status,
-                'inventory_item_id' => $item->id,
             ]);
 
             return MarketplaceListing::find($item->id);
         }
 
-        // If marked as not_reusable, dissociate inventory_item_id so it is excluded from marketplace
+        // Non-reusable items remain private internal inventory (never active on Marketplace)
         $item->update([
-            'inventory_item_id' => null,
+            'price' => null,
+            'is_free' => false,
             'status' => ((float) $item->quantity > 0) ? 'in_stock' : 'out_of_stock',
         ]);
 

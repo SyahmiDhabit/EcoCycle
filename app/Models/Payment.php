@@ -12,23 +12,31 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'material_exchange_id',
     'buyer_business_id',
     'seller_business_id',
-    'provider',
-    'settlement_account_type',
     'stripe_checkout_session_id',
     'stripe_payment_intent_id',
     'stripe_event_id',
-    'idempotency_key',
     'currency',
     'amount',
-    'amount_sen',
-    'payment_method',
     'status',
-    'failure_reason',
     'paid_at',
 ])]
 class Payment extends Model
 {
     use HasFactory;
+
+    /**
+     * Supported payment statuses.
+     *
+     * @var array<int, string>
+     */
+    public const ALLOWED_STATUSES = [
+        'pending',
+        'paid',
+        'failed',
+        'cancelled',
+        'refunded',
+        'free',
+    ];
 
     protected $table = 'payment';
 
@@ -36,7 +44,6 @@ class Payment extends Model
     {
         return [
             'amount' => 'decimal:2',
-            'amount_sen' => 'integer',
             'paid_at' => 'datetime',
         ];
     }
@@ -61,9 +68,26 @@ class Payment extends Model
         return $this->hasOne(Invoice::class, 'payment_id');
     }
 
+    public function amountInSen(): int
+    {
+        return (int) round((float) $this->amount * 100);
+    }
+
     public function formattedAmount(): string
     {
         return 'RM '.number_format((float) $this->amount, 2);
+    }
+
+    public function statusLabel(): string
+    {
+        return match (strtolower((string) $this->status)) {
+            'paid' => 'Paid',
+            'failed' => 'Failed',
+            'cancelled' => 'Cancelled',
+            'refunded' => 'Refunded',
+            'free' => 'Free',
+            default => 'Pending',
+        };
     }
 
     public function referenceDisplay(): string

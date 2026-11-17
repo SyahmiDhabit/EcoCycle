@@ -30,7 +30,6 @@ class MyListingController extends Controller
 
         $basePublishedScope = MarketplaceListing::where('business_id', $business->id)
             ->where('reusability', 'reusable')
-            ->whereNotNull('inventory_item_id')
             ->whereIn('status', ['active', 'sold', 'inactive']);
 
         $query = (clone $basePublishedScope)->with('reviews.reviewer')->latest();

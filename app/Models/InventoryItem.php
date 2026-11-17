@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'business_id',
-    'inventory_item_id',
     'title',
     'name',
     'description',
@@ -42,7 +41,6 @@ class InventoryItem extends Model
     public function isPublishedToMarketplace(): bool
     {
         return ($this->reusability ?? '') === 'reusable'
-            && ! empty($this->inventory_item_id)
             && in_array($this->attributes['status'] ?? '', ['active', 'sold'], true);
     }
 

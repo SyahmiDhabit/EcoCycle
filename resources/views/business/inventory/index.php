@@ -764,8 +764,8 @@ $activeNav = 'inventory';
                             <tbody>
                                 <?php foreach ($items as $item): ?>
                                     <tr>
-                                        <td data-label="Item" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)' style="cursor:pointer;" title="Click to view/edit material details">
-                                            <div style="display:flex;align-items:center;gap:12px;">
+                                        <td data-label="Item">
+                                            <a href="<?= route('business.inventory.edit', $item) ?>" style="display:flex;align-items:center;gap:12px;text-decoration:none;" title="Open Edit Inventory Details">
                                                 <?php if ($item->image_path): ?>
                                                     <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" style="width:44px;height:44px;border-radius:0;object-fit:cover;border:1px solid #d4e0d2;flex-shrink:0;" loading="lazy">
                                                 <?php else: ?>
@@ -776,7 +776,7 @@ $activeNav = 'inventory';
                                                 <div>
                                                     <strong style="color:#123321;font-size:14px;"><?= e($item->name) ?></strong>
                                                 </div>
-                                            </div>
+                                            </a>
                                         </td>
                                         <td data-label="Category"><?= e($item->category) ?></td>
                                         <td data-label="Reusability">
@@ -812,7 +812,7 @@ $activeNav = 'inventory';
                                                             On Market
                                                         </a>
                                                     <?php else: ?>
-                                                        <button type="button" class="btn-publish-market" title="Publish reusable item to Marketplace" onclick='openListMarketModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= (float) $item->quantity ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
+                                                        <button type="button" class="btn-publish-market" title="Publish reusable item to Marketplace" onclick='openListMarketModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= (float) $item->quantity ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode($item->condition ?? "Used") ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->price !== null ? (float) $item->price : null) ?>, <?= json_encode($item->pickup_address ?? "") ?>)'>
                                                             Publish
                                                         </button>
                                                     <?php endif; ?>
@@ -821,9 +821,9 @@ $activeNav = 'inventory';
                                                         EcoCycle Helper
                                                     </a>
                                                 <?php endif; ?>
-                                                <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
-                                                    Edit
-                                                </button>
+                                                <a href="<?= route('business.inventory.edit', $item) ?>" class="btn-edit" title="Edit details">
+                                                    Edit Details
+                                                </a>
                                                 <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;margin:0;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
                                                     <?= csrf_field() ?>
                                                     <?= method_field('DELETE') ?>
@@ -840,7 +840,7 @@ $activeNav = 'inventory';
                     <div id="inventory-catalog-container" class="inventory-catalog-grid" style="display: <?= $viewMode === 'catalog' ? 'grid' : 'none' ?>;">
                         <?php foreach ($items as $item): ?>
                             <div class="catalog-card">
-                                <div class="catalog-card-header" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)' title="Click to view/edit details">
+                                <a href="<?= route('business.inventory.edit', $item) ?>" class="catalog-card-header" style="display:block;text-decoration:none;" title="Open Edit Inventory Details">
                                     <?php if ($item->image_path): ?>
                                         <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" class="catalog-card-img" loading="lazy">
                                     <?php else: ?>
@@ -861,11 +861,13 @@ $activeNav = 'inventory';
                                             <span class="status status-in-stock" style="font-size:11px;">In stock</span>
                                         <?php endif; ?>
                                     </div>
-                                </div>
+                                </a>
 
                                 <div class="catalog-card-body">
-                                    <div class="catalog-card-title-row" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
-                                        <h4 class="catalog-card-title"><?= e($item->name) ?></h4>
+                                    <div class="catalog-card-title-row">
+                                        <a href="<?= route('business.inventory.edit', $item) ?>" style="text-decoration:none;">
+                                            <h4 class="catalog-card-title"><?= e($item->name) ?></h4>
+                                        </a>
                                     </div>
 
                                     <div class="catalog-meta-row">
@@ -896,10 +898,11 @@ $activeNav = 'inventory';
                                     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;">
                                         <div class="catalog-price-tag">
                                             <?php if (($item->listing_type ?? 'buy') === 'free'): ?>
-                                                <span style="color:#16a34a;font-weight:800;">FREE</span>
+                                                <span style="color:#16a34a;font-weight:800;">FREE (RM 0.00)</span>
+                                            <?php elseif ($item->price !== null && (float) $item->price > 0): ?>
+                                                <span>RM <?= number_format((float) $item->price, 2) ?></span>
                                             <?php else: ?>
-                                                <span>RM <?= number_format((float) ($item->price ?? 0), 2) ?></span>
-                                                <span style="font-size:11px;font-weight:500;color:#6a7c6f;">/ <?= e($item->unit) ?></span>
+                                                <span style="font-size:12px;font-weight:600;color:#64748b;">Price not set</span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -922,7 +925,7 @@ $activeNav = 'inventory';
                                                     On Market
                                                 </a>
                                             <?php else: ?>
-                                                <button type="button" class="btn-publish-market" title="Publish reusable item to Marketplace" onclick='openListMarketModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= (float) $item->quantity ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
+                                                <button type="button" class="btn-publish-market" title="Publish reusable item to Marketplace" onclick='openListMarketModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= (float) $item->quantity ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode($item->condition ?? "Used") ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->price !== null ? (float) $item->price : null) ?>, <?= json_encode($item->pickup_address ?? "") ?>)'>
                                                     Publish
                                                 </button>
                                             <?php endif; ?>
@@ -932,9 +935,9 @@ $activeNav = 'inventory';
                                             </a>
                                         <?php endif; ?>
 
-                                        <button type="button" class="btn-edit" title="Edit details" onclick='openEditModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= json_encode($item->notes ?? "") ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getImageSlots()) ?>, <?= json_encode((float) ($item->price ?? 0)) ?>, <?= json_encode($item->listing_type ?? "buy") ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
-                                            Edit
-                                        </button>
+                                        <a href="<?= route('business.inventory.edit', $item) ?>" class="btn-edit" title="Edit details">
+                                            Edit Details
+                                        </a>
 
                                         <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;margin:0;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
                                             <?= csrf_field() ?>
@@ -1275,8 +1278,8 @@ $activeNav = 'inventory';
                                 </select>
                             </div>
                             <div class="form-group" id="edit_price_group" style="margin-bottom:0;">
-                                <label for="edit_price">Price per Unit (RM)</label>
-                                <input id="edit_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00">
+                                <label for="edit_price">Price (RM)</label>
+                                <input id="edit_price" name="price" type="number" step="0.01" min="0.01" placeholder="e.g. 25.00">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
                                 <label for="edit_condition">Material Condition *</label>
@@ -1455,9 +1458,14 @@ $activeNav = 'inventory';
                 </div>
 
                 <div class="form-group" id="lm_price_group">
-                    <label for="lm_price" id="lm_price_label">Unit Price (RM) *</label>
-                    <input id="lm_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 15.00">
-                    <small id="lm_price_hint" style="color:#6f7b72;font-size:11px;">Specify price in RM per unit.</small>
+                    <label for="lm_price" id="lm_price_label">Price (RM) *</label>
+                    <input id="lm_price" name="price" type="number" step="0.01" min="0.01" placeholder="e.g. 15.00">
+                    <small id="lm_price_hint" style="color:#6f7b72;font-size:11px;">Enter a Price (RM) greater than RM 0.00 for Sell listings.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="lm_pickup_address">Collection / Pickup Address</label>
+                    <input id="lm_pickup_address" name="pickup_address" type="text" maxlength="255" placeholder="Warehouse or collection address">
                 </div>
 
                 <div class="form-group">
@@ -1632,10 +1640,10 @@ function handleListingTypeChange(type, prefix) {
 
     if (type === 'free') {
         if (priceGroup) {
-            priceGroup.style.opacity = '0.4';
-            priceGroup.style.pointerEvents = 'none';
+            priceGroup.style.display = 'none';
         }
         if (priceInput) {
+            priceInput.min = '0';
             priceInput.value = '0.00';
             priceInput.required = false;
         }
@@ -1644,17 +1652,17 @@ function handleListingTypeChange(type, prefix) {
         }
     } else {
         if (priceGroup) {
-            priceGroup.style.opacity = '1';
-            priceGroup.style.pointerEvents = 'auto';
+            priceGroup.style.display = 'block';
         }
         if (priceInput) {
+            priceInput.min = '0.01';
             if (priceInput.value === '0.00' || priceInput.value === '0') {
                 priceInput.value = '';
             }
             priceInput.required = true;
         }
         if (priceHint) {
-            priceHint.textContent = 'Specify price in RM per unit.';
+            priceHint.textContent = 'Enter a Price (RM) greater than RM 0.00 for Sell listings.';
         }
     }
 }
@@ -2377,7 +2385,7 @@ function closeAdjustModal() {
 var lmPhotosTransfer = new DataTransfer();
 var lmInitialImages = [];
 
-function openListMarketModal(id, name, category, unit, quantity, reusability, description, existingImages, condition) {
+function openListMarketModal(id, name, category, unit, quantity, reusability, description, existingImages, condition, listingType, price, pickupAddress) {
     if (reusability === 'not_reusable') {
         alert('This material is classified as Non-Reusable. Only reusable materials can be published to the public Marketplace.');
         return;
@@ -2395,9 +2403,22 @@ function openListMarketModal(id, name, category, unit, quantity, reusability, de
     if (document.getElementById('lm_description')) {
         document.getElementById('lm_description').value = description || '';
     }
+    if (document.getElementById('lm_pickup_address')) {
+        document.getElementById('lm_pickup_address').value = pickupAddress || '';
+    }
+    var resolvedType = (listingType === 'free') ? 'free' : 'buy';
     var buyRadio = document.getElementById('lm_type_buy');
-    if (buyRadio) buyRadio.checked = true;
-    handleListingTypeChange('buy', 'lm');
+    var freeRadio = document.getElementById('lm_type_free');
+    if (resolvedType === 'free' && freeRadio) {
+        freeRadio.checked = true;
+    } else if (buyRadio) {
+        buyRadio.checked = true;
+    }
+    handleListingTypeChange(resolvedType, 'lm');
+    var lmPriceEl = document.getElementById('lm_price');
+    if (lmPriceEl && resolvedType === 'buy') {
+        lmPriceEl.value = (price !== null && price !== undefined && parseFloat(price) > 0) ? parseFloat(price).toFixed(2) : '';
+    }
 
     lmPhotosTransfer = new DataTransfer();
     lmInitialImages = existingImages || [];

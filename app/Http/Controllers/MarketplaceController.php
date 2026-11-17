@@ -176,6 +176,11 @@ class MarketplaceController extends Controller
         /** @var User $business */
         $business = Auth::user();
 
+        $listingTypeInput = (string) $request->input('listing_type', 'buy');
+        $priceRules = $listingTypeInput === 'buy'
+            ? ['required', 'numeric', 'gt:0']
+            : ['nullable', 'numeric', 'min:0'];
+
         $validated = $request->validate([
             'inventory_item_id' => ['nullable', 'exists:item,id'],
             'title' => ['required', 'string', 'max:255'],
@@ -185,13 +190,16 @@ class MarketplaceController extends Controller
             'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
             'listing_type' => ['required', 'in:buy,free'],
             'reusability' => ['required', 'in:reusable'],
-            'price' => ['nullable', 'numeric', 'min:0'],
+            'price' => $priceRules,
             'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
+            'pickup_address' => ['nullable', 'string', 'max:255'],
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ], [
             'unit.in' => 'Please select a valid Unit of Measurement from the dropdown.',
             'condition.in' => 'Please select a valid Material Condition (New, Damaged, or Used).',
+            'price.required' => 'Sell listings must have a valid Price (RM) greater than RM 0.00.',
+            'price.gt' => 'Sell listings must have a valid Price (RM) greater than RM 0.00.',
             'images.max' => 'You can upload a maximum of 3 photos.',
             'reusability.in' => 'Only reusable materials can be listed on the marketplace. Non-reusable items remain saved in your internal inventory only.',
         ]);
@@ -199,9 +207,10 @@ class MarketplaceController extends Controller
         $reusability = $validated['reusability'] ?? 'reusable';
         $listingType = $validated['listing_type'];
         $isFree = $listingType === 'free';
-        $price = $isFree ? 0 : (isset($validated['price']) ? (float) $validated['price'] : null);
+        $price = $isFree ? 0.00 : round((float) $validated['price'], 2);
         $description = ! empty($validated['description']) ? $validated['description'] : 'Reusable material available on EcoCycle Marketplace.';
         $condition = ! empty($validated['condition']) ? $validated['condition'] : 'Used';
+        $pickupAddressInput = trim((string) ($validated['pickup_address'] ?? ''));
 
         // Handle 1 to 3 uploaded images
         $uploadedImages = [];
@@ -243,8 +252,8 @@ class MarketplaceController extends Controller
                 'price' => $price,
                 'is_free' => $isFree,
                 'condition' => $condition,
+                'pickup_address' => $pickupAddressInput !== '' ? $pickupAddressInput : $listing->pickup_address,
                 'status' => 'active',
-                'inventory_item_id' => $listing->id,
                 'image_path' => $uploadedImages[0] ?? $listing->image_path,
                 'image_1' => $uploadedImages[0] ?? $listing->image_1,
                 'image_2' => $uploadedImages[1] ?? $listing->image_2,
@@ -252,6 +261,12 @@ class MarketplaceController extends Controller
                 'images' => ! empty($uploadedImages) ? $uploadedImages : $listing->images,
             ]);
         } else {
+            $defaultPickup = trim(implode(', ', array_filter([
+                $business->registered_address,
+                trim(implode(' ', array_filter([$business->postcode, $business->city ?: 'Kuala Lumpur']))),
+                $business->state ?: 'Selangor',
+            ])));
+
             $listing = MarketplaceListing::create([
                 'business_id' => $business->id,
                 'title' => $validated['title'],
@@ -272,16 +287,9 @@ class MarketplaceController extends Controller
                 'images' => $uploadedImages,
                 'location_city' => $business->city ?: 'Kuala Lumpur',
                 'location_state' => $business->state ?: 'Selangor',
-                'pickup_address' => trim(implode(', ', array_filter([
-                    $business->registered_address,
-                    trim(implode(' ', array_filter([$business->postcode, $business->city ?: 'Kuala Lumpur']))),
-                    $business->state ?: 'Selangor',
-                ]))) ?: null,
+                'pickup_address' => $pickupAddressInput !== '' ? $pickupAddressInput : ($defaultPickup !== '' ? $defaultPickup : null),
                 'status' => 'active',
             ]);
-
-            $listing->inventory_item_id = $listing->id;
-            $listing->save();
 
             if ((float) $validated['quantity'] > 0) {
                 InventoryTransaction::create([

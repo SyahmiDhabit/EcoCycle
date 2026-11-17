@@ -4,21 +4,17 @@ $item = $exchange->item;
 $listingType = $exchange->resolvedListingType();
 $isFree = $listingType === 'free' || (float) $exchange->total_price <= 0;
 $typeLabel = $isFree ? 'Free' : 'Sell';
-$qtyFormatted = rtrim(rtrim(number_format((float) $exchange->quantity, 2, '.', ''), '0'), '.');
-$itemDisplay = ($item?->name ?: ($item?->title ?: 'Material')).' — '.$qtyFormatted.' '.$exchange->unit;
+$qtyFormatted = rtrim(rtrim(number_format((float) $exchange->quantity, 2, '.', ''), '0'), '.').' '.$exchange->unit;
+$itemName = $exchange->invoice?->item_name ?: ($item?->name ?: ($item?->title ?: 'Material'));
 
-$rawStatus = strtolower((string) ($exchange->payment_status ?: ($isFree ? 'free' : 'pending_payment')));
-$statusLabel = match (true) {
-    $isFree || $rawStatus === 'free' => 'Free (Not Required)',
-    $rawStatus === 'paid' => 'Paid',
-    $rawStatus === 'failed' => 'Failed',
-    $rawStatus === 'cancelled' => 'Cancelled',
-    default => 'Pending',
-};
-$statusClass = match (true) {
-    $isFree || $rawStatus === 'free' || $rawStatus === 'paid' => 'status-paid',
-    $rawStatus === 'failed' => 'status-failed',
-    $rawStatus === 'cancelled' => 'status-cancelled',
+$rawStatus = $exchange->normalizedPaymentStatus();
+$statusLabel = $exchange->paymentStatusLabel();
+$statusClass = match ($rawStatus) {
+    'paid' => 'status-paid',
+    'free' => 'status-free',
+    'failed' => 'status-failed',
+    'cancelled' => 'status-cancelled',
+    'refunded' => 'status-refunded',
     default => 'status-pending',
 };
 $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2);
@@ -58,7 +54,7 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
             margin-bottom: 22px;
         }
         .pay-table th {
-            width: 34%;
+            width: 36%;
             text-align: left;
             padding: 13px 16px;
             background: #f8fafc;
@@ -85,9 +81,11 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
             text-transform: uppercase;
         }
         .status-paid { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .status-free { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
         .status-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .status-failed { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
         .status-cancelled { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .status-refunded { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
         .pay-actions {
             display: flex;
             justify-content: space-between;
@@ -156,7 +154,7 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
 
             <div class="pay-card">
                 <div class="pay-card-header">
-                    <strong style="font-size:15px;">Order Payment Summary</strong>
+                    <strong style="font-size:15px;">Payment Information</strong>
                     <span style="font-size:12px;color:#cde0d3;"><?= e($exchange->resolvedOrderReference()) ?></span>
                 </div>
 
@@ -164,19 +162,23 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
                     <table class="pay-table">
                         <tbody>
                             <tr>
-                                <th>Item</th>
-                                <td><?= e($itemDisplay) ?></td>
+                                <th>Item Name</th>
+                                <td><?= e($itemName) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Quantity</th>
+                                <td><?= e($qtyFormatted) ?></td>
                             </tr>
                             <tr>
                                 <th>Type</th>
                                 <td><?= e($typeLabel) ?></td>
                             </tr>
                             <tr>
-                                <th>Total</th>
+                                <th>Total Amount (RM)</th>
                                 <td style="font-size:17px;font-weight:800;color:#143825;"><?= e($totalDisplay) ?></td>
                             </tr>
                             <tr>
-                                <th>Status</th>
+                                <th>Payment Status</th>
                                 <td><span class="status-tag <?= $statusClass ?>"><?= e($statusLabel) ?></span></td>
                             </tr>
                         </tbody>
@@ -188,7 +190,7 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
                         </a>
 
                         <div style="display:flex;gap:10px;align-items:center;">
-                            <?php if (! $isFree && $exchange->requiresStripePayment() && $rawStatus !== 'paid'): ?>
+                            <?php if (! $isFree && $exchange->requiresStripePayment() && ! in_array($rawStatus, ['paid', 'refunded'], true)): ?>
                                 <form method="POST" action="<?= route('business.payments.stripe.checkout', $exchange) ?>" style="margin:0;">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn-pay-primary">

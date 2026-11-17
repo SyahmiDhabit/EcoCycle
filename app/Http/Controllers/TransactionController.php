@@ -6,6 +6,7 @@ use App\Models\BusinessNotification;
 use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\MaterialExchange;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\InvoiceService;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class TransactionController extends Controller
@@ -124,47 +126,72 @@ class TransactionController extends Controller
         $totalPrice = $isFree ? 0.00 : $totals['total'];
 
         $orderRef = 'ECO-ORD-'.date('Y').'-'.strtoupper(Str::random(6));
-        $initialPaymentStatus = $isFree ? 'free' : 'pending_payment';
+        $initialPaymentStatus = $isFree ? 'free' : 'pending';
 
-        $exchange = DB::transaction(function () use ($listing, $business, $normalizedType, $orderQty, $unitPrice, $totalPrice, $orderRef, $isFree, $initialPaymentStatus, $validated) {
+        $exchange = DB::transaction(function () use ($listing, $business, $normalizedType, $orderQty, $unitPrice, $totalPrice, $orderRef, $isFree, $initialPaymentStatus, $validated): MaterialExchange {
+            // Lock item row inside transaction to strictly prevent overselling
+            $lockedListing = Item::query()
+                ->where('id', $listing->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((float) $lockedListing->quantity < $orderQty) {
+                throw ValidationException::withMessages([
+                    'quantity' => "Requested quantity exceeds available stock of {$lockedListing->quantity} {$lockedListing->unit}.",
+                ]);
+            }
+
+            $now = now();
+
             $exchange = MaterialExchange::create([
                 'invoice_number' => $orderRef,
                 'order_reference' => $orderRef,
-                'item_id' => $listing->id,
-                'provider_business_id' => $listing->business_id,
+                'item_id' => $lockedListing->id,
+                'provider_business_id' => $lockedListing->business_id,
                 'requester_business_id' => $business->id,
                 'listing_type' => $normalizedType,
                 'quantity' => $orderQty,
-                'unit' => $listing->unit,
+                'unit' => $lockedListing->unit,
                 'unit_price' => $unitPrice,
                 'total_price' => $totalPrice,
                 'status' => $isFree ? 'completed' : 'pending',
                 'payment_status' => $initialPaymentStatus,
                 'payment_reference' => $isFree ? 'FREE' : null,
-                'paid_at' => $isFree ? now() : null,
-                'completed_at' => $isFree ? now() : null,
+                'paid_at' => $isFree ? $now : null,
+                'completed_at' => $isFree ? $now : null,
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            // For Free items: deduct stock immediately and generate simple Free receipt (no Stripe)
+            // Create the single Payment record for this order (RM 0.00 Free or Pending MYR)
+            $payment = Payment::create([
+                'material_exchange_id' => $exchange->id,
+                'buyer_business_id' => $business->id,
+                'seller_business_id' => $lockedListing->business_id,
+                'currency' => 'myr',
+                'amount' => $totalPrice,
+                'status' => $initialPaymentStatus,
+                'paid_at' => $isFree ? $now : null,
+            ]);
+
+            // For Free items: deduct stock atomically once and generate one Free receipt (no Stripe)
             if ($isFree) {
-                $newQty = max(0, (float) $listing->quantity - $orderQty);
+                $newQty = max(0, (float) $lockedListing->quantity - $orderQty);
                 $newStatus = $newQty <= 0 ? 'sold' : 'active';
-                $listing->update([
+                $lockedListing->update([
                     'quantity' => $newQty,
                     'status' => $newStatus,
                 ]);
 
                 InventoryTransaction::create([
-                    'business_id' => $listing->business_id,
-                    'inventory_item_id' => $listing->id,
+                    'business_id' => $lockedListing->business_id,
+                    'inventory_item_id' => $lockedListing->id,
                     'transaction_type' => 'stock_out',
                     'quantity_change' => -$orderQty,
                     'quantity_after' => $newQty,
                     'notes' => "Free material claimed via Order #{$orderRef}",
                 ]);
 
-                $this->invoiceService->generateForOrder($exchange);
+                $this->invoiceService->generateForOrder($exchange, $payment);
             }
 
             return $exchange;
@@ -242,36 +269,69 @@ class TransactionController extends Controller
 
         $ref = $request->input('payment_reference') ?: ('FPX-'.strtoupper(bin2hex(random_bytes(4))));
 
-        $exchange->payment_status = 'paid';
-        $exchange->payment_reference = $ref;
-        $exchange->paid_at = now();
-        $exchange->status = 'completed';
-        $exchange->completed_at = now();
-        if (empty($exchange->invoice_number)) {
-            $exchange->invoice_number = 'INV-'.date('Y').'-'.str_pad((string) $exchange->id, 5, '0', STR_PAD_LEFT);
-        }
-        $exchange->save();
+        $alreadyPaid = DB::transaction(function () use ($exchange, $ref): bool {
+            $lockedExchange = MaterialExchange::query()
+                ->where('id', $exchange->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        // Generate official invoice idempotently if paid
-        $this->invoiceService->generateForOrder($exchange);
+            if ($lockedExchange->payment_status === 'paid') {
+                return true;
+            }
 
-        // Automatically deduct purchased quantity from the listing and inventory
-        if ($listing = $exchange->listing) {
-            $newListingQty = max(0, (float) $listing->quantity - (float) $exchange->quantity);
-            $newStatus = $newListingQty <= 0 ? 'sold' : 'active';
-            $listing->update([
-                'quantity' => $newListingQty,
-                'status' => $newStatus,
-            ]);
+            $now = now();
+            $lockedExchange->payment_status = 'paid';
+            $lockedExchange->payment_reference = $ref;
+            $lockedExchange->paid_at = $now;
+            $lockedExchange->status = 'completed';
+            $lockedExchange->completed_at = $now;
+            $lockedExchange->save();
 
-            InventoryTransaction::create([
-                'business_id' => $listing->business_id,
-                'inventory_item_id' => $listing->id,
-                'transaction_type' => 'stock_out',
-                'quantity_change' => -(float) $exchange->quantity,
-                'quantity_after' => $newListingQty,
-                'notes' => "Sold via Order #{$exchange->invoice_number} (Ref: {$ref})",
-            ]);
+            $payment = Payment::updateOrCreate(
+                ['material_exchange_id' => $lockedExchange->id],
+                [
+                    'buyer_business_id' => $lockedExchange->requester_business_id,
+                    'seller_business_id' => $lockedExchange->provider_business_id,
+                    'currency' => 'myr',
+                    'amount' => $lockedExchange->total_price,
+                    'status' => 'paid',
+                    'paid_at' => $now,
+                ]
+            );
+
+            // Deduct purchased stock atomically once
+            $lockedListing = Item::query()
+                ->where('id', $lockedExchange->item_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($lockedListing) {
+                $newListingQty = max(0, (float) $lockedListing->quantity - (float) $lockedExchange->quantity);
+                $newStatus = $newListingQty <= 0 ? 'sold' : 'active';
+                $lockedListing->update([
+                    'quantity' => $newListingQty,
+                    'status' => $newStatus,
+                ]);
+
+                InventoryTransaction::create([
+                    'business_id' => $lockedListing->business_id,
+                    'inventory_item_id' => $lockedListing->id,
+                    'transaction_type' => 'stock_out',
+                    'quantity_change' => -(float) $lockedExchange->quantity,
+                    'quantity_after' => $newListingQty,
+                    'notes' => "Sold via Order #{$lockedExchange->resolvedOrderReference()} (Ref: {$ref})",
+                ]);
+            }
+
+            $this->invoiceService->generateForOrder($lockedExchange, $payment);
+
+            return false;
+        });
+
+        $exchange->refresh();
+
+        if ($alreadyPaid) {
+            return back()->with('status', "Order #{$exchange->invoice_number} is already marked as PAID.");
         }
 
         // Notify counterpart

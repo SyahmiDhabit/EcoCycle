@@ -105,6 +105,41 @@ class MaterialExchange extends Model
         return $this->belongsTo(User::class, 'requester_business_id');
     }
 
+    public function normalizedPaymentStatus(): string
+    {
+        $isFree = $this->resolvedListingType() === 'free' || (float) $this->total_price <= 0;
+        $raw = strtolower(trim((string) ($this->payment_status ?: ($isFree ? 'free' : 'pending'))));
+
+        if ($isFree || $raw === 'free') {
+            return 'free';
+        }
+
+        return match ($raw) {
+            'paid' => 'paid',
+            'failed' => 'failed',
+            'cancelled' => 'cancelled',
+            'refunded' => 'refunded',
+            default => 'pending',
+        };
+    }
+
+    public function paymentStatusLabel(): string
+    {
+        return match ($this->normalizedPaymentStatus()) {
+            'paid' => 'Paid',
+            'failed' => 'Failed',
+            'cancelled' => 'Cancelled',
+            'refunded' => 'Refunded',
+            'free' => 'Free',
+            default => 'Pending',
+        };
+    }
+
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class, 'material_exchange_id');
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'material_exchange_id')->latest();

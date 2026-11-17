@@ -1,13 +1,6 @@
 <?php
-$sellerName = $invoice->seller_snapshot['business_name']
-    ?? $invoice->seller?->business_name
-    ?? $invoice->seller?->name
-    ?? 'Seller Business';
-
-$buyerName = $invoice->buyer_snapshot['business_name']
-    ?? $invoice->buyer?->business_name
-    ?? $invoice->buyer?->name
-    ?? 'Buyer Business';
+$buyerName = trim((string) ($invoice->buyer_business_name ?: ($invoice->buyer?->business_name ?: ($invoice->buyer?->name ?? 'Buyer Business'))));
+$sellerName = trim((string) ($invoice->seller_business_name ?: ($invoice->seller?->business_name ?: ($invoice->seller?->name ?? 'Seller Business'))));
 
 $pickupAddress = trim((string) ($invoice->pickup_address ?? ''));
 if ($pickupAddress === '' && $invoice->exchange) {
@@ -17,11 +10,10 @@ if ($pickupAddress === '') {
     $pickupAddress = 'To be confirmed with seller';
 }
 
-$isFree = strtolower((string) $invoice->payment_status) === 'free' || (float) $invoice->total_amount <= 0;
-$statusLabel = $isFree ? 'Free' : ucfirst((string) $invoice->payment_status);
-$qtyFormatted = rtrim(rtrim(number_format((float) $invoice->quantity, 2, '.', ''), '0'), '.').' '.$invoice->unit;
+$statusLabel = $invoice->statusLabel();
+$qtyFormatted = $invoice->formattedQuantity();
 $dateFormatted = $invoice->issued_at ? $invoice->issued_at->format('d M Y') : date('d M Y');
-$totalFormatted = 'RM '.number_format((float) $invoice->total_amount, 2);
+$totalFormatted = $invoice->formattedTotal();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -65,18 +57,18 @@ $totalFormatted = 'RM '.number_format((float) $invoice->total_amount, 2);
             align-items: center;
             gap: 12px;
         }
-        .receipt-logo-circle {
+        .receipt-logo-box {
             width: 40px;
             height: 40px;
             background: #ffffff;
-            border-radius: 50%;
+            border-radius: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             padding: 6px;
             box-sizing: border-box;
         }
-        .receipt-logo-circle img {
+        .receipt-logo-box img {
             width: 100%;
             height: 100%;
             object-fit: contain;
@@ -202,8 +194,8 @@ $totalFormatted = 'RM '.number_format((float) $invoice->total_amount, 2);
             <div class="receipt-paper">
                 <div class="receipt-header">
                     <div class="receipt-brand">
-                        <span class="receipt-logo-circle">
-                            <img src="/images/figma/ecocycle-leaf.svg" alt="EcoCycle">
+                        <span class="receipt-logo-box">
+                            <img src="/images/figma/ecocycle-leaf.svg" alt="EcoCycle Logo">
                         </span>
                         <div>
                             <div style="font-size:20px;font-weight:800;">EcoCycle Receipt</div>
@@ -223,20 +215,8 @@ $totalFormatted = 'RM '.number_format((float) $invoice->total_amount, 2);
                                 <td style="font-family:monospace;font-weight:700;"><?= e($invoice->invoice_number) ?></td>
                             </tr>
                             <tr>
-                                <th>Date</th>
+                                <th>Transaction Date</th>
                                 <td><?= e($dateFormatted) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Item Name</th>
-                                <td style="font-weight:700;"><?= e($invoice->item_name) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Quantity</th>
-                                <td><?= e($qtyFormatted) ?></td>
-                            </tr>
-                            <tr class="receipt-total-row">
-                                <th>Total Amount (RM)</th>
-                                <td><?= e($totalFormatted) ?></td>
                             </tr>
                             <tr>
                                 <th>Buyer Business Name</th>
@@ -247,12 +227,24 @@ $totalFormatted = 'RM '.number_format((float) $invoice->total_amount, 2);
                                 <td><?= e($sellerName) ?></td>
                             </tr>
                             <tr>
-                                <th>Transaction Status</th>
-                                <td style="font-weight:700;color:#15803d;"><?= e($statusLabel) ?></td>
+                                <th>Item Name</th>
+                                <td style="font-weight:700;"><?= e($invoice->item_name) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Quantity and Unit</th>
+                                <td><?= e($qtyFormatted) ?></td>
+                            </tr>
+                            <tr class="receipt-total-row">
+                                <th>Total Amount (RM)</th>
+                                <td><?= e($totalFormatted) ?></td>
                             </tr>
                             <tr>
                                 <th>Collection / Pickup Address</th>
                                 <td><?= e($pickupAddress) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Payment Status</th>
+                                <td style="font-weight:700;color:#15803d;"><?= e($statusLabel) ?></td>
                             </tr>
                         </tbody>
                     </table>

@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'business_id',
-    'inventory_item_id',
     'title',
     'name',
     'description',
@@ -38,16 +37,6 @@ class MarketplaceListing extends Model
     use HasFactory;
 
     protected $table = 'item';
-
-    protected static function booted(): void
-    {
-        static::created(function (MarketplaceListing $listing): void {
-            if (empty($listing->inventory_item_id)) {
-                $listing->inventory_item_id = $listing->id;
-                $listing->saveQuietly();
-            }
-        });
-    }
 
     public function getStatusAttribute(): string
     {

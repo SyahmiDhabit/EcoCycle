@@ -139,13 +139,12 @@ class StripePaymentController extends Controller
 
         abort_unless($exchange->requester_business_id === $business->id, 403, 'Only the buyer can cancel checkout for this order.');
 
-        if ($exchange->payment_status !== 'paid') {
+        if (! in_array($exchange->payment_status, ['paid', 'refunded'], true)) {
             Payment::query()
                 ->where('material_exchange_id', $exchange->id)
                 ->where('status', 'pending')
                 ->update([
                     'status' => 'cancelled',
-                    'failure_reason' => 'Buyer cancelled Stripe Checkout.',
                 ]);
 
             $exchange->update([

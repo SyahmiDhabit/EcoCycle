@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -286,11 +287,12 @@ class InventoryGeminiWorkflowTest extends TestCase
         $storeResponse->assertSessionHas('status');
 
         $item = InventoryItem::where('name', 'Standard Heavy-Duty Wooden Pallets')->firstOrFail();
+        $this->assertFalse(Schema::hasColumn('item', 'inventory_item_id'));
         $this->assertSame('reusable', $item->reusability);
         $this->assertSame('pcs', $item->unit);
         $this->assertSame('Used', $item->condition);
+        $this->assertNull($item->price);
         $this->assertSame('in_stock', $item->getRawOriginal('status'));
-        $this->assertNull($item->inventory_item_id);
         $this->assertFalse($item->isPublishedToMarketplace());
 
         // MUST NOT be automatically published to Marketplace
@@ -301,26 +303,54 @@ class InventoryGeminiWorkflowTest extends TestCase
             ->assertViewHas('listings', fn ($listings): bool => ! $listings->contains('id', $item->id))
             ->assertDontSee('Standard Heavy-Duty Wooden Pallets');
 
-        // Inventory page shows the separate Publish action for this unpublished reusable item
+        // Inventory page shows Edit Details and Publish actions for this unpublished reusable item
         $this->actingAs($business)
             ->get(route('business.inventory'))
             ->assertOk()
             ->assertSee('Standard Heavy-Duty Wooden Pallets')
+            ->assertSee('Edit Details')
             ->assertSee('Publish');
 
-        // Separate explicit action: Business publishes this reusable item to Marketplace (Sell)
-        $publishResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
-            'inventory_item_id' => $item->id,
-            'title' => 'Standard Heavy-Duty Wooden Pallets',
-            'description' => 'Heavy duty standard euro wooden pallets in good structural condition.',
-            'category' => 'Wooden Logistics Pallets',
-            'quantity' => 80,
-            'unit' => 'pcs',
-            'condition' => 'Used',
-            'reusability' => 'reusable',
-            'listing_type' => 'buy',
-            'price' => 18.50,
-        ]);
+        // Step 4: Cannot publish Sell item with missing/zero price before setting Price (RM) in Edit Details
+        $this->actingAs($business)
+            ->post(route('business.inventory.publish', $item))
+            ->assertSessionHasErrors('price');
+
+        // Open Edit Details page, update quantity, Sell listing type, Price (RM) > 0, and Pickup Address
+        $this->actingAs($business)
+            ->get(route('business.inventory.edit', $item))
+            ->assertOk()
+            ->assertSee('Edit Inventory Details')
+            ->assertSee('Price (RM)')
+            ->assertSee('Collection / Pickup Address');
+
+        $this->actingAs($business)
+            ->put(route('business.inventory.update', $item), [
+                'name' => 'Standard Heavy-Duty Wooden Pallets',
+                'description' => 'Updated pallet specifications.',
+                'category' => 'Wooden Logistics Pallets',
+                'quantity' => 75,
+                'unit' => 'pcs',
+                'condition' => 'Used',
+                'reusability' => 'reusable',
+                'listing_type' => 'buy',
+                'price' => 18.50,
+                'pickup_address' => 'Lot 9, Jalan Industri 3, 40200 Shah Alam, Selangor',
+                'redirect_to' => 'edit',
+            ])
+            ->assertRedirect(route('business.inventory.edit', $item))
+            ->assertSessionHasNoErrors();
+
+        $item->refresh();
+        $this->assertEquals(75.0, (float) $item->quantity);
+        $this->assertEquals(18.50, (float) $item->price);
+        $this->assertSame('Lot 9, Jalan Industri 3, 40200 Shah Alam, Selangor', $item->pickup_address);
+        // Editing alone must NOT auto-publish
+        $this->assertFalse($item->isPublishedToMarketplace());
+
+        // Step 5: Separate explicit Publish action publishes to Marketplace
+        $publishResponse = $this->actingAs($business)
+            ->post(route('business.inventory.publish', $item));
         $publishResponse->assertRedirect(route('business.marketplace'));
 
         $item->refresh();
@@ -331,6 +361,91 @@ class InventoryGeminiWorkflowTest extends TestCase
             ->get(route('business.marketplace'))
             ->assertOk()
             ->assertSee('Standard Heavy-Duty Wooden Pallets');
+    }
+
+    public function test_edit_details_and_publish_enforce_sell_price_free_zero_and_block_non_reusable(): void
+    {
+        $business = $this->createApprovedBusiness('Publish Guardrails Bhd');
+
+        // Create unpublished reusable item (no price required)
+        $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Clean HDPE Drums',
+            'description' => 'Reusable 200L blue plastic drums.',
+            'quantity' => 20,
+            'unit' => 'pcs',
+            'condition' => 'Used',
+            'reusability' => 'reusable',
+            'category' => 'Plastic Containers',
+            'image_1' => UploadedFile::fake()->image('drums.jpg', 400, 400),
+        ])->assertSessionHasNoErrors();
+
+        $reusableItem = InventoryItem::where('name', 'Clean HDPE Drums')->firstOrFail();
+        $this->assertNull($reusableItem->price);
+
+        // Sell with RM 0.00 is rejected on Edit Details and on Marketplace publish
+        $this->actingAs($business)->put(route('business.inventory.update', $reusableItem), [
+            'name' => 'Clean HDPE Drums',
+            'category' => 'Plastic Containers',
+            'quantity' => 20,
+            'unit' => 'pcs',
+            'condition' => 'Used',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 0,
+        ])->assertSessionHasErrors('price');
+
+        $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'inventory_item_id' => $reusableItem->id,
+            'title' => 'Clean HDPE Drums',
+            'category' => 'Plastic Containers',
+            'quantity' => 20,
+            'unit' => 'pcs',
+            'condition' => 'Used',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 0,
+        ])->assertSessionHasErrors('price');
+
+        // Configuring as Free enforces RM 0.00 and allows publishing without price > 0
+        $this->actingAs($business)->put(route('business.inventory.update', $reusableItem), [
+            'name' => 'Clean HDPE Drums',
+            'category' => 'Plastic Containers',
+            'quantity' => 20,
+            'unit' => 'pcs',
+            'condition' => 'Used',
+            'reusability' => 'reusable',
+            'listing_type' => 'free',
+        ])->assertSessionHasNoErrors();
+
+        $reusableItem->refresh();
+        $this->assertTrue((bool) $reusableItem->is_free);
+        $this->assertEquals(0.00, (float) $reusableItem->price);
+
+        $this->actingAs($business)
+            ->post(route('business.inventory.publish', $reusableItem))
+            ->assertRedirect(route('business.marketplace'));
+
+        $this->assertTrue($reusableItem->fresh()->isPublishedToMarketplace());
+
+        // Non-Reusable item cannot be published via publish endpoint
+        $this->actingAs($business)->post(route('business.inventory.store'), [
+            'name' => 'Oily Metal Swarf',
+            'description' => 'Contaminated CNC shavings.',
+            'quantity' => 50,
+            'unit' => 'kg',
+            'condition' => 'Damaged',
+            'reusability' => 'not_reusable',
+            'category' => 'Metal Scrap',
+            'image_1' => UploadedFile::fake()->image('swarf.jpg', 400, 400),
+        ])->assertSessionHasNoErrors();
+
+        $scrapItem = InventoryItem::where('name', 'Oily Metal Swarf')->firstOrFail();
+
+        $this->actingAs($business)
+            ->post(route('business.inventory.publish', $scrapItem), ['listing_type' => 'free'])
+            ->assertSessionHasErrors('reusability');
+
+        $this->assertFalse($scrapItem->fresh()->isPublishedToMarketplace());
     }
 
     public function test_all_eleven_dropdown_units_and_three_conditions_are_accepted(): void

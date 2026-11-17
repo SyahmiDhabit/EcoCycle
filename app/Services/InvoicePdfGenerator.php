@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\Invoice;
 
 /**
- * Pure-PHP PDF 1.4 generator for simple EcoCycle Malaysian receipts.
- * Contains only the essential transaction details in a clean square-corner layout.
+ * Pure-PHP PDF 1.4 generator for clean Malaysian EcoCycle Receipts.
+ * Contains only the essential transaction details in a crisp square-corner layout.
  */
 class InvoicePdfGenerator
 {
@@ -21,17 +21,10 @@ class InvoicePdfGenerator
      */
     public function generate(Invoice $invoice): string
     {
-        $invoice->loadMissing(['seller', 'buyer', 'exchange.item']);
+        $invoice->loadMissing(['seller', 'buyer', 'exchange']);
 
-        $sellerName = $invoice->seller_snapshot['business_name']
-            ?? $invoice->seller?->business_name
-            ?? $invoice->seller?->name
-            ?? 'Seller Business';
-
-        $buyerName = $invoice->buyer_snapshot['business_name']
-            ?? $invoice->buyer?->business_name
-            ?? $invoice->buyer?->name
-            ?? 'Buyer Business';
+        $buyerName = trim((string) ($invoice->buyer_business_name ?: ($invoice->buyer?->business_name ?: ($invoice->buyer?->name ?? 'Buyer Business'))));
+        $sellerName = trim((string) ($invoice->seller_business_name ?: ($invoice->seller?->business_name ?: ($invoice->seller?->name ?? 'Seller Business'))));
 
         $pickupAddress = trim((string) ($invoice->pickup_address ?? ''));
         if ($pickupAddress === '' && $invoice->exchange) {
@@ -41,43 +34,45 @@ class InvoicePdfGenerator
             $pickupAddress = 'To be confirmed with seller';
         }
 
-        $isFree = strtolower((string) $invoice->payment_status) === 'free' || (float) $invoice->total_amount <= 0;
-        $statusLabel = $isFree ? 'Free' : ucfirst((string) $invoice->payment_status);
-        $qtyFormatted = rtrim(rtrim(number_format((float) $invoice->quantity, 2, '.', ''), '0'), '.').' '.$invoice->unit;
+        $statusLabel = $invoice->statusLabel();
+        $qtyFormatted = $invoice->formattedQuantity();
         $dateFormatted = $invoice->issued_at ? $invoice->issued_at->format('d M Y') : date('d M Y');
-        $totalFormatted = 'RM '.number_format((float) $invoice->total_amount, 2);
+        $totalFormatted = $invoice->formattedTotal();
 
         $ops = [];
         $contentWidth = self::PAGE_WIDTH - (self::MARGIN * 2);
 
-        // 1. Clean EcoCycle Header Banner (square corners)
-        $headerH = 72.0;
+        // 1. EcoCycle Header Banner with EcoCycle Name & Vector Leaf Logo
+        $headerH = 74.0;
         $headerTopY = self::PAGE_HEIGHT - 44.0;
         $headerBottomY = $headerTopY - $headerH;
         $ops[] = $this->rect(self::MARGIN, $headerBottomY, $contentWidth, $headerH, [0.078, 0.220, 0.145], [0.078, 0.220, 0.145]);
 
-        // Brand Mark & Title
-        $ops[] = $this->rect(self::MARGIN + 18, $headerBottomY + 18, 36, 36, [0.133, 0.365, 0.239], [1.0, 1.0, 1.0], 1.0);
-        $ops[] = $this->text(self::MARGIN + 27, $headerBottomY + 30, 'EC', 'F2', 14, [1.0, 1.0, 1.0]);
-        $ops[] = $this->text(self::MARGIN + 66, $headerBottomY + 40, 'EcoCycle Receipt', 'F2', 18, [1.0, 1.0, 1.0]);
-        $ops[] = $this->text(self::MARGIN + 66, $headerBottomY + 22, 'EcoCycle Malaysia Marketplace', 'F1', 9.5, [0.82, 0.90, 0.84]);
+        // Vector EcoCycle Leaf Logo Box
+        $logoX = self::MARGIN + 18.0;
+        $logoY = $headerBottomY + 19.0;
+        $ops[] = $this->rect($logoX, $logoY, 36.0, 36.0, [1.0, 1.0, 1.0], [0.80, 0.88, 0.82], 0.8);
+        $ops[] = $this->drawEcoCycleLeaf($logoX + 8.0, $logoY + 7.0);
+
+        $ops[] = $this->text(self::MARGIN + 66.0, $headerBottomY + 41.0, 'EcoCycle Receipt', 'F2', 18.0, [1.0, 1.0, 1.0]);
+        $ops[] = $this->text(self::MARGIN + 66.0, $headerBottomY + 23.0, 'EcoCycle Malaysia Marketplace', 'F1', 9.5, [0.82, 0.90, 0.84]);
 
         // Status label on top right
-        $ops[] = $this->textRight(self::PAGE_WIDTH - self::MARGIN - 18, $headerBottomY + 32, strtoupper($statusLabel), 'F2', 12, [1.0, 1.0, 1.0]);
+        $ops[] = $this->textRight(self::PAGE_WIDTH - self::MARGIN - 18.0, $headerBottomY + 33.0, strtoupper($statusLabel), 'F2', 12.0, [1.0, 1.0, 1.0]);
 
-        // 2. Clean Essential Details Table (Square-corner rows)
+        // 2. Clean Essential Receipt Table (Exact Required Fields Only)
         $rows = [
             ['Receipt Number', (string) $invoice->invoice_number],
-            ['Date', $dateFormatted],
+            ['Transaction Date', $dateFormatted],
+            ['Buyer Business Name', $buyerName],
+            ['Seller Business Name', $sellerName],
             ['Item Name', (string) $invoice->item_name],
-            ['Quantity', $qtyFormatted],
+            ['Quantity and Unit', $qtyFormatted],
             ['Total Amount (RM)', $totalFormatted],
-            ['Buyer Business Name', (string) $buyerName],
-            ['Seller Business Name', (string) $sellerName],
-            ['Transaction Status', $statusLabel],
+            ['Payment Status', $statusLabel],
         ];
 
-        $labelColW = 185.0;
+        $labelColW = 190.0;
         $valColW = $contentWidth - $labelColW;
         $currentTopY = $headerBottomY - 22.0;
 
@@ -93,15 +88,15 @@ class InvoicePdfGenerator
             $ops[] = $this->rect(self::MARGIN + $labelColW, $rowBottomY, $valColW, $rowH, $bg, $borderColor, 0.8);
 
             $textY = $rowBottomY + 12.5;
-            $ops[] = $this->text(self::MARGIN + 14, $textY, $label, 'F2', 9.5, [0.278, 0.333, 0.412]);
+            $ops[] = $this->text(self::MARGIN + 14.0, $textY, $label, 'F2', 9.5, [0.278, 0.333, 0.412]);
 
             $valColor = $isTotalRow
                 ? [0.078, 0.220, 0.145]
-                : ($label === 'Transaction Status' ? [0.082, 0.502, 0.239] : [0.059, 0.090, 0.165]);
-            $valFont = ($isTotalRow || $label === 'Receipt Number' || $label === 'Transaction Status') ? 'F2' : 'F1';
+                : ($label === 'Payment Status' ? [0.082, 0.502, 0.239] : [0.059, 0.090, 0.165]);
+            $valFont = ($isTotalRow || $label === 'Receipt Number' || $label === 'Payment Status') ? 'F2' : 'F1';
             $valSize = $isTotalRow ? 11.5 : 10.0;
 
-            $ops[] = $this->text(self::MARGIN + $labelColW + 14, $textY, $this->truncate($value, 48), $valFont, $valSize, $valColor);
+            $ops[] = $this->text(self::MARGIN + $labelColW + 14.0, $textY, $this->truncate($value, 48), $valFont, $valSize, $valColor);
 
             $currentTopY = $rowBottomY;
         }
@@ -117,20 +112,48 @@ class InvoicePdfGenerator
         $ops[] = $this->rect(self::MARGIN, $addrBottomY, $labelColW, $addrRowH, [0.980, 0.988, 0.980], [0.796, 0.835, 0.882], 0.8);
         $ops[] = $this->rect(self::MARGIN + $labelColW, $addrBottomY, $valColW, $addrRowH, [1.0, 1.0, 1.0], [0.796, 0.835, 0.882], 0.8);
 
-        $ops[] = $this->text(self::MARGIN + 14, $currentTopY - 22.0, 'Collection / Pickup Address', 'F2', 9.5, [0.278, 0.333, 0.412]);
+        $ops[] = $this->text(self::MARGIN + 14.0, $currentTopY - 22.0, 'Collection / Pickup Address', 'F2', 9.5, [0.278, 0.333, 0.412]);
 
         $addrY = $currentTopY - 20.0;
         foreach ($addressLines as $line) {
-            $ops[] = $this->text(self::MARGIN + $labelColW + 14, $addrY, $line, 'F1', 9.8, [0.059, 0.090, 0.165]);
+            $ops[] = $this->text(self::MARGIN + $labelColW + 14.0, $addrY, $line, 'F1', 9.8, [0.059, 0.090, 0.165]);
             $addrY -= 14.0;
         }
 
         // 4. Clean Minimal Footer
-        $footerY = $addrBottomY - 32.0;
-        $ops[] = $this->line(self::MARGIN, $footerY + 14, self::PAGE_WIDTH - self::MARGIN, $footerY + 14, [0.796, 0.835, 0.882], 0.6);
+        $footerY = $addrBottomY - 30.0;
+        $ops[] = $this->line(self::MARGIN, $footerY + 14.0, self::PAGE_WIDTH - self::MARGIN, $footerY + 14.0, [0.796, 0.835, 0.882], 0.6);
         $ops[] = $this->text(self::MARGIN, $footerY, 'EcoCycle Malaysia - Electronic Transaction Receipt (MYR)', 'F1', 8.5, [0.45, 0.51, 0.59]);
 
         return $this->assemblePdf(implode("\n", $ops));
+    }
+
+    /**
+     * Draw a simple vector leaf emblem representing EcoCycle inside the header logo mark.
+     */
+    private function drawEcoCycleLeaf(float $ox, float $oy): string
+    {
+        return sprintf(
+            '0.094 0.345 0.200 rg 0.078 0.220 0.145 RG 1.1 w %.2f %.2f m %.2f %.2f %.2f %.2f %.2f %.2f c %.2f %.2f %.2f %.2f %.2f %.2f c B 1 1 1 RG 1.0 w %.2f %.2f m %.2f %.2f l S',
+            $ox + 2.0,
+            $oy + 3.0,
+            $ox + 2.0,
+            $oy + 16.0,
+            $ox + 10.0,
+            $oy + 22.0,
+            $ox + 19.0,
+            $oy + 21.0,
+            $ox + 19.0,
+            $oy + 10.0,
+            $ox + 12.0,
+            $oy + 3.0,
+            $ox + 2.0,
+            $oy + 3.0,
+            $ox + 3.5,
+            $oy + 4.5,
+            $ox + 14.5,
+            $oy + 16.5
+        );
     }
 
     /**
@@ -169,6 +192,8 @@ class InvoicePdfGenerator
             '·' => '-',
             '→' => '->',
             '×' => 'x',
+            '²' => '2',
+            '³' => '3',
         ];
         $text = strtr($text, $map);
 

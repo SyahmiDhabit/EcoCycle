@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BusinessNotification;
 use App\Models\InventoryTransaction;
 use App\Models\Invoice;
+use App\Models\Item;
 use App\Models\MaterialExchange;
 use App\Models\Payment;
 use App\Models\User;
@@ -22,11 +23,7 @@ class StripePaymentService
 
     /**
      * Create a Stripe Checkout Session on the server using verified order prices in MYR.
-     *
-     * Note on Marketplace Seller Settlement:
-     * In this initial test implementation, payments are collected by the EcoCycle platform's
-     * configured Stripe test account (STRIPE_SECRET). Multi-seller automated transfers require
-     * Stripe Connect Express/Custom onboarding for each Malaysian SME seller and are not enabled here.
+     * Reuses the single Payment record for this order on retries so duplicate payment rows are never created.
      *
      * @return array{payment: Payment, session_id: string, checkout_url: string}
      */
@@ -36,7 +33,7 @@ class StripePaymentService
         string $successUrl,
         string $cancelUrl
     ): array {
-        $exchange->loadMissing(['item', 'provider', 'requester']);
+        $exchange->loadMissing(['item', 'provider', 'requester', 'payment']);
 
         if ($exchange->requester_business_id !== $buyer->id) {
             throw new RuntimeException('You are not authorized to pay for this order.');
@@ -57,14 +54,23 @@ class StripePaymentService
         }
 
         if ($listingType !== 'buy') {
-            throw new RuntimeException('Only Sell listings are eligible for Stripe payment. Exchange and Borrow/Lend are not supported.');
+            throw new RuntimeException('Only Sell listings are eligible for Stripe payment.');
         }
 
         if ($exchange->payment_status === 'paid') {
             throw new RuntimeException('This order has already been paid.');
         }
 
-        // Recalculate price strictly on the backend (never trust client-submitted totals)
+        if ($exchange->payment_status === 'refunded') {
+            throw new RuntimeException('This order has been refunded and cannot be paid again.');
+        }
+
+        // Prevent overselling before redirecting buyer to Stripe Checkout
+        if ((float) $item->quantity < (float) $exchange->quantity) {
+            throw new RuntimeException("Insufficient stock available. Only {$item->quantity} {$item->unit} remaining.");
+        }
+
+        // Calculate total strictly on the backend (never trust client-submitted amounts)
         $unitPrice = (float) $exchange->unit_price > 0
             ? (float) $exchange->unit_price
             : (float) $item->price;
@@ -80,40 +86,59 @@ class StripePaymentService
             throw new RuntimeException('Stripe API secret key is not configured.');
         }
 
-        $currency = strtolower((string) config('services.stripe.currency', 'myr'));
-        if ($currency !== 'myr') {
-            $currency = 'myr';
-        }
+        $currency = 'myr';
 
-        // Ensure order has server-calculated totals and order reference
-        if (empty($exchange->order_reference)) {
-            $exchange->order_reference = $exchange->resolvedOrderReference();
-        }
-        $exchange->unit_price = $unitPrice;
-        $exchange->total_price = $totals['total'];
-        $exchange->save();
+        // Persist backend-calculated total and upsert the single payment record for this order
+        $payment = DB::transaction(function () use ($exchange, $buyer, $unitPrice, $totals, $currency): Payment {
+            $lockedExchange = MaterialExchange::query()
+                ->where('id', $exchange->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        // Mark any previous uncompleted pending session for this order as expired/superseded before creating a new attempt
-        Payment::query()
-            ->where('material_exchange_id', $exchange->id)
-            ->where('status', 'pending')
-            ->update(['status' => 'expired']);
+            if ($lockedExchange->payment_status === 'paid') {
+                throw new RuntimeException('This order has already been paid.');
+            }
+
+            if (empty($lockedExchange->order_reference)) {
+                $lockedExchange->order_reference = $lockedExchange->resolvedOrderReference();
+            }
+            $lockedExchange->unit_price = $unitPrice;
+            $lockedExchange->total_price = $totals['total'];
+            $lockedExchange->payment_status = 'pending';
+            $lockedExchange->save();
+
+            $existingPayment = Payment::query()
+                ->where('material_exchange_id', $lockedExchange->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingPayment) {
+                if ($existingPayment->status === 'paid') {
+                    throw new RuntimeException('This order has already been paid.');
+                }
+
+                $existingPayment->update([
+                    'amount' => $totals['total'],
+                    'currency' => $currency,
+                    'status' => 'pending',
+                ]);
+
+                return $existingPayment;
+            }
+
+            return Payment::create([
+                'material_exchange_id' => $lockedExchange->id,
+                'buyer_business_id' => $buyer->id,
+                'seller_business_id' => $lockedExchange->provider_business_id,
+                'currency' => $currency,
+                'amount' => $totals['total'],
+                'status' => 'pending',
+            ]);
+        });
+
+        $exchange->refresh();
 
         $idempotencyKey = 'ecocycle_order_'.$exchange->id.'_'.Str::uuid()->toString();
-
-        $payment = Payment::create([
-            'material_exchange_id' => $exchange->id,
-            'buyer_business_id' => $buyer->id,
-            'seller_business_id' => $exchange->provider_business_id,
-            'provider' => 'stripe',
-            'settlement_account_type' => 'platform_test_account',
-            'idempotency_key' => $idempotencyKey,
-            'currency' => $currency,
-            'amount' => $totals['total'],
-            'amount_sen' => $totals['amount_sen'],
-            'status' => 'pending',
-        ]);
-
         $qtyLabel = rtrim(rtrim(number_format((float) $exchange->quantity, 2, '.', ''), '0'), '.');
         $productName = ($item->name ?: $item->title)." ({$qtyLabel} {$exchange->unit})";
         $sellerName = $exchange->provider?->business_name ?: ($exchange->provider?->name ?? 'EcoCycle Seller');
@@ -129,7 +154,6 @@ class StripePaymentService
             'metadata[order_reference]' => $exchange->resolvedOrderReference(),
             'metadata[buyer_business_id]' => (string) $buyer->id,
             'metadata[seller_business_id]' => (string) $exchange->provider_business_id,
-            'metadata[settlement_account_type]' => 'platform_test_account',
             'line_items[0][price_data][currency]' => $currency,
             'line_items[0][price_data][unit_amount]' => (string) $totals['amount_sen'],
             'line_items[0][price_data][product_data][name]' => Str::limit($productName, 120, ''),
@@ -152,10 +176,8 @@ class StripePaymentService
 
         if (! $response->successful()) {
             $errMsg = (string) ($response->json('error.message') ?? 'Unable to initiate Stripe Checkout Session.');
-            $payment->update([
-                'status' => 'failed',
-                'failure_reason' => Str::limit($errMsg, 250, ''),
-            ]);
+            $payment->update(['status' => 'failed']);
+            $exchange->update(['payment_status' => 'failed']);
             Log::error('Stripe checkout session creation failed', [
                 'exchange_id' => $exchange->id,
                 'status' => $response->status(),
@@ -172,16 +194,15 @@ class StripePaymentService
             : null;
 
         if ($sessionId === '' || $checkoutUrl === '') {
-            $payment->update([
-                'status' => 'failed',
-                'failure_reason' => 'Stripe did not return a valid Checkout Session URL.',
-            ]);
+            $payment->update(['status' => 'failed']);
+            $exchange->update(['payment_status' => 'failed']);
             throw new RuntimeException('Stripe did not return a valid Checkout Session URL.');
         }
 
         $payment->update([
             'stripe_checkout_session_id' => $sessionId,
             'stripe_payment_intent_id' => $paymentIntentId,
+            'status' => 'pending',
         ]);
 
         return [
@@ -270,13 +291,10 @@ class StripePaymentService
         return match ($eventType) {
             'checkout.session.completed' => $this->handleCheckoutSessionCompleted($eventId, $object),
             'checkout.session.async_payment_succeeded' => $this->handleCheckoutSessionPaid($eventId, $object),
-            'checkout.session.async_payment_failed' => $this->handlePaymentFailure($eventId, $object, 'Async payment failed.'),
+            'checkout.session.async_payment_failed' => $this->handlePaymentFailure($eventId, $object),
             'checkout.session.expired' => $this->handleCheckoutSessionExpired($eventId, $object),
-            'payment_intent.payment_failed' => $this->handlePaymentFailure(
-                $eventId,
-                $object,
-                (string) ($object['last_payment_error']['message'] ?? 'Payment failed.')
-            ),
+            'payment_intent.payment_failed' => $this->handlePaymentFailure($eventId, $object),
+            'charge.refunded' => $this->handlePaymentRefunded($eventId, $object),
             default => ['handled' => false, 'status' => 'ignored_event_type'],
         };
     }
@@ -289,7 +307,6 @@ class StripePaymentService
     {
         $stripePaymentStatus = strtolower((string) ($session['payment_status'] ?? ''));
 
-        // Only mark paid when Stripe explicitly reports payment_status === 'paid'
         if ($stripePaymentStatus !== 'paid') {
             return ['handled' => true, 'status' => 'awaiting_async_payment'];
         }
@@ -312,9 +329,6 @@ class StripePaymentService
         $currency = strtolower((string) ($session['currency'] ?? 'myr'));
         $amountTotalSen = isset($session['amount_total']) ? (int) $session['amount_total'] : null;
 
-        $paymentMethodTypes = (array) ($session['payment_method_types'] ?? []);
-        $paymentMethod = ! empty($paymentMethodTypes) ? (string) $paymentMethodTypes[0] : 'card';
-
         return DB::transaction(function () use (
             $eventId,
             $sessionId,
@@ -322,10 +336,9 @@ class StripePaymentService
             $exchangeId,
             $paymentId,
             $currency,
-            $amountTotalSen,
-            $paymentMethod
+            $amountTotalSen
         ): array {
-            $payment = $this->resolvePaymentForUpdate($paymentId, $sessionId, $paymentIntentId);
+            $payment = $this->resolvePaymentForUpdate($paymentId, $sessionId, $paymentIntentId, $exchangeId);
             $exchange = $this->resolveExchangeForUpdate($exchangeId, $payment?->material_exchange_id);
 
             if (! $exchange) {
@@ -338,7 +351,15 @@ class StripePaymentService
                 return ['handled' => false, 'status' => 'order_not_found'];
             }
 
-            // Idempotency: if order is already paid, ensure invoice exists and skip duplicate mutations
+            // Re-resolve payment by exchange_id if not yet matched (enforces single payment row per order)
+            if (! $payment) {
+                $payment = Payment::query()
+                    ->where('material_exchange_id', $exchange->id)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            // Idempotency: if order is already paid, ensure receipt exists and skip duplicate mutations/deductions
             if ($exchange->payment_status === 'paid') {
                 $existingInvoice = $exchange->invoice ?: $this->invoiceService->generateForOrder($exchange, $payment);
 
@@ -349,8 +370,8 @@ class StripePaymentService
                 ];
             }
 
-            // Server-side verification of currency & amount
-            $expectedSen = $payment ? $payment->amount_sen : (int) round((float) $exchange->total_price * 100);
+            // Strict server-side verification of currency (MYR) & amount
+            $expectedSen = $payment ? $payment->amountInSen() : (int) round((float) $exchange->total_price * 100);
             if ($currency !== 'myr') {
                 Log::error('Stripe webhook currency mismatch', ['expected' => 'myr', 'received' => $currency, 'exchange_id' => $exchange->id]);
 
@@ -362,32 +383,29 @@ class StripePaymentService
                 return ['handled' => false, 'status' => 'amount_mismatch'];
             }
 
+            $paidAt = now();
+
             if (! $payment) {
                 $payment = Payment::create([
                     'material_exchange_id' => $exchange->id,
                     'buyer_business_id' => $exchange->requester_business_id,
                     'seller_business_id' => $exchange->provider_business_id,
-                    'provider' => 'stripe',
-                    'settlement_account_type' => 'platform_test_account',
                     'stripe_checkout_session_id' => $sessionId !== '' ? $sessionId : null,
                     'stripe_payment_intent_id' => $paymentIntentId,
                     'stripe_event_id' => $eventId !== '' ? $eventId : null,
                     'currency' => 'myr',
                     'amount' => $exchange->total_price,
-                    'amount_sen' => $expectedSen,
-                    'payment_method' => $paymentMethod,
                     'status' => 'paid',
-                    'paid_at' => now(),
+                    'paid_at' => $paidAt,
                 ]);
             } else {
                 $payment->update([
-                    'stripe_checkout_session_id' => $payment->stripe_checkout_session_id ?: ($sessionId !== '' ? $sessionId : null),
+                    'stripe_checkout_session_id' => $sessionId !== '' ? $sessionId : $payment->stripe_checkout_session_id,
                     'stripe_payment_intent_id' => $paymentIntentId ?: $payment->stripe_payment_intent_id,
                     'stripe_event_id' => $eventId !== '' ? $eventId : $payment->stripe_event_id,
-                    'payment_method' => $paymentMethod,
+                    'currency' => 'myr',
                     'status' => 'paid',
-                    'failure_reason' => null,
-                    'paid_at' => now(),
+                    'paid_at' => $paidAt,
                 ]);
             }
 
@@ -396,22 +414,27 @@ class StripePaymentService
             $exchange->update([
                 'payment_status' => 'paid',
                 'payment_reference' => $reference,
-                'paid_at' => $payment->paid_at ?: now(),
+                'paid_at' => $paidAt,
                 'status' => 'completed',
-                'completed_at' => now(),
+                'completed_at' => $paidAt,
             ]);
 
-            // Deduct purchased stock once on payment confirmation
-            if ($listing = $exchange->listing) {
-                $newQty = max(0, (float) $listing->quantity - (float) $exchange->quantity);
-                $listing->update([
+            // Deduct purchased stock atomically with row lock (strictly once)
+            $lockedItem = Item::query()
+                ->where('id', $exchange->item_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($lockedItem) {
+                $newQty = max(0, (float) $lockedItem->quantity - (float) $exchange->quantity);
+                $lockedItem->update([
                     'quantity' => $newQty,
                     'status' => $newQty <= 0 ? 'sold' : 'active',
                 ]);
 
                 InventoryTransaction::create([
-                    'business_id' => $listing->business_id,
-                    'inventory_item_id' => $listing->id,
+                    'business_id' => $lockedItem->business_id,
+                    'inventory_item_id' => $lockedItem->id,
                     'transaction_type' => 'stock_out',
                     'quantity_change' => -(float) $exchange->quantity,
                     'quantity_after' => $newQty,
@@ -419,7 +442,7 @@ class StripePaymentService
                 ]);
             }
 
-            // Generate official Malaysian PDF-ready Invoice idempotently
+            // Generate exactly one EcoCycle Receipt idempotently
             $invoice = $this->invoiceService->generateForOrder($exchange, $payment);
 
             // Notify Buyer & Seller
@@ -453,7 +476,7 @@ class StripePaymentService
      * @param  array<string, mixed>  $object
      * @return array{handled: bool, status: string}
      */
-    private function handlePaymentFailure(string $eventId, array $object, string $reason): array
+    private function handlePaymentFailure(string $eventId, array $object): array
     {
         $objectId = (string) ($object['id'] ?? '');
         $metadata = (array) ($object['metadata'] ?? []);
@@ -462,24 +485,23 @@ class StripePaymentService
         $paymentIntentId = str_starts_with($objectId, 'pi_') ? $objectId : (is_string($object['payment_intent'] ?? null) ? $object['payment_intent'] : null);
         $sessionId = str_starts_with($objectId, 'cs_') ? $objectId : '';
 
-        return DB::transaction(function () use ($eventId, $paymentId, $sessionId, $paymentIntentId, $exchangeId, $reason): array {
-            $payment = $this->resolvePaymentForUpdate($paymentId, $sessionId, $paymentIntentId);
+        return DB::transaction(function () use ($eventId, $paymentId, $sessionId, $paymentIntentId, $exchangeId): array {
+            $payment = $this->resolvePaymentForUpdate($paymentId, $sessionId, $paymentIntentId, $exchangeId);
             $exchange = $this->resolveExchangeForUpdate($exchangeId, $payment?->material_exchange_id);
 
             if ($exchange && $exchange->payment_status === 'paid') {
                 return ['handled' => true, 'status' => 'already_paid'];
             }
 
-            if ($payment && $payment->status !== 'paid') {
+            if ($payment && ! in_array($payment->status, ['paid', 'refunded'], true)) {
                 $payment->update([
                     'status' => 'failed',
                     'stripe_event_id' => $eventId !== '' ? $eventId : $payment->stripe_event_id,
                     'stripe_payment_intent_id' => $paymentIntentId ?: $payment->stripe_payment_intent_id,
-                    'failure_reason' => Str::limit($reason, 250, ''),
                 ]);
             }
 
-            if ($exchange && $exchange->payment_status !== 'paid') {
+            if ($exchange && ! in_array($exchange->payment_status, ['paid', 'refunded'], true)) {
                 $exchange->update([
                     'payment_status' => 'failed',
                 ]);
@@ -501,7 +523,7 @@ class StripePaymentService
         $paymentId = (int) ($metadata['payment_id'] ?? 0);
 
         return DB::transaction(function () use ($eventId, $paymentId, $sessionId, $exchangeId): array {
-            $payment = $this->resolvePaymentForUpdate($paymentId, $sessionId, null);
+            $payment = $this->resolvePaymentForUpdate($paymentId, $sessionId, null, $exchangeId);
             $exchange = $this->resolveExchangeForUpdate($exchangeId, $payment?->material_exchange_id);
 
             if ($exchange && $exchange->payment_status === 'paid') {
@@ -512,11 +534,10 @@ class StripePaymentService
                 $payment->update([
                     'status' => 'cancelled',
                     'stripe_event_id' => $eventId !== '' ? $eventId : $payment->stripe_event_id,
-                    'failure_reason' => 'Checkout session expired before payment was completed.',
                 ]);
             }
 
-            if ($exchange && $exchange->payment_status !== 'paid') {
+            if ($exchange && ! in_array($exchange->payment_status, ['paid', 'refunded'], true)) {
                 $exchange->update([
                     'payment_status' => 'cancelled',
                 ]);
@@ -526,7 +547,47 @@ class StripePaymentService
         });
     }
 
-    private function resolvePaymentForUpdate(int $paymentId, string $sessionId, ?string $paymentIntentId): ?Payment
+    /**
+     * @param  array<string, mixed>  $charge
+     * @return array{handled: bool, status: string}
+     */
+    private function handlePaymentRefunded(string $eventId, array $charge): array
+    {
+        $metadata = (array) ($charge['metadata'] ?? []);
+        $exchangeId = (int) ($metadata['exchange_id'] ?? 0);
+        $paymentId = (int) ($metadata['payment_id'] ?? 0);
+        $paymentIntentId = is_string($charge['payment_intent'] ?? null) ? $charge['payment_intent'] : null;
+
+        return DB::transaction(function () use ($eventId, $paymentId, $paymentIntentId, $exchangeId): array {
+            $payment = $this->resolvePaymentForUpdate($paymentId, '', $paymentIntentId, $exchangeId);
+            $exchange = $this->resolveExchangeForUpdate($exchangeId, $payment?->material_exchange_id);
+
+            if (! $payment && ! $exchange) {
+                return ['handled' => false, 'status' => 'order_not_found'];
+            }
+
+            if ($payment) {
+                $payment->update([
+                    'status' => 'refunded',
+                    'stripe_event_id' => $eventId !== '' ? $eventId : $payment->stripe_event_id,
+                ]);
+            }
+
+            if ($exchange) {
+                $exchange->update([
+                    'payment_status' => 'refunded',
+                ]);
+
+                Invoice::query()
+                    ->where('material_exchange_id', $exchange->id)
+                    ->update(['payment_status' => 'refunded']);
+            }
+
+            return ['handled' => true, 'status' => 'refunded'];
+        });
+    }
+
+    private function resolvePaymentForUpdate(int $paymentId, string $sessionId, ?string $paymentIntentId, int $exchangeId = 0): ?Payment
     {
         if ($paymentId > 0) {
             $found = Payment::query()->where('id', $paymentId)->lockForUpdate()->first();
@@ -547,6 +608,10 @@ class StripePaymentService
             if ($found) {
                 return $found;
             }
+        }
+
+        if ($exchangeId > 0) {
+            return Payment::query()->where('material_exchange_id', $exchangeId)->lockForUpdate()->first();
         }
 
         return null;

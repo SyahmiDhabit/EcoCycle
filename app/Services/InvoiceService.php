@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\MaterialExchange;
 use App\Models\Payment;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -68,26 +67,12 @@ class InvoiceService
     }
 
     /**
-     * Build a minimal business snapshot containing only the real business name.
-     *
-     * @return array<string, string|null>
-     */
-    public function buildBusinessSnapshot(?User $business): array
-    {
-        $name = trim((string) ($business?->business_name ?: ($business?->name ?? 'EcoCycle Business')));
-
-        return [
-            'business_name' => $name !== '' ? $name : 'EcoCycle Business',
-        ];
-    }
-
-    /**
-     * Generate the next unique sequential receipt number in format ECO-RCP-YYYY-00001.
+     * Generate the next unique sequential receipt number in format ECO-YYYY-00001.
      */
     public function generateNextReceiptNumber(): string
     {
         $year = date('Y');
-        $prefix = "ECO-RCP-{$year}-";
+        $prefix = "ECO-{$year}-";
 
         $latest = Invoice::query()
             ->where('invoice_number', 'like', $prefix.'%')
@@ -104,7 +89,7 @@ class InvoiceService
     }
 
     /**
-     * Idempotently generate or retrieve the simple EcoCycle Receipt for a Paid Sell or Free order.
+     * Idempotently generate or retrieve the single EcoCycle Receipt for a Paid Sell or confirmed Free order.
      */
     public function generateForOrder(MaterialExchange $exchange, ?Payment $payment = null): Invoice
     {
@@ -118,7 +103,7 @@ class InvoiceService
                 return $existing;
             }
 
-            $exchange->loadMissing(['item', 'provider', 'requester']);
+            $exchange->loadMissing(['item', 'provider', 'requester', 'payment']);
 
             $listingType = $exchange->resolvedListingType();
             $isFree = $listingType === 'free' || $exchange->payment_status === 'free';
@@ -127,6 +112,7 @@ class InvoiceService
                 throw new RuntimeException('A paid receipt can only be generated after verified payment.');
             }
 
+            $resolvedPayment = $payment ?: $exchange->payment;
             $item = $exchange->item;
             $qty = (float) $exchange->quantity;
             $unitPrice = $isFree
@@ -138,38 +124,30 @@ class InvoiceService
             $totals = $this->calculateTotals($qty, $unitPrice);
             $finalTotal = $isFree
                 ? 0.00
-                : ($payment ? (float) $payment->amount : $totals['total']);
+                : ($resolvedPayment ? (float) $resolvedPayment->amount : $totals['total']);
 
             $receiptNumber = $this->generateNextReceiptNumber();
-            $orderRef = $exchange->resolvedOrderReference();
             $pickupAddress = $this->resolvePickupAddress($exchange);
+
+            $sellerName = trim((string) ($exchange->provider?->business_name ?: ($exchange->provider?->name ?? 'Seller Business')));
+            $buyerName = trim((string) ($exchange->requester?->business_name ?: ($exchange->requester?->name ?? 'Buyer Business')));
 
             $invoice = Invoice::create([
                 'invoice_number' => $receiptNumber,
                 'material_exchange_id' => $exchange->id,
-                'payment_id' => $payment?->id,
+                'payment_id' => $resolvedPayment?->id,
                 'seller_business_id' => $exchange->provider_business_id,
                 'buyer_business_id' => $exchange->requester_business_id,
-                'order_reference' => $orderRef,
-                'currency' => 'myr',
+                'buyer_business_name' => $buyerName !== '' ? $buyerName : 'Buyer Business',
+                'seller_business_name' => $sellerName !== '' ? $sellerName : 'Seller Business',
                 'item_name' => $item?->name ?: ($item?->title ?: "Material #{$exchange->item_id}"),
-                'item_description' => null,
                 'quantity' => $qty,
-                'unit' => $exchange->unit ?: ($item?->unit ?: 'units'),
-                'unit_price' => $unitPrice,
-                'subtotal' => $finalTotal,
-                'tax_label' => null,
-                'tax_rate' => null,
-                'tax_amount' => 0.00,
+                'unit' => $exchange->unit ?: ($item?->unit ?: 'pcs'),
                 'total_amount' => $finalTotal,
-                'payment_status' => $isFree ? 'free' : 'paid',
-                'payment_method' => $isFree ? 'free' : ($payment?->payment_method ?: 'stripe'),
-                'payment_reference' => $isFree ? 'FREE' : ($payment?->referenceDisplay() ?: ($exchange->payment_reference ?: 'STRIPE')),
+                'currency' => 'myr',
                 'pickup_address' => $pickupAddress,
+                'payment_status' => $isFree ? 'free' : 'paid',
                 'issued_at' => now(),
-                'paid_at' => $isFree ? now() : ($payment?->paid_at ?: ($exchange->paid_at ?: now())),
-                'seller_snapshot' => $this->buildBusinessSnapshot($exchange->provider),
-                'buyer_snapshot' => $this->buildBusinessSnapshot($exchange->requester),
             ]);
 
             if ($exchange->invoice_number !== $receiptNumber) {

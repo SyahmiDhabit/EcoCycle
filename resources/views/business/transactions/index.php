@@ -84,6 +84,9 @@
         .pay-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .pay-requested { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
         .pay-paid { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .pay-free { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .pay-cancelled { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .pay-refunded { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
         .btn-action-sm {
             padding: 5px 10px;
             border-radius: 0;
@@ -185,23 +188,21 @@
                                 $counterpartName = $counterpart?->business_name ?: ($counterpart?->name ?? 'Partner Business');
                                 $qtyFormatted = rtrim(rtrim(number_format((float) $exchange->quantity, 2, '.', ''), '0'), '.');
 
-                                $payStatus = strtolower((string) ($exchange->payment_status ?: ($isFree ? 'free' : 'pending_payment')));
-                                $payClass = match (true) {
-                                    $isFree || $payStatus === 'free' || $payStatus === 'paid' => 'pay-paid',
-                                    $payStatus === 'failed' || $payStatus === 'requested' => 'pay-requested',
+                                $payStatus = $exchange->normalizedPaymentStatus();
+                                $payClass = match ($payStatus) {
+                                    'paid' => 'pay-paid',
+                                    'free' => 'pay-free',
+                                    'failed' => 'pay-requested',
+                                    'cancelled' => 'pay-cancelled',
+                                    'refunded' => 'pay-refunded',
                                     default => 'pay-pending',
                                 };
-                                $payLabel = match (true) {
-                                    $isFree || $payStatus === 'free' => 'Free',
-                                    $payStatus === 'paid' => 'Paid',
-                                    $payStatus === 'failed' => 'Failed',
-                                    $payStatus === 'cancelled' => 'Cancelled',
-                                    default => 'Pending',
-                                };
+                                $payLabel = $exchange->paymentStatusLabel();
+                                $itemTitle = $exchange->invoice?->item_name ?: ($exchange->listing?->title ?: 'Material #' . $exchange->listing_id);
                             ?>
                                 <tr>
                                     <td>
-                                        <strong style="color:#143825;"><?= e($exchange->listing?->title ?: 'Material #' . $exchange->listing_id) ?></strong>
+                                        <strong style="color:#143825;"><?= e($itemTitle) ?></strong>
                                         <span style="font-size:11px;color:var(--text-secondary);display:block;"><?= e($qtyFormatted) ?> <?= e($exchange->unit) ?> &middot; <?= $isSeller ? 'Buyer: ' : 'Seller: ' ?><?= e($counterpartName) ?></span>
                                     </td>
                                     <td>
@@ -218,7 +219,7 @@
                                     </td>
                                     <td style="text-align:right;">
                                         <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap;">
-                                            <?php if ($isBuyer && ! $isFree && $exchange->requiresStripePayment() && $payStatus !== 'paid'): ?>
+                                            <?php if ($isBuyer && ! $isFree && $exchange->requiresStripePayment() && ! in_array($payStatus, ['paid', 'refunded'], true)): ?>
                                                 <a href="<?= route('business.orders.checkout', $exchange) ?>" class="btn-action-sm" style="background:#143825;border:1px solid #143825;color:#ffffff;text-decoration:none;">
                                                     Pay Now
                                                 </a>
@@ -256,113 +257,5 @@
             </div>
         </main>
     </div>
-
-    <!-- Mark Paid Modal -->
-    <div class="modal-backdrop" id="mark-paid-modal" style="display:none;" onclick="if(event.target===this)closeMarkPaidModal()">
-        <div class="modal-dialog" style="max-width:480px;">
-            <div class="modal-header">
-                <h3>Confirm Payment Receipt</h3>
-                <button type="button" class="modal-close-btn" onclick="closeMarkPaidModal()" aria-label="Close">&times;</button>
-            </div>
-            <form id="mark-paid-form" method="POST" action="">
-                <?= csrf_field() ?>
-                <div class="modal-body">
-                    <p style="margin:0;font-size:13px;color:#334155;line-height:1.5;">
-                        Confirming payment settlement for invoice <strong id="paid_inv_label">INV-000</strong> totaling <strong id="paid_amt_label" style="color:#15803d;">RM 0.00</strong>.
-                    </p>
-                    <div class="form-group">
-                        <label for="mp_ref">Payment Reference / Transaction ID *</label>
-                        <input type="text" id="mp_ref" name="payment_reference" required placeholder="e.g. FPX-9842109 or Bank Transfer Ref" value="FPX-<?= strtoupper(bin2hex(random_bytes(3))) ?>">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="closeMarkPaidModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Confirm Payment Complete</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- View Invoice / Receipt Modal -->
-    <div class="modal-backdrop" id="receipt-modal" style="display:none;" onclick="if(event.target===this)closeReceiptModal()">
-        <div class="modal-dialog" style="max-width:540px;">
-            <div class="modal-header">
-                <h3 id="rc_title">EcoCycle Electronic Invois</h3>
-                <button type="button" class="modal-close-btn" onclick="closeReceiptModal()" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body" style="background:#f8faf8;border:1px solid var(--card-border);margin:16px;border-radius:0;padding:20px;">
-                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #cbd5e1;padding-bottom:12px;margin-bottom:14px;">
-                    <div>
-                        <strong style="font-size:17px;color:#143825;display:block;">EcoCycle B2B Settlement</strong>
-                        <span style="font-size:12px;color:var(--text-secondary);">Circular Economy Trade Platform</span>
-                    </div>
-                    <div style="text-align:right;">
-                        <span id="rc_inv_no" style="font-family:monospace;font-weight:700;font-size:14px;color:#113624;">INV-0000</span>
-                        <span id="rc_date" style="font-size:11.5px;color:var(--text-muted);display:block;">12 Nov 2026</span>
-                    </div>
-                </div>
-
-                <div style="font-size:12.5px;color:#334155;line-height:1.7;margin-bottom:14px;">
-                    <div style="display:flex;justify-content:space-between;">
-                        <span>Counterparty:</span>
-                        <strong id="rc_counterpart">SME Partner</strong>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;">
-                        <span>Material:</span>
-                        <strong id="rc_material">Surplus Material</strong>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;">
-                        <span>Quantity:</span>
-                        <span id="rc_qty">100 units</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;">
-                        <span>Payment Reference:</span>
-                        <span id="rc_ref" style="font-family:monospace;">FPX-12345</span>
-                    </div>
-                </div>
-
-                <div style="background:#ffffff;border:1px solid #86efac;border-radius:0;padding:12px;display:flex;justify-content:space-between;align-items:center;">
-                    <strong style="font-size:14px;color:#15803d;">Total Settlement:</strong>
-                    <strong id="rc_total" style="font-size:20px;color:#15803d;">RM 0.00</strong>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="window.print()">Print Invois</button>
-                <button type="button" class="btn-save" onclick="closeReceiptModal()">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    function openMarkPaidModal(id, invNo, price) {
-        document.getElementById('mark-paid-form').action = '/business/transactions/' + id + '/mark-paid';
-        document.getElementById('paid_inv_label').textContent = invNo;
-        document.getElementById('paid_amt_label').textContent = 'RM ' + price.toFixed(2);
-        var m = document.getElementById('mark-paid-modal');
-        m.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-    function closeMarkPaidModal() {
-        document.getElementById('mark-paid-modal').style.display = 'none';
-        document.body.style.overflow = '';
-    }
-
-    function openReceiptModal(invNo, material, counterpart, qty, unit, total, status, ref, date) {
-        document.getElementById('rc_inv_no').textContent = invNo;
-        document.getElementById('rc_material').textContent = material;
-        document.getElementById('rc_counterpart').textContent = counterpart;
-        document.getElementById('rc_qty').textContent = qty + ' ' + unit;
-        document.getElementById('rc_total').textContent = total > 0 ? ('RM ' + total.toFixed(2)) : 'FREE CLAIM';
-        document.getElementById('rc_ref').textContent = ref;
-        document.getElementById('rc_date').textContent = date;
-        var m = document.getElementById('receipt-modal');
-        m.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-    function closeReceiptModal() {
-        document.getElementById('receipt-modal').style.display = 'none';
-        document.body.style.overflow = '';
-    }
-    </script>
 </body>
 </html>

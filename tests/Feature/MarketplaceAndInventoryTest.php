@@ -488,7 +488,7 @@ class MarketplaceAndInventoryTest extends TestCase
         $item = InventoryItem::where('name', 'Grade-A Reusable Wooden Pallets')->firstOrFail();
         $this->assertSame('reusable', $item->reusability);
         $this->assertSame('in_stock', $item->getRawOriginal('status'));
-        $this->assertNull($item->inventory_item_id);
+        $this->assertNull($item->price);
         $this->assertFalse($item->isPublishedToMarketplace());
 
         // Not visible on Marketplace or Directory before explicit publish
@@ -519,7 +519,7 @@ class MarketplaceAndInventoryTest extends TestCase
             'condition' => 'Used',
         ])->assertRedirect(route('business.marketplace'));
 
-        $listing = MarketplaceListing::where('inventory_item_id', $item->id)->firstOrFail();
+        $listing = MarketplaceListing::findOrFail($item->id);
         $this->assertSame('active', $listing->status);
         $this->assertSame('Grade-A Reusable Wooden Pallets', $listing->title);
         $this->assertSame('buy', $listing->listing_type);
@@ -615,7 +615,7 @@ class MarketplaceAndInventoryTest extends TestCase
             'price' => 12.00,
         ])->assertSessionHasNoErrors();
 
-        $listing = MarketplaceListing::where('inventory_item_id', $item->id)->firstOrFail();
+        $listing = MarketplaceListing::findOrFail($item->id);
         $this->assertSame('active', $listing->status);
         $this->assertSame(100.0, (float) $listing->quantity);
 
@@ -684,12 +684,9 @@ class MarketplaceAndInventoryTest extends TestCase
 
         $response->assertSessionHasNoErrors();
 
-        // Marketplace listing created
+        // Marketplace listing created and connected to the same item row in inventory
         $listing = MarketplaceListing::where('title', 'Excess Corrugated Cartons')->firstOrFail();
-        $this->assertNotNull($listing->inventory_item_id);
-
-        // Inventory item was automatically created and synchronized!
-        $item = InventoryItem::find($listing->inventory_item_id);
+        $item = InventoryItem::find($listing->id);
         $this->assertNotNull($item);
         $this->assertSame('Excess Corrugated Cartons', $item->name);
         $this->assertSame('Packaging & paper', $item->category);
@@ -748,7 +745,7 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertSame($buyer->id, $exchange->requester_business_id);
         $this->assertSame(30.0, (float) $exchange->quantity);
         $this->assertSame(750.00, (float) $exchange->total_price);
-        $this->assertSame('pending_payment', $exchange->payment_status);
+        $this->assertSame('pending', $exchange->payment_status);
 
         // 3. Seller requests payment (generates invoice notification)
         $this->actingAs($seller)

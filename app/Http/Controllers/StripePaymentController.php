@@ -121,11 +121,11 @@ class StripePaymentController extends Controller
 
         if ($exchange && $exchange->payment_status === 'paid' && $exchange->invoice) {
             return redirect()->route('business.invoices.show', $exchange->invoice)
-                ->with('status', "Payment verified via Stripe. Invoice {$exchange->invoice->invoice_number} is ready.");
+                ->with('status', "Payment verified via Stripe. Receipt {$exchange->invoice->invoice_number} is ready.");
         }
 
         return redirect()->route('business.invoices.index', ['tab' => 'orders'])
-            ->with('status', 'Payment submitted to Stripe. Your order will automatically update to Paid and generate your PDF invoice as soon as webhook verification completes.');
+            ->with('status', 'Payment submitted to Stripe. Your status will automatically update to Paid and generate your PDF receipt once Stripe webhook verification completes.');
     }
 
     /**

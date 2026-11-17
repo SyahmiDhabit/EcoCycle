@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\BusinessNotification;
-use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
+use App\Models\Item;
 use App\Models\MarketplaceListing;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MarketplaceController extends Controller
@@ -30,15 +31,7 @@ class MarketplaceController extends Controller
             return redirect()->route('business.pending');
         }
 
-        // Auto-heal / synchronize any reusable inventory items missing from marketplace_listings
-        $unsynced = InventoryItem::where('reusability', 'reusable')
-            ->whereDoesntHave('marketplaceListing')
-            ->get();
-        foreach ($unsynced as $itemToSync) {
-            InventoryController::syncInventoryToMarketplace($itemToSync);
-        }
-
-        // Query marketplace listings directly from database
+        // Query explicitly published marketplace listings only (do NOT auto-publish inventory items)
         $search = trim((string) $request->query('q', ''));
         $category = trim((string) $request->query('category', ''));
         $location = trim((string) $request->query('location', ''));
@@ -58,7 +51,7 @@ class MarketplaceController extends Controller
 
         $query = MarketplaceListing::query()
             ->with('business')
-            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('status', 'active')
             ->where('quantity', '>', 0);
 
         if ($tab === 'my_listings') {
@@ -93,13 +86,13 @@ class MarketplaceController extends Controller
             });
         }
 
-        if ($listingType !== '') {
+        if ($listingType !== '' && in_array($listingType, ['buy', 'free'], true)) {
             if ($listingType === 'free') {
                 $query->where(function ($q) {
                     $q->where('listing_type', 'free')->orWhere('is_free', true);
                 });
             } else {
-                $query->where('listing_type', $listingType);
+                $query->where('listing_type', 'buy');
             }
         }
 
@@ -109,27 +102,27 @@ class MarketplaceController extends Controller
 
         $listings = $query->latest()->get();
 
-        // Counts for tabs
+        // Counts for tabs (published marketplace listings only)
         $reusableCount = MarketplaceListing::query()
-            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('status', 'active')
             ->where('quantity', '>', 0)
             ->where('reusability', 'reusable')
             ->count();
 
         $nonReusableCount = MarketplaceListing::query()
-            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('status', 'active')
             ->where('quantity', '>', 0)
             ->where('reusability', 'not_reusable')
             ->count();
 
         $myListingsCount = $business->marketplaceListings()
-            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('status', 'active')
             ->where('quantity', '>', 0)
             ->count();
 
         // Get distinct categories and locations for the current category context
         $catLocationScope = MarketplaceListing::query()
-            ->whereIn('status', ['active', 'in_stock', 'low_stock'])
+            ->where('status', 'active')
             ->where('quantity', '>', 0);
 
         if ($tab === 'non_reusable') {
@@ -150,9 +143,10 @@ class MarketplaceController extends Controller
             ->filter()
             ->values();
 
-        // User's inventory items for easy listing
+        // User's reusable inventory items available to publish
         $myInventoryItems = $business->inventoryItems()
             ->where('status', '!=', 'out_of_stock')
+            ->where('quantity', '>', 0)
             ->where('reusability', 'reusable')
             ->orderBy('name')
             ->get();
@@ -188,14 +182,16 @@ class MarketplaceController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'category' => ['required', 'string', 'max:100'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
-            'unit' => ['required', 'string', 'max:20'],
+            'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
             'listing_type' => ['required', 'in:buy,free'],
             'reusability' => ['required', 'in:reusable'],
             'price' => ['nullable', 'numeric', 'min:0'],
-            'condition' => ['nullable', 'in:New,Used,Unused'],
+            'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ], [
+            'unit.in' => 'Please select a valid Unit of Measurement from the dropdown.',
+            'condition.in' => 'Please select a valid Material Condition (New, Damaged, or Used).',
             'images.max' => 'You can upload a maximum of 3 photos.',
             'reusability.in' => 'Only reusable materials can be listed on the marketplace. Non-reusable items remain saved in your internal inventory only.',
         ]);
@@ -204,7 +200,7 @@ class MarketplaceController extends Controller
         $listingType = $validated['listing_type'];
         $isFree = $listingType === 'free';
         $price = $isFree ? 0 : (isset($validated['price']) ? (float) $validated['price'] : null);
-        $description = ! empty($validated['description']) ? $validated['description'] : 'Surplus material available for circular exchange on EcoCycle.';
+        $description = ! empty($validated['description']) ? $validated['description'] : 'Reusable material available on EcoCycle Marketplace.';
         $condition = ! empty($validated['condition']) ? $validated['condition'] : 'Used';
 
         // Handle 1 to 3 uploaded images
@@ -276,6 +272,11 @@ class MarketplaceController extends Controller
                 'images' => $uploadedImages,
                 'location_city' => $business->city ?: 'Kuala Lumpur',
                 'location_state' => $business->state ?: 'Selangor',
+                'pickup_address' => trim(implode(', ', array_filter([
+                    $business->registered_address,
+                    trim(implode(' ', array_filter([$business->postcode, $business->city ?: 'Kuala Lumpur']))),
+                    $business->state ?: 'Selangor',
+                ]))) ?: null,
                 'status' => 'active',
             ]);
 

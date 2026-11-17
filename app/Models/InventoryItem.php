@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'condition',
     'location_city',
     'location_state',
+    'pickup_address',
     'image_path',
     'image_1',
     'image_2',
@@ -38,14 +39,11 @@ class InventoryItem extends Model
 
     protected $table = 'item';
 
-    protected static function booted(): void
+    public function isPublishedToMarketplace(): bool
     {
-        static::created(function (InventoryItem $item): void {
-            if (($item->reusability ?? 'reusable') === 'reusable' && empty($item->inventory_item_id)) {
-                $item->inventory_item_id = $item->id;
-                $item->saveQuietly();
-            }
-        });
+        return ($this->reusability ?? '') === 'reusable'
+            && ! empty($this->inventory_item_id)
+            && in_array($this->attributes['status'] ?? '', ['active', 'sold'], true);
     }
 
     public function getStatusAttribute(): string

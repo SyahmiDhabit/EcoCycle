@@ -93,7 +93,14 @@ class TransactionController extends Controller
         $business = Auth::user();
 
         abort_if($listing->business_id === $business->id, 400, 'You cannot order materials from your own business.');
-        abort_if(($listing->reusability ?? 'reusable') === 'not_reusable', 400, 'This item is not available for public exchange.');
+        abort_if(($listing->reusability ?? 'reusable') !== 'reusable', 400, 'Non-Reusable items cannot be purchased on the Marketplace.');
+
+        $listingType = strtolower(trim((string) ($listing->listing_type ?: 'buy')));
+        abort_unless(
+            in_array($listingType, ['buy', 'free'], true),
+            422,
+            'Only Sell and Free listing types are supported.'
+        );
 
         $availableQty = (float) $listing->quantity;
         abort_if($availableQty <= 0, 400, 'This item is currently out of stock.');
@@ -108,45 +115,38 @@ class TransactionController extends Controller
         ]);
 
         $orderQty = (float) $validated['quantity'];
-        $listingType = $listing->listing_type ?: 'buy';
         $isFree = (bool) $listing->is_free || $listingType === 'free';
-        $isBorrow = $listingType === 'borrow';
+        $normalizedType = $isFree ? 'free' : 'buy';
 
-        // Calculate price strictly on the backend (never trust client-submitted totals)
+        // Calculate price strictly on the backend (unit price * quantity)
         $unitPrice = $isFree ? 0.00 : round((float) ($listing->price ?? 0), 2);
         $totals = $this->invoiceService->calculateTotals($orderQty, $unitPrice);
         $totalPrice = $isFree ? 0.00 : $totals['total'];
 
         $orderRef = 'ECO-ORD-'.date('Y').'-'.strtoupper(Str::random(6));
-        $invoiceNumber = $isFree ? ('FREE-'.date('Y').'-'.strtoupper(Str::random(6))) : $orderRef;
+        $initialPaymentStatus = $isFree ? 'free' : 'pending_payment';
 
-        $initialPaymentStatus = match (true) {
-            $isFree => 'paid',
-            $isBorrow => 'borrow_pending',
-            default => 'pending_payment',
-        };
-
-        $exchange = DB::transaction(function () use ($listing, $business, $listingType, $orderQty, $unitPrice, $totalPrice, $orderRef, $invoiceNumber, $isFree, $initialPaymentStatus, $validated) {
+        $exchange = DB::transaction(function () use ($listing, $business, $normalizedType, $orderQty, $unitPrice, $totalPrice, $orderRef, $isFree, $initialPaymentStatus, $validated) {
             $exchange = MaterialExchange::create([
-                'invoice_number' => $invoiceNumber,
+                'invoice_number' => $orderRef,
                 'order_reference' => $orderRef,
                 'item_id' => $listing->id,
                 'provider_business_id' => $listing->business_id,
                 'requester_business_id' => $business->id,
-                'listing_type' => $listingType,
+                'listing_type' => $normalizedType,
                 'quantity' => $orderQty,
                 'unit' => $listing->unit,
                 'unit_price' => $unitPrice,
                 'total_price' => $totalPrice,
                 'status' => $isFree ? 'completed' : 'pending',
                 'payment_status' => $initialPaymentStatus,
-                'payment_reference' => $isFree ? 'FREE-GRANT' : null,
+                'payment_reference' => $isFree ? 'FREE' : null,
                 'paid_at' => $isFree ? now() : null,
                 'completed_at' => $isFree ? now() : null,
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            // If free claim, deduct stock immediately without requiring Stripe payment
+            // For Free items: deduct stock immediately and generate simple Free receipt (no Stripe)
             if ($isFree) {
                 $newQty = max(0, (float) $listing->quantity - $orderQty);
                 $newStatus = $newQty <= 0 ? 'sold' : 'active';
@@ -163,6 +163,8 @@ class TransactionController extends Controller
                     'quantity_after' => $newQty,
                     'notes' => "Free material claimed via Order #{$orderRef}",
                 ]);
+
+                $this->invoiceService->generateForOrder($exchange);
             }
 
             return $exchange;
@@ -173,28 +175,33 @@ class TransactionController extends Controller
             $listing->business_id,
             'New Material Order Received',
             "{$business->business_name} ordered {$orderQty} {$listing->unit} of '{$listing->name}'. Order #{$orderRef}.",
-            'exchange',
+            'order',
             '/business/transactions?tab=sales',
             'green'
         );
 
         BusinessNotification::send(
             $business->id,
-            'Material Order Placed',
-            "You placed Order #{$orderRef} for {$orderQty} {$listing->unit} of '{$listing->name}'.",
-            'exchange',
-            '/business/transactions?tab=purchases',
+            $isFree ? 'Free Material Claimed & Receipt Ready' : 'Material Order Placed',
+            $isFree
+                ? "You claimed {$orderQty} {$listing->unit} of '{$listing->name}' for RM 0.00. Your receipt is ready."
+                : "You placed Order #{$orderRef} for {$orderQty} {$listing->unit} of '{$listing->name}'.",
+            'order',
+            $isFree && $exchange->invoice ? "/business/invoices/{$exchange->invoice->id}" : '/business/transactions?tab=purchases',
             'blue'
         );
 
-        // If buyer clicked Review & Pay Now on a Sell item, take them straight to the Order Review & Stripe Checkout screen
+        // Sell item with checkout flow -> go to simple Payment screen
         if ($request->boolean('proceed_to_checkout') && $exchange->requiresStripePayment()) {
             return redirect()->route('business.orders.checkout', $exchange)
-                ->with('status', "Order {$orderRef} created. Please review the summary below and click Pay Now to complete payment via Stripe.");
+                ->with('status', "Order {$orderRef} created. Review details and click Pay Now to complete payment via Stripe.");
         }
 
+        // Free item with receipt -> go to transactions history (receipt link available immediately)
         return redirect()->route('business.transactions', ['tab' => 'purchases'])
-            ->with('status', "Order #{$orderRef} successfully placed! You can review details and manage payment below.");
+            ->with('status', $isFree
+                ? "Free order #{$orderRef} completed (RM 0.00). Your EcoCycle Receipt is ready to view and download."
+                : "Order #{$orderRef} placed. Complete payment to generate your receipt.");
     }
 
     public function requestPayment(Request $request, MaterialExchange $exchange): RedirectResponse

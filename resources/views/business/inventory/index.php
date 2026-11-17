@@ -115,7 +115,8 @@ $activeNav = 'inventory';
         .btn-edit,
         .btn-delete,
         .btn-ai-advisor,
-        .btn-market-live {
+        .btn-market-live,
+        .btn-publish-market {
             height: 28px;
             padding: 0 10px;
             border-radius: 0;
@@ -182,6 +183,15 @@ $activeNav = 'inventory';
         .btn-market-live:hover {
             background: #0d2b1b;
             border-color: #0d2b1b;
+        }
+        .btn-publish-market {
+            border: 1px solid #18422d;
+            background: #ffffff;
+            color: #18422d;
+        }
+        .btn-publish-market:hover {
+            background: #18422d;
+            color: #ffffff;
         }
         .pagination-wrap {
             margin-top: 20px;
@@ -771,9 +781,9 @@ $activeNav = 'inventory';
                                         <td data-label="Category"><?= e($item->category) ?></td>
                                         <td data-label="Reusability">
                                             <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                                <span class="badge-reusable" title="Reusable circular material - automatically published to Marketplace & Directory">Reusable</span>
+                                                <span class="badge-reusable" title="Reusable circular material - can be published to the Marketplace">Reusable</span>
                                             <?php else: ?>
-                                                <span class="badge-not-reusable" title="Single-use scrap - private internal inventory only">Non-Reusable</span>
+                                                <span class="badge-not-reusable" title="Non-reusable material - stays in inventory for EcoCycle Helper">Non-Reusable</span>
                                             <?php endif; ?>
                                         </td>
                                         <td data-label="Stock Level">
@@ -797,9 +807,15 @@ $activeNav = 'inventory';
                                                     </button>
                                                 </div>
                                                 <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                                    <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="View live listing on Marketplace">
-                                                        On Market
-                                                    </a>
+                                                    <?php if ($item->isPublishedToMarketplace()): ?>
+                                                        <a href="<?= route('business.marketplace', ['q' => $item->name]) ?>" class="btn-market-live" title="View live listing on Marketplace">
+                                                            On Market
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <button type="button" class="btn-publish-market" title="Publish reusable item to Marketplace" onclick='openListMarketModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= (float) $item->quantity ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
+                                                            Publish
+                                                        </button>
+                                                    <?php endif; ?>
                                                 <?php else: ?>
                                                     <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Open in EcoCycle Helper">
                                                         EcoCycle Helper
@@ -901,9 +917,15 @@ $activeNav = 'inventory';
 
                                     <div style="display:inline-flex;gap:5px;align-items:center;">
                                         <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                            <a href="<?= route('business.marketplace', ['search' => $item->name]) ?>" class="btn-market-live" title="View on Marketplace">
-                                                Market
-                                            </a>
+                                            <?php if ($item->isPublishedToMarketplace()): ?>
+                                                <a href="<?= route('business.marketplace', ['q' => $item->name]) ?>" class="btn-market-live" title="View on Marketplace">
+                                                    On Market
+                                                </a>
+                                            <?php else: ?>
+                                                <button type="button" class="btn-publish-market" title="Publish reusable item to Marketplace" onclick='openListMarketModal(<?= $item->id ?>, <?= json_encode($item->name) ?>, <?= json_encode($item->category) ?>, <?= json_encode($item->unit) ?>, <?= (float) $item->quantity ?>, <?= json_encode($item->reusability ?? "reusable") ?>, <?= json_encode($item->description ?? "") ?>, <?= json_encode($item->getAllImages()) ?>, <?= json_encode($item->condition ?? "Used") ?>)'>
+                                                    Publish
+                                                </button>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <a href="<?= route('business.helper', ['item_id' => $item->id]) ?>" class="btn-ai-advisor" title="Open in EcoCycle Helper">
                                                 Helper
@@ -961,10 +983,16 @@ $activeNav = 'inventory';
             <input type="hidden" name="saved_image_slots" id="add_saved_image_slots" value="">
             <input type="hidden" name="analysis_token" id="add_analysis_token" value="">
             <input type="hidden" name="reusability" id="add_reusability_hidden" value="">
-            <input type="hidden" name="redirect_to" id="add_redirect_to" value="helper">
+            <input type="hidden" name="redirect_to" id="add_redirect_to" value="inventory">
             <input type="hidden" name="publish_to_marketplace" id="add_publish_to_marketplace" value="0">
 
             <div class="modal-body">
+                <!-- Inline Error Banner for Image Upload or AI Analysis Failure -->
+                <div id="add_analysis_error" role="alert" style="display:none;margin-bottom:16px;padding:12px 14px;background:#fef2f2;border:1px solid #fecaca;border-left:3px solid #b91c1c;color:#991b1b;font-size:13px;line-height:1.5;">
+                    <strong style="display:block;margin-bottom:2px;">Material Analysis Failed</strong>
+                    <span id="add_analysis_error_text"></span>
+                </div>
+
                 <!-- ==================== STAGE 1: Material Details & Photos ==================== -->
                 <div id="add_stage_1">
                     <!-- 1. Material Photos (3 Independent Slots: Image 1, Image 2, Image 3) -->
@@ -982,7 +1010,7 @@ $activeNav = 'inventory';
                             <input type="file" id="add_slot_input_2" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(2, this)">
 
                             <div class="inv-photo-hint" style="margin-bottom:12px;display:block;font-size:12px;color:#475569;">
-                                Upload up to 3 independent images. Each slot stores its own photo (Image 1 is the cover image).
+                                Upload 1 to 3 independent photos (JPG, PNG, or WEBP, max 5MB each). Your uploaded images are analyzed directly with the material details.
                             </div>
 
                             <div class="inv-slots-grid-3" id="add_slots_grid">
@@ -1007,15 +1035,28 @@ $activeNav = 'inventory';
                         <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, condition, or source..." class="add-input-field" style="resize:vertical;"></textarea>
                     </div>
 
-                    <!-- 4 & 5. Quantity & Unit of Measure -->
-                    <div class="add-grid-2">
+                    <!-- 4, 5 & 6. Quantity, Unit of Measurement Dropdown & Material Condition Dropdown -->
+                    <div class="add-grid-3">
                         <div class="form-group" style="margin-bottom:0;">
                             <label for="add_quantity" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Quantity <span style="color:#b91c1c;">*</span></label>
                             <input id="add_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50" class="add-input-field">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
-                            <label for="add_unit" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Unit of Measure <span style="color:#b91c1c;">*</span></label>
-                            <input id="add_unit" name="unit" type="text" required placeholder="e.g. kg, pieces, boxes, pallets" class="add-input-field">
+                            <label for="add_unit" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Unit of Measurement <span style="color:#b91c1c;">*</span></label>
+                            <select id="add_unit" name="unit" required class="add-input-field">
+                                <option value="">Select unit...</option>
+                                <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel): ?>
+                                    <option value="<?= e($unitVal) ?>"><?= e($unitLabel) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="add_condition" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Condition <span style="color:#b91c1c;">*</span></label>
+                            <select id="add_condition" name="condition" required class="add-input-field">
+                                <?php foreach (\App\Models\Item::ALLOWED_CONDITIONS as $condOpt): ?>
+                                    <option value="<?= e($condOpt) ?>" <?= $condOpt === 'Used' ? 'selected' : '' ?>><?= e($condOpt) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -1026,26 +1067,26 @@ $activeNav = 'inventory';
                         <div class="rect-loading-track">
                             <div class="rect-loading-bar"></div>
                         </div>
-                        <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Scanning Material...</h4>
-                        <p style="font-size:13px;color:#64748b;margin:0 auto;max-width:420px;line-height:1.5;">
-                            Please wait while the material details and photos are being analyzed.
+                        <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Analyzing Material &amp; Photos...</h4>
+                        <p style="font-size:13px;color:#64748b;margin:0 auto;max-width:440px;line-height:1.5;">
+                            Please wait while your uploaded photos and material details are analyzed to determine category, reusability, and recommended action.
                         </p>
                     </div>
                 </div>
 
-                <!-- ==================== STAGE 2: Material Analysis Result & Confirmation ==================== -->
+                <!-- ==================== STAGE 2: Review & Confirm AI Suggestion -> Add to Inventory ==================== -->
                 <div id="add_stage_2" style="display:none;">
                     <!-- Material Analysis Result Container -->
                     <div class="add-rect-box" style="margin-bottom:20px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;">
-                            <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Material Analysis</h4>
+                            <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Material Analysis Result</h4>
                             <button type="button" id="btn_retry_analysis" class="add-btn-utility" onclick="startGeminiAnalysis()" style="display:none;">
                                 Retry Analysis
                             </button>
                         </div>
 
                         <div id="ai_category_review_notice" style="display:none;margin-bottom:14px;padding:12px 14px;background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-size:12.5px;line-height:1.5;">
-                            The material category could not be confidently identified from the provided details. You may click <strong>Retry Analysis</strong> or enter the appropriate category below before continuing.
+                            The material category could not be confidently identified from the provided details. You may click <strong>Retry Analysis</strong> or enter the appropriate category below before saving.
                         </div>
 
                         <div class="add-grid-2" style="margin-bottom:14px;">
@@ -1055,7 +1096,7 @@ $activeNav = 'inventory';
                                 </label>
                                 <input id="add_category_input" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter or confirm material category" class="add-input-field" style="font-weight:700;color:#0f172a;padding:8px 10px;font-size:13.5px;">
                                 <div id="ai_category_hint" style="font-size:11px;color:#64748b;margin-top:5px;">
-                                    Review and confirm or adjust the detected category before proceeding.
+                                    Review and confirm or adjust the suggested category before saving.
                                 </div>
                             </div>
                             <div class="add-rect-card">
@@ -1065,18 +1106,18 @@ $activeNav = 'inventory';
                         </div>
 
                         <div class="add-rect-card" style="margin-bottom:14px;">
-                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Reason</div>
+                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Reason for Classification</div>
                             <p id="ai_result_reason" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
                         </div>
 
                         <div class="add-rect-card">
-                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Recommendation</div>
+                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Recommended Action</div>
                             <p id="ai_result_recommendation" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
                         </div>
                     </div>
 
                     <!-- Classification Confirmation -->
-                    <div class="form-group" style="margin-bottom:20px;">
+                    <div class="form-group" style="margin-bottom:18px;">
                         <label style="font-size:13px;font-weight:700;color:#18422d;display:block;margin-bottom:8px;">
                             Confirm Classification <span style="color:#b91c1c;">*</span>
                         </label>
@@ -1086,7 +1127,7 @@ $activeNav = 'inventory';
                                 <div>
                                     <span style="font-weight:700;color:#18422d;font-size:13px;display:block;">Reusable</span>
                                     <span style="font-size:12px;color:#64748b;line-height:1.45;display:block;margin-top:4px;">
-                                        Proceed to listing details to publish this item to the Marketplace.
+                                        Save in Inventory. You can publish this item to the Marketplace later from your Inventory list.
                                     </span>
                                 </div>
                             </label>
@@ -1095,88 +1136,27 @@ $activeNav = 'inventory';
                                 <div>
                                     <span style="font-weight:700;color:#334155;font-size:13px;display:block;">Non-Reusable</span>
                                     <span style="font-size:12px;color:#64748b;line-height:1.45;display:block;margin-top:4px;">
-                                        Save in inventory and forward to EcoCycle Helper for recycling and disposal guidance.
+                                        Save in Inventory only. Non-reusable items cannot be published to the Marketplace and can be handled through EcoCycle Helper.
                                     </span>
                                 </div>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Non-Reusable Restriction Notice -->
-                    <div id="add_section_not_reusable" class="add-rect-box" style="display:none;">
-                        <h4 style="margin:0 0 6px;font-size:14px;font-weight:700;color:#334155;">EcoCycle Helper</h4>
-                        <p style="margin:0;font-size:13px;color:#475569;line-height:1.5;">
-                            Non-reusable items cannot be published to the Marketplace. This item will be saved in your inventory and forwarded to EcoCycle Helper for recycling, repurposing, and disposal guidance.
+                    <!-- Reusable Save Info Notice -->
+                    <div id="add_section_reusable" class="add-rect-box" style="display:none;background:#f0fdf4;border-color:#b9dec0;">
+                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#18422d;">Saved to Inventory Only</h4>
+                        <p style="margin:0;font-size:12.5px;color:#2c523b;line-height:1.5;">
+                            Clicking <strong>Add to Inventory</strong> stores this item in your Inventory without publishing it automatically. When you are ready to offer it for Sell or Free, use the <strong>Publish</strong> action in Inventory.
                         </p>
                     </div>
-                </div>
 
-                <!-- ==================== STAGE 3: Marketplace Listing Details (Reusable Only) ==================== -->
-                <div id="add_stage_3_reusable" style="display:none;">
-                    <!-- Confirmed Material Summary Bar -->
-                    <div class="add-rect-box" style="margin-bottom:20px;padding:14px 18px;">
-                        <div class="add-grid-3">
-                            <div>
-                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Material</div>
-                                <div id="stage3_summary_name" style="font-size:13px;font-weight:700;color:#0f172a;">-</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Material Category</div>
-                                <div id="stage3_summary_category" style="font-size:13px;font-weight:700;color:#0f172a;">-</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Classification</div>
-                                <div style="font-size:13px;font-weight:700;color:#18422d;">Reusable</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Listing Details Form Box -->
-                    <div class="add-rect-card" style="padding:20px;">
-                        <h4 style="margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;font-size:14px;font-weight:700;color:#18422d;">Marketplace Listing Details</h4>
-
-                        <div class="add-grid-3" style="margin-bottom:16px;">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_listing_type" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Listing Type <span style="color:#b91c1c;">*</span></label>
-                                <select id="add_listing_type" name="listing_type" onchange="toggleAddPriceField(this.value); checkListingDetailsComplete();" class="add-input-field">
-                                    <option value="buy">Sell</option>
-                                    <option value="free">Free</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="add_price_group" style="margin-bottom:0;">
-                                <label for="add_price" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Price per Unit (RM) <span style="color:#b91c1c;">*</span></label>
-                                <input id="add_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00" oninput="checkListingDetailsComplete()" class="add-input-field">
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_condition" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Condition <span style="color:#b91c1c;">*</span></label>
-                                <select id="add_condition" name="condition" onchange="checkListingDetailsComplete()" class="add-input-field">
-                                    <option value="New">New</option>
-                                    <option value="Used" selected>Used</option>
-                                    <option value="Unused">Unused</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Available Quantity & Pickup Location -->
-                        <div class="add-grid-2">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_available_quantity" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Available Quantity <span style="color:#b91c1c;">*</span></label>
-                                <input id="add_available_quantity" name="available_quantity" type="number" step="0.01" min="0.01" placeholder="e.g. 50" oninput="checkListingDetailsComplete()" class="add-input-field">
-                            </div>
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label for="add_pickup_location" style="font-size:12px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Pickup Location <span style="color:#b91c1c;">*</span></label>
-                                <input id="add_pickup_location" name="pickup_location" type="text" placeholder="e.g. Shah Alam, Selangor" oninput="checkListingDetailsComplete()" class="add-input-field">
-                                <div style="display:flex;gap:8px;margin-top:8px;">
-                                    <button type="button" onclick="useGpsLocation()" class="add-btn-utility">
-                                        Use Current Location
-                                    </button>
-                                    <button type="button" onclick="useProfileLocation()" class="add-btn-utility">
-                                        Use Business Address
-                                    </button>
-                                </div>
-                                <div id="gps_status_msg" style="font-size:11px;color:#18422d;margin-top:6px;display:none;"></div>
-                            </div>
-                        </div>
+                    <!-- Non-Reusable Restriction Notice -->
+                    <div id="add_section_not_reusable" class="add-rect-box" style="display:none;">
+                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#334155;">Inventory Only (EcoCycle Helper Available)</h4>
+                        <p style="margin:0;font-size:12.5px;color:#475569;line-height:1.5;">
+                            Non-reusable items cannot be published to the Marketplace. This item will be saved in your Inventory where you can open <strong>EcoCycle Helper</strong> for recycling and disposal guidance.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1188,17 +1168,11 @@ $activeNav = 'inventory';
                     <button type="button" class="add-btn-primary" id="btn_trigger_ai" onclick="startGeminiAnalysis()">
                         Analyze Material
                     </button>
-                    <button type="button" class="add-btn-primary" id="btn_proceed_listing" onclick="proceedToListingDetails()" style="display:none;">
-                        Continue to Listing Details
+                    <button type="button" class="add-btn-secondary" id="btn_back_to_details" onclick="backToAddDetails()" style="display:none;">
+                        Edit Details
                     </button>
-                    <button type="submit" class="add-btn-primary" id="btn_submit_helper" style="display:none;">
-                        Save &amp; Proceed to EcoCycle Helper
-                    </button>
-                    <span id="listing_incomplete_hint" style="display:none;font-size:12px;color:#64748b;font-weight:600;">
-                        Complete all required listing details to publish.
-                    </span>
-                    <button type="submit" class="add-btn-primary" id="btn_submit_reusable" style="display:none;">
-                        Publish to Marketplace
+                    <button type="submit" class="add-btn-primary" id="btn_submit_inventory" style="display:none;">
+                        Add to Inventory
                     </button>
                 </div>
             </div>
@@ -1259,8 +1233,12 @@ $activeNav = 'inventory';
                         <input id="edit_category" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter material category">
                     </div>
                     <div class="form-group">
-                        <label for="edit_unit">Unit of Measure *</label>
-                        <input id="edit_unit" name="unit" type="text" required>
+                        <label for="edit_unit">Unit of Measurement *</label>
+                        <select id="edit_unit" name="unit" required>
+                            <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel): ?>
+                                <option value="<?= e($unitVal) ?>"><?= e($unitLabel) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
 
@@ -1271,22 +1249,22 @@ $activeNav = 'inventory';
                             <input type="radio" name="reusability" id="edit_reusability_reusable" value="reusable" onchange="toggleReusabilityNotice('edit', this.value)">
                             <div class="toggle-card-content">
                                 <span class="toggle-title" style="color:#15803d;">Reusable</span>
-                                <span class="toggle-desc">Durable, multi-use, circular (Synced with Marketplace &amp; Directory)</span>
+                                <span class="toggle-desc">Durable, multi-use material (Can be published to Marketplace)</span>
                             </div>
                         </label>
                         <label class="reusability-toggle-card">
                             <input type="radio" name="reusability" id="edit_reusability_not_reusable" value="not_reusable" onchange="toggleReusabilityNotice('edit', this.value)">
                             <div class="toggle-card-content">
                                 <span class="toggle-title" style="color:#475569;">Non-Reusable</span>
-                                <span class="toggle-desc">Single-use scrap / cutoffs (Private internal inventory)</span>
+                                <span class="toggle-desc">Single-use scrap / cutoffs (Private internal inventory only)</span>
                             </div>
                         </label>
                     </div>
 
-                    <!-- Marketplace & Directory Trade Settings (Automatic Sync for Reusable) -->
+                    <!-- Material Condition & Listing Settings -->
                     <div id="edit_marketplace_trade_panel" style="margin-top:12px;background:#f4fbf6;border:1px solid #b9dec0;border-radius:0;padding:14px 16px;">
                         <div style="margin-bottom:8px;">
-                            <strong style="color:#0f5132;font-size:13px;">Marketplace &amp; Directory Publication Settings</strong>
+                            <strong style="color:#0f5132;font-size:13px;">Material Condition &amp; Listing Preferences</strong>
                         </div>
                         <div class="form-row-3" style="margin-bottom:0;">
                             <div class="form-group" style="margin-bottom:0;">
@@ -1301,11 +1279,11 @@ $activeNav = 'inventory';
                                 <input id="edit_price" name="price" type="number" step="0.01" min="0" placeholder="e.g. 25.00">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label for="edit_condition">Material Condition</label>
-                                <select id="edit_condition" name="condition">
-                                    <option value="New">New</option>
-                                    <option value="Used">Used</option>
-                                    <option value="Unused">Unused</option>
+                                <label for="edit_condition">Material Condition *</label>
+                                <select id="edit_condition" name="condition" required>
+                                    <?php foreach (\App\Models\Item::ALLOWED_CONDITIONS as $condOpt): ?>
+                                        <option value="<?= e($condOpt) ?>"><?= e($condOpt) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
@@ -1426,9 +1404,9 @@ $activeNav = 'inventory';
                     <div class="form-group">
                         <label for="lm_condition">Material Condition *</label>
                         <select id="lm_condition" name="condition" required>
-                            <option value="New">New</option>
-                            <option value="Used" selected>Used</option>
-                            <option value="Unused">Unused</option>
+                            <?php foreach (\App\Models\Item::ALLOWED_CONDITIONS as $condOpt): ?>
+                                <option value="<?= e($condOpt) ?>" <?= $condOpt === 'Used' ? 'selected' : '' ?>><?= e($condOpt) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                 </div>
@@ -1467,8 +1445,12 @@ $activeNav = 'inventory';
                     </div>
 
                     <div class="form-group">
-                        <label for="lm_unit">Unit of Measure *</label>
-                        <input id="lm_unit" name="unit" type="text" required>
+                        <label for="lm_unit">Unit of Measurement *</label>
+                        <select id="lm_unit" name="unit" required>
+                            <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel): ?>
+                                <option value="<?= e($unitVal) ?>"><?= e($unitLabel) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
 
@@ -1588,20 +1570,6 @@ function toggleReusabilityNotice(prefix, val) {
     }
 }
 
-function toggleAddPriceField(val) {
-    var pGrp = document.getElementById('add_price_group');
-    if (!pGrp) return;
-    if (val === 'free') {
-        pGrp.style.opacity = '0.35';
-        pGrp.style.pointerEvents = 'none';
-        var inp = document.getElementById('add_price');
-        if (inp) inp.value = '0.00';
-    } else {
-        pGrp.style.opacity = '1';
-        pGrp.style.pointerEvents = 'auto';
-    }
-}
-
 function toggleEditPriceField(val) {
     var pGrp = document.getElementById('edit_price_group');
     if (!pGrp) return;
@@ -1616,34 +1584,118 @@ function toggleEditPriceField(val) {
     }
 }
 
+function normalizeConditionValue(rawCond) {
+    var val = (rawCond || '').trim();
+    if (val === 'New' || val === 'Damaged' || val === 'Used') {
+        return val;
+    }
+    var lower = val.toLowerCase();
+    if (lower.indexOf('damag') !== -1 || lower.indexOf('broken') !== -1 || lower.indexOf('defect') !== -1 || lower.indexOf('scrap') !== -1) {
+        return 'Damaged';
+    }
+    if (lower.indexOf('new') !== -1 || lower.indexOf('unused') !== -1 || lower.indexOf('unopened') !== -1) {
+        return 'New';
+    }
+    return 'Used';
+}
+
+function setSelectUnitValue(selectEl, rawUnit) {
+    if (!selectEl) return;
+    var val = (rawUnit || '').trim();
+    for (var i = 0; i < selectEl.options.length; i++) {
+        if (selectEl.options[i].value === val) {
+            selectEl.value = val;
+            return;
+        }
+    }
+    var lower = val.toLowerCase();
+    var map = {
+        'kg': 'kg', 'kilogram': 'kg', 'kilograms': 'kg',
+        'g': 'g', 'gram': 'g', 'grams': 'g',
+        'l': 'L', 'litre': 'L', 'litres': 'L', 'liter': 'L', 'liters': 'L',
+        'ml': 'mL', 'millilitre': 'mL', 'millilitres': 'mL',
+        'pcs': 'pcs', 'pc': 'pcs', 'piece': 'pcs', 'pieces': 'pcs', 'unit': 'pcs', 'units': 'pcs', 'pallet': 'pcs', 'pallets': 'pcs', 'roll': 'pcs', 'rolls': 'pcs', 'sheet': 'pcs', 'sheets': 'pcs', 'drum': 'pcs', 'drums': 'pcs', 'crate': 'pcs', 'crates': 'pcs', 'ream': 'pcs', 'reams': 'pcs',
+        'bag': 'Bag', 'bags': 'Bag',
+        'box': 'Box', 'boxes': 'Box',
+        't': 't', 'tonne': 't', 'tonnes': 't', 'ton': 't', 'tons': 't',
+        'm': 'm', 'metre': 'm', 'metres': 'm', 'meter': 'm', 'meters': 'm',
+        'm2': 'm²', 'm²': 'm²', 'sqm': 'm²', 'sq m': 'm²',
+        'm3': 'm³', 'm³': 'm³', 'cbm': 'm³'
+    };
+    selectEl.value = map[lower] || 'kg';
+}
+
+function handleListingTypeChange(type, prefix) {
+    var priceGroup = document.getElementById(prefix + '_price_group');
+    var priceInput = document.getElementById(prefix + '_price');
+    var priceHint = document.getElementById(prefix + '_price_hint');
+
+    if (type === 'free') {
+        if (priceGroup) {
+            priceGroup.style.opacity = '0.4';
+            priceGroup.style.pointerEvents = 'none';
+        }
+        if (priceInput) {
+            priceInput.value = '0.00';
+            priceInput.required = false;
+        }
+        if (priceHint) {
+            priceHint.textContent = 'Free listings are offered at RM 0.00.';
+        }
+    } else {
+        if (priceGroup) {
+            priceGroup.style.opacity = '1';
+            priceGroup.style.pointerEvents = 'auto';
+        }
+        if (priceInput) {
+            if (priceInput.value === '0.00' || priceInput.value === '0') {
+                priceInput.value = '';
+            }
+            priceInput.required = true;
+        }
+        if (priceHint) {
+            priceHint.textContent = 'Specify price in RM per unit.';
+        }
+    }
+}
+
+function showAddAnalysisError(message) {
+    var box = document.getElementById('add_analysis_error');
+    var text = document.getElementById('add_analysis_error_text');
+    if (text) text.textContent = message || 'Unable to analyze material. Please check your photos and details, then try again.';
+    if (box) box.style.display = 'block';
+    var modal = document.getElementById('add-modal');
+    if (modal) {
+        var body = modal.querySelector('.modal-body');
+        if (body) body.scrollTop = 0;
+    }
+}
+
+function clearAddAnalysisError() {
+    var box = document.getElementById('add_analysis_error');
+    var text = document.getElementById('add_analysis_error_text');
+    if (text) text.textContent = '';
+    if (box) box.style.display = 'none';
+}
+
 var addAnalysisCompleted = false;
 
 function setAddModalStageActions(stage) {
     var btnAi = document.getElementById('btn_trigger_ai');
-    var btnProceed = document.getElementById('btn_proceed_listing');
-    var btnHelper = document.getElementById('btn_submit_helper');
-    var hint = document.getElementById('listing_incomplete_hint');
-    var btnPublish = document.getElementById('btn_submit_reusable');
+    var btnBack = document.getElementById('btn_back_to_details');
+    var btnSubmit = document.getElementById('btn_submit_inventory');
 
     if (btnAi) btnAi.style.display = 'none';
-    if (btnProceed) btnProceed.style.display = 'none';
-    if (btnHelper) btnHelper.style.display = 'none';
-    if (hint) hint.style.display = 'none';
-    if (btnPublish) btnPublish.style.display = 'none';
+    if (btnBack) btnBack.style.display = 'none';
+    if (btnSubmit) btnSubmit.style.display = 'none';
 
     if (stage === 'stage_1') {
         if (btnAi) btnAi.style.display = 'inline-block';
     } else if (stage === 'loading') {
-        // Loading: only single Cancel button remains visible
+        // Loading: only Cancel button remains visible
     } else if (stage === 'stage_2') {
-        var reusability = document.getElementById('add_reusability_hidden') ? document.getElementById('add_reusability_hidden').value : '';
-        if (reusability === 'reusable') {
-            if (btnProceed) btnProceed.style.display = 'inline-block';
-        } else {
-            if (btnHelper) btnHelper.style.display = 'inline-block';
-        }
-    } else if (stage === 'stage_3') {
-        checkListingDetailsComplete();
+        if (btnBack) btnBack.style.display = 'inline-block';
+        if (btnSubmit) btnSubmit.style.display = 'inline-block';
     }
 }
 
@@ -1667,6 +1719,7 @@ function openAddModal() {
     addPhotoPreviews = [null, null, null];
     resetAddPhotoInputs();
     addAnalysisCompleted = false;
+    clearAddAnalysisError();
 
     var form = document.getElementById('add_inventory_form');
     if (form) form.reset();
@@ -1683,6 +1736,9 @@ function openAddModal() {
     var catInput = document.getElementById('add_category_input');
     if (catInput) catInput.value = '';
 
+    var condSelect = document.getElementById('add_condition');
+    if (condSelect) condSelect.value = 'Used';
+
     var reviewNotice = document.getElementById('ai_category_review_notice');
     if (reviewNotice) reviewNotice.style.display = 'none';
 
@@ -1696,14 +1752,13 @@ function openAddModal() {
     if (pubInput) pubInput.value = '0';
 
     var redInput = document.getElementById('add_redirect_to');
-    if (redInput) redInput.value = 'helper';
+    if (redInput) redInput.value = 'inventory';
 
     renderAddSlots();
 
     document.getElementById('add_stage_1').style.display = 'block';
     document.getElementById('add_stage_loading').style.display = 'none';
     document.getElementById('add_stage_2').style.display = 'none';
-    document.getElementById('add_stage_3_reusable').style.display = 'none';
 
     setAddModalStageActions('stage_1');
 
@@ -1712,6 +1767,20 @@ function openAddModal() {
     var body = modal.querySelector('.modal-body');
     if (body) body.scrollTop = 0;
     document.body.style.overflow = 'hidden';
+}
+
+function backToAddDetails() {
+    addAnalysisCompleted = false;
+    clearAddAnalysisError();
+    document.getElementById('add_stage_2').style.display = 'none';
+    document.getElementById('add_stage_loading').style.display = 'none';
+    document.getElementById('add_stage_1').style.display = 'block';
+    setAddModalStageActions('stage_1');
+    var modal = document.getElementById('add-modal');
+    if (modal) {
+        var body = modal.querySelector('.modal-body');
+        if (body) body.scrollTop = 0;
+    }
 }
 
 function closeAddModal() {
@@ -1731,16 +1800,19 @@ function handleAddSlotFile(slotIndex, input) {
     if (!input.files || input.files.length === 0) return;
     var file = input.files[0];
 
-    if (!file.type || !file.type.match('image.*')) {
-        alert('File "' + file.name + '" is not a valid image.');
+    var allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!file.type || (allowedTypes.indexOf(file.type.toLowerCase()) === -1 && !file.type.match('image.*'))) {
+        showAddAnalysisError('File "' + file.name + '" is not a supported image type. Please upload JPG, PNG, or WEBP images.');
         input.value = '';
         return;
     }
     if (file.size > 5 * 1024 * 1024) {
-        alert('File "' + file.name + '" exceeds the 5MB size limit.');
+        showAddAnalysisError('File "' + file.name + '" exceeds the 5MB file size limit.');
         input.value = '';
         return;
     }
+
+    clearAddAnalysisError();
 
     // Store ONLY in this exact slot without affecting any other slot
     addPhotoSlots[slotIndex] = file;
@@ -1835,43 +1907,59 @@ function renderAddSlots() {
 }
 
 function startGeminiAnalysis() {
+    clearAddAnalysisError();
+
     var name = document.getElementById('add_name').value.trim();
     var desc = document.getElementById('add_description').value.trim();
     var qty = document.getElementById('add_quantity').value.trim();
     var unit = document.getElementById('add_unit').value.trim();
+    var condition = document.getElementById('add_condition').value.trim();
 
     if (!name) {
-        alert('Please enter the Material Name.');
+        showAddAnalysisError('Please enter the Material Name before analyzing.');
         document.getElementById('add_name').focus();
         return;
     }
     if (!desc) {
-        alert('Please enter the Description / Material Specifications.');
+        showAddAnalysisError('Please enter the Material Description before analyzing.');
         document.getElementById('add_description').focus();
         return;
     }
     if (!qty || parseFloat(qty) <= 0) {
-        alert('Please enter a valid Quantity greater than 0.');
+        showAddAnalysisError('Please enter a valid Quantity greater than 0.');
         document.getElementById('add_quantity').focus();
         return;
     }
     if (!unit) {
-        alert('Please enter the Unit of Measure (e.g. kg, pieces, boxes).');
+        showAddAnalysisError('Please select a Unit of Measurement from the dropdown.');
         document.getElementById('add_unit').focus();
+        return;
+    }
+    if (!condition) {
+        showAddAnalysisError('Please select a Material Condition (New, Damaged, or Used).');
+        document.getElementById('add_condition').focus();
         return;
     }
     if (getAddPhotoCount() < 1) {
         var err = document.getElementById('add_img_error');
         if (err) err.style.display = 'block';
-        alert('Please upload at least 1 photo for material analysis (minimum 1, maximum 3 photos).');
+        showAddAnalysisError('Please upload at least 1 material photo (minimum 1, maximum 3 images) for analysis.');
         return;
     }
+
+    // Reset previous analysis state before running a fresh multimodal request
+    addAnalysisCompleted = false;
+    var prevSavedImgs = document.getElementById('add_saved_images');
+    if (prevSavedImgs) prevSavedImgs.value = '';
+    var prevSavedSlots = document.getElementById('add_saved_image_slots');
+    if (prevSavedSlots) prevSavedSlots.value = '';
+    var prevToken = document.getElementById('add_analysis_token');
+    if (prevToken) prevToken.value = '';
 
     // Switch to Loading View
     document.getElementById('add_stage_1').style.display = 'none';
     document.getElementById('add_stage_loading').style.display = 'block';
     document.getElementById('add_stage_2').style.display = 'none';
-    document.getElementById('add_stage_3_reusable').style.display = 'none';
     setAddModalStageActions('loading');
 
     var formData = new FormData();
@@ -1880,8 +1968,9 @@ function startGeminiAnalysis() {
     formData.append('description', desc);
     formData.append('quantity', qty);
     formData.append('unit', unit);
+    formData.append('condition', condition);
 
-    // Send each populated slot under its independent slot key (image_1, image_2, image_3)
+    // Send actual uploaded File objects under independent slot keys (image_1, image_2, image_3)
     for (var i = 0; i < 3; i++) {
         if (addPhotoSlots[i]) {
             formData.append('image_' + (i + 1), addPhotoSlots[i]);
@@ -1897,18 +1986,27 @@ function startGeminiAnalysis() {
         body: formData
     })
     .then(function(res) {
-        if (!res.ok) {
-            return res.json().then(function(errData) {
-                var msg = (errData && errData.message) ? errData.message : 'Material analysis could not be completed. Please try again.';
+        return res.json().catch(function() {
+            return { success: false, message: 'Unexpected server response during material analysis. Please try again.' };
+        }).then(function(payload) {
+            if (!res.ok) {
+                var msg = (payload && payload.message) ? payload.message : 'Material analysis could not be completed. Please try again.';
+                if (payload && payload.errors) {
+                    var firstKey = Object.keys(payload.errors)[0];
+                    if (firstKey && Array.isArray(payload.errors[firstKey]) && payload.errors[firstKey][0]) {
+                        msg = payload.errors[firstKey][0];
+                    }
+                }
                 throw new Error(msg);
-            });
-        }
-        return res.json();
+            }
+            return payload;
+        });
     })
     .then(function(data) {
         document.getElementById('add_stage_loading').style.display = 'none';
-        if (!data.success || !data.analysis) {
-            alert('Material analysis could not complete. Returning to details.');
+        if (!data || !data.success || !data.analysis) {
+            var failMsg = (data && data.message) ? data.message : 'Material analysis could not process the uploaded photos. Please retry.';
+            showAddAnalysisError(failMsg);
             document.getElementById('add_stage_1').style.display = 'block';
             setAddModalStageActions('stage_1');
             return;
@@ -1916,7 +2014,7 @@ function startGeminiAnalysis() {
 
         addAnalysisCompleted = true;
 
-        // Store pre-saved slots cleanly (inputs have no name attribute so they are never re-uploaded on form submit)
+        // Store pre-saved slots cleanly (file inputs have no name attribute so they are never re-uploaded on form submit)
         if (data.saved_images && data.saved_images.length > 0) {
             document.getElementById('add_saved_images').value = JSON.stringify(data.saved_images);
         }
@@ -1955,18 +2053,18 @@ function startGeminiAnalysis() {
 
         var reasonEl = document.getElementById('ai_result_reason');
         if (reasonEl) {
-            reasonEl.textContent = analysis.reason || 'Material evaluated based on condition and composition.';
+            reasonEl.textContent = analysis.reason || 'Material evaluated based on uploaded photos, condition, and specifications.';
         }
 
         var recEl = document.getElementById('ai_result_recommendation');
         if (recEl) {
             var actions = analysis.recommended_actions || [];
             if (Array.isArray(actions)) {
-                recEl.textContent = actions.join(' ') || (isReusable ? 'Publish to EcoCycle Marketplace for reuse or resale.' : 'Forward to EcoCycle Helper for recycling recommendations.');
+                recEl.textContent = actions.join(' ') || (isReusable ? 'Save to Inventory and publish to EcoCycle Marketplace when ready.' : 'Save to Inventory and manage via EcoCycle Helper for recycling or disposal guidance.');
             } else if (typeof actions === 'string') {
                 recEl.textContent = actions;
             } else {
-                recEl.textContent = isReusable ? 'Publish to EcoCycle Marketplace for reuse or resale.' : 'Forward to EcoCycle Helper for recycling recommendations.';
+                recEl.textContent = isReusable ? 'Save to Inventory and publish to EcoCycle Marketplace when ready.' : 'Save to Inventory and manage via EcoCycle Helper for recycling or disposal guidance.';
             }
         }
 
@@ -1980,7 +2078,8 @@ function startGeminiAnalysis() {
     })
     .catch(function(err) {
         document.getElementById('add_stage_loading').style.display = 'none';
-        alert('Notice: ' + err.message);
+        addAnalysisCompleted = false;
+        showAddAnalysisError(err && err.message ? err.message : 'Material analysis failed. Please check your connection and try again.');
         document.getElementById('add_stage_1').style.display = 'block';
         setAddModalStageActions('stage_1');
     });
@@ -1992,9 +2091,12 @@ function selectDecision(choice) {
     var radioNotReusable = document.getElementById('radio_choice_not_reusable');
     var cardReusable = document.getElementById('card_choice_reusable');
     var cardNotReusable = document.getElementById('card_choice_not_reusable');
+    var secReusable = document.getElementById('add_section_reusable');
     var secNotReusable = document.getElementById('add_section_not_reusable');
-    var btnProceedListing = document.getElementById('btn_proceed_listing');
-    var btnSubmitHelper = document.getElementById('btn_submit_helper');
+
+    // Always save to Inventory ONLY (never auto-publish to Marketplace)
+    document.getElementById('add_publish_to_marketplace').value = '0';
+    document.getElementById('add_redirect_to').value = 'inventory';
 
     if (choice === 'reusable') {
         if (radioReusable) radioReusable.checked = true;
@@ -2007,12 +2109,8 @@ function selectDecision(choice) {
             cardNotReusable.style.border = '1px solid #cbd5e1';
             cardNotReusable.style.background = '#ffffff';
         }
+        if (secReusable) secReusable.style.display = 'block';
         if (secNotReusable) secNotReusable.style.display = 'none';
-        if (btnProceedListing) btnProceedListing.style.display = 'inline-block';
-        if (btnSubmitHelper) btnSubmitHelper.style.display = 'none';
-
-        document.getElementById('add_publish_to_marketplace').value = '1';
-        document.getElementById('add_redirect_to').value = 'marketplace';
     } else {
         if (radioReusable) radioReusable.checked = false;
         if (radioNotReusable) radioNotReusable.checked = true;
@@ -2024,141 +2122,33 @@ function selectDecision(choice) {
             cardNotReusable.style.border = '2px solid #18422d';
             cardNotReusable.style.background = '#f8fafc';
         }
+        if (secReusable) secReusable.style.display = 'none';
         if (secNotReusable) secNotReusable.style.display = 'block';
-        if (btnProceedListing) btnProceedListing.style.display = 'none';
-        if (btnSubmitHelper) btnSubmitHelper.style.display = 'inline-block';
-
-        document.getElementById('add_publish_to_marketplace').value = '0';
-        document.getElementById('add_redirect_to').value = 'helper';
     }
-}
-
-function proceedToListingDetails() {
-    var name = document.getElementById('add_name').value.trim();
-    var catInput = document.getElementById('add_category_input');
-    var cat = catInput ? catInput.value.trim() : '';
-    var qty = document.getElementById('add_quantity').value.trim();
-
-    if (!cat) {
-        alert('Please enter or confirm the Material Category before proceeding.');
-        if (catInput) catInput.focus();
-        return;
-    }
-
-    document.getElementById('stage3_summary_name').textContent = name;
-    document.getElementById('stage3_summary_category').textContent = cat;
-
-    var availQty = document.getElementById('add_available_quantity');
-    if (availQty && (!availQty.value || parseFloat(availQty.value) <= 0)) {
-        availQty.value = qty;
-    }
-
-    document.getElementById('add_stage_2').style.display = 'none';
-    document.getElementById('add_stage_3_reusable').style.display = 'block';
-    setAddModalStageActions('stage_3');
-
-    var modal = document.getElementById('add-modal');
-    var body = modal.querySelector('.modal-body');
-    if (body) body.scrollTop = 0;
-}
-
-function checkListingDetailsComplete() {
-    var listingType = document.getElementById('add_listing_type').value;
-    var condition = document.getElementById('add_condition').value;
-    var availQty = document.getElementById('add_available_quantity').value.trim();
-    var price = document.getElementById('add_price').value.trim();
-    var pickupLoc = document.getElementById('add_pickup_location').value.trim();
-
-    var isComplete = true;
-
-    if (!listingType || !condition) {
-        isComplete = false;
-    }
-    if (!availQty || parseFloat(availQty) <= 0) {
-        isComplete = false;
-    }
-    if (!pickupLoc) {
-        isComplete = false;
-    }
-    if (listingType === 'buy') {
-        if (!price || isNaN(price) || parseFloat(price) < 0) {
-            isComplete = false;
-        }
-    }
-
-    var btnPublish = document.getElementById('btn_submit_reusable');
-    var hint = document.getElementById('listing_incomplete_hint');
-
-    if (isComplete) {
-        if (btnPublish) btnPublish.style.display = 'inline-block';
-        if (hint) hint.style.display = 'none';
-    } else {
-        if (btnPublish) btnPublish.style.display = 'none';
-        if (hint) hint.style.display = 'inline-block';
-    }
-}
-
-function useGpsLocation() {
-    var status = document.getElementById('gps_status_msg');
-    if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser.');
-        return;
-    }
-    if (status) {
-        status.style.display = 'block';
-        status.textContent = 'Acquiring GPS coordinates...';
-        status.style.color = '#18422d';
-    }
-    navigator.geolocation.getCurrentPosition(
-        function(pos) {
-            var lat = pos.coords.latitude.toFixed(5);
-            var lng = pos.coords.longitude.toFixed(5);
-            var input = document.getElementById('add_pickup_location');
-            if (input) {
-                input.value = lat + ', ' + lng;
-            }
-            if (status) {
-                status.textContent = 'GPS acquired: ' + lat + ', ' + lng;
-                status.style.color = '#18422d';
-            }
-            checkListingDetailsComplete();
-        },
-        function(err) {
-            if (status) {
-                status.textContent = 'Could not acquire GPS (' + err.message + '). Please enter pickup address manually.';
-                status.style.color = '#b91c1c';
-            }
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-    );
-}
-
-function useProfileLocation() {
-    var profileLoc = '<?= addslashes(htmlspecialchars(trim(implode(', ', array_filter([$business->registered_address ?? null, $business->city ?? null, $business->state ?? null]))))) ?>';
-    if (!profileLoc) {
-        profileLoc = '<?= addslashes(htmlspecialchars(($business->city ? $business->city . ', ' : '') . ($business->state ?: 'Selangor, Malaysia'))) ?>';
-    }
-    var input = document.getElementById('add_pickup_location');
-    if (input) input.value = profileLoc;
-    var status = document.getElementById('gps_status_msg');
-    if (status) {
-        status.style.display = 'block';
-        status.textContent = 'Set to registered business profile address.';
-        status.style.color = '#18422d';
-    }
-    checkListingDetailsComplete();
 }
 
 function validateInventoryAddForm(form) {
     if (!addAnalysisCompleted) {
-        alert('Material analysis is mandatory before saving or publishing. Please click Analyze Material first.');
+        showAddAnalysisError('Please click Analyze Material and review the AI suggestion before adding this item to Inventory.');
         return false;
     }
 
     var catInput = document.getElementById('add_category_input');
     if (!catInput || !catInput.value.trim()) {
-        alert('Please enter or confirm the Material Category before saving.');
+        showAddAnalysisError('Please enter or confirm the Material Category before saving.');
         if (catInput) catInput.focus();
+        return false;
+    }
+
+    var unitEl = document.getElementById('add_unit');
+    if (!unitEl || !unitEl.value.trim()) {
+        showAddAnalysisError('Please select a Unit of Measurement from the dropdown.');
+        return false;
+    }
+
+    var condEl = document.getElementById('add_condition');
+    if (!condEl || !condEl.value.trim()) {
+        showAddAnalysisError('Please select a Material Condition (New, Damaged, or Used).');
         return false;
     }
 
@@ -2167,33 +2157,12 @@ function validateInventoryAddForm(form) {
     if (getAddPhotoCount() < 1 && !savedImagesVal && !savedSlotsVal) {
         var err = document.getElementById('add_img_error');
         if (err) err.style.display = 'block';
-        alert('Please upload at least 1 photo for this material (minimum 1, maximum 3 photos required).');
+        showAddAnalysisError('Please upload at least 1 photo for this material (minimum 1, maximum 3 photos required).');
         return false;
     }
 
-    var reusability = document.getElementById('add_reusability_hidden').value;
-    if (reusability === 'reusable') {
-        var listingType = document.getElementById('add_listing_type').value;
-        if (listingType === 'buy') {
-            var price = document.getElementById('add_price').value;
-            if (price === '' || isNaN(price) || parseFloat(price) < 0) {
-                alert('Please enter a valid Price per Unit (RM) for Sell listing.');
-                document.getElementById('add_price').focus();
-                return false;
-            }
-        }
-        var availQty = document.getElementById('add_available_quantity').value;
-        if (!availQty || parseFloat(availQty) <= 0) {
-            alert('Please enter a valid Available Quantity.');
-            document.getElementById('add_available_quantity').focus();
-            return false;
-        }
-        document.getElementById('add_publish_to_marketplace').value = '1';
-        document.getElementById('add_redirect_to').value = 'marketplace';
-    } else {
-        document.getElementById('add_publish_to_marketplace').value = '0';
-        document.getElementById('add_redirect_to').value = 'helper';
-    }
+    document.getElementById('add_publish_to_marketplace').value = '0';
+    document.getElementById('add_redirect_to').value = 'inventory';
 
     return true;
 }
@@ -2203,7 +2172,7 @@ function openEditModal(id, name, category, unit, notes, reusability, description
     document.getElementById('edit-form').action = '/business/inventory/' + id;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_category').value = category || '';
-    document.getElementById('edit_unit').value = unit;
+    setSelectUnitValue(document.getElementById('edit_unit'), unit);
     document.getElementById('edit_notes').value = notes || '';
     if (document.getElementById('edit_description')) {
         document.getElementById('edit_description').value = description || '';
@@ -2217,16 +2186,7 @@ function openEditModal(id, name, category, unit, notes, reusability, description
         document.getElementById('edit_price').value = (price !== null && price !== undefined && parseFloat(price) > 0) ? price : '';
     }
     if (document.getElementById('edit_condition')) {
-        var rawCond = (condition || '').trim();
-        var mappedCond = 'Used';
-        if (rawCond === 'New' || rawCond === 'Used' || rawCond === 'Unused') {
-            mappedCond = rawCond;
-        } else if (rawCond.toLowerCase().indexOf('unopened') !== -1 || rawCond.toLowerCase().indexOf('unused') !== -1) {
-            mappedCond = 'Unused';
-        } else if (rawCond.toLowerCase().indexOf('new') !== -1) {
-            mappedCond = 'New';
-        }
-        document.getElementById('edit_condition').value = mappedCond;
+        document.getElementById('edit_condition').value = normalizeConditionValue(condition);
     }
     toggleEditPriceField(normalizedListingType);
 
@@ -2417,9 +2377,9 @@ function closeAdjustModal() {
 var lmPhotosTransfer = new DataTransfer();
 var lmInitialImages = [];
 
-function openListMarketModal(id, name, category, unit, quantity, reusability, description, existingImages) {
+function openListMarketModal(id, name, category, unit, quantity, reusability, description, existingImages, condition) {
     if (reusability === 'not_reusable') {
-        alert('This material is classified as Not Reusable (Scrap). Per platform policy, only reusable circular materials can be listed on the public marketplace. This item remains saved in your owner account.');
+        alert('This material is classified as Non-Reusable. Only reusable materials can be published to the public Marketplace.');
         return;
     }
     document.getElementById('lm_inventory_item_id').value = id;
@@ -2427,7 +2387,10 @@ function openListMarketModal(id, name, category, unit, quantity, reusability, de
     document.getElementById('lm_source_stock').textContent = quantity + ' ' + unit;
     document.getElementById('lm_title').value = name;
     document.getElementById('lm_category').value = category;
-    document.getElementById('lm_unit').value = unit;
+    setSelectUnitValue(document.getElementById('lm_unit'), unit);
+    if (document.getElementById('lm_condition')) {
+        document.getElementById('lm_condition').value = normalizeConditionValue(condition);
+    }
     document.getElementById('lm_quantity').value = quantity;
     if (document.getElementById('lm_description')) {
         document.getElementById('lm_description').value = description || '';

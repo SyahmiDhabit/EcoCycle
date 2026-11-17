@@ -26,18 +26,23 @@ class MyListingController extends Controller
             return redirect()->route('business.dashboard');
         }
 
-        $statusTab = $request->input('status', 'all'); // all, active, sold, borrowed
+        $statusTab = $request->input('status', 'all'); // all, active, sold, free
 
-        $query = MarketplaceListing::where('business_id', $business->id)->with('reviews.reviewer')->latest();
+        $basePublishedScope = MarketplaceListing::where('business_id', $business->id)
+            ->where('reusability', 'reusable')
+            ->whereNotNull('inventory_item_id')
+            ->whereIn('status', ['active', 'sold', 'inactive']);
+
+        $query = (clone $basePublishedScope)->with('reviews.reviewer')->latest();
 
         if ($statusTab === 'active') {
-            $query->whereIn('status', ['active', 'in_stock', 'low_stock'])->where('quantity', '>', 0);
+            $query->where('status', 'active')->where('quantity', '>', 0);
         } elseif ($statusTab === 'sold') {
             $query->where(function ($q) {
-                $q->whereIn('status', ['sold', 'out_of_stock'])->orWhere('quantity', '<=', 0);
+                $q->where('status', 'sold')->orWhere('quantity', '<=', 0);
             });
-        } elseif ($statusTab === 'borrowed') {
-            $query->where('listing_type', 'borrow');
+        } elseif ($statusTab === 'free') {
+            $query->where('listing_type', 'free');
         }
 
         $myListings = $query->paginate(12)->withQueryString();
@@ -51,15 +56,15 @@ class MyListingController extends Controller
         $avgRating = $allReviews->isNotEmpty() ? round($allReviews->avg('rating'), 1) : 5.0;
         $totalReviewCount = $allReviews->count();
 
-        // Counts
-        $allListings = MarketplaceListing::where('business_id', $business->id)->get();
+        // Counts (published marketplace listings only)
+        $allListings = (clone $basePublishedScope)->get();
         $totalActive = $allListings->filter(function ($l) {
-            return in_array($l->status, ['active', 'in_stock', 'low_stock']) && (float) $l->quantity > 0;
+            return $l->getRawOriginal('status') === 'active' && (float) $l->quantity > 0;
         })->count();
         $totalSold = $allListings->filter(function ($l) {
-            return in_array($l->status, ['sold', 'out_of_stock']) || (float) $l->quantity <= 0;
+            return $l->getRawOriginal('status') === 'sold' || (float) $l->quantity <= 0;
         })->count();
-        $totalBorrowed = $allListings->where('listing_type', 'borrow')->count();
+        $totalFree = $allListings->where('listing_type', 'free')->count();
 
         return view('business.listings.index', [
             'business' => $business,
@@ -70,7 +75,7 @@ class MyListingController extends Controller
             'totalReviewCount' => $totalReviewCount,
             'totalActive' => $totalActive,
             'totalSold' => $totalSold,
-            'totalBorrowed' => $totalBorrowed,
+            'totalFree' => $totalFree,
         ]);
     }
 
@@ -101,7 +106,7 @@ class MyListingController extends Controller
         $validated = $request->validate([
             'rating' => ['required', 'integer', 'between:1,5'],
             'comment' => ['required', 'string', 'max:1000'],
-            'exchange_type' => ['nullable', 'string', 'max:30'],
+            'exchange_type' => ['nullable', 'in:buy,free'],
         ]);
 
         MarketplaceReview::create([

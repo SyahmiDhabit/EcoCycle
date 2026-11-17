@@ -56,12 +56,8 @@ class StripePaymentService
             throw new RuntimeException('Free items do not require Stripe payment.');
         }
 
-        if ($listingType === 'borrow') {
-            throw new RuntimeException('Borrow/Lend transactions follow their existing workflow and do not trigger Stripe payment.');
-        }
-
         if ($listingType !== 'buy') {
-            throw new RuntimeException('Only Sell listings require payment.');
+            throw new RuntimeException('Only Sell listings are eligible for Stripe payment. Exchange and Borrow/Lend are not supported.');
         }
 
         if ($exchange->payment_status === 'paid') {
@@ -429,8 +425,8 @@ class StripePaymentService
             // Notify Buyer & Seller
             BusinessNotification::send(
                 $exchange->requester_business_id,
-                'Payment Confirmed & Invoice Ready',
-                "Your payment of RM ".number_format((float) $invoice->total_amount, 2)." for Order {$exchange->resolvedOrderReference()} is confirmed. Invoice {$invoice->invoice_number} is ready to download.",
+                'Payment Confirmed & Receipt Ready',
+                "Your payment of RM ".number_format((float) $invoice->total_amount, 2)." for Order {$exchange->resolvedOrderReference()} is confirmed. Receipt {$invoice->invoice_number} is ready to download.",
                 'payment',
                 "/business/invoices/{$invoice->id}",
                 'green'
@@ -439,7 +435,7 @@ class StripePaymentService
             BusinessNotification::send(
                 $exchange->provider_business_id,
                 'Order Payment Received',
-                "Payment of RM ".number_format((float) $invoice->total_amount, 2)." for Order {$exchange->resolvedOrderReference()} has been verified via Stripe. Invoice {$invoice->invoice_number} generated.",
+                "Payment of RM ".number_format((float) $invoice->total_amount, 2)." for Order {$exchange->resolvedOrderReference()} has been verified via Stripe. Receipt {$invoice->invoice_number} generated.",
                 'payment',
                 "/business/invoices/{$invoice->id}",
                 'green'

@@ -38,9 +38,9 @@ class BusinessDashboardController extends Controller
             ->where('account_status', 'approved')
             ->where('id', '!=', $business->id)
             ->with(['marketplaceListings' => function ($q) {
-                $q->whereIn('status', ['active', 'in_stock', 'low_stock'])
+                $q->where('status', 'active')
                     ->where('quantity', '>', 0)
-                    ->where('reusability', '!=', 'not_reusable');
+                    ->where('reusability', 'reusable');
             }])
             ->with('inventoryItems')
             ->latest()
@@ -154,9 +154,9 @@ class BusinessDashboardController extends Controller
 
         $company->load([
             'marketplaceListings' => function ($q) {
-                $q->whereIn('status', ['active', 'in_stock', 'low_stock'])
+                $q->where('status', 'active')
                     ->where('quantity', '>', 0)
-                    ->where('reusability', '!=', 'not_reusable')
+                    ->where('reusability', 'reusable')
                     ->latest();
             },
             'inventoryItems',

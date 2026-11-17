@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'payment_status',
     'payment_method',
     'payment_reference',
+    'pickup_address',
     'issued_at',
     'paid_at',
     'seller_snapshot',

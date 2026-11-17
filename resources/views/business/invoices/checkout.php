@@ -1,76 +1,127 @@
 <?php
 $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
 $item = $exchange->item;
-$seller = $exchange->provider;
-$sellerSnap = app(\App\Services\InvoiceService::class)->buildBusinessSnapshot($seller);
-$orderRef = $exchange->resolvedOrderReference();
+$listingType = $exchange->resolvedListingType();
+$isFree = $listingType === 'free' || (float) $exchange->total_price <= 0;
+$typeLabel = $isFree ? 'Free' : 'Sell';
 $qtyFormatted = rtrim(rtrim(number_format((float) $exchange->quantity, 2, '.', ''), '0'), '.');
-$hasTax = (float) ($totals['tax_amount'] ?? 0) > 0 && ! empty($totals['tax_label']);
+$itemDisplay = ($item?->name ?: ($item?->title ?: 'Material')).' — '.$qtyFormatted.' '.$exchange->unit;
+
+$rawStatus = strtolower((string) ($exchange->payment_status ?: ($isFree ? 'free' : 'pending_payment')));
+$statusLabel = match (true) {
+    $isFree || $rawStatus === 'free' => 'Free (Not Required)',
+    $rawStatus === 'paid' => 'Paid',
+    $rawStatus === 'failed' => 'Failed',
+    $rawStatus === 'cancelled' => 'Cancelled',
+    default => 'Pending',
+};
+$statusClass = match (true) {
+    $isFree || $rawStatus === 'free' || $rawStatus === 'paid' => 'status-paid',
+    $rawStatus === 'failed' => 'status-failed',
+    $rawStatus === 'cancelled' => 'status-cancelled',
+    default => 'status-pending',
+};
+$totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Checkout <?= e($orderRef) ?> &middot; EcoCycle</title>
+    <title>Payment Information &middot; EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
-        .checkout-grid {
-            display: grid;
-            grid-template-columns: 1.4fr 1fr;
-            gap: 20px;
-            max-width: 980px;
-        }
-        .checkout-box {
+        .pay-card {
+            max-width: 640px;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 0;
         }
-        .checkout-box-header {
-            padding: 14px 20px;
+        .pay-card-header {
+            padding: 16px 24px;
+            background: #143825;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pay-card-body {
+            padding: 24px;
+        }
+        .pay-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 22px;
+        }
+        .pay-table th {
+            width: 34%;
+            text-align: left;
+            padding: 13px 16px;
             background: #f8fafc;
-            border-bottom: 1px solid #cbd5e1;
-            font-size: 13px;
+            border: 1px solid #cbd5e1;
+            font-size: 12px;
             font-weight: 700;
-            color: #143825;
+            color: #475569;
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
-        .checkout-box-body {
-            padding: 20px;
+        .pay-table td {
+            padding: 13px 16px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
         }
-        .checkout-row {
+        .status-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            font-size: 11.5px;
+            font-weight: 700;
+            border-radius: 0;
+            text-transform: uppercase;
+        }
+        .status-paid { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .status-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .status-failed { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .status-cancelled { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .pay-actions {
             display: flex;
             justify-content: space-between;
-            padding: 9px 0;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 13px;
-            color: #334155;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
-        .checkout-row:last-child {
-            border-bottom: none;
-        }
-        .btn-pay-now {
-            width: 100%;
-            padding: 13px 20px;
+        .btn-pay-primary {
+            padding: 11px 24px;
             background: #143825;
             border: 1px solid #143825;
             color: #ffffff;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 700;
+            text-decoration: none;
             cursor: pointer;
             border-radius: 0;
         }
-        .btn-pay-now:hover {
+        .btn-pay-primary:hover {
             background: #0d2b1b;
         }
-        @media (max-width: 820px) {
-            .checkout-grid {
-                grid-template-columns: 1fr;
-            }
+        .btn-pay-secondary {
+            padding: 10px 18px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border-radius: 0;
+        }
+        .btn-pay-secondary:hover {
+            background: #f1f5f9;
         }
     </style>
 </head>
@@ -86,117 +137,72 @@ $hasTax = (float) ($totals['tax_amount'] ?? 0) > 0 && ! empty($totals['tax_label
         <main class="dashboard-main-content">
             <header class="section-header">
                 <div class="section-header-title">
-                    <h2>Order Review &amp; Stripe Checkout</h2>
-                    <p>Review your Reusable Marketplace order details below before proceeding to Stripe's secure payment page.</p>
+                    <h2>Payment Information</h2>
+                    <p>Review your order summary and complete payment.</p>
                 </div>
             </header>
 
             <?php if (session('status')): ?>
-                <div style="background:#eef6ed;border:1px solid #b9dec0;border-left:3px solid #176b40;color:#143825;padding:12px 18px;font-size:13px;margin-bottom:18px;font-weight:600;">
+                <div style="max-width:640px;background:#eef6ed;border:1px solid #b9dec0;border-left:3px solid #176b40;color:#143825;padding:12px 16px;font-size:13px;margin-bottom:18px;font-weight:600;">
                     <?= e(session('status')) ?>
                 </div>
             <?php endif; ?>
 
             <?php if ($errors->any()): ?>
-                <div style="background:#fff5f4;border:1px solid #fed7d2;border-left:3px solid #b91c1c;color:#b91c1c;padding:12px 18px;font-size:13px;margin-bottom:18px;font-weight:600;">
+                <div style="max-width:640px;background:#fff5f4;border:1px solid #fed7d2;border-left:3px solid #b91c1c;color:#b91c1c;padding:12px 16px;font-size:13px;margin-bottom:18px;font-weight:600;">
                     <?= e($errors->first()) ?>
                 </div>
             <?php endif; ?>
 
-            <div class="checkout-grid">
-                <!-- Left: Order & Seller Summary -->
-                <div style="display:flex;flex-direction:column;gap:18px;">
-                    <div class="checkout-box">
-                        <div class="checkout-box-header">Order Details &middot; <?= e($orderRef) ?></div>
-                        <div class="checkout-box-body">
-                            <div class="checkout-row">
-                                <span>Material Name</span>
-                                <strong style="color:#0f172a;"><?= e($item?->name ?: ($item?->title ?: 'Material')) ?></strong>
-                            </div>
-                            <?php if (! empty($item?->category)): ?>
-                                <div class="checkout-row">
-                                    <span>Category</span>
-                                    <span><?= e($item->category) ?></span>
-                                </div>
-                            <?php endif; ?>
-                            <?php if (! empty($item?->description)): ?>
-                                <div class="checkout-row" style="flex-direction:column;gap:4px;">
-                                    <span>Description</span>
-                                    <span style="color:#475569;font-size:12.5px;line-height:1.5;"><?= e($item->description) ?></span>
-                                </div>
-                            <?php endif; ?>
-                            <div class="checkout-row">
-                                <span>Quantity</span>
-                                <strong><?= e($qtyFormatted) ?> <?= e($exchange->unit) ?></strong>
-                            </div>
-                            <div class="checkout-row">
-                                <span>Unit Price</span>
-                                <strong>RM <?= number_format((float) $unitPrice, 2) ?></strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="checkout-box">
-                        <div class="checkout-box-header">Seller Information</div>
-                        <div class="checkout-box-body" style="font-size:13px;color:#334155;line-height:1.6;">
-                            <strong style="display:block;font-size:14px;color:#0f172a;margin-bottom:4px;"><?= e($sellerSnap['business_name'] ?? 'Seller Business') ?></strong>
-                            <?php if (! empty($sellerSnap['registration_number'])): ?>
-                                <div>SSM Reg. No: <strong><?= e($sellerSnap['registration_number']) ?></strong></div>
-                            <?php endif; ?>
-                            <?php if (! empty($sellerSnap['address'])): ?>
-                                <div><?= e($sellerSnap['address']) ?></div>
-                            <?php endif; ?>
-                            <?php if (! empty($sellerSnap['phone'])): ?>
-                                <div>Tel: <?= e($sellerSnap['phone']) ?></div>
-                            <?php endif; ?>
-                            <?php if (! empty($sellerSnap['email'])): ?>
-                                <div>Email: <?= e($sellerSnap['email']) ?></div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+            <div class="pay-card">
+                <div class="pay-card-header">
+                    <strong style="font-size:15px;">Order Payment Summary</strong>
+                    <span style="font-size:12px;color:#cde0d3;"><?= e($exchange->resolvedOrderReference()) ?></span>
                 </div>
 
-                <!-- Right: Payment Summary & Pay Now -->
-                <div class="checkout-box" style="align-self:start;">
-                    <div class="checkout-box-header">Payment Summary (MYR)</div>
-                    <div class="checkout-box-body">
-                        <div class="checkout-row">
-                            <span>Subtotal</span>
-                            <strong>RM <?= number_format((float) $totals['subtotal'], 2) ?></strong>
-                        </div>
-                        <?php if ($hasTax): ?>
-                            <div class="checkout-row">
-                                <span><?= e($totals['tax_label']) ?> (<?= number_format((float) $totals['tax_rate'], 2) ?>%)</span>
-                                <strong>RM <?= number_format((float) $totals['tax_amount'], 2) ?></strong>
-                            </div>
-                        <?php endif; ?>
-                        <div style="margin:14px 0 18px;padding:14px;background:#eef6ed;border:1px solid #b9dec0;display:flex;justify-content:space-between;align-items:center;">
-                            <strong style="font-size:13px;color:#143825;">TOTAL PAYABLE</strong>
-                            <strong style="font-size:20px;color:#143825;">RM <?= number_format((float) $totals['total'], 2) ?></strong>
-                        </div>
+                <div class="pay-card-body">
+                    <table class="pay-table">
+                        <tbody>
+                            <tr>
+                                <th>Item</th>
+                                <td><?= e($itemDisplay) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Type</th>
+                                <td><?= e($typeLabel) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Total</th>
+                                <td style="font-size:17px;font-weight:800;color:#143825;"><?= e($totalDisplay) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td><span class="status-tag <?= $statusClass ?>"><?= e($statusLabel) ?></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
 
-                        <?php if ($exchange->requiresStripePayment()): ?>
-                            <form method="POST" action="<?= route('business.payments.stripe.checkout', $exchange) ?>" style="margin:0 0 14px;">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn-pay-now">
-                                    Pay Now (RM <?= number_format((float) $totals['total'], 2) ?>)
-                                </button>
-                            </form>
-                        <?php else: ?>
-                            <div style="padding:12px;background:#f8fafc;border:1px solid #cbd5e1;font-size:12.5px;color:#475569;margin-bottom:14px;">
-                                This order does not require Stripe Checkout payment.
-                            </div>
-                        <?php endif; ?>
+                    <div class="pay-actions">
+                        <a href="<?= route('business.invoices.index') ?>" class="btn-pay-secondary">
+                            &larr; Transaction History
+                        </a>
 
-                        <div style="padding:12px;background:#f8fafc;border:1px solid #cbd5e1;font-size:11.5px;color:#475569;line-height:1.55;">
-                            <strong style="display:block;color:#1e293b;margin-bottom:4px;">Stripe Test Mode &amp; Payment Security</strong>
-                            You will be redirected to Stripe's hosted checkout page. EcoCycle never stores card numbers or CVCs. Payments are collected by EcoCycle's Stripe test account in MYR, and your order is marked Paid with a downloadable PDF invoice once Stripe's webhook signature is verified.
-                        </div>
-
-                        <div style="margin-top:14px;">
-                            <a href="<?= route('business.invoices.index', ['tab' => 'orders']) ?>" style="display:block;text-align:center;padding:9px 14px;border:1px solid #cbd5e1;color:#334155;text-decoration:none;font-size:12.5px;font-weight:600;">
-                                Back to My Orders
-                            </a>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <?php if (! $isFree && $exchange->requiresStripePayment() && $rawStatus !== 'paid'): ?>
+                                <form method="POST" action="<?= route('business.payments.stripe.checkout', $exchange) ?>" style="margin:0;">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn-pay-primary">
+                                        Pay Now (<?= e($totalDisplay) ?>)
+                                    </button>
+                                </form>
+                            <?php elseif ($exchange->invoice): ?>
+                                <a href="<?= route('business.invoices.show', $exchange->invoice) ?>" class="btn-pay-secondary">
+                                    View Receipt
+                                </a>
+                                <a href="<?= route('business.invoices.pdf', $exchange->invoice) ?>" class="btn-pay-primary">
+                                    Download PDF
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

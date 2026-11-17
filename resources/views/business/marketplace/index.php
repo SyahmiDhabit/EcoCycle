@@ -21,9 +21,9 @@ $business = $business ?? Auth::guard()->user();
 $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
 $myListingsOnly = $myListingsOnly ?? request()->boolean('my_listings');
 $currentTab = $currentTab ?? (request('tab') ?: ($myListingsOnly ? 'my_listings' : 'reusable'));
-$reusableCount = $reusableCount ?? MarketplaceListing::where('reusability', 'reusable')->whereIn('status', ['active', 'in_stock', 'low_stock'])->where('quantity', '>', 0)->count();
-$nonReusableCount = $nonReusableCount ?? MarketplaceListing::where('reusability', 'not_reusable')->whereIn('status', ['active', 'in_stock', 'low_stock'])->where('quantity', '>', 0)->count();
-$myListingsCount = $myListingsCount ?? ($business ? $business->marketplaceListings()->whereIn('status', ['active', 'in_stock', 'low_stock'])->where('quantity', '>', 0)->count() : 0);
+$reusableCount = $reusableCount ?? MarketplaceListing::where('reusability', 'reusable')->where('status', 'active')->where('quantity', '>', 0)->count();
+$nonReusableCount = $nonReusableCount ?? MarketplaceListing::where('reusability', 'not_reusable')->where('status', 'active')->where('quantity', '>', 0)->count();
+$myListingsCount = $myListingsCount ?? ($business ? $business->marketplaceListings()->where('status', 'active')->where('quantity', '>', 0)->count() : 0);
 $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 ?>
 <!doctype html>
@@ -450,7 +450,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <h1><?= $currentTab === 'non_reusable' ? 'Non-reusable items category' : ($myListingsOnly ? 'My marketplace listings' : 'Reusable materials marketplace') ?></h1>
                     <p><?= $currentTab === 'non_reusable' 
                         ? 'Industrial scrap, single-use residues, and manufacturing cutoffs separated from the normal reusable marketplace. Forward items directly to <strong>EcoCycle Helper</strong> for circular upcycling advice or find matching certified recyclers.' 
-                        : 'Exchange, claim, or source secondary materials directly from verified Malaysian SMEs. Reusable listings support <strong>Sell</strong> and <strong>Free</strong>.' ?></p>
+                        : 'Purchase or claim reusable materials directly from verified Malaysian SMEs. Marketplace listings support <strong>Sell</strong> and <strong>Free</strong>.' ?></p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                     <a href="/business/helper" class="btn-reset" style="display:inline-flex;align-items:center;gap:8px;">
@@ -780,7 +780,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             $invImg = $inv->getPrimaryImage() ? asset($inv->getPrimaryImage()) : 'https://placehold.co/120x120/e8f5e9/1b5e20?text='.urlencode(substr($inv->name, 0, 3));
                             $invAllImgs = json_encode($inv->getAllImages());
                             ?>
-                            <div class="inv-pick-card" onclick='selectInventoryItemForListing(<?= $inv->id ?>, <?= json_encode($inv->name) ?>, <?= json_encode($inv->category) ?>, <?= (float) $inv->quantity ?>, <?= json_encode($inv->unit) ?>, <?= json_encode($inv->description ?? '') ?>, <?= $invAllImgs ?>)'>
+                            <div class="inv-pick-card" onclick='selectInventoryItemForListing(<?= $inv->id ?>, <?= json_encode($inv->name) ?>, <?= json_encode($inv->category) ?>, <?= (float) $inv->quantity ?>, <?= json_encode($inv->unit) ?>, <?= json_encode($inv->description ?? '') ?>, <?= $invAllImgs ?>, <?= json_encode($inv->condition ?? 'Used') ?>)'>
                                 <div class="inv-pick-thumb">
                                     <img src="<?= e($invImg) ?>" alt="<?= e($inv->name) ?>">
                                 </div>
@@ -915,8 +915,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         </div>
 
                         <div class="form-group">
-                            <label for="create_unit">Unit *</label>
-                            <input type="text" id="create_unit" name="unit" required placeholder="units, kg, pcs">
+                            <label for="create_unit">Unit of Measurement *</label>
+                            <select id="create_unit" name="unit" required>
+                                <option value="">Select unit...</option>
+                                <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel) { ?>
+                                    <option value="<?= e($unitVal) ?>"><?= e($unitLabel) ?></option>
+                                <?php } ?>
+                            </select>
                         </div>
 
                         <div class="form-group" id="modal_price_group">
@@ -927,11 +932,11 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
                         <div class="form-group">
-                            <label for="create_condition">Material Condition</label>
-                            <select id="create_condition" name="condition">
-                                <option value="New">New</option>
-                                <option value="Used" selected>Used</option>
-                                <option value="Unused">Unused</option>
+                            <label for="create_condition">Material Condition *</label>
+                            <select id="create_condition" name="condition" required>
+                                <?php foreach (\App\Models\Item::ALLOWED_CONDITIONS as $condOpt) { ?>
+                                    <option value="<?= e($condOpt) ?>" <?= $condOpt === 'Used' ? 'selected' : '' ?>><?= e($condOpt) ?></option>
+                                <?php } ?>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1241,8 +1246,36 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.body.style.overflow = '';
     }
 
+    function normalizeMktCondition(rawCond) {
+        var val = (rawCond || '').trim();
+        if (val === 'New' || val === 'Damaged' || val === 'Used') return val;
+        var lower = val.toLowerCase();
+        if (lower.indexOf('damag') !== -1 || lower.indexOf('broken') !== -1) return 'Damaged';
+        if (lower.indexOf('new') !== -1 || lower.indexOf('unused') !== -1) return 'New';
+        return 'Used';
+    }
+
+    function setMktUnitValue(selectEl, rawUnit) {
+        if (!selectEl) return;
+        var val = (rawUnit || '').trim();
+        for (var i = 0; i < selectEl.options.length; i++) {
+            if (selectEl.options[i].value === val) {
+                selectEl.value = val;
+                return;
+            }
+        }
+        var lower = val.toLowerCase();
+        var map = {
+            'kg': 'kg', 'kilogram': 'kg', 'g': 'g', 'gram': 'g', 'l': 'L', 'litre': 'L', 'ml': 'mL',
+            'pcs': 'pcs', 'piece': 'pcs', 'pieces': 'pcs', 'unit': 'pcs', 'units': 'pcs',
+            'bag': 'Bag', 'bags': 'Bag', 'box': 'Box', 'boxes': 'Box', 't': 't', 'tonne': 't',
+            'm': 'm', 'metre': 'm', 'm2': 'm²', 'm²': 'm²', 'sqm': 'm²', 'm3': 'm³', 'm³': 'm³', 'cbm': 'm³'
+        };
+        selectEl.value = map[lower] || 'kg';
+    }
+
     // Step 2: Clicking an Item First Selects It & Pops Out Listing Modal
-    function selectInventoryItemForListing(id, name, cat, qty, unit, desc, images) {
+    function selectInventoryItemForListing(id, name, cat, qty, unit, desc, images, condition) {
         closeSelectInventoryModal();
 
         // Fill Form Fields
@@ -1250,7 +1283,10 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.getElementById('create_title').value = name;
         document.getElementById('create_category').value = cat;
         document.getElementById('create_quantity').value = qty;
-        document.getElementById('create_unit').value = unit;
+        setMktUnitValue(document.getElementById('create_unit'), unit);
+        if (document.getElementById('create_condition')) {
+            document.getElementById('create_condition').value = normalizeMktCondition(condition);
+        }
         document.getElementById('create_desc').value = desc || '';
 
         // Sourced from inventory banner
@@ -1422,8 +1458,8 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         <div class="modal-card" style="max-width:540px;">
             <div class="modal-header">
                 <div>
-                    <h3 id="order-modal-heading" style="margin:0;font-size:17px;color:#123321;">Request Material Exchange</h3>
-                    <small style="color:#526b5a;font-size:12px;">Initiate a verified circular exchange with this SME.</small>
+                    <h3 id="order-modal-heading" style="margin:0;font-size:17px;color:#123321;">Order Material</h3>
+                    <small style="color:#526b5a;font-size:12px;">Review quantity and total before completing your order.</small>
                 </div>
                 <button type="button" class="modal-close-btn" onclick="closeExchangeOrderModal()" aria-label="Close">&times;</button>
             </div>

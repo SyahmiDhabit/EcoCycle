@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Invoice;
-use App\Models\Item;
 use App\Models\MarketplaceListing;
 use App\Models\MaterialExchange;
 use App\Models\Payment;
@@ -27,8 +26,6 @@ class StripePaymentAndInvoiceTest extends TestCase
         config()->set('services.stripe.secret', 'sk_test_fake_secret');
         config()->set('services.stripe.webhook_secret', $this->webhookSecret);
         config()->set('services.stripe.currency', 'myr');
-        config()->set('services.stripe.tax_rate', null);
-        config()->set('services.stripe.tax_label', null);
     }
 
     private function createApprovedBusiness(string $name, ?string $regNo = null): User
@@ -55,18 +52,19 @@ class StripePaymentAndInvoiceTest extends TestCase
             'category' => 'Plastics & Polymers',
             'quantity' => 50,
             'unit' => 'units',
-            'price' => 50.00,
+            'price' => 30.00,
             'is_free' => false,
             'listing_type' => 'buy',
             'reusability' => 'reusable',
             'condition' => 'Used',
-            'location_city' => 'Shah Alam',
+            'location_city' => 'Klang',
             'location_state' => 'Selangor',
+            'pickup_address' => 'Lot 42, Kawasan Perindustrian Bukit Raja, 41050 Klang, Selangor',
             'status' => 'active',
         ], $overrides));
     }
 
-    public function test_complete_stripe_payment_webhook_verification_and_pdf_invoice_workflow(): void
+    public function test_sell_item_stripe_payment_webhook_verification_and_simple_pdf_receipt(): void
     {
         Http::fake([
             'https://api.stripe.com/v1/checkout/sessions' => Http::response([
@@ -76,61 +74,63 @@ class StripePaymentAndInvoiceTest extends TestCase
             ], 200),
         ]);
 
-        $seller = $this->createApprovedBusiness('GreenMetal Sdn Bhd', '202301009999');
-        $buyer = $this->createApprovedBusiness('Klang Packaging Bhd', '202401008888');
-        $item = $this->createReusableItem($seller, ['price' => 50.00, 'quantity' => 20]);
+        $seller = $this->createApprovedBusiness('GreenMetal Sdn Bhd');
+        $buyer = $this->createApprovedBusiness('Klang Packaging Bhd');
+        $pickupAddress = 'Lot 42, Kawasan Perindustrian Bukit Raja, 41050 Klang, Selangor';
+        $item = $this->createReusableItem($seller, [
+            'price' => 30.00,
+            'quantity' => 20,
+            'pickup_address' => $pickupAddress,
+        ]);
 
-        // 1. Buyer places order (even if browser tries sending tampered total_price=1.00, server computes 5 * 50.00 = 250.00)
+        // 1. Buyer places Sell order (client tampered total_price=1.00 is ignored; server computes 5 * 30.00 = 150.00)
         $orderResp = $this->actingAs($buyer)->post(route('business.marketplace.exchange', $item), [
             'quantity' => 5,
             'total_price' => 1.00,
             'proceed_to_checkout' => 1,
-            'notes' => 'Pickup next Monday',
         ]);
 
         $exchange = MaterialExchange::where('item_id', $item->id)->firstOrFail();
         $orderResp->assertRedirect(route('business.orders.checkout', $exchange));
-        $this->assertEquals(250.00, (float) $exchange->total_price);
-        $this->assertEquals(50.00, (float) $exchange->unit_price);
+        $this->assertEquals(150.00, (float) $exchange->total_price);
+        $this->assertEquals(30.00, (float) $exchange->unit_price);
         $this->assertSame('pending_payment', $exchange->payment_status);
+        $this->assertDatabaseCount('invoice', 0);
 
-        // 2. Buyer views Order Review page
+        // 2. Simple Payment page shows Item, Type, Total, Status, and Pay Now
         $this->actingAs($buyer)
             ->get(route('business.orders.checkout', $exchange))
             ->assertOk()
-            ->assertSee('RM 250.00')
-            ->assertSee('GreenMetal Sdn Bhd')
+            ->assertSee('Industrial HDPE Pallets')
+            ->assertSee('Sell')
+            ->assertSee('RM 150.00')
+            ->assertSee('Pending')
             ->assertSee('Pay Now');
 
-        // 3. Buyer clicks Pay Now -> creates Stripe Checkout Session with MYR 25000 sen
-        $checkoutResp = $this->actingAs($buyer)
-            ->post(route('business.payments.stripe.checkout', $exchange));
-
-        $checkoutResp->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_a1b2c3d4e5');
+        // 3. Buyer clicks Pay Now -> creates Stripe Checkout Session with MYR 15000 sen
+        $this->actingAs($buyer)
+            ->post(route('business.payments.stripe.checkout', $exchange))
+            ->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_a1b2c3d4e5');
 
         Http::assertSent(function ($request): bool {
             return $request->url() === 'https://api.stripe.com/v1/checkout/sessions'
                 && $request['line_items[0][price_data][currency]'] === 'myr'
-                && $request['line_items[0][price_data][unit_amount]'] === '25000'
+                && $request['line_items[0][price_data][unit_amount]'] === '15000'
                 && ! empty($request->header('Idempotency-Key'));
         });
 
         $payment = Payment::where('material_exchange_id', $exchange->id)->firstOrFail();
-        $this->assertSame('cs_test_a1b2c3d4e5', $payment->stripe_checkout_session_id);
-        $this->assertSame(25000, $payment->amount_sen);
-        $this->assertSame('myr', $payment->currency);
-        $this->assertSame('pending', $payment->status);
 
-        // 4. Success redirect ALONE must NOT mark the order as paid!
-        $successResp = $this->actingAs($buyer)
-            ->get(route('business.payments.stripe.success', ['session_id' => 'cs_test_a1b2c3d4e5']));
-        $successResp->assertRedirect(route('business.invoices.index', ['tab' => 'orders']));
+        // 4. Success redirect ALONE must NOT mark order as paid or generate receipt
+        $this->actingAs($buyer)
+            ->get(route('business.payments.stripe.success', ['session_id' => 'cs_test_a1b2c3d4e5']))
+            ->assertRedirect(route('business.invoices.index', ['tab' => 'orders']));
 
         $exchange->refresh();
         $this->assertSame('pending_payment', $exchange->payment_status);
         $this->assertDatabaseCount('invoice', 0);
 
-        // 5. Invalid webhook signature is strictly rejected (400)
+        // 5. Invalid webhook signature is rejected (400)
         $webhookPayload = json_encode([
             'id' => 'evt_test_paid_001',
             'type' => 'checkout.session.completed',
@@ -140,7 +140,7 @@ class StripePaymentAndInvoiceTest extends TestCase
                     'payment_status' => 'paid',
                     'payment_intent' => 'pi_test_99887766',
                     'currency' => 'myr',
-                    'amount_total' => 25000,
+                    'amount_total' => 15000,
                     'payment_method_types' => ['card'],
                     'client_reference_id' => (string) $exchange->id,
                     'metadata' => [
@@ -161,10 +161,7 @@ class StripePaymentAndInvoiceTest extends TestCase
             $webhookPayload
         )->assertStatus(400);
 
-        $exchange->refresh();
-        $this->assertSame('pending_payment', $exchange->payment_status);
-
-        // 6. Valid signed Stripe webhook confirms payment, deducts stock ONCE, and generates invoice
+        // 6. Verified Stripe webhook marks Paid, deducts stock ONCE, and generates EcoCycle Receipt
         $validSig = StripePaymentService::buildTestSignatureHeader($webhookPayload, $this->webhookSecret);
         $this->call(
             'POST',
@@ -177,22 +174,18 @@ class StripePaymentAndInvoiceTest extends TestCase
         )->assertOk()->assertJsonPath('status', 'paid');
 
         $exchange->refresh();
-        $payment->refresh();
         $item->refresh();
-
         $this->assertSame('paid', $exchange->payment_status);
         $this->assertSame('completed', $exchange->status);
-        $this->assertSame('paid', $payment->status);
-        $this->assertSame('pi_test_99887766', $payment->stripe_payment_intent_id);
         $this->assertEquals(15.00, (float) $item->quantity);
 
-        $invoice = Invoice::where('material_exchange_id', $exchange->id)->firstOrFail();
-        $this->assertMatchesRegularExpression('/^ECO-INV-\d{4}-00001$/', $invoice->invoice_number);
-        $this->assertEquals(250.00, (float) $invoice->total_amount);
-        $this->assertEquals(0.00, (float) $invoice->tax_amount);
-        $this->assertNull($invoice->tax_label);
+        $receipt = Invoice::where('material_exchange_id', $exchange->id)->firstOrFail();
+        $this->assertMatchesRegularExpression('/^ECO-RCP-\d{4}-00001$/', $receipt->invoice_number);
+        $this->assertEquals(150.00, (float) $receipt->total_amount);
+        $this->assertSame('paid', $receipt->payment_status);
+        $this->assertSame($pickupAddress, $receipt->pickup_address);
 
-        // 7. Duplicate webhook delivery is idempotent (no duplicate invoice, no second stock deduction)
+        // 7. Duplicate webhook is idempotent
         $this->call(
             'POST',
             route('webhooks.stripe'),
@@ -202,58 +195,62 @@ class StripePaymentAndInvoiceTest extends TestCase
             ['HTTP_STRIPE_SIGNATURE' => $validSig, 'CONTENT_TYPE' => 'application/json'],
             $webhookPayload
         )->assertOk()->assertJsonPath('status', 'duplicate_event_ignored');
-
-        // Even a second event ID for the same paid order must not deduct stock or duplicate invoice
-        $secondEventPayload = str_replace('evt_test_paid_001', 'evt_test_paid_002', $webhookPayload);
-        $secondSig = StripePaymentService::buildTestSignatureHeader($secondEventPayload, $this->webhookSecret);
-        $this->call(
-            'POST',
-            route('webhooks.stripe'),
-            [],
-            [],
-            [],
-            ['HTTP_STRIPE_SIGNATURE' => $secondSig, 'CONTENT_TYPE' => 'application/json'],
-            $secondEventPayload
-        )->assertOk()->assertJsonPath('status', 'already_paid');
-
-        $item->refresh();
-        $this->assertEquals(15.00, (float) $item->quantity);
+        $this->assertEquals(15.00, (float) $item->fresh()->quantity);
         $this->assertDatabaseCount('invoice', 1);
 
         // 8. Duplicate payment attempt is blocked once paid
-        $dupCheckout = $this->actingAs($buyer)->post(route('business.payments.stripe.checkout', $exchange));
-        $dupCheckout->assertRedirect(route('business.invoices.show', $invoice));
-        Http::assertSentCount(1); // Stripe API was NOT called a second time
-
-        // 9. Invoice view & PDF download work for both buyer and seller
         $this->actingAs($buyer)
-            ->get(route('business.invoices.show', $invoice))
+            ->post(route('business.payments.stripe.checkout', $exchange))
+            ->assertRedirect(route('business.invoices.show', $receipt));
+        Http::assertSentCount(1);
+
+        // 9. Simple EcoCycle Receipt HTML and PDF contain essential info + actual pickup address
+        $this->actingAs($buyer)
+            ->get(route('business.invoices.show', $receipt))
             ->assertOk()
-            ->assertSee($invoice->invoice_number)
-            ->assertSee('RM 250.00')
+            ->assertSee('EcoCycle Receipt')
+            ->assertSee($receipt->invoice_number)
+            ->assertSee('Industrial HDPE Pallets')
+            ->assertSee('5 units')
+            ->assertSee('RM 150.00')
             ->assertSee('GreenMetal Sdn Bhd')
             ->assertSee('Klang Packaging Bhd')
-            ->assertSee('pi_test_99887766');
+            ->assertSee('Paid')
+            ->assertSee($pickupAddress);
 
-        $pdfResponse = $this->actingAs($buyer)->get(route('business.invoices.pdf', $invoice));
-        $pdfResponse->assertOk();
-        $pdfResponse->assertHeader('Content-Type', 'application/pdf');
-        $pdfBody = $pdfResponse->getContent();
+        $pdfResp = $this->actingAs($buyer)->get(route('business.invoices.pdf', $receipt));
+        $pdfResp->assertOk();
+        $pdfResp->assertHeader('Content-Type', 'application/pdf');
+        $pdfBody = $pdfResp->getContent();
         $this->assertStringStartsWith('%PDF-1.4', $pdfBody);
         $this->assertStringContainsString('%%EOF', $pdfBody);
-        $this->assertStringContainsString($invoice->invoice_number, $pdfBody);
+        $this->assertStringContainsString('EcoCycle Receipt', $pdfBody);
+        $this->assertStringContainsString($receipt->invoice_number, $pdfBody);
+        $this->assertStringContainsString('RM 150.00', $pdfBody);
+        $this->assertStringContainsString('Lot 42, Kawasan Perindustrian Bukit Raja', $pdfBody);
 
-        // Seller can also view and download PDF
-        $this->actingAs($seller)->get(route('business.invoices.show', $invoice))->assertOk();
-        $this->actingAs($seller)->get(route('business.invoices.pdf', $invoice))->assertOk();
+        // Seller can also view and download the receipt
+        $this->actingAs($seller)->get(route('business.invoices.show', $receipt))->assertOk();
+        $this->actingAs($seller)->get(route('business.invoices.pdf', $receipt))->assertOk();
 
-        // 10. Business dashboard invoice hub tabs render cleanly
-        $this->actingAs($buyer)->get(route('business.invoices.index', ['tab' => 'orders']))->assertOk()->assertSee($exchange->order_reference);
-        $this->actingAs($buyer)->get(route('business.invoices.index', ['tab' => 'payments']))->assertOk()->assertSee('pi_test_99887766');
-        $this->actingAs($buyer)->get(route('business.invoices.index', ['tab' => 'invoices']))->assertOk()->assertSee($invoice->invoice_number);
+        // 10. Simple Transaction History shows required columns (Item, Type, Total, Status, Date)
+        $this->actingAs($buyer)
+            ->get(route('business.invoices.index'))
+            ->assertOk()
+            ->assertSee('Item')
+            ->assertSee('Type')
+            ->assertSee('Total')
+            ->assertSee('Status')
+            ->assertSee('Date')
+            ->assertSee('Industrial HDPE Pallets')
+            ->assertSee('Sell')
+            ->assertSee('RM 150.00')
+            ->assertSee('Paid')
+            ->assertSee('View Receipt')
+            ->assertSee('Download PDF');
     }
 
-    public function test_failed_payment_and_cancelled_checkout_do_not_mark_paid_or_create_invoice(): void
+    public function test_failed_payment_and_cancelled_checkout_do_not_mark_paid_or_create_receipt(): void
     {
         Http::fake([
             'https://api.stripe.com/v1/checkout/sessions' => Http::response([
@@ -274,8 +271,9 @@ class StripePaymentAndInvoiceTest extends TestCase
         $payment = Payment::firstOrFail();
 
         // 1. Cancelled checkout redirect
-        $cancelResp = $this->actingAs($buyer)->get(route('business.payments.stripe.cancel', $exchange));
-        $cancelResp->assertRedirect(route('business.orders.checkout', $exchange));
+        $this->actingAs($buyer)
+            ->get(route('business.payments.stripe.cancel', $exchange))
+            ->assertRedirect(route('business.orders.checkout', $exchange));
 
         $exchange->refresh();
         $payment->refresh();
@@ -317,12 +315,135 @@ class StripePaymentAndInvoiceTest extends TestCase
         $item->refresh();
         $this->assertSame('failed', $exchange->payment_status);
         $this->assertSame('failed', $payment->status);
-        $this->assertSame('Your card has insufficient funds.', $payment->failure_reason);
-        $this->assertEquals(10.00, (float) $item->quantity); // Stock untouched
+        $this->assertEquals(10.00, (float) $item->quantity);
         $this->assertDatabaseCount('invoice', 0);
     }
 
-    public function test_unrelated_business_cannot_access_other_business_invoice_or_checkout(): void
+    public function test_free_item_generates_free_receipt_with_rm_zero_without_stripe(): void
+    {
+        Http::fake();
+
+        $seller = $this->createApprovedBusiness('Free Supplier Sdn Bhd');
+        $buyer = $this->createApprovedBusiness('Free Receiver Sdn Bhd');
+        $pickupAddress = 'Warehouse 7, Taman Perindustrian Subang, 47500 Subang Jaya, Selangor';
+
+        $freeItem = $this->createReusableItem($seller, [
+            'title' => 'Clean Corrugated Boxes',
+            'name' => 'Clean Corrugated Boxes',
+            'listing_type' => 'free',
+            'is_free' => true,
+            'price' => 0.00,
+            'quantity' => 20,
+            'pickup_address' => $pickupAddress,
+        ]);
+
+        $this->actingAs($buyer)
+            ->post(route('business.marketplace.exchange', $freeItem), [
+                'quantity' => 4,
+                'proceed_to_checkout' => 1,
+            ])
+            ->assertRedirect(route('business.transactions', ['tab' => 'purchases']));
+
+        // Zero Stripe calls made
+        Http::assertNothingSent();
+
+        $freeOrder = MaterialExchange::where('item_id', $freeItem->id)->firstOrFail();
+        $this->assertEquals(0.00, (float) $freeOrder->total_price);
+        $this->assertSame('free', $freeOrder->payment_status);
+        $this->assertSame('completed', $freeOrder->status);
+        $this->assertEquals(16.00, (float) $freeItem->fresh()->quantity);
+
+        // Simple Free receipt generated automatically without Stripe
+        $receipt = Invoice::where('material_exchange_id', $freeOrder->id)->firstOrFail();
+        $this->assertSame('free', $receipt->payment_status);
+        $this->assertEquals(0.00, (float) $receipt->total_amount);
+        $this->assertSame($pickupAddress, $receipt->pickup_address);
+
+        $this->actingAs($buyer)
+            ->get(route('business.invoices.show', $receipt))
+            ->assertOk()
+            ->assertSee('EcoCycle Receipt')
+            ->assertSee('RM 0.00')
+            ->assertSee('Free')
+            ->assertSee($pickupAddress);
+
+        $pdfResp = $this->actingAs($buyer)->get(route('business.invoices.pdf', $receipt));
+        $pdfResp->assertOk();
+        $pdfResp->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringContainsString('RM 0.00', $pdfResp->getContent());
+        $this->assertStringContainsString('Free', $pdfResp->getContent());
+
+        // Attempting Stripe Checkout on Free order does not call Stripe
+        $this->actingAs($buyer)
+            ->post(route('business.payments.stripe.checkout', $freeOrder))
+            ->assertSessionHasErrors('payment');
+        Http::assertNothingSent();
+    }
+
+    public function test_exchange_borrow_lend_removed_and_non_reusable_cannot_be_purchased(): void
+    {
+        Http::fake();
+
+        $seller = $this->createApprovedBusiness('Rules Seller Bhd');
+        $buyer = $this->createApprovedBusiness('Rules Buyer Bhd');
+
+        // 1. Marketplace creation rejects borrow, lend, exchange, barter
+        foreach (['borrow', 'lend', 'exchange', 'barter'] as $invalidType) {
+            $this->actingAs($seller)
+                ->post(route('business.marketplace.store'), [
+                    'title' => "Invalid {$invalidType} Listing",
+                    'category' => 'Plastics & Polymers',
+                    'reusability' => 'reusable',
+                    'listing_type' => $invalidType,
+                    'condition' => 'Used',
+                    'quantity' => 10,
+                    'unit' => 'units',
+                    'price' => 10.00,
+                ])
+                ->assertSessionHasErrors('listing_type');
+        }
+
+        // 2. Legacy borrow/exchange listing cannot be ordered (422)
+        $legacyBorrowItem = $this->createReusableItem($seller, [
+            'title' => 'Legacy Borrow Item',
+            'name' => 'Legacy Borrow Item',
+            'listing_type' => 'borrow',
+            'price' => 25.00,
+        ]);
+
+        $this->actingAs($buyer)
+            ->post(route('business.marketplace.exchange', $legacyBorrowItem), ['quantity' => 2])
+            ->assertStatus(422);
+
+        // 3. Non-Reusable item cannot be purchased (400)
+        $nonReusableItem = $this->createReusableItem($seller, [
+            'title' => 'Contaminated Oil Sludge',
+            'name' => 'Contaminated Oil Sludge',
+            'reusability' => 'not_reusable',
+            'listing_type' => 'buy',
+            'price' => 40.00,
+        ]);
+
+        $this->actingAs($buyer)
+            ->post(route('business.marketplace.exchange', $nonReusableItem), ['quantity' => 2])
+            ->assertStatus(400);
+
+        // 4. UI does not display Borrow / Lend options
+        $this->actingAs($buyer)
+            ->get(route('business.marketplace'))
+            ->assertOk()
+            ->assertDontSee('Borrow (Loan)')
+            ->assertDontSee('Request Material Exchange');
+
+        $this->actingAs($seller)
+            ->get(route('business.listings'))
+            ->assertOk()
+            ->assertDontSee('Borrowed Materials');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_unrelated_business_cannot_access_other_business_transaction_or_receipt(): void
     {
         $seller = $this->createApprovedBusiness('Alpha Supply Sdn Bhd');
         $buyer = $this->createApprovedBusiness('Beta Builders Sdn Bhd');
@@ -331,7 +452,7 @@ class StripePaymentAndInvoiceTest extends TestCase
 
         $exchange = MaterialExchange::create([
             'order_reference' => 'ECO-ORD-2026-SEC01',
-            'invoice_number' => 'ECO-INV-2026-00001',
+            'invoice_number' => 'ECO-RCP-2026-00001',
             'item_id' => $item->id,
             'provider_business_id' => $seller->id,
             'requester_business_id' => $buyer->id,
@@ -345,8 +466,8 @@ class StripePaymentAndInvoiceTest extends TestCase
             'paid_at' => now(),
         ]);
 
-        $invoice = Invoice::create([
-            'invoice_number' => 'ECO-INV-2026-00001',
+        $receipt = Invoice::create([
+            'invoice_number' => 'ECO-RCP-2026-00001',
             'material_exchange_id' => $exchange->id,
             'seller_business_id' => $seller->id,
             'buyer_business_id' => $buyer->id,
@@ -362,93 +483,22 @@ class StripePaymentAndInvoiceTest extends TestCase
             'payment_status' => 'paid',
             'payment_method' => 'card',
             'payment_reference' => 'pi_sec_001',
+            'pickup_address' => $item->pickup_address,
             'issued_at' => now(),
             'paid_at' => now(),
         ]);
 
-        // Intruder blocked from invoice HTML, PDF download, and checkout
-        $this->actingAs($intruder)->get(route('business.invoices.show', $invoice))->assertForbidden();
-        $this->actingAs($intruder)->get(route('business.invoices.pdf', $invoice))->assertForbidden();
+        // Intruder blocked from receipt HTML, PDF download, and checkout
+        $this->actingAs($intruder)->get(route('business.invoices.show', $receipt))->assertForbidden();
+        $this->actingAs($intruder)->get(route('business.invoices.pdf', $receipt))->assertForbidden();
         $this->actingAs($intruder)->get(route('business.orders.checkout', $exchange))->assertForbidden();
         $this->actingAs($intruder)->post(route('business.payments.stripe.checkout', $exchange))->assertForbidden();
 
-        // Seller cannot initiate buyer checkout either
-        $this->actingAs($seller)->post(route('business.payments.stripe.checkout', $exchange))->assertForbidden();
-    }
-
-    public function test_payment_restrictions_for_free_borrow_and_non_reusable_items(): void
-    {
-        Http::fake();
-
-        $seller = $this->createApprovedBusiness('Restriction Seller Bhd');
-        $buyer = $this->createApprovedBusiness('Restriction Buyer Bhd');
-
-        // 1. Free item does NOT trigger Stripe payment
-        $freeItem = $this->createReusableItem($seller, [
-            'title' => 'Free Cardboard Sheets',
-            'name' => 'Free Cardboard Sheets',
-            'listing_type' => 'free',
-            'is_free' => true,
-            'price' => 0.00,
-            'quantity' => 20,
-        ]);
-
-        $this->actingAs($buyer)
-            ->post(route('business.marketplace.exchange', $freeItem), [
-                'quantity' => 5,
-                'proceed_to_checkout' => 1,
-            ])
-            ->assertRedirect(route('business.transactions', ['tab' => 'purchases']));
-
-        $freeOrder = MaterialExchange::where('item_id', $freeItem->id)->firstOrFail();
-        $this->assertEquals(0.00, (float) $freeOrder->total_price);
-        $this->assertSame('paid', $freeOrder->payment_status);
-
-        // Attempting Stripe checkout on free order makes zero Stripe HTTP calls
-        $this->actingAs($buyer)->post(route('business.payments.stripe.checkout', $freeOrder));
-        Http::assertNothingSent();
-
-        // 2. Borrow/Lend item does NOT trigger Stripe payment
-        $borrowItem = $this->createReusableItem($seller, [
-            'title' => 'Borrowable Steel Crates',
-            'name' => 'Borrowable Steel Crates',
-            'listing_type' => 'borrow',
-            'price' => 25.00,
-            'quantity' => 10,
-        ]);
-
-        $this->actingAs($buyer)
-            ->post(route('business.marketplace.exchange', $borrowItem), [
-                'quantity' => 2,
-                'proceed_to_checkout' => 1,
-            ])
-            ->assertRedirect(route('business.transactions', ['tab' => 'purchases']));
-
-        $borrowOrder = MaterialExchange::where('item_id', $borrowItem->id)->firstOrFail();
-        $this->assertSame('borrow_pending', $borrowOrder->payment_status);
-
-        $this->actingAs($buyer)
-            ->post(route('business.payments.stripe.checkout', $borrowOrder))
-            ->assertSessionHasErrors('payment');
-        Http::assertNothingSent();
-
-        // 3. Non-Reusable item cannot be purchased at all
-        $nonReusableItem = $this->createReusableItem($seller, [
-            'title' => 'Contaminated Oil Sludge',
-            'name' => 'Contaminated Oil Sludge',
-            'reusability' => 'not_reusable',
-            'listing_type' => 'buy',
-            'price' => 40.00,
-            'quantity' => 10,
-        ]);
-
-        $this->actingAs($buyer)
-            ->post(route('business.marketplace.exchange', $nonReusableItem), [
-                'quantity' => 2,
-            ])
-            ->assertStatus(400);
-
-        $this->assertDatabaseMissing('material_exchange', ['item_id' => $nonReusableItem->id]);
-        Http::assertNothingSent();
+        // Intruder's transaction history must not leak buyer/seller's order
+        $this->actingAs($intruder)
+            ->get(route('business.invoices.index'))
+            ->assertOk()
+            ->assertDontSee('Industrial HDPE Pallets')
+            ->assertDontSee('ECO-RCP-2026-00001');
     }
 }

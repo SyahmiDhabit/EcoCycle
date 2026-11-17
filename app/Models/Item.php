@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'condition',
     'location_city',
     'location_state',
+    'pickup_address',
     'image_path',
     'image_1',
     'image_2',
@@ -35,6 +36,31 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Item extends Model
 {
     use HasFactory;
+
+    public const ALLOWED_CONDITIONS = [
+        'New',
+        'Damaged',
+        'Used',
+    ];
+
+    /**
+     * Canonical unit values mapped to dropdown display labels.
+     *
+     * @var array<string, string>
+     */
+    public const ALLOWED_UNITS = [
+        'kg' => 'Kilogram (kg)',
+        'g' => 'Gram (g)',
+        'L' => 'Litre (L)',
+        'mL' => 'Millilitre (mL)',
+        'pcs' => 'Piece (pcs)',
+        'Bag' => 'Bag',
+        'Box' => 'Box',
+        't' => 'Tonne (t)',
+        'm' => 'Metre (m)',
+        'm²' => 'Square Metre (m²)',
+        'm³' => 'Cubic Metre (m³)',
+    ];
 
     protected $table = 'item';
 

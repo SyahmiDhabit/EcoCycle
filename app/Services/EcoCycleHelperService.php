@@ -99,33 +99,101 @@ class EcoCycleHelperService
     }
 
     /**
-     * Classify an inventory material using Gemini AI (with image analysis) or fallback expert engine.
-     * Suggests:
-     * - Material category
-     * - Reusability classification (Reusable or Non-Reusable)
-     * - Reason for the classification
-     * - Recommended actions
-     * - Recycling & repurposing guidance
+     * Classify an inventory material using Gemini Multimodal AI with actual uploaded images.
      *
-     * @param string $name
-     * @param string $description
-     * @param float $quantity
-     * @param string $unit
-     * @param array<int, string|\Illuminate\Http\UploadedFile> $images
+     * @param  array<int, string|\Illuminate\Http\UploadedFile>  $images
      * @return array<string, mixed>
+     *
+     * @throws \RuntimeException
      */
-    public function classifyMaterial(string $name, string $description, float $quantity, string $unit, array $images = []): array
-    {
-        $geminiResult = null;
-        if (! empty(config('services.gemini.api_key'))) {
-            $geminiResult = $this->classifyWithGemini($name, $description, $quantity, $unit, $images);
+    public function classifyMaterial(
+        string $name,
+        string $description,
+        float $quantity,
+        string $unit,
+        array $images = [],
+        string $condition = 'Used'
+    ): array {
+        $imageParts = $this->extractInlineImageParts($images);
+
+        if (empty($imageParts)) {
+            throw new \RuntimeException('Uploaded material photos could not be processed. Please upload 1 to 3 valid images and retry analysis.');
         }
 
-        if ($geminiResult !== null) {
+        if (! empty(config('services.gemini.api_key'))) {
+            $geminiResult = $this->classifyWithGemini($name, $description, $quantity, $unit, $condition, $imageParts);
+            if ($geminiResult === null) {
+                throw new \RuntimeException('Material analysis failed while processing your images. Please try again.');
+            }
+
             return $geminiResult;
         }
 
-        return $this->classifyWithExpertEngine($name, $description, $quantity, $unit, $images);
+        return $this->classifyWithExpertEngine($name, $description, $quantity, $unit, $condition, count($imageParts));
+    }
+
+    /**
+     * Read and base64-encode up to 3 actual uploaded image files for Gemini multimodal inline_data.
+     * Deduplicates by file content hash so each image is sent only once.
+     *
+     * @param  array<int, string|\Illuminate\Http\UploadedFile>  $images
+     * @return array<int, array{inline_data: array{mime_type: string, data: string}}>
+     */
+    private function extractInlineImageParts(array $images): array
+    {
+        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+        $parts = [];
+        $seenHashes = [];
+
+        foreach (array_slice($images, 0, 3) as $img) {
+            $mimeType = null;
+            $binary = null;
+
+            if ($img instanceof \Illuminate\Http\UploadedFile && $img->isValid()) {
+                $realPath = $img->getRealPath();
+                if ($realPath && is_readable($realPath)) {
+                    $mimeType = $img->getMimeType() ?: 'image/jpeg';
+                    $binary = file_get_contents($realPath);
+                }
+            } elseif (is_string($img) && trim($img) !== '') {
+                $cleanPath = ltrim(parse_url($img, PHP_URL_PATH) ?: $img, '/');
+                if (str_starts_with($cleanPath, 'storage/')) {
+                    $cleanPath = substr($cleanPath, 8);
+                }
+                if ($disk->exists($cleanPath)) {
+                    $mimeType = $disk->mimeType($cleanPath) ?: 'image/jpeg';
+                    $binary = $disk->get($cleanPath);
+                } elseif (file_exists(public_path($cleanPath))) {
+                    $mimeType = mime_content_type(public_path($cleanPath)) ?: 'image/jpeg';
+                    $binary = file_get_contents(public_path($cleanPath));
+                }
+            }
+
+            if (! is_string($binary) || $binary === '' || ! $mimeType || ! str_starts_with($mimeType, 'image/')) {
+                continue;
+            }
+
+            $hash = hash('sha256', $binary);
+            if (isset($seenHashes[$hash])) {
+                continue;
+            }
+            $seenHashes[$hash] = true;
+
+            $base64 = base64_encode($binary);
+            // Support up to ~5.5MB raw image (~7.5MB base64) per image
+            if (strlen($base64) > 7500000) {
+                continue;
+            }
+
+            $parts[] = [
+                'inline_data' => [
+                    'mime_type' => $mimeType,
+                    'data' => $base64,
+                ],
+            ];
+        }
+
+        return $parts;
     }
 
     /**
@@ -151,7 +219,7 @@ class EcoCycleHelperService
             $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
             try {
-                $response = Http::timeout(10)->post($endpoint, [
+                $response = Http::timeout(30)->post($endpoint, [
                     'contents' => [
                         [
                             'role' => 'user',
@@ -160,7 +228,8 @@ class EcoCycleHelperService
                     ],
                     'generationConfig' => [
                         'temperature' => $temperature,
-                        'maxOutputTokens' => 1500,
+                        'maxOutputTokens' => 2048,
+                        'responseMimeType' => 'application/json',
                     ],
                 ]);
 
@@ -185,32 +254,41 @@ class EcoCycleHelperService
     }
 
     /**
-     * Classify material using Gemini Multimodal AI
+     * Classify material using Gemini Multimodal AI with actual uploaded images and material details.
+     *
+     * @param  array<int, array{inline_data: array{mime_type: string, data: string}}>  $imageParts
      */
-    private function classifyWithGemini(string $name, string $description, float $quantity, string $unit, array $images = []): ?array
-    {
-        $imageCount = count($images);
+    private function classifyWithGemini(
+        string $name,
+        string $description,
+        float $quantity,
+        string $unit,
+        string $condition,
+        array $imageParts
+    ): ?array {
+        $imageCount = count($imageParts);
         $prompt = <<<PROMPT
 You are an industrial circular economy specialist and material waste auditor in Malaysia.
-Analyze the uploaded photo(s) together with the material details submitted by a business:
+Visually inspect ALL {$imageCount} attached material photo(s) together with the submitted material details:
 
 Material Name: {$name}
 Description: {$description}
 Quantity: {$quantity} {$unit}
-Image Count: {$imageCount}
+Material Condition: {$condition}
+Uploaded Photos Attached: {$imageCount}
 
-Evaluate this material thoroughly (note: names and descriptions may be in English or Bahasa Malaysia):
+Evaluate this material thoroughly using BOTH the visual evidence from the attached photo(s) AND the text details (note: names and descriptions may be in English or Bahasa Malaysia):
 1. Dynamic Material Category:
-   - Identify the most accurate, concise, professional material category directly from the visual evidence in the photo(s), the material name, and the description.
+   - Identify the most accurate, concise, professional material category directly from what you see in the photo(s) together with the material name and description.
    - DO NOT restrict yourself to a fixed list and DO NOT default to "Other" when the material can be identified.
    - Use a clear Title Case category name (2 to 4 words, e.g., "Organic Food Waste", "Structural Steel", "Timber & Wood Pallets", "HDPE Plastic Containers", "Corrugated Cardboard Packaging", "Borosilicate Glass", "Cotton Fabric Offcuts", "Electronic Circuit Boards", "Rubber & Industrial Tyres", "Concrete & Masonry").
-   - Set "category_confidence" to "high" if the material is clearly identifiable, "medium" if reasonably identifiable with minor ambiguity, or "low" if the photo and text are too vague, unclear, or contradictory to identify confidently (in which case leave "suggested_category" as an empty string "").
+   - Set "category_confidence" to "high" if clearly identifiable, "medium" if reasonably identifiable, or "low" if the photos and text are too vague or contradictory to identify confidently (in which case leave "suggested_category" as "").
 
-2. Reusability classification:
-   - "reusable": If the material is structurally sound, clean, durable, multi-use, or can be directly reused, repurposed, or resold to other Malaysian businesses (e.g. wooden pallets, clean cardboard boxes, metal bars/sheets, working parts, surplus fabric rolls, reusable drums/containers).
-   - "not_reusable": If the material is single-use cutoffs, food/organic waste, contaminated, shredded, slag, sludge, hazardous waste, broken, or degraded scrap that cannot be directly reused without industrial recycling, smelting, granulation, composting, or licensed disposal.
+2. Reusability Classification (taking visual wear/damage and Material Condition "{$condition}" into account):
+   - "reusable": If the material visible in the photo(s) is structurally sound, clean, durable, multi-use, or can be directly reused, repurposed, or resold to other Malaysian businesses (e.g. intact wooden pallets, clean cardboard boxes, metal bars/sheets, working parts, surplus fabric rolls, reusable drums/containers).
+   - "not_reusable": If the material visible in the photo(s) is severely damaged/broken beyond reuse, single-use cutoffs, food/organic waste, contaminated, shredded, slag, sludge, hazardous waste, or degraded scrap that cannot be directly reused without industrial recycling, smelting, granulation, composting, or licensed disposal.
 
-3. Provide a clear, concise reason explaining both the identified category and why it is classified as Reusable or Non-Reusable.
+3. Provide a clear, concise reason referencing the observed material condition and visual state explaining why it is classified as Reusable or Non-Reusable.
 
 4. Provide 3 specific recommended next actions.
 
@@ -222,7 +300,7 @@ Return ONLY a valid JSON object matching this schema (no markdown backticks, no 
   "category_confidence": "high",
   "suggested_reusability": "reusable",
   "classification_label": "Reusable",
-  "reason": "Clear explanation of the identified material category and reusability classification",
+  "reason": "Clear explanation based on the photos, condition, and specifications",
   "recommended_actions": [
     "Recommended action 1",
     "Recommended action 2",
@@ -237,41 +315,10 @@ Return ONLY a valid JSON object matching this schema (no markdown backticks, no 
 }
 PROMPT;
 
-        $parts = [
-            ['text' => $prompt],
-        ];
-
-        // Attach image data if available
-        $disk = \Illuminate\Support\Facades\Storage::disk('public');
-        foreach (array_slice($images, 0, 3) as $img) {
-            $mimeType = null;
-            $data = null;
-            if ($img instanceof \Illuminate\Http\UploadedFile) {
-                $mimeType = $img->getMimeType() ?: 'image/jpeg';
-                $data = base64_encode(file_get_contents($img->getRealPath()));
-            } elseif (is_string($img)) {
-                $cleanPath = ltrim(parse_url($img, PHP_URL_PATH) ?: $img, '/');
-                if (str_starts_with($cleanPath, 'storage/')) {
-                    $cleanPath = substr($cleanPath, 8);
-                }
-                if ($disk->exists($cleanPath)) {
-                    $mimeType = $disk->mimeType($cleanPath) ?: 'image/jpeg';
-                    $data = base64_encode($disk->get($cleanPath));
-                } elseif (file_exists(public_path($cleanPath))) {
-                    $mimeType = mime_content_type(public_path($cleanPath)) ?: 'image/jpeg';
-                    $data = base64_encode(file_get_contents(public_path($cleanPath)));
-                }
-            }
-
-            if ($mimeType && $data && strlen($data) < 4000000) {
-                $parts[] = [
-                    'inline_data' => [
-                        'mime_type' => $mimeType,
-                        'data' => $data,
-                    ],
-                ];
-            }
-        }
+        $parts = array_merge(
+            [['text' => $prompt]],
+            $imageParts
+        );
 
         $rawResponse = $this->callGeminiMultimodal($parts, 0.2);
         if (empty($rawResponse)) {
@@ -291,6 +338,13 @@ PROMPT;
         $cleaned = trim($cleaned);
 
         $decoded = json_decode($cleaned, true);
+        if (! is_array($decoded)) {
+            $firstBrace = strpos($cleaned, '{');
+            $lastBrace = strrpos($cleaned, '}');
+            if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
+                $decoded = json_decode(substr($cleaned, $firstBrace, $lastBrace - $firstBrace + 1), true);
+            }
+        }
         if (! is_array($decoded)) {
             return null;
         }
@@ -337,16 +391,23 @@ PROMPT;
             'recycling_recommendations' => $decoded['recycling_recommendations'] ?? 'Recycle with certified recovery partners.',
             'repurposing_ideas' => (array) ($decoded['repurposing_ideas'] ?? []),
             'disposal_method' => $decoded['disposal_method'] ?? 'Divert from landfill into certified circular channels.',
+            'images_analyzed' => $imageCount,
             'ai_source' => 'Google Gemini AI',
         ];
     }
 
     /**
-     * Fallback expert engine for material classification when external AI is unavailable.
+     * Offline fallback engine used only when GEMINI_API_KEY is not configured.
      */
-    private function classifyWithExpertEngine(string $name, string $description, float $quantity, string $unit, array $images = []): array
-    {
-        $text = mb_strtolower($name . ' ' . $description);
+    private function classifyWithExpertEngine(
+        string $name,
+        string $description,
+        float $quantity,
+        string $unit,
+        string $condition = 'Used',
+        int $imageCount = 0
+    ): array {
+        $text = mb_strtolower($name . ' ' . $description . ' ' . $condition);
 
         // 1. Broad Multilingual Category Detection (English & Bahasa Malaysia) with strict word boundaries
         $category = '';
@@ -438,6 +499,7 @@ PROMPT;
             'recycling_recommendations' => $recycling,
             'repurposing_ideas' => $repurposing,
             'disposal_method' => $disposal,
+            'images_analyzed' => $imageCount,
             'ai_source' => 'EcoCycle Expert Engine',
         ];
     }

@@ -77,7 +77,7 @@
             <header class="section-header">
                 <div class="section-header-title">
                     <h2>My Published Listings &amp; Feedback</h2>
-                    <p>Track the status of your surplus materials, check items sold or borrowed, and review ratings and feedback from trading partners.</p>
+                    <p>Track the status of your reusable materials, view Sell and Free listings, and review feedback from partner businesses.</p>
                 </div>
                 <div>
                     <a href="/business/marketplace" class="btn-search" style="text-decoration:none;">
@@ -105,9 +105,9 @@
                     <small style="color:var(--text-muted);">Successful circular exchanges</small>
                 </div>
                 <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:16px 18px;border-left:3px solid #a16207;">
-                    <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Borrowed Materials</span>
-                    <div style="font-size:26px;font-weight:800;color:#a16207;font-family:var(--font-display);margin:4px 0;"><?= $totalBorrowed ?></div>
-                    <small style="color:var(--text-muted);">Under loan / deposit terms</small>
+                    <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Free Listings</span>
+                    <div style="font-size:26px;font-weight:800;color:#a16207;font-family:var(--font-display);margin:4px 0;"><?= (int) ($totalFree ?? 0) ?></div>
+                    <small style="color:var(--text-muted);">Available at RM 0.00</small>
                 </div>
                 <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:16px 18px;border-left:3px solid #b45309;">
                     <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Partner Rating</span>
@@ -129,8 +129,8 @@
                 <a href="/business/my-listings?status=sold" class="sidebar-link <?= $currentTab === 'sold' ? 'active' : '' ?>" style="display:inline-flex;padding:8px 14px;border:1px solid var(--card-border);border-radius:0;text-decoration:none;font-size:12.5px;font-weight:700;">
                     Sold / Claimed (<?= $totalSold ?>)
                 </a>
-                <a href="/business/my-listings?status=borrowed" class="sidebar-link <?= $currentTab === 'borrowed' ? 'active' : '' ?>" style="display:inline-flex;padding:8px 14px;border:1px solid var(--card-border);border-radius:0;text-decoration:none;font-size:12.5px;font-weight:700;">
-                    Borrowed (<?= $totalBorrowed ?>)
+                <a href="/business/my-listings?status=free" class="sidebar-link <?= $currentTab === 'free' ? 'active' : '' ?>" style="display:inline-flex;padding:8px 14px;border:1px solid var(--card-border);border-radius:0;text-decoration:none;font-size:12.5px;font-weight:700;">
+                    Free (<?= (int) ($totalFree ?? 0) ?>)
                 </a>
                 <a href="#reviews-section" style="margin-left:auto;color:#176b40;font-size:12.5px;font-weight:700;text-decoration:underline;">
                     View Feedback &amp; Reviews (<?= $totalReviewCount ?>)
@@ -156,8 +156,8 @@
                                     <?php endif; ?>
                                 </div>
                                 <div style="position:absolute;bottom:8px;left:8px;">
-                                    <span class="offer-pill <?= e($item->listing_type ?: 'buy') ?>" style="margin-left:0;">
-                                        <?= ucfirst($item->listing_type ?: 'buy') ?>
+                                    <span class="offer-pill <?= e($item->listing_type === 'free' ? 'free' : 'buy') ?>" style="margin-left:0;">
+                                        <?= $item->listing_type === 'free' ? 'Free' : 'Sell' ?>
                                     </span>
                                 </div>
                             </div>
@@ -219,7 +219,7 @@
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;border-bottom:1px solid var(--card-border);padding-bottom:12px;">
                     <div>
                         <h3 style="margin:0 0 4px;color:#123020;font-size:17px;">Customer Reviews &amp; Partner Feedback</h3>
-                        <p style="margin:0;font-size:12.5px;color:var(--text-secondary);">Feedback left by verified businesses who have inquired, purchased, or borrowed materials from you.</p>
+                        <p style="margin:0;font-size:12.5px;color:var(--text-secondary);">Feedback left by verified businesses who have purchased or claimed materials from you.</p>
                     </div>
                     <div style="text-align:right;">
                         <span class="rating-score" style="font-size:15px;"><?= $avgRating ?> / 5</span>
@@ -256,7 +256,7 @@
                     <div style="text-align:center;padding:32px 16px;">
                         <h4 style="margin:0 0 4px;color:#143825;font-size:15px;">No Reviews Yet</h4>
                         <p style="margin:0;font-size:12.5px;color:var(--text-secondary);">
-                            When other businesses complete purchases or borrow items from you, their ratings and circular feedback will appear here.
+                            When other businesses complete purchases or free claims from you, their ratings and feedback will appear here.
                         </p>
                     </div>
                 <?php endif; ?>

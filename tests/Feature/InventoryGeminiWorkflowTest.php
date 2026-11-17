@@ -3,10 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\MarketplaceListing;
 use App\Models\User;
-use App\Services\EcoCycleHelperService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -43,6 +44,43 @@ class InventoryGeminiWorkflowTest extends TestCase
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function fakeGeminiSuccess(array $overrides = []): void
+    {
+        config()->set('services.gemini.api_key', 'test-gemini-key');
+        config()->set('services.gemini.model', 'gemini-2.5-flash');
+
+        $payload = array_merge([
+            'suggested_category' => 'Solid Oak Timber Planks',
+            'category_confidence' => 'high',
+            'suggested_reusability' => 'reusable',
+            'classification_label' => 'Reusable',
+            'reason' => 'Visual inspection of the uploaded photos confirms structurally intact timber planks suitable for reuse.',
+            'recommended_actions' => [
+                'Store in dry inventory and publish to EcoCycle Marketplace for reuse.',
+            ],
+            'recycling_recommendations' => 'Chip damaged offcuts for composite board manufacturing.',
+            'repurposing_ideas' => ['Furniture joinery', 'Architectural cladding'],
+            'disposal_method' => 'Send clean offcuts to a licensed biomass recovery center.',
+        ], $overrides);
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    [
+                        'content' => [
+                            'parts' => [
+                                ['text' => json_encode($payload)],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+    }
+
     public function test_ai_analyze_endpoint_requires_approved_business(): void
     {
         $guestResponse = $this->postJson(route('business.inventory.ai-analyze'), []);
@@ -53,16 +91,28 @@ class InventoryGeminiWorkflowTest extends TestCase
         $pendingResponse->assertForbidden();
     }
 
-    public function test_ai_analyze_validates_required_fields_and_photo_limits(): void
+    public function test_ai_analyze_validates_required_fields_dropdowns_and_photo_limits(): void
     {
         $business = $this->createApprovedBusiness();
 
         // 1. Missing all fields
         $response = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), []);
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['name', 'description', 'quantity', 'unit', 'images']);
+        $response->assertJsonValidationErrors(['name', 'description', 'quantity', 'unit', 'condition', 'images']);
 
-        // 2. Exceeding 3 photos limit
+        // 2. Rejects free-text unit and invalid condition (must be dropdown values only)
+        $responseInvalidDropdowns = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Pine Wood Offcuts',
+            'description' => 'Clean untreated pine wood planks',
+            'quantity' => 10,
+            'unit' => 'custom_pallets',
+            'condition' => 'Unused',
+            'image_1' => UploadedFile::fake()->image('p1.jpg', 400, 400),
+        ]);
+        $responseInvalidDropdowns->assertStatus(422);
+        $responseInvalidDropdowns->assertJsonValidationErrors(['unit', 'condition']);
+
+        // 3. Exceeding 3 photos limit
         $excessPhotos = [
             UploadedFile::fake()->image('p1.jpg', 400, 400),
             UploadedFile::fake()->image('p2.jpg', 400, 400),
@@ -75,6 +125,7 @@ class InventoryGeminiWorkflowTest extends TestCase
             'description' => 'Clean untreated pine wood planks',
             'quantity' => 10,
             'unit' => 'kg',
+            'condition' => 'Used',
             'images' => $excessPhotos,
         ]);
 
@@ -82,21 +133,28 @@ class InventoryGeminiWorkflowTest extends TestCase
         $responseMax->assertJsonValidationErrors(['images']);
     }
 
-    public function test_ai_analyze_returns_gemini_analysis_and_saved_images(): void
+    public function test_ai_analyze_sends_actual_uploaded_images_and_condition_to_gemini(): void
     {
+        $this->fakeGeminiSuccess();
         $business = $this->createApprovedBusiness();
 
-        $images = [
-            UploadedFile::fake()->image('wood1.jpg', 500, 500),
-            UploadedFile::fake()->image('wood2.jpg', 500, 500),
-        ];
+        $img1 = UploadedFile::fake()->image('wood1.jpg', 500, 400);
+        $img2 = UploadedFile::fake()->image('wood2.png', 400, 500);
+        $img3 = UploadedFile::fake()->image('wood3.jpg', 450, 450);
+
+        $expectedBase64_1 = base64_encode((string) file_get_contents($img1->getRealPath()));
+        $expectedBase64_2 = base64_encode((string) file_get_contents($img2->getRealPath()));
+        $expectedBase64_3 = base64_encode((string) file_get_contents($img3->getRealPath()));
 
         $response = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
             'name' => 'Solid Oak Flooring Planks',
-            'description' => 'Reclaimed solid oak tongue-and-groove flooring planks, denailed and kiln dried. Excellent condition for furniture making.',
+            'description' => 'Reclaimed solid oak tongue-and-groove flooring planks, denailed and kiln dried.',
             'quantity' => 45,
-            'unit' => 'sqm',
-            'images' => $images,
+            'unit' => 'm²',
+            'condition' => 'Damaged',
+            'image_1' => $img1,
+            'image_2' => $img2,
+            'image_3' => $img3,
         ]);
 
         $response->assertOk();
@@ -108,88 +166,207 @@ class InventoryGeminiWorkflowTest extends TestCase
                 'classification_label',
                 'reason',
                 'recommended_actions',
+                'images_analyzed',
             ],
             'analysis_token',
             'saved_images',
+            'saved_image_slots',
             'item_data' => [
                 'name',
                 'description',
                 'quantity',
                 'unit',
+                'condition',
             ],
         ]);
 
         $data = $response->json();
         $this->assertTrue($data['success']);
-        $this->assertNotEmpty($data['analysis_token']);
-        $this->assertNotEmpty($data['saved_images']);
-        $this->assertCount(2, $data['saved_images']);
-        $this->assertContains($data['analysis']['suggested_reusability'], ['reusable', 'not_reusable']);
+        $this->assertSame(3, $data['analysis']['images_analyzed']);
+        $this->assertCount(3, $data['saved_images']);
+        $this->assertSame('m²', $data['item_data']['unit']);
+        $this->assertSame('Damaged', $data['item_data']['condition']);
+
+        // Assert the actual uploaded image binaries and condition were sent to Gemini (each image once, never URLs)
+        Http::assertSent(function (HttpClientRequest $request) use ($expectedBase64_1, $expectedBase64_2, $expectedBase64_3): bool {
+            $parts = $request->data()['contents'][0]['parts'] ?? [];
+            $textPart = '';
+            $inlineDatas = [];
+
+            foreach ($parts as $part) {
+                if (isset($part['text'])) {
+                    $textPart .= $part['text'];
+                }
+                if (isset($part['inline_data'])) {
+                    $inlineDatas[] = $part['inline_data'];
+                }
+            }
+
+            if (count($inlineDatas) !== 3) {
+                return false;
+            }
+
+            $sentBase64s = array_column($inlineDatas, 'data');
+
+            return str_contains($textPart, 'Material Condition: Damaged')
+                && str_contains($textPart, 'Quantity: 45 m²')
+                && str_contains($textPart, 'Solid Oak Flooring Planks')
+                && in_array($expectedBase64_1, $sentBase64s, true)
+                && in_array($expectedBase64_2, $sentBase64s, true)
+                && in_array($expectedBase64_3, $sentBase64s, true)
+                && count(array_unique($sentBase64s)) === 3;
+        });
     }
 
-    public function test_store_reusable_item_publishes_to_marketplace_and_redirects(): void
+    public function test_ai_analyze_returns_clear_error_when_gemini_fails_and_does_not_fake_success(): void
     {
-        $business = $this->createApprovedBusiness('Timber Solutions Bhd');
+        config()->set('services.gemini.api_key', 'test-gemini-key');
+        config()->set('services.gemini.model', 'gemini-2.5-flash');
 
-        $images = [
-            UploadedFile::fake()->image('pallet1.jpg', 600, 400),
-        ];
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response([
+                'error' => ['message' => 'Service unavailable'],
+            ], 503),
+        ]);
+
+        $business = $this->createApprovedBusiness();
+
+        $response = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Steel Sheet Offcuts',
+            'description' => 'Clean mild steel sheet metal offcuts.',
+            'quantity' => 50,
+            'unit' => 'kg',
+            'condition' => 'Used',
+            'image_1' => UploadedFile::fake()->image('steel.jpg', 500, 400),
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('success', false);
+        $this->assertNotEmpty($response->json('message'));
+        $this->assertEmpty(Storage::disk('public')->allFiles('inventory-images'));
+    }
+
+    public function test_add_inventory_saves_to_inventory_only_without_auto_publishing_to_marketplace(): void
+    {
+        $this->fakeGeminiSuccess([
+            'suggested_category' => 'Wooden Logistics Pallets',
+            'suggested_reusability' => 'reusable',
+        ]);
+
+        $business = $this->createApprovedBusiness('Timber Solutions Bhd');
+        $viewer = $this->createApprovedBusiness('Buyer Corp');
 
         $analysisResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
             'name' => 'Standard Heavy-Duty Wooden Pallets',
             'description' => 'Heavy duty standard euro wooden pallets in good structural condition.',
             'quantity' => 80,
-            'unit' => 'pallets',
-            'images' => $images,
+            'unit' => 'pcs',
+            'condition' => 'Used',
+            'image_1' => UploadedFile::fake()->image('pallet1.jpg', 600, 400),
         ]);
         $analysisResponse->assertOk();
-        $analysisToken = $analysisResponse->json('analysis_token');
-        $savedImages = $analysisResponse->json('saved_images');
 
-        $response = $this->actingAs($business)->post(route('business.inventory.store'), [
+        // Business confirms AI suggestion and clicks "Add to Inventory"
+        $storeResponse = $this->actingAs($business)->post(route('business.inventory.store'), [
             'name' => 'Standard Heavy-Duty Wooden Pallets',
             'description' => 'Heavy duty standard euro wooden pallets in good structural condition.',
             'quantity' => 80,
-            'unit' => 'pallets',
-            'reusability' => 'reusable',
-            'category' => 'Furniture & wood products',
-            'listing_type' => 'buy',
-            'price' => 18.50,
+            'unit' => 'pcs',
             'condition' => 'Used',
-            'available_quantity' => 80,
-            'pickup_location' => 'Shah Alam, Selangor',
-            'redirect_to' => 'marketplace',
-            'publish_to_marketplace' => 1,
-            'analysis_token' => $analysisToken,
-            'saved_images' => json_encode($savedImages),
+            'reusability' => 'reusable',
+            'category' => 'Wooden Logistics Pallets',
+            'redirect_to' => 'inventory',
+            'publish_to_marketplace' => 0,
+            'analysis_token' => $analysisResponse->json('analysis_token'),
+            'saved_image_slots' => json_encode($analysisResponse->json('saved_image_slots')),
         ]);
 
-        $response->assertRedirect(route('business.marketplace'));
-        $response->assertSessionHas('status');
+        // Redirects back to Inventory with simple success message
+        $storeResponse->assertRedirect(route('business.inventory'));
+        $storeResponse->assertSessionHas('status');
 
-        // Verify stored in singular item table as reusable
-        $this->assertDatabaseHas('item', [
-            'business_id' => $business->id,
-            'name' => 'Standard Heavy-Duty Wooden Pallets',
+        $item = InventoryItem::where('name', 'Standard Heavy-Duty Wooden Pallets')->firstOrFail();
+        $this->assertSame('reusable', $item->reusability);
+        $this->assertSame('pcs', $item->unit);
+        $this->assertSame('Used', $item->condition);
+        $this->assertSame('in_stock', $item->getRawOriginal('status'));
+        $this->assertNull($item->inventory_item_id);
+        $this->assertFalse($item->isPublishedToMarketplace());
+
+        // MUST NOT be automatically published to Marketplace
+        $this->flushSession();
+        $this->actingAs($viewer)
+            ->get(route('business.marketplace'))
+            ->assertOk()
+            ->assertViewHas('listings', fn ($listings): bool => ! $listings->contains('id', $item->id))
+            ->assertDontSee('Standard Heavy-Duty Wooden Pallets');
+
+        // Inventory page shows the separate Publish action for this unpublished reusable item
+        $this->actingAs($business)
+            ->get(route('business.inventory'))
+            ->assertOk()
+            ->assertSee('Standard Heavy-Duty Wooden Pallets')
+            ->assertSee('Publish');
+
+        // Separate explicit action: Business publishes this reusable item to Marketplace (Sell)
+        $publishResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'inventory_item_id' => $item->id,
+            'title' => 'Standard Heavy-Duty Wooden Pallets',
+            'description' => 'Heavy duty standard euro wooden pallets in good structural condition.',
+            'category' => 'Wooden Logistics Pallets',
+            'quantity' => 80,
+            'unit' => 'pcs',
+            'condition' => 'Used',
             'reusability' => 'reusable',
             'listing_type' => 'buy',
             'price' => 18.50,
-            'status' => 'active',
         ]);
+        $publishResponse->assertRedirect(route('business.marketplace'));
 
-        // Verify it is visible in marketplace
-        $marketplaceResponse = $this->actingAs($business)->get(route('business.marketplace'));
-        $marketplaceResponse->assertOk();
-        $marketplaceResponse->assertSee('Standard Heavy-Duty Wooden Pallets');
+        $item->refresh();
+        $this->assertTrue($item->isPublishedToMarketplace());
+
+        // Now visible on public Marketplace
+        $this->actingAs($viewer)
+            ->get(route('business.marketplace'))
+            ->assertOk()
+            ->assertSee('Standard Heavy-Duty Wooden Pallets');
     }
 
-    public function test_unanalysed_item_cannot_be_published_to_marketplace(): void
+    public function test_all_eleven_dropdown_units_and_three_conditions_are_accepted(): void
+    {
+        $business = $this->createApprovedBusiness('Dropdown Validation Bhd');
+
+        $this->assertSame(['New', 'Damaged', 'Used'], Item::ALLOWED_CONDITIONS);
+        $this->assertSame(
+            ['kg', 'g', 'L', 'mL', 'pcs', 'Bag', 'Box', 't', 'm', 'm²', 'm³'],
+            array_keys(Item::ALLOWED_UNITS)
+        );
+
+        foreach (['kg', 'm²', 'm³', 'Bag', 'Box', 't', 'L', 'mL'] as $unit) {
+            $response = $this->actingAs($business)->post(route('business.inventory.store'), [
+                'name' => "Material {$unit}",
+                'description' => 'Standardized measurement test material.',
+                'quantity' => 10,
+                'unit' => $unit,
+                'condition' => 'Damaged',
+                'reusability' => 'reusable',
+                'category' => 'Industrial Materials',
+                'image_1' => UploadedFile::fake()->image("img_{$unit}.jpg", 300, 300),
+            ]);
+            $response->assertRedirect(route('business.inventory'));
+            $response->assertSessionHasNoErrors();
+            $this->assertDatabaseHas('item', [
+                'name' => "Material {$unit}",
+                'unit' => $unit,
+                'condition' => 'Damaged',
+            ]);
+        }
+    }
+
+    public function test_unanalysed_item_cannot_be_published_directly_via_inventory_store(): void
     {
         $business = $this->createApprovedBusiness('Unanalysed Test Sdn Bhd');
-
-        $images = [
-            UploadedFile::fake()->image('pallet1.jpg', 600, 400),
-        ];
 
         $response = $this->actingAs($business)->post(route('business.inventory.store'), [
             'name' => 'Unanalysed Timber Lot',
@@ -205,7 +382,7 @@ class InventoryGeminiWorkflowTest extends TestCase
             'pickup_location' => 'Shah Alam, Selangor',
             'redirect_to' => 'marketplace',
             'publish_to_marketplace' => 1,
-            'images' => $images,
+            'images' => [UploadedFile::fake()->image('pallet1.jpg', 600, 400)],
         ]);
 
         $response->assertSessionHasErrors('analysis_token');
@@ -216,22 +393,23 @@ class InventoryGeminiWorkflowTest extends TestCase
 
     public function test_non_reusable_item_cannot_be_published_to_marketplace_even_with_manual_request(): void
     {
-        $business = $this->createApprovedBusiness('Scrap Control Bhd');
+        $this->fakeGeminiSuccess([
+            'suggested_category' => 'Contaminated Industrial Textiles',
+            'suggested_reusability' => 'not_reusable',
+            'classification_label' => 'Non-Reusable',
+        ]);
 
-        $images = [
-            UploadedFile::fake()->image('scrap1.jpg', 600, 400),
-        ];
+        $business = $this->createApprovedBusiness('Scrap Control Bhd');
 
         $analysisResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
             'name' => 'Contaminated Oily Rags',
             'description' => 'Used industrial rags soaked in machine oil.',
             'quantity' => 30,
             'unit' => 'kg',
-            'images' => $images,
+            'condition' => 'Damaged',
+            'image_1' => UploadedFile::fake()->image('scrap1.jpg', 600, 400),
         ]);
         $analysisResponse->assertOk();
-        $analysisToken = $analysisResponse->json('analysis_token');
-        $savedImages = $analysisResponse->json('saved_images');
 
         // Attempt to force publishing a Non-Reusable item to the Marketplace
         $response = $this->actingAs($business)->post(route('business.inventory.store'), [
@@ -240,14 +418,14 @@ class InventoryGeminiWorkflowTest extends TestCase
             'quantity' => 30,
             'unit' => 'kg',
             'reusability' => 'not_reusable',
-            'category' => 'Textiles & apparel',
+            'category' => 'Contaminated Industrial Textiles',
             'listing_type' => 'buy',
             'price' => 5.00,
-            'condition' => 'Used',
+            'condition' => 'Damaged',
             'redirect_to' => 'marketplace',
             'publish_to_marketplace' => 1,
-            'analysis_token' => $analysisToken,
-            'saved_images' => json_encode($savedImages),
+            'analysis_token' => $analysisResponse->json('analysis_token'),
+            'saved_images' => json_encode($analysisResponse->json('saved_images')),
         ]);
 
         $response->assertSessionHasErrors('reusability');
@@ -256,42 +434,39 @@ class InventoryGeminiWorkflowTest extends TestCase
         ]);
     }
 
-    public function test_store_non_reusable_item_forwards_to_ecocycle_helper(): void
+    public function test_store_non_reusable_item_stays_in_inventory_and_accessible_in_ecocycle_helper(): void
     {
         $business = $this->createApprovedBusiness('Metal Works Enterprise');
-
-        $images = [
-            UploadedFile::fake()->image('metal_shavings.jpg', 600, 400),
-        ];
 
         $response = $this->actingAs($business)->post(route('business.inventory.store'), [
             'name' => 'Mixed CNC Aluminium Swarf and Shavings',
             'description' => 'Fine machine cutting swarf contaminated with coolant fluid. Not reusable in current state.',
             'quantity' => 350,
             'unit' => 'kg',
+            'condition' => 'Damaged',
             'reusability' => 'not_reusable',
             'category' => 'Metal & fabrication',
-            'redirect_to' => 'helper',
+            'redirect_to' => 'inventory',
             'publish_to_marketplace' => 0,
-            'images' => $images,
+            'image_1' => UploadedFile::fake()->image('metal_shavings.jpg', 600, 400),
         ]);
 
-        // Verify item created
         $item = InventoryItem::where('name', 'Mixed CNC Aluminium Swarf and Shavings')->first();
         $this->assertNotNull($item);
         $this->assertEquals('not_reusable', $item->reusability);
+        $this->assertFalse($item->isPublishedToMarketplace());
 
-        // Verify redirection to EcoCycle Helper with item_id
-        $response->assertRedirect(route('business.helper', ['item_id' => $item->id]));
+        // Redirects back to Inventory
+        $response->assertRedirect(route('business.inventory'));
 
-        // Verify it does NOT appear in normal reusable marketplace listings
+        // Does NOT appear in normal reusable marketplace listings
         $marketplaceResponse = $this->actingAs($business)->get(route('business.marketplace'));
         $marketplaceResponse->assertOk();
         $marketplaceResponse->assertViewHas('listings', function ($listings) use ($item) {
             return ! $listings->contains('id', $item->id);
         });
 
-        // Verify it is accessible in EcoCycle Helper
+        // Accessible in EcoCycle Helper
         $helperResponse = $this->actingAs($business)->get(route('business.helper', ['item_id' => $item->id]));
         $helperResponse->assertOk();
         $helperResponse->assertSee('Mixed CNC Aluminium Swarf and Shavings');
@@ -302,14 +477,8 @@ class InventoryGeminiWorkflowTest extends TestCase
     {
         $business = $this->createApprovedBusiness();
 
-        // Simulate photos saved during aiAnalyze and valid analysis token
         Storage::disk('public')->put('inventory-images/pre_analyzed_1.jpg', 'fake-image-binary');
         $savedImages = ['/inventory-images/pre_analyzed_1.jpg'];
-        $analysisToken = \App\Http\Controllers\InventoryController::generateAnalysisToken(
-            $business->id,
-            'High Purity HDPE Granules',
-            200.0
-        );
 
         $response = $this->actingAs($business)->post(route('business.inventory.store'), [
             'name' => 'High Purity HDPE Granules',
@@ -318,41 +487,42 @@ class InventoryGeminiWorkflowTest extends TestCase
             'unit' => 'kg',
             'reusability' => 'reusable',
             'category' => 'Plastics & rubber',
-            'listing_type' => 'free',
-            'condition' => 'Unused',
-            'redirect_to' => 'marketplace',
-            'publish_to_marketplace' => 1,
-            'analysis_token' => $analysisToken,
+            'condition' => 'New',
+            'redirect_to' => 'inventory',
+            'publish_to_marketplace' => 0,
             'saved_images' => json_encode($savedImages),
         ]);
 
-        $response->assertRedirect(route('business.marketplace'));
+        $response->assertRedirect(route('business.inventory'));
 
         $this->assertDatabaseHas('item', [
             'name' => 'High Purity HDPE Granules',
             'reusability' => 'reusable',
+            'condition' => 'New',
+            'status' => 'in_stock',
             'image_path' => '/inventory-images/pre_analyzed_1.jpg',
         ]);
     }
 
     public function test_single_image_upload_after_ai_analysis_does_not_duplicate_into_image_2(): void
     {
+        $this->fakeGeminiSuccess(['suggested_category' => 'Structural Steel']);
         $business = $this->createApprovedBusiness('Single Slot Sdn Bhd');
 
         $photo = UploadedFile::fake()->image('single_photo.jpg', 500, 500);
 
         $analysisResponse = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
             'name' => 'Clean Steel Rods',
-            'description' => 'Unused mild steel rods stored indoors.',
+            'description' => 'New mild steel rods stored indoors.',
             'quantity' => 40,
             'unit' => 'kg',
+            'condition' => 'New',
             'image_1' => $photo,
         ]);
         $analysisResponse->assertOk();
 
         $savedImages = $analysisResponse->json('saved_images');
         $savedSlots = $analysisResponse->json('saved_image_slots');
-        $analysisToken = $analysisResponse->json('analysis_token');
 
         $this->assertCount(1, $savedImages);
         $this->assertNotNull($savedSlots[0]);
@@ -363,25 +533,20 @@ class InventoryGeminiWorkflowTest extends TestCase
         // the backend must NOT duplicate Image 1 into Image 2.
         $storeResponse = $this->actingAs($business)->post(route('business.inventory.store'), [
             'name' => 'Clean Steel Rods',
-            'description' => 'Unused mild steel rods stored indoors.',
+            'description' => 'New mild steel rods stored indoors.',
             'quantity' => 40,
             'unit' => 'kg',
             'reusability' => 'reusable',
             'category' => 'Structural Steel',
-            'listing_type' => 'buy',
-            'price' => 12.00,
             'condition' => 'New',
-            'available_quantity' => 40,
-            'pickup_location' => 'Shah Alam, Selangor',
-            'redirect_to' => 'marketplace',
-            'publish_to_marketplace' => 1,
-            'analysis_token' => $analysisToken,
+            'redirect_to' => 'inventory',
+            'publish_to_marketplace' => 0,
             'saved_images' => json_encode($savedImages),
             'saved_image_slots' => json_encode($savedSlots),
             'images' => [UploadedFile::fake()->image('single_photo.jpg', 500, 500)],
         ]);
 
-        $storeResponse->assertRedirect(route('business.marketplace'));
+        $storeResponse->assertRedirect(route('business.inventory'));
 
         $item = InventoryItem::where('name', 'Clean Steel Rods')->firstOrFail();
         $this->assertSame($savedSlots[0], $item->image_1);
@@ -401,7 +566,8 @@ class InventoryGeminiWorkflowTest extends TestCase
             'name' => 'Reclaimed Glass Sheets',
             'description' => 'Tempered clear glass panels.',
             'quantity' => 15,
-            'unit' => 'panels',
+            'unit' => 'm²',
+            'condition' => 'Used',
             'reusability' => 'reusable',
             'category' => 'Tempered Glass Panels',
             'image_1' => $img1,
@@ -423,7 +589,8 @@ class InventoryGeminiWorkflowTest extends TestCase
             'name' => 'Reclaimed Glass Sheets',
             'description' => 'Tempered clear glass panels.',
             'category' => 'Tempered Glass Panels',
-            'unit' => 'panels',
+            'unit' => 'm²',
+            'condition' => 'Used',
             'reusability' => 'reusable',
             'remove_image_1' => 1,
             'image_3' => $newImg3,
@@ -441,35 +608,12 @@ class InventoryGeminiWorkflowTest extends TestCase
 
     public function test_dynamic_ai_category_detection_preserves_gemini_category_without_hardcoded_override(): void
     {
-        config()->set('services.gemini.api_key', 'test-gemini-key');
-        config()->set('services.gemini.model', 'gemini-2.5-flash');
-
-        Http::fake([
-            'https://generativelanguage.googleapis.com/*' => Http::response([
-                'candidates' => [
-                    [
-                        'content' => [
-                            'parts' => [
-                                [
-                                    'text' => json_encode([
-                                        'suggested_category' => 'Borosilicate Laboratory Glass',
-                                        'category_confidence' => 'high',
-                                        'suggested_reusability' => 'reusable',
-                                        'classification_label' => 'Reusable',
-                                        'reason' => 'Intact heat-resistant borosilicate glass beakers suitable for laboratory reuse.',
-                                        'recommended_actions' => [
-                                            'List on Marketplace for educational or lab reuse.',
-                                        ],
-                                        'recycling_recommendations' => 'Separate from soda-lime glass before recycling.',
-                                        'repurposing_ideas' => ['Reuse in industrial testing labs'],
-                                        'disposal_method' => 'Send to specialized glass recovery center.',
-                                    ]),
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-            ], 200),
+        $this->fakeGeminiSuccess([
+            'suggested_category' => 'Borosilicate Laboratory Glass',
+            'category_confidence' => 'high',
+            'suggested_reusability' => 'reusable',
+            'classification_label' => 'Reusable',
+            'reason' => 'Intact heat-resistant borosilicate glass beakers suitable for laboratory reuse.',
         ]);
 
         $business = $this->createApprovedBusiness('Lab Glass Sdn Bhd');
@@ -478,7 +622,8 @@ class InventoryGeminiWorkflowTest extends TestCase
             'name' => '500ml Lab Beakers',
             'description' => 'Clean heat-resistant borosilicate laboratory glassware in intact condition.',
             'quantity' => 25,
-            'unit' => 'pieces',
+            'unit' => 'pcs',
+            'condition' => 'New',
             'image_1' => UploadedFile::fake()->image('beakers.jpg', 500, 500),
         ]);
 
@@ -487,29 +632,27 @@ class InventoryGeminiWorkflowTest extends TestCase
         $analysisResponse->assertJsonPath('analysis.category_confidence', 'high');
         $analysisResponse->assertJsonPath('analysis.needs_category_review', false);
 
-        // Confirm and save the dynamic AI category verbatim
+        // Confirm and save the dynamic AI category verbatim into Inventory
         $storeResponse = $this->actingAs($business)->post(route('business.inventory.store'), [
             'name' => '500ml Lab Beakers',
             'description' => 'Clean heat-resistant borosilicate laboratory glassware in intact condition.',
             'quantity' => 25,
-            'unit' => 'pieces',
+            'unit' => 'pcs',
+            'condition' => 'New',
             'reusability' => 'reusable',
             'category' => $analysisResponse->json('analysis.suggested_category'),
-            'listing_type' => 'buy',
-            'price' => 15.00,
-            'condition' => 'New',
-            'available_quantity' => 25,
-            'pickup_location' => 'Shah Alam, Selangor',
-            'redirect_to' => 'marketplace',
-            'publish_to_marketplace' => 1,
-            'analysis_token' => $analysisResponse->json('analysis_token'),
+            'redirect_to' => 'inventory',
+            'publish_to_marketplace' => 0,
             'saved_image_slots' => json_encode($analysisResponse->json('saved_image_slots')),
         ]);
 
-        $storeResponse->assertRedirect(route('business.marketplace'));
+        $storeResponse->assertRedirect(route('business.inventory'));
         $this->assertDatabaseHas('item', [
             'name' => '500ml Lab Beakers',
             'category' => 'Borosilicate Laboratory Glass',
+            'unit' => 'pcs',
+            'condition' => 'New',
+            'status' => 'in_stock',
         ]);
     }
 
@@ -525,6 +668,7 @@ class InventoryGeminiWorkflowTest extends TestCase
             'description' => 'Lebihan sayur dan sisa dapur harian dari kantin kilang.',
             'quantity' => 50,
             'unit' => 'kg',
+            'condition' => 'Damaged',
             'image_1' => UploadedFile::fake()->image('food_waste.jpg', 400, 400),
         ]);
 
@@ -537,7 +681,8 @@ class InventoryGeminiWorkflowTest extends TestCase
             'name' => 'Batch XYZ-999',
             'description' => 'Unlabeled item from storage room B.',
             'quantity' => 5,
-            'unit' => 'units',
+            'unit' => 'pcs',
+            'condition' => 'Used',
             'image_1' => UploadedFile::fake()->image('mystery.jpg', 400, 400),
         ]);
 

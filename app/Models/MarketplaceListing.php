@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'condition',
     'location_city',
     'location_state',
+    'pickup_address',
     'image_path',
     'image_1',
     'image_2',

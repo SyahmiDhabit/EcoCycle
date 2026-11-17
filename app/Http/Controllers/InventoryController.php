@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BusinessNotification;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
+use App\Models\Item;
 use App\Models\MarketplaceListing;
 use App\Models\User;
 use App\Services\EcoCycleHelperService;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class InventoryController extends Controller
@@ -31,16 +33,6 @@ class InventoryController extends Controller
 
         if ($business->account_status !== 'approved') {
             return redirect()->route('business.pending');
-        }
-
-        // Auto-heal / synchronize any reusable inventory items missing a marketplace listing
-        $unsynced = $business->inventoryItems()
-            ->where('reusability', 'reusable')
-            ->whereDoesntHave('marketplaceListing')
-            ->get();
-
-        foreach ($unsynced as $itemToSync) {
-            static::syncInventoryToMarketplace($itemToSync);
         }
 
         $query = $business->inventoryItems()->latest();
@@ -143,7 +135,8 @@ class InventoryController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:5000'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
-            'unit' => ['required', 'string', 'max:30'],
+            'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
+            'condition' => ['required', 'string', Rule::in(Item::ALLOWED_CONDITIONS)],
             'image_1' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'image_2' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'image_3' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
@@ -158,18 +151,20 @@ class InventoryController extends Controller
         }
 
         $validated = $request->validate($rules, [
+            'unit.in' => 'Please select a valid Unit of Measurement from the dropdown.',
+            'condition.in' => 'Please select a valid Material Condition (New, Damaged, or Used).',
             'images.required' => 'Please upload at least 1 photo for material analysis (minimum 1, maximum 3 photos).',
             'images.min' => 'Please upload at least 1 photo (minimum 1, maximum 3 photos).',
             'images.max' => 'You can upload a maximum of 3 photos.',
         ]);
 
-        // Save up to 3 independent image slots into public storage
-        $savedSlots = [null, null, null];
+        // Collect actual UploadedFile objects per slot (up to 3) so Gemini analyzes the real image files
+        $slotFiles = [null, null, null];
         if ($hasExplicitSlots) {
             for ($slot = 1; $slot <= 3; $slot++) {
                 $file = $request->file("image_{$slot}");
                 if ($file && $file->isValid()) {
-                    $savedSlots[$slot - 1] = $this->storeUploadedInventoryImage($file);
+                    $slotFiles[$slot - 1] = $file;
                 }
             }
         } elseif ($request->hasFile('images')) {
@@ -178,22 +173,45 @@ class InventoryController extends Controller
                 $slotIdx = 0;
                 foreach (array_slice($files, 0, 3) as $file) {
                     if ($file && $file->isValid() && $slotIdx < 3) {
-                        $savedSlots[$slotIdx] = $this->storeUploadedInventoryImage($file);
+                        $slotFiles[$slotIdx] = $file;
                         $slotIdx++;
                     }
                 }
             }
         }
 
-        $savedImages = array_values(array_filter($savedSlots));
+        $actualFiles = array_values(array_filter($slotFiles));
+        if (empty($actualFiles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Uploaded material photos could not be read. Please upload 1 to 3 valid images and retry.',
+            ], 422);
+        }
 
-        $analysis = $helper->classifyMaterial(
-            $validated['name'],
-            $validated['description'],
-            (float) $validated['quantity'],
-            $validated['unit'],
-            $savedImages
-        );
+        try {
+            $analysis = $helper->classifyMaterial(
+                $validated['name'],
+                $validated['description'],
+                (float) $validated['quantity'],
+                $validated['unit'],
+                $actualFiles,
+                $validated['condition']
+            );
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+
+        // Only persist uploaded images once AI visual analysis succeeds (each image saved once per slot)
+        $savedSlots = [null, null, null];
+        for ($i = 0; $i < 3; $i++) {
+            if ($slotFiles[$i] !== null) {
+                $savedSlots[$i] = $this->storeUploadedInventoryImage($slotFiles[$i]);
+            }
+        }
+        $savedImages = array_values(array_filter($savedSlots));
 
         $analysisToken = self::generateAnalysisToken(
             (int) Auth::id(),
@@ -213,6 +231,7 @@ class InventoryController extends Controller
                 'description' => $validated['description'],
                 'quantity' => (float) $validated['quantity'],
                 'unit' => $validated['unit'],
+                'condition' => $validated['condition'],
             ],
         ]);
     }
@@ -235,7 +254,7 @@ class InventoryController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
-            'unit' => ['required', 'string', 'max:30'],
+            'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
             'reusability' => ['required', 'in:reusable,not_reusable'],
             'category' => ['required', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -247,7 +266,7 @@ class InventoryController extends Controller
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'listing_type' => ['nullable', 'in:buy,free'],
-            'condition' => ['nullable', 'in:New,Used,Unused'],
+            'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
             'available_quantity' => ['nullable', 'numeric', 'min:0'],
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
@@ -258,7 +277,7 @@ class InventoryController extends Controller
 
         if ($request->input('reusability') === 'reusable' && $isPublishingRequest) {
             $rules['listing_type'] = ['required', 'in:buy,free'];
-            $rules['condition'] = ['required', 'in:New,Used,Unused'];
+            $rules['condition'] = ['required', Rule::in(Item::ALLOWED_CONDITIONS)];
             if ($request->input('listing_type') === 'buy') {
                 $rules['price'] = ['required', 'numeric', 'min:0'];
             }
@@ -267,6 +286,8 @@ class InventoryController extends Controller
         }
 
         $validated = $request->validate($rules, [
+            'unit.in' => 'Please select a valid Unit of Measurement from the dropdown.',
+            'condition.in' => 'Please select a valid Material Condition (New, Damaged, or Used).',
             'category.required' => 'Please confirm or enter a valid Material Category.',
             'images.max' => 'You can upload a maximum of 3 photos.',
             'price.required' => 'Price per unit (RM) is required when listing type is Sell.',
@@ -359,28 +380,37 @@ class InventoryController extends Controller
         $description = ! empty($validated['description']) ? $validated['description'] : "Material specifications for {$validated['name']}.";
 
         // Location resolution (use user entered or GPS or business profile location)
-        $pickupLocation = $validated['pickup_location'] ?? null;
+        $pickupLocation = trim((string) ($validated['pickup_location'] ?? ''));
         $locationCity = $business->city ?: 'Shah Alam';
         $locationState = $business->state ?: 'Selangor';
-        if ($pickupLocation) {
+        if ($pickupLocation !== '') {
             $parts = array_map('trim', explode(',', $pickupLocation));
             if (count($parts) >= 2) {
                 $locationCity = $parts[0];
                 $locationState = end($parts);
             }
         }
+        $resolvedPickupAddress = $pickupLocation !== ''
+            ? $pickupLocation
+            : trim(implode(', ', array_filter([
+                $business->registered_address,
+                trim(implode(' ', array_filter([$business->postcode, $locationCity]))),
+                $locationState,
+            ])));
 
+        // Save to Inventory only by default (do NOT auto-publish to Marketplace)
         $status = 'in_stock';
         if ($quantity <= 0) {
             $status = 'out_of_stock';
-        } elseif ($reusability === 'reusable') {
+        } elseif ($isPublishingRequest && $reusability === 'reusable') {
             $status = 'active';
         }
 
         $createdItem = null;
-        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $status, $imageSlots, $uploadedImages, $reusability, $listingType, $price, $condition, $locationCity, $locationState, &$createdItem): void {
+        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $status, $imageSlots, $uploadedImages, $reusability, $listingType, $price, $condition, $locationCity, $locationState, $resolvedPickupAddress, $isPublishingRequest, &$createdItem): void {
             $createdItem = InventoryItem::create([
                 'business_id' => $business->id,
+                'inventory_item_id' => null,
                 'name' => $validated['name'],
                 'title' => $validated['name'],
                 'description' => $description,
@@ -393,6 +423,7 @@ class InventoryController extends Controller
                 'condition' => $condition,
                 'location_city' => $locationCity,
                 'location_state' => $locationState,
+                'pickup_address' => $resolvedPickupAddress !== '' ? $resolvedPickupAddress : null,
                 'image_path' => $uploadedImages[0] ?? null,
                 'image_1' => $imageSlots[0],
                 'image_2' => $imageSlots[1],
@@ -413,23 +444,31 @@ class InventoryController extends Controller
                 ]);
             }
 
-            if ($reusability === 'reusable') {
-                // Synchronize with Marketplace & Business Profile Directory
+            if ($isPublishingRequest && $reusability === 'reusable') {
                 static::syncInventoryToMarketplace($createdItem, $validated);
 
                 BusinessNotification::send(
                     $business->id,
-                    'Material Added & Live on Marketplace',
-                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$category}). It is now live on the EcoCycle Marketplace for other businesses to browse.",
+                    'Material Added & Published to Marketplace',
+                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$category}) and published it to the EcoCycle Marketplace.",
                     'inventory_added',
                     '/business/marketplace',
+                    'green'
+                );
+            } elseif ($reusability === 'reusable') {
+                BusinessNotification::send(
+                    $business->id,
+                    'Reusable Material Added to Inventory',
+                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$category}) to your inventory. You can publish it to the Marketplace anytime from Inventory.",
+                    'inventory_added',
+                    '/business/inventory',
                     'green'
                 );
             } else {
                 BusinessNotification::send(
                     $business->id,
-                    'Non-Reusable Material Logged',
-                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$category}) as internal scrap. Forwarded to EcoCycle Helper for recovery.",
+                    'Non-Reusable Material Logged in Inventory',
+                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$category}) to your inventory. Open EcoCycle Helper for recycling and disposal guidance.",
                     'inventory_added',
                     "/business/helper?item_id={$createdItem->id}",
                     'blue'
@@ -437,17 +476,16 @@ class InventoryController extends Controller
             }
         });
 
-        // If Non-Reusable: Forward item information directly to EcoCycle Helper
-        if ($reusability === 'not_reusable') {
-            return redirect()->route('business.helper', ['item_id' => $createdItem->id])->with('status', "Non-reusable material '{$validated['name']}' saved and forwarded to EcoCycle Helper for circular recommendations!");
+        // Only redirect to Helper if explicitly requested
+        if ($reusability === 'not_reusable' && $request->input('redirect_to') === 'helper') {
+            return redirect()->route('business.helper', ['item_id' => $createdItem->id])->with('status', "Non-reusable material '{$validated['name']}' saved in inventory and opened in EcoCycle Helper.");
         }
 
-        // If Reusable: If redirect_to marketplace requested, redirect to marketplace, otherwise inventory
-        if ($request->input('redirect_to') === 'marketplace') {
-            return redirect()->route('business.marketplace')->with('status', "Material '{$validated['name']}' added to inventory and automatically published to the EcoCycle Marketplace!");
+        if ($isPublishingRequest && $reusability === 'reusable' && $request->input('redirect_to') === 'marketplace') {
+            return redirect()->route('business.marketplace')->with('status', "Material '{$validated['name']}' added to inventory and published to the EcoCycle Marketplace.");
         }
 
-        return redirect()->route('business.inventory')->with('status', "Material '{$validated['name']}' added to inventory and automatically published to the EcoCycle Marketplace!");
+        return redirect()->route('business.inventory')->with('status', "Material '{$validated['name']}' has been added to your inventory.");
     }
 
     public function update(Request $request, InventoryItem $item): RedirectResponse
@@ -459,11 +497,11 @@ class InventoryController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'category' => ['required', 'string', 'max:100'],
-            'unit' => ['required', 'string', 'max:20'],
+            'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
             'listing_type' => ['nullable', 'in:buy,free'],
             'price' => ['nullable', 'numeric', 'min:0'],
-            'condition' => ['nullable', 'in:New,Used,Unused'],
+            'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
             'notes' => ['nullable', 'string', 'max:1000'],
             'image_1' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'image_2' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
@@ -474,6 +512,8 @@ class InventoryController extends Controller
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ], [
+            'unit.in' => 'Please select a valid Unit of Measurement from the dropdown.',
+            'condition.in' => 'Please select a valid Material Condition (New, Damaged, or Used).',
             'images.max' => 'You can upload a maximum of 3 photos.',
         ]);
 
@@ -523,8 +563,9 @@ class InventoryController extends Controller
 
         $uploadedImages = array_values(array_filter($imageSlots));
 
+        $wasPublished = $item->isPublishedToMarketplace();
         $quantity = (float) $item->quantity;
-        $status = $quantity <= 0 ? 'out_of_stock' : 'in_stock';
+        $status = $quantity <= 0 ? 'out_of_stock' : ($wasPublished && ($validated['reusability'] ?? $item->reusability) === 'reusable' ? 'active' : 'in_stock');
 
         $reusability = $validated['reusability'] ?? $item->reusability ?? 'reusable';
         $listingType = $validated['listing_type'] ?? $item->listing_type ?? 'buy';
@@ -559,10 +600,12 @@ class InventoryController extends Controller
             }
         }
 
-        // Sync with marketplace
-        static::syncInventoryToMarketplace($item, $validated);
+        // Only keep Marketplace synced if item was ALREADY published, or unpublish if switched to non-reusable
+        if ($wasPublished || $reusability === 'not_reusable') {
+            static::syncInventoryToMarketplace($item, $validated);
+        }
 
-        return back()->with('status', "Item '{$item->name}' updated and synced successfully.");
+        return back()->with('status', "Item '{$item->name}' updated successfully.");
     }
 
     public function adjust(Request $request, InventoryItem $item): RedirectResponse
@@ -586,12 +629,15 @@ class InventoryController extends Controller
             ])->withInput();
         }
 
+        $wasPublished = $item->isPublishedToMarketplace();
         $newQty = $type === 'stock_in' ? ($currentQty + $adjQty) : ($currentQty - $adjQty);
         $change = $type === 'stock_in' ? $adjQty : -$adjQty;
 
-        $status = $newQty <= 0 ? 'out_of_stock' : 'in_stock';
+        $status = $newQty <= 0
+            ? ($wasPublished ? 'sold' : 'out_of_stock')
+            : ($wasPublished ? 'active' : 'in_stock');
 
-        DB::transaction(function () use ($item, $newQty, $status, $type, $change, $validated): void {
+        DB::transaction(function () use ($item, $newQty, $status, $type, $change, $validated, $wasPublished): void {
             $item->update([
                 'quantity' => $newQty,
                 'status' => $status,
@@ -606,13 +652,16 @@ class InventoryController extends Controller
                 'notes' => $validated['notes'] ?? ($type === 'stock_in' ? 'Stock replenished' : 'Stock dispatched / used'),
             ]);
 
-            // Sync with marketplace
-            static::syncInventoryToMarketplace($item);
+            // Only sync Marketplace status if this item is already published to Marketplace
+            if ($wasPublished) {
+                static::syncInventoryToMarketplace($item);
+            }
         });
 
         $actionWord = $type === 'stock_in' ? 'added to' : 'deducted from';
+        $syncSuffix = $wasPublished ? ' (Marketplace synced)' : '';
 
-        return back()->with('status', "{$adjQty} {$item->unit} {$actionWord} '{$item->name}'. New balance: {$newQty} {$item->unit} (Marketplace synced).");
+        return back()->with('status', "{$adjQty} {$item->unit} {$actionWord} '{$item->name}'. New balance: {$newQty} {$item->unit}{$syncSuffix}.");
     }
 
     public function destroy(InventoryItem $item): RedirectResponse

@@ -51,7 +51,8 @@ class MarketplaceAndInventoryTest extends TestCase
                 'description' => 'Industrial grade heavy duty pallets with reinforced corners.',
                 'category' => 'Packaging & paper',
                 'quantity' => 150,
-                'unit' => 'units',
+                'unit' => 'pcs',
+                'condition' => 'Used',
                 'reusability' => 'reusable',
                 'images' => $images,
             ]);
@@ -79,7 +80,8 @@ class MarketplaceAndInventoryTest extends TestCase
             'reusability' => 'reusable',
             'listing_type' => 'buy',
             'quantity' => 50,
-            'unit' => 'units',
+            'unit' => 'pcs',
+            'condition' => 'Used',
             'price' => 18.00,
         ]);
         $listResponse->assertRedirect();
@@ -128,32 +130,32 @@ class MarketplaceAndInventoryTest extends TestCase
             'condition' => 'Used',
             'price' => 10.00,
             'quantity' => 30,
-            'unit' => 'crates',
+            'unit' => 'Box',
             'location_city' => 'Shah Alam',
             'location_state' => 'Selangor',
         ]);
         $borrowResponse->assertSessionHasErrors('listing_type');
 
-        // 3. Invalid condition is rejected (only New, Used, Unused allowed)
+        // 3. Invalid condition is rejected (only New, Damaged, Used allowed)
         $invalidCondResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
             'title' => 'Invalid Condition Crate',
             'category' => 'Packaging & paper',
             'reusability' => 'reusable',
             'listing_type' => 'buy',
-            'condition' => 'Like New',
+            'condition' => 'Unused',
             'price' => 10.00,
             'quantity' => 10,
-            'unit' => 'crates',
+            'unit' => 'Box',
         ]);
         $invalidCondResponse->assertSessionHasErrors('condition');
 
-        // 4. Free listing with Unused condition
+        // 4. Free listing with Damaged condition
         $freeResponse = $this->actingAs($business)->post(route('business.marketplace.store'), [
             'title' => 'Clean Shredded Cardboard',
             'category' => 'Packaging & paper',
             'reusability' => 'reusable',
             'listing_type' => 'free',
-            'condition' => 'Unused',
+            'condition' => 'Damaged',
             'price' => 0.00,
             'quantity' => 200,
             'unit' => 'kg',
@@ -165,7 +167,7 @@ class MarketplaceAndInventoryTest extends TestCase
             'business_id' => $business->id,
             'title' => 'Clean Shredded Cardboard',
             'listing_type' => 'free',
-            'condition' => 'Unused',
+            'condition' => 'Damaged',
             'is_free' => true,
             'price' => 0.00,
         ]);
@@ -187,9 +189,10 @@ class MarketplaceAndInventoryTest extends TestCase
             'category' => 'Packaging & paper',
             'reusability' => 'reusable',
             'listing_type' => 'buy',
+            'condition' => 'Used',
             'price' => 22.50,
             'quantity' => 120,
-            'unit' => 'pallets',
+            'unit' => 'pcs',
             'images' => $images,
         ]);
 
@@ -458,9 +461,10 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertDatabaseMissing('item', ['id' => $listing->id]);
     }
 
-    public function test_reusable_inventory_item_automatically_creates_active_marketplace_listing(): void
+    public function test_reusable_inventory_item_saves_to_inventory_only_until_explicitly_published(): void
     {
         $business = $this->createApprovedBusiness('BioGreen Manufacturing');
+        $viewer = $this->createApprovedBusiness('Buyer Corp');
 
         $image = UploadedFile::fake()->image('pallet.jpg', 400, 400);
 
@@ -471,10 +475,8 @@ class MarketplaceAndInventoryTest extends TestCase
                 'description' => 'Heat treated pine wood pallets, certified for logistics reuse.',
                 'category' => 'Furniture & wood products',
                 'quantity' => 80,
-                'unit' => 'pallets',
+                'unit' => 'pcs',
                 'reusability' => 'reusable',
-                'listing_type' => 'buy',
-                'price' => 35.50,
                 'condition' => 'Used',
                 'images' => [$image],
             ]);
@@ -482,12 +484,41 @@ class MarketplaceAndInventoryTest extends TestCase
         $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('business.inventory'));
 
-        // Check Inventory Item was created
+        // Check Inventory Item was created in Inventory ONLY (NOT auto-published)
         $item = InventoryItem::where('name', 'Grade-A Reusable Wooden Pallets')->firstOrFail();
         $this->assertSame('reusable', $item->reusability);
-        $this->assertSame('35.50', (string) $item->price);
+        $this->assertSame('in_stock', $item->getRawOriginal('status'));
+        $this->assertNull($item->inventory_item_id);
+        $this->assertFalse($item->isPublishedToMarketplace());
 
-        // Check Marketplace Listing was AUTOMATICALLY created and linked!
+        // Not visible on Marketplace or Directory before explicit publish
+        $this->flushSession();
+        $this->actingAs($viewer)
+            ->get(route('business.marketplace'))
+            ->assertOk()
+            ->assertViewHas('listings', fn ($listings): bool => ! $listings->contains('id', $item->id))
+            ->assertDontSee('Grade-A Reusable Wooden Pallets');
+
+        $this->actingAs($viewer)
+            ->get(route('business.directory.show', $business))
+            ->assertOk()
+            ->assertViewHas('listings', fn ($listings): bool => ! $listings->contains('id', $item->id))
+            ->assertDontSee('Grade-A Reusable Wooden Pallets');
+
+        // Explicitly publish to Marketplace as a separate action
+        $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'inventory_item_id' => $item->id,
+            'title' => 'Grade-A Reusable Wooden Pallets',
+            'description' => 'Heat treated pine wood pallets, certified for logistics reuse.',
+            'category' => 'Furniture & wood products',
+            'quantity' => 80,
+            'unit' => 'pcs',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 35.50,
+            'condition' => 'Used',
+        ])->assertRedirect(route('business.marketplace'));
+
         $listing = MarketplaceListing::where('inventory_item_id', $item->id)->firstOrFail();
         $this->assertSame('active', $listing->status);
         $this->assertSame('Grade-A Reusable Wooden Pallets', $listing->title);
@@ -497,16 +528,16 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertSame($business->id, $listing->business_id);
         $this->assertNotNull($listing->image_path);
 
-        // Verify it appears in Marketplace view
-        $mktResponse = $this->actingAs($business)->get(route('business.marketplace'));
-        $mktResponse->assertOk();
-        $mktResponse->assertSee('Grade-A Reusable Wooden Pallets');
+        // Now visible in Marketplace and Business Directory
+        $this->actingAs($viewer)
+            ->get(route('business.marketplace'))
+            ->assertOk()
+            ->assertSee('Grade-A Reusable Wooden Pallets');
 
-        // Verify it appears in public Business Directory show page for other businesses!
-        $viewer = $this->createApprovedBusiness('Buyer Corp');
-        $dirResponse = $this->actingAs($viewer)->get(route('business.directory.show', $business));
-        $dirResponse->assertOk();
-        $dirResponse->assertSee('Grade-A Reusable Wooden Pallets');
+        $this->actingAs($viewer)
+            ->get(route('business.directory.show', $business))
+            ->assertOk()
+            ->assertSee('Grade-A Reusable Wooden Pallets');
     }
 
     public function test_not_reusable_inventory_item_remains_internal_scrap_and_never_lists_on_marketplace(): void
@@ -563,14 +594,27 @@ class MarketplaceAndInventoryTest extends TestCase
             'name' => 'Cotton Fabric Rolls',
             'category' => 'Textiles & apparel',
             'quantity' => 100,
-            'unit' => 'meters',
+            'unit' => 'm',
+            'condition' => 'Used',
+            'reusability' => 'reusable',
+            'images' => [$image],
+        ])->assertSessionHasNoErrors();
+
+        $item = InventoryItem::where('name', 'Cotton Fabric Rolls')->firstOrFail();
+
+        // Publish explicitly to Marketplace first
+        $this->actingAs($business)->post(route('business.marketplace.store'), [
+            'inventory_item_id' => $item->id,
+            'title' => 'Cotton Fabric Rolls',
+            'category' => 'Textiles & apparel',
+            'quantity' => 100,
+            'unit' => 'm',
+            'condition' => 'Used',
             'reusability' => 'reusable',
             'listing_type' => 'buy',
             'price' => 12.00,
-            'images' => [$image],
-        ]);
+        ])->assertSessionHasNoErrors();
 
-        $item = InventoryItem::where('name', 'Cotton Fabric Rolls')->firstOrFail();
         $listing = MarketplaceListing::where('inventory_item_id', $item->id)->firstOrFail();
         $this->assertSame('active', $listing->status);
         $this->assertSame(100.0, (float) $listing->quantity);
@@ -603,7 +647,8 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->actingAs($business)->put(route('business.inventory.update', $item), [
             'name' => 'Damaged Cotton Fabric Scrap',
             'category' => 'Textiles & apparel',
-            'unit' => 'meters',
+            'unit' => 'm',
+            'condition' => 'Damaged',
             'reusability' => 'not_reusable',
         ]);
 
@@ -626,10 +671,11 @@ class MarketplaceAndInventoryTest extends TestCase
 
         $response = $this->actingAs($business)->post(route('business.marketplace.store'), [
             'title' => 'Excess Corrugated Cartons',
-            'description' => 'Unused double-wall shipping boxes.',
+            'description' => 'New double-wall shipping boxes.',
             'category' => 'Packaging & paper',
             'quantity' => 200,
-            'unit' => 'boxes',
+            'unit' => 'Box',
+            'condition' => 'New',
             'reusability' => 'reusable',
             'listing_type' => 'buy',
             'price' => 4.50,
@@ -657,21 +703,35 @@ class MarketplaceAndInventoryTest extends TestCase
         $seller = $this->createApprovedBusiness('Seller Eco Print');
         $buyer = $this->createApprovedBusiness('Buyer Packaging Ltd');
 
-        // 1. Seller adds reusable item into inventory
+        // 1. Seller adds reusable item into inventory and publishes it to Marketplace
         $image = UploadedFile::fake()->image('paper.jpg', 400, 400);
         $this->actingAs($seller)->post(route('business.inventory.store'), [
             'name' => 'Recycled Kraft Sheets',
             'description' => 'Heavyweight 120gsm kraft paper.',
             'category' => 'Packaging & paper',
             'quantity' => 100,
-            'unit' => 'reams',
+            'unit' => 'Box',
+            'condition' => 'New',
             'reusability' => 'reusable',
-            'listing_type' => 'buy',
-            'price' => 25.00,
             'images' => [$image],
         ])->assertSessionHasNoErrors();
 
         $item = Item::where('name', 'Recycled Kraft Sheets')->firstOrFail();
+
+        $this->actingAs($seller)->post(route('business.marketplace.store'), [
+            'inventory_item_id' => $item->id,
+            'title' => 'Recycled Kraft Sheets',
+            'description' => 'Heavyweight 120gsm kraft paper.',
+            'category' => 'Packaging & paper',
+            'quantity' => 100,
+            'unit' => 'Box',
+            'condition' => 'New',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 25.00,
+        ])->assertSessionHasNoErrors();
+
+        $item->refresh();
         $this->assertSame('active', $item->status);
 
         // 2. Buyer views marketplace and requests an exchange / order for 30 reams

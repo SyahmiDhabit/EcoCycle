@@ -108,15 +108,12 @@
         <main class="dashboard-main-content">
             <header class="section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                 <div class="section-header-title">
-                    <h2>Transactions, Orders &amp; Invoicing</h2>
-                    <p>Manage Marketplace orders, Stripe payments (MYR), and official PDF invoices between verified businesses.</p>
+                    <h2>Transactions &amp; Payment History</h2>
+                    <p>Track Marketplace Sell and Free orders, complete Stripe payments (MYR), and download PDF receipts.</p>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="<?= route('business.invoices.index', ['tab' => 'payments']) ?>" class="trx-tab-btn">
-                        Payment History
-                    </a>
-                    <a href="<?= route('business.invoices.index', ['tab' => 'invoices']) ?>" class="trx-tab-btn active">
-                        My Invoices
+                    <a href="<?= route('business.invoices.index') ?>" class="trx-tab-btn active">
+                        Receipts &amp; History
                     </a>
                 </div>
             </header>
@@ -157,10 +154,10 @@
                     All Transactions
                 </a>
                 <a href="/business/transactions?tab=sales" class="trx-tab-btn <?= $currentTab === 'sales' ? 'active' : '' ?>">
-                    Sales (Barang Dijual / Dipinjamkan)
+                    Sales
                 </a>
                 <a href="/business/transactions?tab=purchases" class="trx-tab-btn <?= $currentTab === 'purchases' ? 'active' : '' ?>">
-                    Purchases (Barang Dibeli / Dituntut)
+                    Purchases &amp; Free Claims
                 </a>
             </div>
 
@@ -170,95 +167,70 @@
                     <table class="directory-table" style="margin-bottom:0;">
                         <thead>
                             <tr>
-                                <th>Invoice / Order Ref</th>
-                                <th>Material</th>
-                                <th>Counterparty Business</th>
-                                <th>Qty &amp; Role</th>
-                                <th>Total Amount</th>
-                                <th>Payment Status</th>
+                                <th>Item</th>
+                                <th>Type</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
                                 <th style="text-align:right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($exchanges as $exchange): 
+                            <?php foreach ($exchanges as $exchange):
                                 $isSeller = ($exchange->provider_business_id === $business->id);
+                                $isBuyer = ! $isSeller;
+                                $isFree = ($exchange->resolvedListingType() === 'free') || (float) $exchange->total_price <= 0;
+                                $typeLabel = $isFree ? 'Free' : 'Sell';
                                 $counterpart = $isSeller ? $exchange->requester : $exchange->provider;
                                 $counterpartName = $counterpart?->business_name ?: ($counterpart?->name ?? 'Partner Business');
-                                $invNumber = $exchange->invoice_number ?: ('INV-' . date('Y') . '-' . str_pad((string) $exchange->id, 5, '0', STR_PAD_LEFT));
-                                
-                                $payStatus = $exchange->payment_status ?: 'pending_payment';
-                                $payClass = match($payStatus) {
-                                    'paid' => 'pay-paid',
-                                    'requested' => 'pay-requested',
+                                $qtyFormatted = rtrim(rtrim(number_format((float) $exchange->quantity, 2, '.', ''), '0'), '.');
+
+                                $payStatus = strtolower((string) ($exchange->payment_status ?: ($isFree ? 'free' : 'pending_payment')));
+                                $payClass = match (true) {
+                                    $isFree || $payStatus === 'free' || $payStatus === 'paid' => 'pay-paid',
+                                    $payStatus === 'failed' || $payStatus === 'requested' => 'pay-requested',
                                     default => 'pay-pending',
                                 };
-                                $payLabel = match($payStatus) {
-                                    'paid' => 'Paid',
-                                    'requested' => 'Payment Requested',
-                                    'failed' => 'Payment Failed',
-                                    'cancelled' => 'Cancelled',
-                                    'borrow_pending' => 'Borrow Pending',
-                                    default => 'Pending Payment',
+                                $payLabel = match (true) {
+                                    $isFree || $payStatus === 'free' => 'Free',
+                                    $payStatus === 'paid' => 'Paid',
+                                    $payStatus === 'failed' => 'Failed',
+                                    $payStatus === 'cancelled' => 'Cancelled',
+                                    default => 'Pending',
                                 };
-                                $isBuyer = ! $isSeller;
                             ?>
                                 <tr>
                                     <td>
-                                        <strong style="color:#113624;font-family:monospace;font-size:13px;"><?= e($invNumber) ?></strong>
-                                        <small style="color:var(--text-muted);display:block;font-size:11px;"><?= $exchange->created_at ? $exchange->created_at->format('d M Y') : 'N/A' ?></small>
+                                        <strong style="color:#143825;"><?= e($exchange->listing?->title ?: 'Material #' . $exchange->listing_id) ?></strong>
+                                        <span style="font-size:11px;color:var(--text-secondary);display:block;"><?= e($qtyFormatted) ?> <?= e($exchange->unit) ?> &middot; <?= $isSeller ? 'Buyer: ' : 'Seller: ' ?><?= e($counterpartName) ?></span>
                                     </td>
                                     <td>
-                                        <strong style="color:#143825;"><?= e($exchange->listing?->title ?: 'Material Batch #' . $exchange->listing_id) ?></strong>
-                                        <span style="font-size:11px;color:var(--text-secondary);display:block;"><?= e($exchange->listing?->category ?: 'Secondary Material') ?></span>
+                                        <span style="display:inline-block;padding:3px 8px;border:1px solid #cbd5e1;background:#f8fafc;color:#1e293b;font-size:11px;font-weight:700;"><?= e($typeLabel) ?></span>
+                                    </td>
+                                    <td style="font-weight:700;color:#113624;white-space:nowrap;">
+                                        RM <?= number_format($isFree ? 0.00 : (float) $exchange->total_price, 2) ?>
                                     </td>
                                     <td>
-                                        <strong><?= e($counterpartName) ?></strong>
-                                        <span style="font-size:11px;color:var(--text-muted);display:block;"><?= $isSeller ? 'Customer / Buyer' : 'Supplier / Seller' ?></span>
+                                        <span class="pay-badge <?= $payClass ?>"><?= e($payLabel) ?></span>
                                     </td>
-                                    <td>
-                                        <?= (float) $exchange->quantity ?> <?= e($exchange->unit) ?>
-                                        <span style="display:block;font-size:10.5px;font-weight:700;color:<?= $isSeller ? '#15803d' : '#b45309' ?>;">
-                                            <?= $isSeller ? 'SELLER' : 'BUYER' ?>
-                                        </span>
-                                    </td>
-                                    <td style="font-weight:700;color:#113624;">
-                                        <?php if ((float)$exchange->total_price <= 0): ?>
-                                            <span style="color:#15803d;">FREE (RM 0.00)</span>
-                                        <?php else: ?>
-                                            RM <?= number_format((float) $exchange->total_price, 2) ?>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <span class="pay-badge <?= $payClass ?>"><?= $payLabel ?></span>
+                                    <td style="font-size:12.5px;color:#334155;white-space:nowrap;">
+                                        <?= $exchange->created_at ? $exchange->created_at->format('d M Y') : 'N/A' ?>
                                     </td>
                                     <td style="text-align:right;">
                                         <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap;">
-                                            <?php if ($isBuyer && $exchange->requiresStripePayment() && $payStatus !== 'paid'): ?>
+                                            <?php if ($isBuyer && ! $isFree && $exchange->requiresStripePayment() && $payStatus !== 'paid'): ?>
                                                 <a href="<?= route('business.orders.checkout', $exchange) ?>" class="btn-action-sm" style="background:#143825;border:1px solid #143825;color:#ffffff;text-decoration:none;">
                                                     Pay Now
                                                 </a>
                                             <?php endif; ?>
 
-                                            <?php if ($isSeller && $payStatus !== 'paid' && (float)$exchange->total_price > 0): ?>
-                                                <form method="POST" action="/business/transactions/<?= $exchange->id ?>/request-payment" style="margin:0;">
-                                                    <?= csrf_field() ?>
-                                                    <button type="submit" class="btn-action-sm" style="background:#fff5f5;border:1px solid #fecaca;color:#b91c1c;" title="Send payment request to buyer">
-                                                        Request Payment
-                                                    </button>
-                                                </form>
-                                            <?php endif; ?>
-
                                             <?php if ($exchange->invoice): ?>
                                                 <a href="<?= route('business.invoices.show', $exchange->invoice) ?>" class="btn-action-sm" style="background:#f8fafc;border:1px solid #cbd5e1;color:#334155;text-decoration:none;">
-                                                    View Invoice
+                                                    View Receipt
                                                 </a>
                                                 <a href="<?= route('business.invoices.pdf', $exchange->invoice) ?>" class="btn-action-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;text-decoration:none;">
-                                                    PDF
+                                                    Download PDF
                                                 </a>
-                                            <?php else: ?>
-                                                <button type="button" class="btn-action-sm" style="background:#f8fafc;border:1px solid #cbd5e1;color:#334155;" onclick='openReceiptModal("<?= e($invNumber) ?>", "<?= e(addslashes($exchange->listing?->title ?? 'Material')) ?>", "<?= e(addslashes($counterpartName)) ?>", <?= (float)$exchange->quantity ?>, "<?= e($exchange->unit) ?>", <?= (float)$exchange->total_price ?>, "<?= e($payStatus) ?>", "<?= e($exchange->payment_reference ?? 'N/A') ?>", "<?= $exchange->created_at ? $exchange->created_at->format('d M Y') : '' ?>")'>
-                                                    Summary
-                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </td>

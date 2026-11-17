@@ -42,6 +42,7 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::post('/business/marketplace/{listing}/exchange', [TransactionController::class, 'store'])->name('business.marketplace.exchange');
     Route::delete('/business/marketplace/{listing}', [MarketplaceController::class, 'destroy'])->name('business.marketplace.destroy');
     Route::get('/business/inventory', [InventoryController::class, 'index'])->name('business.inventory');
+    Route::post('/business/inventory/ai-analyze', [InventoryController::class, 'aiAnalyze'])->name('business.inventory.ai-analyze');
     Route::post('/business/inventory', [InventoryController::class, 'store'])->name('business.inventory.store');
     Route::put('/business/inventory/{item}', [InventoryController::class, 'update'])->name('business.inventory.update');
     Route::post('/business/inventory/{item}/adjust', [InventoryController::class, 'adjust'])->name('business.inventory.adjust');

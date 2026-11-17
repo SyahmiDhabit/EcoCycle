@@ -99,6 +99,300 @@ class EcoCycleHelperService
     }
 
     /**
+     * Classify an inventory material using Gemini AI (with image analysis) or fallback expert engine.
+     * Suggests:
+     * - Material category
+     * - Reusability classification (Reusable or Non-Reusable)
+     * - Reason for the classification
+     * - Recommended actions
+     * - Recycling & repurposing guidance
+     *
+     * @param string $name
+     * @param string $description
+     * @param float $quantity
+     * @param string $unit
+     * @param array<int, string|\Illuminate\Http\UploadedFile> $images
+     * @return array<string, mixed>
+     */
+    public function classifyMaterial(string $name, string $description, float $quantity, string $unit, array $images = []): array
+    {
+        $geminiResult = null;
+        if (! empty(config('services.gemini.api_key'))) {
+            $geminiResult = $this->classifyWithGemini($name, $description, $quantity, $unit, $images);
+        }
+
+        if ($geminiResult !== null) {
+            return $geminiResult;
+        }
+
+        return $this->classifyWithExpertEngine($name, $description, $quantity, $unit, $images);
+    }
+
+    /**
+     * Call Google Gemini API with multimodal parts (Text and Image data)
+     */
+    public function callGeminiMultimodal(array $parts, float $temperature = 0.2): ?string
+    {
+        $apiKey = config('services.gemini.api_key');
+        if (empty($apiKey)) {
+            return null;
+        }
+
+        $model = config('services.gemini.model', 'gemini-2.5-flash');
+        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+        try {
+            $response = Http::timeout(6)->post($endpoint, [
+                'contents' => [
+                    [
+                        'role' => 'user',
+                        'parts' => $parts,
+                    ],
+                ],
+                'generationConfig' => [
+                    'temperature' => $temperature,
+                    'maxOutputTokens' => 1500,
+                ],
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+            }
+
+            Log::warning('Gemini Multimodal API call returned non-200 status', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Gemini Multimodal API call failed: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Classify material using Gemini Multimodal AI
+     */
+    private function classifyWithGemini(string $name, string $description, float $quantity, string $unit, array $images = []): ?array
+    {
+        $imageCount = count($images);
+        $prompt = <<<PROMPT
+You are EcoCycle AI, an expert industrial circular economy specialist and material waste auditor in Malaysia.
+Analyze the following material submitted by an industrial business:
+
+Material Name: {$name}
+Description: {$description}
+Quantity: {$quantity} {$unit}
+Image Count: {$imageCount}
+
+Evaluate this material thoroughly:
+1. Category must be chosen from ONE of these standard categories:
+   - "Packaging & paper"
+   - "Furniture & wood products"
+   - "Textiles & apparel"
+   - "Electronics & electrical"
+   - "Metal & fabrication"
+   - "Plastics & rubber"
+   - "Chemicals & lubricants"
+   - "Food & beverage organic"
+   - "Other"
+
+2. Reusability classification:
+   - "reusable": If the material is structurally sound, clean, durable, multi-use, or can be directly reused, repurposed, or resold to other Malaysian businesses (e.g. wooden pallets, clean cardboard boxes, metal bars/sheets, working parts, surplus fabric rolls, reusable drums/containers).
+   - "not_reusable": If the material is single-use cutoffs, contaminated, shredded, slag, sludge, hazardous waste, or degraded scrap that cannot be directly reused without industrial recycling, smelting, granulation, composting, or licensed disposal.
+
+3. Provide a clear reason explaining why it is classified as reusable or non-reusable.
+
+4. Provide 3 specific recommended actions.
+
+5. Provide recycling and repurposing guidance.
+
+Return ONLY a valid JSON object matching this schema (no markdown backticks, no markdown formatting):
+{
+  "suggested_category": "Category name from list above",
+  "suggested_reusability": "reusable",
+  "classification_label": "Reusable",
+  "reason": "Detailed, professional reason for this classification in Malaysian industrial context",
+  "recommended_actions": [
+    "Recommended action 1",
+    "Recommended action 2",
+    "Recommended action 3"
+  ],
+  "recycling_recommendations": "Concrete recycling steps and processes",
+  "repurposing_ideas": [
+    "Upcycling or repurposing idea 1",
+    "Upcycling or repurposing idea 2"
+  ],
+  "disposal_method": "Compliant disposal and landfill diversion guidance"
+}
+PROMPT;
+
+        $parts = [
+            ['text' => $prompt],
+        ];
+
+        // Attach image data if available
+        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+        foreach (array_slice($images, 0, 3) as $img) {
+            $mimeType = null;
+            $data = null;
+            if ($img instanceof \Illuminate\Http\UploadedFile) {
+                $mimeType = $img->getMimeType() ?: 'image/jpeg';
+                $data = base64_encode(file_get_contents($img->getRealPath()));
+            } elseif (is_string($img)) {
+                $cleanPath = ltrim(parse_url($img, PHP_URL_PATH) ?: $img, '/');
+                if (str_starts_with($cleanPath, 'storage/')) {
+                    $cleanPath = substr($cleanPath, 8);
+                }
+                if ($disk->exists($cleanPath)) {
+                    $mimeType = $disk->mimeType($cleanPath) ?: 'image/jpeg';
+                    $data = base64_encode($disk->get($cleanPath));
+                } elseif (file_exists(public_path($cleanPath))) {
+                    $mimeType = mime_content_type(public_path($cleanPath)) ?: 'image/jpeg';
+                    $data = base64_encode(file_get_contents(public_path($cleanPath)));
+                }
+            }
+
+            if ($mimeType && $data && strlen($data) < 4000000) {
+                $parts[] = [
+                    'inline_data' => [
+                        'mime_type' => $mimeType,
+                        'data' => $data,
+                    ],
+                ];
+            }
+        }
+
+        $rawResponse = $this->callGeminiMultimodal($parts, 0.2);
+        if (empty($rawResponse)) {
+            return null;
+        }
+
+        // Clean markdown backticks if returned
+        $cleaned = trim($rawResponse);
+        if (str_starts_with($cleaned, '```json')) {
+            $cleaned = substr($cleaned, 7);
+        } elseif (str_starts_with($cleaned, '```')) {
+            $cleaned = substr($cleaned, 3);
+        }
+        if (str_ends_with($cleaned, '```')) {
+            $cleaned = substr($cleaned, 0, -3);
+        }
+        $cleaned = trim($cleaned);
+
+        $decoded = json_decode($cleaned, true);
+        if (! is_array($decoded) || ! isset($decoded['suggested_reusability'])) {
+            return null;
+        }
+
+        $reusability = ($decoded['suggested_reusability'] === 'reusable') ? 'reusable' : 'not_reusable';
+        $label = ($reusability === 'reusable') ? 'Reusable' : 'Non-Reusable';
+
+        return [
+            'suggested_category' => $decoded['suggested_category'] ?? 'Other',
+            'suggested_reusability' => $reusability,
+            'classification_label' => $label,
+            'reason' => $decoded['reason'] ?? 'Gemini analyzed the material specifications and concluded this classification.',
+            'recommended_actions' => (array) ($decoded['recommended_actions'] ?? []),
+            'recycling_recommendations' => $decoded['recycling_recommendations'] ?? 'Recycle with certified recovery partners.',
+            'repurposing_ideas' => (array) ($decoded['repurposing_ideas'] ?? []),
+            'disposal_method' => $decoded['disposal_method'] ?? 'Divert from landfill into certified circular channels.',
+            'ai_source' => 'Google Gemini AI',
+        ];
+    }
+
+    /**
+     * Fallback expert engine for material classification
+     */
+    private function classifyWithExpertEngine(string $name, string $description, float $quantity, string $unit, array $images = []): array
+    {
+        $text = mb_strtolower($name . ' ' . $description);
+
+        // 1. Category Detection
+        $category = 'Other';
+        if (preg_match('/(wood|timber|pallet|plank|lumber|plywood|sawdust|furniture|cedar|oak|pine)/i', $text)) {
+            $category = 'Furniture & wood products';
+        } elseif (preg_match('/(paper|cardboard|carton|box|kraft|packaging|corrugated|newspaper|pulp)/i', $text)) {
+            $category = 'Packaging & paper';
+        } elseif (preg_match('/(steel|iron|metal|aluminum|aluminium|copper|brass|wire|rod|sheet metal|offcut|scrap metal)/i', $text)) {
+            $category = 'Metal & fabrication';
+        } elseif (preg_match('/(plastic|polymer|hdpe|ldpe|pp|pet|pvc|resin|rubber|wrap|film|drum|container)/i', $text)) {
+            $category = 'Plastics & rubber';
+        } elseif (preg_match('/(electronic|electrical|pcb|cable|battery|motor|circuit|e-waste|gadget|wire harness)/i', $text)) {
+            $category = 'Electronics & electrical';
+        } elseif (preg_match('/(textile|fabric|cotton|polyester|yarn|denim|rag|garment|apparel|sewing)/i', $text)) {
+            $category = 'Textiles & apparel';
+        } elseif (preg_match('/(chemical|solvent|lubricant|oil|sludge|coolant|paint|coating)/i', $text)) {
+            $category = 'Chemicals & lubricants';
+        } elseif (preg_match('/(food|organic|spent grain|biomass|compost|coffee|peel|agricultural)/i', $text)) {
+            $category = 'Food & beverage organic';
+        }
+
+        // 2. Reusability Detection
+        // Clear indicators of non-reusable scrap
+        $scrapKeywords = ['scrap', 'slag', 'sludge', 'contaminated', 'broken', 'shredded', 'dust', 'residue', 'waste', 'single-use', 'damaged', 'chemical residue', 'crushed', 'spent', 'dirty', 'off-spec'];
+        $isNonReusable = false;
+        foreach ($scrapKeywords as $kw) {
+            if (str_contains($text, $kw)) {
+                $isNonReusable = true;
+                break;
+            }
+        }
+
+        // Clear indicators of reusable durable items
+        $reusableKeywords = ['pallet', 'plank', 'timber', 'carton box', 'container', 'drum', 'clean', 'working', 'good condition', 'surplus', 'reclaimed', 'unopened', 'new', 'sheet', 'beam', 'bar'];
+        $hasReusableKw = false;
+        foreach ($reusableKeywords as $kw) {
+            if (str_contains($text, $kw)) {
+                $hasReusableKw = true;
+                break;
+            }
+        }
+
+        if ($hasReusableKw && ! str_contains($text, 'contaminated') && ! str_contains($text, 'broken')) {
+            $isNonReusable = false;
+        }
+
+        $reusability = $isNonReusable ? 'not_reusable' : 'reusable';
+        $label = $isNonReusable ? 'Non-Reusable' : 'Reusable';
+
+        if ($reusability === 'reusable') {
+            $reason = "{$name} exhibits durable structural characteristics and uniform condition suitable for direct multi-use reuse, remanufacturing, or exchange between Malaysian businesses.";
+            $actions = [
+                "Publish to EcoCycle Surplus Marketplace for other industrial businesses to purchase, borrow, or claim.",
+                "Ensure standard warehouse storage to preserve material integrity prior to pickup.",
+                "Set clear pickup terms and condition ratings so prospective buyers have high confidence.",
+            ];
+            $recycling = "At end-of-life, material can be segregated and channeled into standard industrial recycling loops.";
+            $repurposing = ["Remanufacture into secondary industrial products or crating", "Repurpose for internal facility fixtures or shipping supports"];
+            $disposal = "Avoid landfill disposal entirely. This material retains substantial commercial and circular value.";
+        } else {
+            $reason = "{$name} consists of single-use cutoffs, contaminated residues, or production scrap that cannot be safely reused in its current form without industrial processing.";
+            $actions = [
+                "Forward to EcoCycle Helper to match with certified Malaysian recycling and recovery facilities.",
+                "Segregate from general refuse to maintain purity and maximize scrap recovery value.",
+                "Log into Waste Monitoring to measure diversion from Malaysian landfills under ESG / Act 672 benchmarks.",
+            ];
+            $recycling = "Mechanical granulation, smelting, or chemical recycling through licensed Malaysian recovery operators (DOE SW certified if scheduled).";
+            $repurposing = ["Downcycle into lower-grade construction aggregate, filler, or composite materials", "Convert clean organic fraction into biogas or compost"];
+            $disposal = "Strictly divert from municipal landfills. Send only to DOE-licensed industrial MRFs or recovery plants.";
+        }
+
+        return [
+            'suggested_category' => $category,
+            'suggested_reusability' => $reusability,
+            'classification_label' => $label,
+            'reason' => $reason,
+            'recommended_actions' => $actions,
+            'recycling_recommendations' => $recycling,
+            'repurposing_ideas' => $repurposing,
+            'disposal_method' => $disposal,
+            'ai_source' => 'EcoCycle Expert Engine',
+        ];
+    }
+
+    /**
      * Call Google Gemini Generative Language API
      */
     public function callGemini(string $prompt, float $temperature = 0.4): ?string

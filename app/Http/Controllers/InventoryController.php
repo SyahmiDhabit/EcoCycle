@@ -7,6 +7,8 @@ use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use App\Models\MarketplaceListing;
 use App\Models\User;
+use App\Services\EcoCycleHelperService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -92,39 +94,115 @@ class InventoryController extends Controller
         ]);
     }
 
+    /**
+     * Gemini AI Material Analysis Endpoint
+     * Analyzes uploaded material photos, name, and description.
+     * Suggests: category, reusability (reusable / not_reusable), reason, and recommended actions.
+     */
+    public function aiAnalyze(Request $request, EcoCycleHelperService $helper): JsonResponse
+    {
+        $this->checkApproved();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:5000'],
+            'quantity' => ['required', 'numeric', 'min:0.01'],
+            'unit' => ['required', 'string', 'max:30'],
+            'images' => ['required', 'array', 'min:1', 'max:3'],
+            'images.*' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ], [
+            'images.required' => 'Please upload at least 1 photo for Gemini AI material analysis (minimum 1, maximum 3 photos).',
+            'images.min' => 'Please upload at least 1 photo (minimum 1, maximum 3 photos).',
+            'images.max' => 'You can upload a maximum of 3 photos.',
+        ]);
+
+        // Save up to 3 uploaded images into public storage
+        $disk = Storage::disk('public');
+        $savedImages = [];
+        if ($request->hasFile('images')) {
+            $files = $request->file('images');
+            if (is_array($files)) {
+                foreach (array_slice($files, 0, 3) as $file) {
+                    if ($file && $file->isValid()) {
+                        $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                        $filename = 'inv_'.Str::random(24).'.'.$ext;
+                        $disk->putFileAs('inventory-images', $file, $filename);
+                        $savedImages[] = '/inventory-images/'.$filename;
+                    }
+                }
+            }
+        }
+
+        $analysis = $helper->classifyMaterial(
+            $validated['name'],
+            $validated['description'],
+            (float) $validated['quantity'],
+            $validated['unit'],
+            $savedImages
+        );
+
+        return response()->json([
+            'success' => true,
+            'analysis' => $analysis,
+            'saved_images' => $savedImages,
+            'item_data' => [
+                'name' => $validated['name'],
+                'description' => $validated['description'],
+                'quantity' => (float) $validated['quantity'],
+                'unit' => $validated['unit'],
+            ],
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->checkApproved();
         $business = Auth::user();
 
-        $validated = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
+            'quantity' => ['required', 'numeric', 'min:0.01'],
+            'unit' => ['required', 'string', 'max:30'],
+            'reusability' => ['required', 'in:reusable,not_reusable'],
+            'category' => ['nullable', 'string', 'max:60'],
             'sku' => ['nullable', 'string', 'max:100'],
-            'category' => ['required', 'string', 'max:60'],
-            'quantity' => ['required', 'numeric', 'min:0'],
-            'unit' => ['required', 'string', 'max:20'],
-            'reusability' => ['nullable', 'in:reusable,not_reusable'],
-            'listing_type' => ['nullable', 'in:buy,borrow,free'],
-            'price' => ['nullable', 'numeric', 'min:0'],
-            'condition' => ['nullable', 'string', 'max:40'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'images' => ['required', 'array', 'min:1', 'max:5'],
-            'images.*' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
-        ], [
-            'images.required' => 'Please upload at least 1 photo for this inventory item (maximum 5).',
-            'images.min' => 'Please upload at least 1 photo for this inventory item (minimum 1, maximum 5).',
+            'saved_images' => ['nullable', 'string'],
+            'images' => ['nullable', 'array', 'max:5'],
+            'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'listing_type' => ['nullable', 'in:buy,borrow,free'],
+            'condition' => ['nullable', 'string', 'max:40'],
+            'available_quantity' => ['nullable', 'numeric', 'min:0'],
+            'pickup_location' => ['nullable', 'string', 'max:255'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'redirect_to' => ['nullable', 'string'],
+        ];
+
+        if ($request->input('reusability') === 'reusable' && $request->input('listing_type') === 'buy' && $request->filled('price')) {
+            $rules['price'] = ['required', 'numeric', 'min:0'];
+        }
+
+        $validated = $request->validate($rules, [
             'images.max' => 'You can upload a maximum of 5 photos.',
+            'price.required' => 'Price per unit (RM) is required when listing type is Sell.',
         ]);
 
-        // Process up to 5 uploaded images
+        // Process images (either pre-saved from AI analysis or newly uploaded)
         $uploadedImages = [];
+        if (! empty($validated['saved_images'])) {
+            $decoded = json_decode($validated['saved_images'], true);
+            if (is_array($decoded)) {
+                $uploadedImages = array_slice($decoded, 0, 5);
+            }
+        }
+
         if ($request->hasFile('images')) {
+            $disk = Storage::disk('public');
             $files = $request->file('images');
             if (is_array($files)) {
-                $disk = Storage::disk('public');
-                foreach (array_slice($files, 0, 5) as $file) {
+                foreach (array_slice($files, 0, max(0, 5 - count($uploadedImages))) as $file) {
                     if ($file && $file->isValid()) {
                         $ext = $file->getClientOriginalExtension() ?: 'jpg';
                         $filename = 'inv_'.Str::random(24).'.'.$ext;
@@ -135,12 +213,34 @@ class InventoryController extends Controller
             }
         }
 
+        if (empty($uploadedImages)) {
+            return back()->withErrors(['images' => 'Please provide at least 1 photo for this material.'])->withInput();
+        }
+
         $quantity = (float) $validated['quantity'];
         $threshold = isset($validated['minimum_threshold']) && $validated['minimum_threshold'] !== null && $validated['minimum_threshold'] !== ''
             ? (float) $validated['minimum_threshold']
             : null;
 
-        $reusability = $validated['reusability'] ?? 'reusable';
+        $reusability = $validated['reusability'];
+        $category = ! empty($validated['category']) ? $validated['category'] : 'Other';
+        $listingType = $validated['listing_type'] ?? 'buy';
+        $condition = $validated['condition'] ?? ($reusability === 'reusable' ? 'Used - Good' : 'Scrap');
+        $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : 0);
+        $description = ! empty($validated['description']) ? $validated['description'] : "Material specifications for {$validated['name']}.";
+
+        // Location resolution (use user entered or GPS or business profile location)
+        $pickupLocation = $validated['pickup_location'] ?? null;
+        $locationCity = $business->city ?: 'Shah Alam';
+        $locationState = $business->state ?: 'Selangor';
+        if ($pickupLocation) {
+            $parts = array_map('trim', explode(',', $pickupLocation));
+            if (count($parts) >= 2) {
+                $locationCity = $parts[0];
+                $locationState = end($parts);
+            }
+        }
+
         $status = 'in_stock';
         if ($quantity <= 0) {
             $status = 'out_of_stock';
@@ -150,23 +250,23 @@ class InventoryController extends Controller
             $status = 'low_stock';
         }
 
-        $listingType = $validated['listing_type'] ?? 'buy';
-        $condition = $validated['condition'] ?? 'Used - Good';
-        $price = ($listingType === 'free') ? 0 : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : 0);
-
-        DB::transaction(function () use ($business, $validated, $quantity, $threshold, $status, $uploadedImages, $reusability, $listingType, $price, $condition): void {
-            $item = InventoryItem::create([
+        $createdItem = null;
+        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $threshold, $status, $uploadedImages, $reusability, $listingType, $price, $condition, $locationCity, $locationState, &$createdItem): void {
+            $createdItem = InventoryItem::create([
                 'business_id' => $business->id,
                 'name' => $validated['name'],
-                'description' => $validated['description'] ?? null,
-                'sku' => $validated['sku'] ?? null,
-                'category' => $validated['category'],
+                'title' => $validated['name'],
+                'description' => $description,
+                'sku' => $validated['sku'] ?? ('INV-' . strtoupper(Str::random(6))),
+                'category' => $category,
                 'quantity' => $quantity,
                 'unit' => $validated['unit'],
                 'reusability' => $reusability,
                 'listing_type' => $listingType,
                 'price' => $price,
                 'condition' => $condition,
+                'location_city' => $locationCity,
+                'location_state' => $locationState,
                 'image_path' => $uploadedImages[0] ?? null,
                 'image_1' => $uploadedImages[0] ?? null,
                 'image_2' => $uploadedImages[1] ?? null,
@@ -182,7 +282,7 @@ class InventoryController extends Controller
             if ($quantity > 0) {
                 InventoryTransaction::create([
                     'business_id' => $business->id,
-                    'inventory_item_id' => $item->id,
+                    'inventory_item_id' => $createdItem->id,
                     'transaction_type' => 'stock_in',
                     'quantity_change' => $quantity,
                     'quantity_after' => $quantity,
@@ -190,14 +290,14 @@ class InventoryController extends Controller
                 ]);
             }
 
-            // Synchronize with Marketplace & Business Profile Directory
-            static::syncInventoryToMarketplace($item, $validated);
-
             if ($reusability === 'reusable') {
+                // Synchronize with Marketplace & Business Profile Directory
+                static::syncInventoryToMarketplace($createdItem, $validated);
+
                 BusinessNotification::send(
                     $business->id,
                     'Material Added & Live on Marketplace',
-                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$validated['category']}). It is automatically active on the Marketplace and visible in your business directory profile.",
+                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$category}). It is now live on the EcoCycle Marketplace for other businesses to browse.",
                     'inventory_added',
                     '/business/marketplace',
                     'green'
@@ -205,20 +305,26 @@ class InventoryController extends Controller
             } else {
                 BusinessNotification::send(
                     $business->id,
-                    'Scrap Material Logged in Inventory',
-                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$validated['category']}) as internal scrap. AI Scrap Advisor guidance is ready.",
+                    'Non-Reusable Material Logged',
+                    "Added {$quantity} {$validated['unit']} of '{$validated['name']}' ({$category}) as internal scrap. Forwarded to EcoCycle Helper for recovery.",
                     'inventory_added',
-                    '/business/inventory',
+                    "/business/helper?item_id={$createdItem->id}",
                     'blue'
                 );
             }
         });
 
-        $successMsg = ($reusability === 'reusable')
-            ? "Inventory item '{$validated['name']}' added and automatically published to Marketplace & Directory!"
-            : "Scrap item '{$validated['name']}' saved to internal inventory. Click 'AI Advisor' for circular recovery suggestions.";
+        // If Non-Reusable: Forward item information directly to EcoCycle Helper
+        if ($reusability === 'not_reusable') {
+            return redirect()->route('business.helper', ['item_id' => $createdItem->id])->with('status', "Non-reusable material '{$validated['name']}' saved and forwarded to EcoCycle Helper for circular recommendations!");
+        }
 
-        return back()->with('status', $successMsg);
+        // If Reusable: If redirect_to marketplace requested, redirect to marketplace, otherwise inventory
+        if ($request->input('redirect_to') === 'marketplace') {
+            return redirect()->route('business.marketplace')->with('status', "Material '{$validated['name']}' added to inventory and automatically published to the EcoCycle Marketplace!");
+        }
+
+        return redirect()->route('business.inventory')->with('status', "Material '{$validated['name']}' added to inventory and automatically published to the EcoCycle Marketplace!");
     }
 
     public function update(Request $request, InventoryItem $item): RedirectResponse
@@ -238,7 +344,7 @@ class InventoryController extends Controller
             'condition' => ['nullable', 'string', 'max:40'],
             'minimum_threshold' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'images' => ['nullable', 'array', 'max:5'],
+            'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ]);
 
@@ -248,7 +354,7 @@ class InventoryController extends Controller
             if (is_array($files)) {
                 $disk = Storage::disk('public');
                 $newImages = [];
-                foreach (array_slice($files, 0, 5) as $file) {
+                foreach (array_slice($files, 0, 3) as $file) {
                     if ($file && $file->isValid()) {
                         $ext = $file->getClientOriginalExtension() ?: 'jpg';
                         $filename = 'inv_'.Str::random(24).'.'.$ext;

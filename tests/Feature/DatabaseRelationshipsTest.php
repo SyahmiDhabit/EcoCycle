@@ -10,6 +10,7 @@ use App\Models\MaterialExchange;
 use App\Models\User;
 use App\Models\WasteRecord;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class DatabaseRelationshipsTest extends TestCase
@@ -66,6 +67,10 @@ class DatabaseRelationshipsTest extends TestCase
             'notes' => 'Initial bulk order',
         ]);
 
+        $this->assertTrue(Schema::hasTable('item_transaction'));
+        $this->assertFalse(Schema::hasTable('inventory_transaction'));
+        $this->assertDatabaseHas('item_transaction', ['id' => $tx->id]);
+
         $this->assertEquals($business->id, $item->business->id);
         $this->assertEquals($item->id, $tx->inventoryItem->id);
         $this->assertEquals($business->id, $tx->business->id);
@@ -73,7 +78,7 @@ class DatabaseRelationshipsTest extends TestCase
 
         // When item is deleted, transactions cascade
         $item->delete();
-        $this->assertDatabaseMissing('inventory_transaction', ['id' => $tx->id]);
+        $this->assertDatabaseMissing('item_transaction', ['id' => $tx->id]);
     }
 
     public function test_waste_record_foreign_keys_and_null_on_item_delete(): void

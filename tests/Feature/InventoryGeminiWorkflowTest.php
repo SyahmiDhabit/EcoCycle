@@ -316,11 +316,11 @@ class InventoryGeminiWorkflowTest extends TestCase
             ->post(route('business.inventory.publish', $item))
             ->assertSessionHasErrors('price');
 
-        // Open Update Item Details page, update quantity, Sell listing type, Price per Unit (RM) > 0, and Pickup Address
+        // Open Update Inventory Details page, update quantity, Sell listing type, Price per Unit (RM) > 0, and Pickup Address
         $this->actingAs($business)
             ->get(route('business.inventory.edit', $item))
             ->assertOk()
-            ->assertSee('Update Item Details')
+            ->assertSee('Update Inventory Details')
             ->assertSee('Price per Unit (RM)')
             ->assertSee('Collection / Pickup Address');
 

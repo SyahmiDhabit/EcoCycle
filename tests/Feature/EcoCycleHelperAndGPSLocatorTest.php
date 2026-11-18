@@ -58,7 +58,7 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('EcoCycle Helper');
-        $response->assertSee('AI Circular Advisor', false);
+        $response->assertSee('Material Analysis', false);
         $response->assertSee('GPS Locator');
     }
 

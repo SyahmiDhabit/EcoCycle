@@ -19,7 +19,7 @@ class InventoryTransaction extends Model
 {
     use HasFactory;
 
-    protected $table = 'inventory_transaction';
+    protected $table = 'item_transaction';
 
     protected function casts(): array
     {
@@ -32,6 +32,11 @@ class InventoryTransaction extends Model
     public function business(): BelongsTo
     {
         return $this->belongsTo(User::class, 'business_id');
+    }
+
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(Item::class, 'inventory_item_id');
     }
 
     public function inventoryItem(): BelongsTo

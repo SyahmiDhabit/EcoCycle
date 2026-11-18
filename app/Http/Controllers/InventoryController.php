@@ -220,12 +220,27 @@ class InventoryController extends Controller
         );
         session()->put('inventory_analysis_token', $analysisToken);
 
+        // Persist analyzed draft in session so Update Inventory Details is the central confirmation step before saving
+        session()->put('inventory_pending_draft', [
+            'name' => $validated['name'],
+            'description' => $validated['description'],
+            'quantity' => (float) $validated['quantity'],
+            'unit' => $validated['unit'],
+            'condition' => $validated['condition'],
+            'saved_images' => $savedImages,
+            'saved_image_slots' => $savedSlots,
+            'analysis' => $analysis,
+            'analysis_token' => $analysisToken,
+            'created_at' => now()->toIso8601String(),
+        ]);
+
         return response()->json([
             'success' => true,
             'analysis' => $analysis,
             'analysis_token' => $analysisToken,
             'saved_images' => $savedImages,
             'saved_image_slots' => $savedSlots,
+            'update_details_url' => route('business.inventory.prepare'),
             'item_data' => [
                 'name' => $validated['name'],
                 'description' => $validated['description'],
@@ -236,11 +251,63 @@ class InventoryController extends Controller
         ]);
     }
 
+    /**
+     * Main central workflow step after Material Analysis:
+     * Review, complete, edit, and confirm item details on Update Inventory Details BEFORE saving to `item`.
+     */
+    public function prepare(): View|RedirectResponse
+    {
+        $this->checkApproved();
+        /** @var User $business */
+        $business = Auth::user();
+
+        $draft = session('inventory_pending_draft');
+        if (! is_array($draft) || empty($draft['name'])) {
+            return redirect()->route('business.inventory', ['add' => 1])
+                ->with('status', 'Please upload material photos and submit item details for Material Analysis first.');
+        }
+
+        $categories = $business->inventoryItems()->distinct()->pluck('category')->filter()->values();
+
+        return view('business.inventory.prepare', [
+            'business' => $business,
+            'draft' => $draft,
+            'categories' => $categories,
+        ]);
+    }
+
+    /**
+     * Cancel an unsaved draft from the Update Inventory Details page and clean up any unreferenced draft photos.
+     */
+    public function cancelDraft(): RedirectResponse
+    {
+        $this->checkApproved();
+
+        $draft = session()->pull('inventory_pending_draft');
+        if (is_array($draft)) {
+            $draftImages = array_unique(array_filter(array_merge(
+                (array) ($draft['saved_images'] ?? []),
+                (array) ($draft['saved_image_slots'] ?? [])
+            ), fn ($v): bool => is_string($v) && trim($v) !== ''));
+
+            $disk = Storage::disk('public');
+            foreach ($draftImages as $imgPath) {
+                if (str_starts_with($imgPath, '/inventory-images/') && ! $this->isImageStillReferenced($imgPath)) {
+                    $disk->delete('inventory-images/'.basename($imgPath));
+                }
+            }
+        }
+
+        return redirect()->route('business.inventory')
+            ->with('status', 'Item submission cancelled. No item was saved to your inventory.');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->checkApproved();
         $business = Auth::user();
 
+        $isFromPrepare = $request->boolean('from_prepare');
         $isPublishingRequest = $request->boolean('publish_to_marketplace') || $request->input('redirect_to') === 'marketplace';
 
         // Enforce Non-Reusable publishing restriction strictly on backend
@@ -263,20 +330,25 @@ class InventoryController extends Controller
             'image_1' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'image_2' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'image_3' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'remove_image_1' => ['nullable', 'boolean'],
+            'remove_image_2' => ['nullable', 'boolean'],
+            'remove_image_3' => ['nullable', 'boolean'],
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'listing_type' => ['nullable', 'in:buy,free,lend'],
             'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
             'available_quantity' => ['nullable', 'numeric', 'min:0'],
             'pickup_location' => ['nullable', 'string', 'max:255'],
+            'pickup_address' => ['nullable', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'ai_analysis_json' => ['nullable', 'string'],
             'redirect_to' => ['nullable', 'string'],
             'analysis_token' => ['nullable', 'string'],
             'publish_to_marketplace' => ['nullable', 'boolean'],
+            'from_prepare' => ['nullable', 'boolean'],
         ];
 
-        if ($request->input('reusability') === 'reusable' && $isPublishingRequest) {
+        if ($request->input('reusability') === 'reusable' && ($isPublishingRequest || $isFromPrepare)) {
             $rules['listing_type'] = ['required', 'in:buy,free,lend'];
             $rules['condition'] = ['required', Rule::in(Item::ALLOWED_CONDITIONS)];
             if ($request->input('listing_type') === 'buy') {
@@ -291,8 +363,8 @@ class InventoryController extends Controller
             'condition.in' => 'Please select a valid Material Condition (New, Damaged, or Used).',
             'category.required' => 'Please confirm or enter a valid Material Category.',
             'images.max' => 'You can upload a maximum of 3 photos.',
-            'price.required' => 'Price (RM) is required when listing type is Sell.',
-            'price.gt' => 'Sell listings must have a valid Price (RM) greater than RM 0.00.',
+            'price.required' => 'Price per Unit (RM) is required when Listing Type is Sell.',
+            'price.gt' => 'Sell listings must have a valid Price per Unit (RM) greater than RM 0.00.',
         ]);
 
         // Enforce mandatory material analysis before publishing to Marketplace
@@ -342,25 +414,28 @@ class InventoryController extends Controller
             }
         }
 
-        // Only process uploaded file inputs if pre-saved images from aiAnalyze were NOT already provided
-        if (! $usedPreSaved) {
-            $hasExplicitSlots = $request->hasFile('image_1') || $request->hasFile('image_2') || $request->hasFile('image_3');
-            if ($hasExplicitSlots) {
-                for ($slot = 1; $slot <= 3; $slot++) {
-                    $file = $request->file("image_{$slot}");
-                    if ($file && $file->isValid()) {
-                        $imageSlots[$slot - 1] = $this->storeUploadedInventoryImage($file);
-                    }
+        // Allow replacing/removing individual slots on top of pre-saved analysis slots (e.g. from Update Inventory Details)
+        $hasExplicitSlots = $request->hasFile('image_1') || $request->hasFile('image_2') || $request->hasFile('image_3')
+            || $request->boolean('remove_image_1') || $request->boolean('remove_image_2') || $request->boolean('remove_image_3');
+
+        if ($hasExplicitSlots) {
+            for ($slot = 1; $slot <= 3; $slot++) {
+                $idx = $slot - 1;
+                $file = $request->file("image_{$slot}");
+                if ($file && $file->isValid()) {
+                    $imageSlots[$idx] = $this->storeUploadedInventoryImage($file);
+                } elseif ($request->boolean("remove_image_{$slot}")) {
+                    $imageSlots[$idx] = null;
                 }
-            } elseif ($request->hasFile('images')) {
-                $files = $request->file('images');
-                if (is_array($files)) {
-                    $slotIdx = 0;
-                    foreach (array_slice($files, 0, 3) as $file) {
-                        if ($file && $file->isValid() && $slotIdx < 3) {
-                            $imageSlots[$slotIdx] = $this->storeUploadedInventoryImage($file);
-                            $slotIdx++;
-                        }
+            }
+        } elseif (! $usedPreSaved && $request->hasFile('images')) {
+            $files = $request->file('images');
+            if (is_array($files)) {
+                $slotIdx = 0;
+                foreach (array_slice($files, 0, 3) as $file) {
+                    if ($file && $file->isValid() && $slotIdx < 3) {
+                        $imageSlots[$slotIdx] = $this->storeUploadedInventoryImage($file);
+                        $slotIdx++;
                     }
                 }
             }
@@ -396,8 +471,8 @@ class InventoryController extends Controller
             }
         }
 
-        // Location resolution (use user entered or GPS or business profile location)
-        $pickupLocation = trim((string) ($validated['pickup_location'] ?? ''));
+        // Location resolution (use pickup_address, pickup_location, or business profile location)
+        $pickupLocation = trim((string) ($validated['pickup_address'] ?? $validated['pickup_location'] ?? ''));
         $locationCity = $business->city ?: 'Shah Alam';
         $locationState = $business->state ?: 'Selangor';
         if ($pickupLocation !== '') {
@@ -495,7 +570,23 @@ class InventoryController extends Controller
             }
         });
 
-        // Redirect to Update Item Details when requested after Reusable AI analysis
+        // Clear pending draft from session once confirmed and saved into `item`
+        session()->forget('inventory_pending_draft');
+
+        // Main Update Inventory Details save workflow (Section 3):
+        // - Non-Reusable -> saved in Inventory Items and forwarded directly to EcoCycle Helper
+        // - Reusable -> saved in Inventory Items (NOT auto-published) and displays saved item details with Publish to Marketplace option
+        if ($isFromPrepare && $createdItem) {
+            if ($reusability === 'not_reusable') {
+                return redirect()->route('business.helper', ['item_id' => $createdItem->id])
+                    ->with('status', "Non-reusable material '{$validated['name']}' has been saved to Inventory Items and forwarded to EcoCycle Helper.");
+            }
+
+            return redirect()->route('business.inventory.edit', $createdItem)
+                ->with('status', "Material '{$validated['name']}' has been saved to Inventory Items. Review the saved details below and click Publish to Marketplace when ready.");
+        }
+
+        // Redirect to Update Inventory Details when explicitly requested
         if ($request->input('redirect_to') === 'edit' && $createdItem) {
             return redirect()->route('business.inventory.edit', $createdItem)
                 ->with('status', "Material '{$validated['name']}' saved to your inventory. Review and update its details below before publishing to the Marketplace.");

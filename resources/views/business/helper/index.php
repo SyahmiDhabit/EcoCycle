@@ -423,7 +423,7 @@ $activeNav = 'helper';
                 <section class="helper-card">
                     <div class="helper-card-header">
                         <h2 class="helper-card-title">
-                            <span>AI Circular Advisor</span>
+                            <span>Material Analysis &amp; Disposal Guidance</span>
                         </h2>
                         <span id="ai-status-indicator" style="font-size:11px;color:#15803d;font-weight:700;background:#eef6ed;border:1px solid #c2dec0;padding:3px 9px;">
                             Active

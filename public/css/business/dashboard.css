@@ -666,6 +666,107 @@ h1, h2, h3, h4,
     height: 17px;
 }
 
+/* Layer-by-Layer Collapsible Navigation Groups */
+.sidebar-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 2px;
+}
+
+.sidebar-group-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 14px;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: #243f30;
+    font: 600 13.5px var(--font-main);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar-group-toggle:hover {
+    background: #eef6ec;
+    color: var(--brand-green);
+}
+
+.sidebar-group-toggle.has-active,
+.sidebar-group-toggle.expanded {
+    background: #f2f8f1;
+    color: var(--brand-green);
+    border-left-color: var(--brand-green);
+}
+
+.sidebar-group-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+}
+
+.sidebar-group-label svg {
+    flex-shrink: 0;
+    width: 17px;
+    height: 17px;
+    color: inherit;
+}
+
+.sidebar-chevron {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    color: #617769;
+    transition: transform 0.18s ease, color 0.15s ease;
+}
+
+.sidebar-group-toggle.expanded .sidebar-chevron {
+    transform: rotate(90deg);
+    color: var(--brand-green);
+}
+
+.sidebar-submenu {
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    margin: 2px 0 6px 18px;
+    padding-left: 10px;
+    border-left: 1px solid #d4e2d3;
+}
+
+.sidebar-submenu.open {
+    display: flex;
+}
+
+.sidebar-sublink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 0;
+    color: #4a6152;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-sublink:hover {
+    background: #eef6ec;
+    color: var(--brand-green);
+}
+
+.sidebar-sublink.active {
+    background: #e5f2e3;
+    color: var(--brand-green);
+    font-weight: 700;
+}
+
 .sidebar-footer-card {
     background: var(--surface-subtle);
     border: 1px solid var(--card-border);

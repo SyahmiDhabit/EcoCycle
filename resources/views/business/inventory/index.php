@@ -1082,25 +1082,25 @@ $activeNav = 'inventory';
                     </div>
                 </div>
 
-                <!-- ==================== LOADING STATE: Material Scanning ==================== -->
+                <!-- ==================== LOADING STATE: Material Analysis ==================== -->
                 <div id="add_stage_loading" style="display:none;">
                     <div class="add-rect-box" style="padding:56px 24px;text-align:center;">
                         <div class="rect-loading-track">
                             <div class="rect-loading-bar"></div>
                         </div>
-                        <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Analyzing Material with Google Gemini AI...</h4>
+                        <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Material Analysis</h4>
                         <p style="font-size:13px;color:#64748b;margin:0 auto;max-width:440px;line-height:1.5;">
-                            Analyzing material details and photos. Please wait a moment...
+                            Analyzing uploaded photos and item details. Please wait a moment...
                         </p>
                     </div>
                 </div>
 
-                <!-- ==================== STAGE 2: Review & Confirm AI Suggestion -> Add to Inventory ==================== -->
+                <!-- ==================== STAGE 2: Material Analysis Result ==================== -->
                 <div id="add_stage_2" style="display:none;">
                     <!-- Material Analysis Result Container -->
                     <div class="add-rect-box" style="margin-bottom:20px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;">
-                            <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Google Gemini AI Material Analysis Result</h4>
+                            <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Material Analysis</h4>
                             <button type="button" id="btn_retry_analysis" class="add-btn-utility" onclick="startGeminiAnalysis()" style="display:none;">
                                 Retry Analysis
                             </button>
@@ -1195,9 +1195,9 @@ $activeNav = 'inventory';
 
                     <!-- Reusable Save Info Notice -->
                     <div id="add_section_reusable" class="add-rect-box" style="display:none;background:#f0fdf4;border-color:#b9dec0;">
-                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#18422d;">Next Step: Update Item Details</h4>
+                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#18422d;">Next Step: Update Inventory Details</h4>
                         <p style="margin:0;font-size:12.5px;color:#2c523b;line-height:1.5;">
-                            AI suggestions above are guidance only. Click <strong>Update Item Details</strong> to save this item to your Inventory and review/edit the final Category, Listing Type (Sell, Free, or Lend), Price per Unit, and Pickup Address before publishing to the Marketplace.
+                            The suggestions above can be edited before saving. Continue to <strong>Update Inventory Details</strong> to review, complete, and confirm the final item information.
                         </p>
                     </div>
 
@@ -2081,8 +2081,8 @@ function startGeminiAnalysis() {
         });
     })
     .then(function(data) {
-        document.getElementById('add_stage_loading').style.display = 'none';
         if (!data || !data.success || !data.analysis) {
+            document.getElementById('add_stage_loading').style.display = 'none';
             var failMsg = (data && data.message) ? data.message : 'Material analysis could not process the uploaded photos. Please retry.';
             showAddAnalysisError(failMsg);
             document.getElementById('add_stage_1').style.display = 'block';
@@ -2090,6 +2090,13 @@ function startGeminiAnalysis() {
             return;
         }
 
+        // Direct business owner straight to the central Update Inventory Details page to review, edit & confirm before saving
+        if (data.update_details_url) {
+            window.location.href = data.update_details_url;
+            return;
+        }
+
+        document.getElementById('add_stage_loading').style.display = 'none';
         addAnalysisCompleted = true;
 
         // Store pre-saved slots cleanly (file inputs have no name attribute so they are never re-uploaded on form submit)
@@ -2252,7 +2259,7 @@ function selectDecision(choice) {
 
 function validateInventoryAddForm(form) {
     if (!addAnalysisCompleted) {
-        showAddAnalysisError('Please click Analyze Item and review the AI suggestion before saving this item to Inventory.');
+        showAddAnalysisError('Please click Analyze Item and review the material analysis before saving this item to Inventory.');
         return false;
     }
 

@@ -34,7 +34,7 @@ $canPublishNow = ! $isPermanentlySoldOut
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Update Item Details — EcoCycle</title>
+    <title>Update Inventory Details &mdash; EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -291,9 +291,9 @@ $canPublishNow = ! $isPermanentlySoldOut
                         <a href="<?= route('business.inventory') ?>" class="edit-btn-secondary" style="padding:7px 14px;font-size:12px;margin-bottom:10px;">
                             &larr; Back to Inventory
                         </a>
-                        <h1 style="margin:6px 0 4px;font-size:22px;color:#123321;">Update Item Details</h1>
+                        <h1 style="margin:6px 0 4px;font-size:22px;color:#123321;">Update Inventory Details</h1>
                         <p style="margin:0;font-size:13px;color:#526658;">
-                            Review AI suggestions, confirm material details, set listing type and price per unit, then save to your inventory.
+                            Review the material analysis summary, confirm item details, set listing type and price per unit, then save to your inventory.
                         </p>
                     </div>
                     <div>
@@ -325,16 +325,16 @@ $canPublishNow = ! $isPermanentlySoldOut
                     </div>
                 <?php endif; ?>
 
-                <?php if ($aiAnalysis && $isReusable): ?>
+                <?php if ($aiAnalysis): ?>
                     <div class="edit-card" style="border-left:4px solid #143825;background:#f7fbf7;">
                         <div class="edit-card-header" style="background:#eef6ed;">
-                            <h3>Google Gemini AI Suggestions (Guidance Only)</h3>
-                            <span style="font-size:11.5px;color:#143825;font-weight:600;">You control the final values below</span>
+                            <h3>Material Analysis</h3>
+                            <span style="font-size:11.5px;color:#143825;font-weight:600;">Suggestions can be edited below</span>
                         </div>
                         <div class="edit-card-body" style="padding:16px 20px;font-size:12.5px;color:#1e293b;line-height:1.55;">
                             <div class="edit-grid-3" style="margin-bottom:10px;">
                                 <div>
-                                    <span style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Suggested Category</span>
+                                    <span style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Suggested Item Category</span>
                                     <strong><?= e($aiAnalysis['suggested_category'] ?? $item->category) ?></strong>
                                 </div>
                                 <div>
@@ -342,15 +342,21 @@ $canPublishNow = ! $isPermanentlySoldOut
                                     <strong><?= e($aiAnalysis['suggested_listing_type_label'] ?? 'Sell') ?></strong>
                                 </div>
                                 <div>
-                                    <span style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Suggested Price Range</span>
+                                    <span style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Suggested Price / Range</span>
                                     <strong><?= e($aiAnalysis['suggested_price_range'] ?? 'Set your own price per unit') ?></strong>
                                 </div>
                             </div>
                             <?php if (! empty($aiAnalysis['reason'])): ?>
-                                <div style="margin-top:6px;"><strong>Reason:</strong> <?= e($aiAnalysis['reason']) ?></div>
+                                <div style="margin-top:6px;"><strong>Reason for Classification:</strong> <?= e($aiAnalysis['reason']) ?></div>
+                            <?php endif; ?>
+                            <?php if (! empty($aiAnalysis['recommended_actions'])): ?>
+                                <div style="margin-top:6px;"><strong>Suggested Next Steps:</strong> <?= e(is_array($aiAnalysis['recommended_actions']) ? implode(' • ', $aiAnalysis['recommended_actions']) : $aiAnalysis['recommended_actions']) ?></div>
                             <?php endif; ?>
                             <?php if (! empty($aiAnalysis['reuse_applications'])): ?>
                                 <div style="margin-top:6px;"><strong>Suggested Reuse Applications:</strong> <?= e(is_array($aiAnalysis['reuse_applications']) ? implode(' • ', $aiAnalysis['reuse_applications']) : $aiAnalysis['reuse_applications']) ?></div>
+                            <?php endif; ?>
+                            <?php if (! empty($aiAnalysis['other_recommendations'])): ?>
+                                <div style="margin-top:6px;"><strong>Other Recommendations:</strong> <?= e(is_array($aiAnalysis['other_recommendations']) ? implode(' ', $aiAnalysis['other_recommendations']) : $aiAnalysis['other_recommendations']) ?></div>
                             <?php endif; ?>
                         </div>
                     </div>

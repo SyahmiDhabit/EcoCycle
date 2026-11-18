@@ -124,12 +124,13 @@ class EcoCycleFullWorkflowTest extends TestCase
         $this->assertFalse($item->isPublishedToMarketplace());
         $this->assertIsArray($item->ai_analysis);
 
-        // 3. Update Item Details page shows AI suggestions banner, Sell/Free/Lend, Price per Unit, and default business address
+        // 3. Update Inventory Details page shows Material Analysis summary (no Google Gemini/API wording), Sell/Free/Lend, Price per Unit, and default business address
         $this->actingAs($seller)
             ->get(route('business.inventory.edit', $item))
             ->assertOk()
-            ->assertSee('Update Item Details')
-            ->assertSee('Google Gemini AI Suggestions')
+            ->assertSee('Update Inventory Details')
+            ->assertSee('Material Analysis')
+            ->assertDontSee('Google Gemini')
             ->assertSee('Price per Unit (RM)')
             ->assertSee('Lot 88, Kawasan Perindustrian Rawang');
 
@@ -621,5 +622,151 @@ class EcoCycleFullWorkflowTest extends TestCase
             ->assertJsonPath('verified_match_found', false)
             ->assertJsonCount(0, 'centres');
         $this->assertNotEmpty($noMatchGps->json('alternative_recommendations'));
+    }
+
+    public function test_material_analysis_directs_to_update_inventory_details_before_saving_and_supports_cancel(): void
+    {
+        $seller = $this->createApprovedBusiness('DraftFlow Timber Sdn Bhd', 'No. 8, Jalan Kilang, Klang');
+        $photo = UploadedFile::fake()->image('draft_pallets.jpg', 640, 480);
+
+        // 1. Analyze Item returns update_details_url and does NOT save to `item` table yet
+        $analyzeResp = $this->actingAs($seller)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Grade-A Heat Treated Pallets',
+            'description' => 'Clean wooden pallets ready for logistics reuse.',
+            'quantity' => 12,
+            'unit' => 'pcs',
+            'condition' => 'Used',
+            'image_1' => $photo,
+        ]);
+
+        $analyzeResp->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('update_details_url', route('business.inventory.prepare'));
+
+        $this->assertSame(0, Item::count());
+
+        // 2. Central Update Inventory Details page shows Material Analysis (zero Gemini/API wording) and pre-filled fields
+        $this->actingAs($seller)
+            ->get(route('business.inventory.prepare'))
+            ->assertOk()
+            ->assertSee('Update Inventory Details')
+            ->assertSee('Material Analysis')
+            ->assertSee('Grade-A Heat Treated Pallets')
+            ->assertSee('Save Item')
+            ->assertSee('Cancel')
+            ->assertDontSee('Google Gemini')
+            ->assertDontSee('Gemini AI');
+
+        // 3. Clicking Cancel discards draft without creating any item row
+        $this->actingAs($seller)
+            ->post(route('business.inventory.draft.cancel'))
+            ->assertRedirect(route('business.inventory'));
+
+        $this->assertSame(0, Item::count());
+        $this->assertNull(session('inventory_pending_draft'));
+    }
+
+    public function test_update_inventory_details_save_item_workflow_for_reusable_and_non_reusable(): void
+    {
+        $seller = $this->createApprovedBusiness('CentralWorkflow Industries Bhd', 'Lot 15, Shah Alam');
+        $viewer = $this->createApprovedBusiness('Marketplace Viewer Sdn Bhd');
+
+        // A. Reusable path: Analyze -> Update Inventory Details -> Save Item -> saved (not published) -> Publish to Marketplace
+        $reusPhoto = UploadedFile::fake()->image('reusable_bins.jpg', 600, 400);
+        $reusAnalyze = $this->actingAs($seller)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Heavy-Duty Stackable Plastic Bins',
+            'description' => 'Clean undamaged industrial storage bins.',
+            'quantity' => 15,
+            'unit' => 'pcs',
+            'condition' => 'New',
+            'image_1' => $reusPhoto,
+        ])->assertOk()->json();
+
+        // Sell requires Price per Unit > 0 on Save Item from Update Inventory Details
+        $this->actingAs($seller)
+            ->from(route('business.inventory.prepare'))
+            ->post(route('business.inventory.store'), [
+                'from_prepare' => 1,
+                'name' => 'Heavy-Duty Stackable Plastic Bins',
+                'description' => 'Clean undamaged industrial storage bins.',
+                'category' => 'Plastics & Polymers',
+                'quantity' => 15,
+                'unit' => 'pcs',
+                'condition' => 'New',
+                'reusability' => 'reusable',
+                'listing_type' => 'buy',
+                'price' => '',
+                'saved_image_slots' => json_encode($reusAnalyze['saved_image_slots']),
+                'analysis_token' => $reusAnalyze['analysis_token'],
+                'ai_analysis_json' => json_encode($reusAnalyze['analysis']),
+            ])->assertSessionHasErrors('price');
+
+        $this->assertSame(0, Item::count());
+
+        // Provide valid Price per Unit RM 22.00 and click Save Item
+        $saveReusResp = $this->actingAs($seller)->post(route('business.inventory.store'), [
+            'from_prepare' => 1,
+            'name' => 'Heavy-Duty Stackable Plastic Bins',
+            'description' => 'Clean undamaged industrial storage bins.',
+            'category' => 'Plastics & Polymers',
+            'quantity' => 15,
+            'unit' => 'pcs',
+            'condition' => 'New',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 22.00,
+            'pickup_address' => 'Lot 15, Shah Alam, Selangor',
+            'saved_image_slots' => json_encode($reusAnalyze['saved_image_slots']),
+            'analysis_token' => $reusAnalyze['analysis_token'],
+            'ai_analysis_json' => json_encode($reusAnalyze['analysis']),
+        ]);
+
+        $reusItem = InventoryItem::where('name', 'Heavy-Duty Stackable Plastic Bins')->firstOrFail();
+        $saveReusResp->assertRedirect(route('business.inventory.edit', $reusItem));
+        $this->assertFalse($reusItem->isPublishedToMarketplace());
+
+        // Not visible in Marketplace until explicitly published
+        $this->flushSession();
+        $this->actingAs($viewer)->get(route('business.marketplace'))
+            ->assertOk()
+            ->assertViewHas('listings', fn ($listings): bool => ! $listings->contains('id', $reusItem->id))
+            ->assertDontSee('Heavy-Duty Stackable Plastic Bins');
+
+        // Explicitly publish -> now visible in Marketplace
+        $this->actingAs($seller)->post(route('business.inventory.publish', $reusItem))
+            ->assertRedirect(route('business.marketplace'));
+
+        $this->actingAs($viewer)->get(route('business.marketplace'))
+            ->assertOk()
+            ->assertSee('Heavy-Duty Stackable Plastic Bins');
+
+        // B. Non-Reusable path: Analyze -> Update Inventory Details -> Save Item -> saved & automatically forwarded to EcoCycle Helper
+        $scrapPhoto = UploadedFile::fake()->image('spoiled_waste.jpg', 600, 400);
+        $scrapAnalyze = $this->actingAs($seller)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Contaminated Kitchen Food Waste',
+            'description' => 'Spoiled organic scraps unsuitable for reuse.',
+            'quantity' => 30,
+            'unit' => 'kg',
+            'condition' => 'Damaged',
+            'image_1' => $scrapPhoto,
+        ])->assertOk()->json();
+
+        $saveScrapResp = $this->actingAs($seller)->post(route('business.inventory.store'), [
+            'from_prepare' => 1,
+            'name' => 'Contaminated Kitchen Food Waste',
+            'description' => 'Spoiled organic scraps unsuitable for reuse.',
+            'category' => 'Food & Organic Waste',
+            'quantity' => 30,
+            'unit' => 'kg',
+            'condition' => 'Damaged',
+            'reusability' => 'not_reusable',
+            'saved_image_slots' => json_encode($scrapAnalyze['saved_image_slots']),
+            'analysis_token' => $scrapAnalyze['analysis_token'],
+            'ai_analysis_json' => json_encode($scrapAnalyze['analysis']),
+        ]);
+
+        $scrapItem = InventoryItem::where('name', 'Contaminated Kitchen Food Waste')->firstOrFail();
+        $saveScrapResp->assertRedirect(route('business.helper', ['item_id' => $scrapItem->id]));
+        $this->assertFalse($scrapItem->isPublishedToMarketplace());
     }
 }

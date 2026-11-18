@@ -176,11 +176,11 @@ h1, h2, h3, h4,
     position: absolute;
     top: 6px;
     right: 6px;
-    width: 7px;
-    height: 7px;
-    background: #10b981;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
     border: 1px solid var(--forest-bg);
-    border-radius: 0;
+    border-radius: 50%;
 }
 
 /* ---------------- NOTIFICATION DROPDOWN ---------------- */
@@ -2102,8 +2102,9 @@ body.business-dashboard-page * {
     border-radius: 0 !important;
 }
 
-/* Circular shape preserved strictly for Brand Logos, Profile Images/Avatars & Radio Inputs */
+/* Circular shape preserved strictly for Brand Logos, Profile Images/Avatars, Notification Dot & Radio Inputs */
 body.business-dashboard-page input[type="radio"],
+body.business-dashboard-page .notification-dot,
 body.business-dashboard-page .brand-mark,
 body.business-dashboard-page .signin-brand-mark,
 body.business-dashboard-page .sidebar-brand-mark,

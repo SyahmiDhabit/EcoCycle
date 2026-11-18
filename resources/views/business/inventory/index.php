@@ -973,8 +973,7 @@ $activeNav = 'inventory';
                     <div class="empty-state-card" style="padding:48px 24px;text-align:center;">
                         <span class="signin-brand-mark" style="margin:0 auto 12px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
                         <h3 style="margin:0 0 6px;font-size:16px;color:#123321;">No materials found in inventory</h3>
-                        <p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;">Add your secondary materials, production cutoffs, or durable assets with photos to manage stock and share with partners.</p>
-                        <button type="button" class="btn-add-primary" onclick="openAddModal()">Add New Item</button>
+                        <p style="margin:0;color:var(--text-muted);font-size:13px;">Add your secondary materials, production cutoffs, or durable assets with photos to manage stock and share with partners.</p>
                     </div>
                 <?php endif; ?>
             </section>

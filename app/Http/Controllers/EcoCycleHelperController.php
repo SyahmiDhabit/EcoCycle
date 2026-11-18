@@ -28,8 +28,9 @@ class EcoCycleHelperController extends Controller
             return redirect()->route('business.pending');
         }
 
-        // Fetch all business inventory items, with non-reusable items prioritized
+        // EcoCycle Helper is STRICTLY for Non-Reusable items only (never display Reusable items)
         $items = Item::where('business_id', $business->id)
+            ->where('reusability', 'not_reusable')
             ->latest()
             ->get();
 
@@ -42,20 +43,12 @@ class EcoCycleHelperController extends Controller
             }
         }
 
-        if (! $selectedItem && $items->isNotEmpty()) {
-            // Default to first non-reusable item if available, or first item
-            $selectedItem = $items->firstWhere('reusability', 'not_reusable') ?: $items->first();
-            if ($selectedItem) {
-                $initialAnalysis = $helper->analyze($selectedItem);
-            }
-        }
-
         // Default coordinates based on business city/state
         $defaultCoords = RecyclingCentreLocatorService::getCityCoordinates($business->city ?: 'Shah Alam', $business->state ?: 'Selangor');
 
-        // Nearby verified centres for selected item's category
-        $materialCat = $selectedItem?->category ?? 'General';
-        $nearbyCentres = RecyclingCentreLocatorService::findNearby($defaultCoords['lat'], $defaultCoords['lng'], $materialCat, 8, true);
+        // Nearby verified centres for selected non-reusable item's category (or all verified if no item selected yet)
+        $materialCat = $selectedItem?->category;
+        $nearbyCentres = RecyclingCentreLocatorService::findNearby($defaultCoords['lat'], $defaultCoords['lng'], $materialCat, 10, true);
 
         return view('business.helper.index', [
             'business' => $business,
@@ -65,6 +58,7 @@ class EcoCycleHelperController extends Controller
             'defaultCoords' => $defaultCoords,
             'nearbyCentres' => $nearbyCentres,
             'verifiedMatchFound' => ! empty($nearbyCentres),
+            'googleMapsApiKey' => trim((string) config('services.google_maps.api_key', '')),
             'activeNav' => 'helper',
         ]);
     }
@@ -81,7 +75,9 @@ class EcoCycleHelperController extends Controller
 
         $contextItem = null;
         if (! empty($validated['item_id'])) {
-            $item = Item::find($validated['item_id']);
+            $item = Item::where('id', (int) $validated['item_id'])
+                ->where('reusability', 'not_reusable')
+                ->first();
             if ($item) {
                 $contextItem = [
                     'id' => $item->id,
@@ -109,12 +105,19 @@ class EcoCycleHelperController extends Controller
     {
         $this->checkApproved();
 
+        if (($item->reusability ?? 'reusable') !== 'not_reusable') {
+            return response()->json([
+                'success' => false,
+                'message' => 'EcoCycle Helper is only available for Non-Reusable items. Reusable items should be managed in Inventory or published to the Marketplace.',
+            ], 422);
+        }
+
         $analysis = $helper->analyze($item);
 
         /** @var User $business */
         $business = Auth::user();
         $coords = RecyclingCentreLocatorService::getCityCoordinates($business->city ?: 'Shah Alam', $business->state ?: 'Selangor');
-        $nearby = RecyclingCentreLocatorService::findNearby($coords['lat'], $coords['lng'], $item->category, 6, true);
+        $nearby = RecyclingCentreLocatorService::findNearby($coords['lat'], $coords['lng'], $item->category, 8, true);
 
         return response()->json([
             'success' => true,

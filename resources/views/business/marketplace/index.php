@@ -1475,7 +1475,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
         var helperLink = document.getElementById('modal-detail-helper-link');
         if (helperLink) {
-            helperLink.href = '/business/helper?item_id=' + listingId;
+            if (card.dataset.reusability === 'not_reusable') {
+                helperLink.style.display = 'inline-flex';
+                helperLink.href = '/business/helper?item_id=' + listingId;
+            } else {
+                helperLink.style.display = 'none';
+            }
         }
 
         var modal = document.getElementById('listing-detail-modal');

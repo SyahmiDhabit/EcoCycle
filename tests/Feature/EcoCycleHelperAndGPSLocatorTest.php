@@ -347,4 +347,61 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $this->assertTrue($response->json('success'));
         $this->assertStringContainsString('Based on Gemini circular analysis', $response->json('reply'));
     }
+
+    public function test_ecocycle_helper_strictly_excludes_reusable_items_and_renders_google_maps(): void
+    {
+        $business = $this->createApprovedBusiness();
+
+        $reusableItem = InventoryItem::create([
+            'business_id' => $business->id,
+            'name' => 'Reusable Steel Warehouse Racks',
+            'category' => 'Metals & machinery',
+            'quantity' => 15,
+            'unit' => 'units',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 450.00,
+            'condition' => 'Used - Good',
+            'status' => 'in_stock',
+        ]);
+
+        $nonReusableItem = InventoryItem::create([
+            'business_id' => $business->id,
+            'name' => 'Shattered Industrial Safety Glass',
+            'category' => 'Construction & debris',
+            'quantity' => 120,
+            'unit' => 'kg',
+            'reusability' => 'not_reusable',
+            'listing_type' => 'free',
+            'price' => 0.00,
+            'condition' => 'Damaged / Scrap',
+            'status' => 'in_stock',
+        ]);
+
+        // 1. Helper page lists ONLY Non-Reusable items and includes interactive map & chat interface
+        $indexResponse = $this->actingAs($business)->get(route('business.helper'));
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('Shattered Industrial Safety Glass');
+        $indexResponse->assertDontSee('Reusable Steel Warehouse Racks');
+        $indexResponse->assertSee('id="ecocycle-gps-map"', false);
+        $indexResponse->assertSee('id="helper-chat-panel"', false);
+
+        // 2. Passing a Reusable item_id via query string is ignored and not displayed
+        $reusableQueryResponse = $this->actingAs($business)->get(route('business.helper', ['item_id' => $reusableItem->id]));
+        $reusableQueryResponse->assertOk();
+        $reusableQueryResponse->assertDontSee('Reusable Steel Warehouse Racks');
+        $reusableQueryResponse->assertSee('Select a Non-Reusable Item or Ask a Question');
+
+        // 3. Direct analyze API endpoint rejects Reusable items with HTTP 422
+        $analyzeReusableResponse = $this->actingAs($business)->getJson(route('business.helper.analyze', $reusableItem->id));
+        $analyzeReusableResponse->assertStatus(422);
+        $analyzeReusableResponse->assertJson([
+            'success' => false,
+        ]);
+
+        // 4. Direct analyze API endpoint accepts Non-Reusable items
+        $analyzeNonReusableResponse = $this->actingAs($business)->getJson(route('business.helper.analyze', $nonReusableItem->id));
+        $analyzeNonReusableResponse->assertOk();
+        $this->assertSame('Shattered Industrial Safety Glass', $analyzeNonReusableResponse->json('item.name'));
+    }
 }

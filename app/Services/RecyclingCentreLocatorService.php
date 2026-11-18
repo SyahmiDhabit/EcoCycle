@@ -236,6 +236,22 @@ class RecyclingCentreLocatorService
                 'lng' => 116.1432,
                 'is_certified' => true,
             ],
+            [
+                'id' => 15,
+                'name' => 'Alam Flora Environmental Solutions (AFES) Organic Composting Hub',
+                'category' => 'Organic & Food Waste',
+                'accepted_materials' => ['Organic & Food Waste', 'Food Waste', 'Organic'],
+                'subtypes' => ['Food Waste', 'Sisa Makanan', 'Vegetable Trimmings', 'Compostable Organics', 'Biomass'],
+                'address' => 'Presint 5, 62200 Putrajaya',
+                'city' => 'Putrajaya',
+                'state' => 'Putrajaya',
+                'phone' => '+60 3-8888 6000',
+                'operating_hours' => 'Mon - Sat: 8:00 AM - 5:00 PM',
+                'license' => 'SWCorp Registered Commercial Organic Composting Facility',
+                'lat' => 2.8942,
+                'lng' => 101.6742,
+                'is_certified' => true,
+            ],
         ];
     }
 
@@ -317,48 +333,105 @@ class RecyclingCentreLocatorService
     }
 
     /**
-     * Find nearby recycling centres sorted by distance, with optional material category filter.
+     * Normalize a free-text/AI material category into canonical accepted material buckets.
+     *
+     * @return array<int, string>
+     */
+    public static function resolveMaterialTokens(?string $materialCategory): array
+    {
+        $raw = mb_strtolower(trim((string) $materialCategory));
+        if ($raw === '' || $raw === 'all' || $raw === 'general') {
+            return [];
+        }
+
+        $buckets = [
+            'plastics' => ['plastic', 'plastik', 'polymer', 'hdpe', 'ldpe', 'pp', 'pet', 'pvc', 'resin', 'film', 'acrylic'],
+            'metals' => ['metal', 'steel', 'iron', 'aluminium', 'aluminum', 'copper', 'brass', 'swarf', 'logam', 'keluli', 'besi'],
+            'packaging & paper' => ['paper', 'cardboard', 'carton', 'kraft', 'packaging', 'kertas', 'kadbod', 'kotak', 'pulp'],
+            'timber' => ['timber', 'wood', 'pallet', 'plywood', 'sawdust', 'kayu', 'palet', 'furniture'],
+            'electronics' => ['electronic', 'electrical', 'e-waste', 'pcb', 'circuit', 'battery', 'cable', 'wire', 'elektronik'],
+            'chemicals' => ['chemical', 'solvent', 'oil', 'sludge', 'lubricant', 'paint', 'acid', 'hazardous', 'scheduled', 'kimia', 'minyak'],
+            'textiles' => ['textile', 'fabric', 'cotton', 'garment', 'apparel', 'yarn', 'cloth', 'rag', 'kain', 'tekstil'],
+            'glass' => ['glass', 'kaca', 'borosilicate', 'cullet', 'mirror'],
+            'rubber & tires' => ['rubber', 'tire', 'tyre', 'tayar', 'getah', 'latex'],
+            'organic & food waste' => ['organic', 'food', 'sisa makanan', 'compost', 'vegetable', 'fruit', 'kitchen', 'makanan'],
+            'construction & demolition' => ['construction', 'concrete', 'masonry', 'brick', 'cement', 'demolition'],
+        ];
+
+        $matched = [];
+        foreach ($buckets as $bucket => $keywords) {
+            foreach ($keywords as $kw) {
+                if (str_contains($raw, $kw)) {
+                    $matched[] = $bucket;
+                    break;
+                }
+            }
+        }
+
+        return $matched;
+    }
+
+    /**
+     * Find ONLY verified nearby recycling centres that accept the given material category.
+     * Never recommends unverified/unrelated facilities when a specific material category is provided.
      *
      * @return array<int, array<string, mixed>>
      */
-    public static function findNearby(float $lat, float $lng, ?string $materialCategory = null, int $limit = 8): array
+    public static function findNearby(float $lat, float $lng, ?string $materialCategory = null, int $limit = 8, bool $strictVerifiedOnly = true): array
     {
         $centres = self::getCentres();
         $results = [];
 
-        $filterCat = $materialCategory ? mb_strtolower(trim($materialCategory)) : null;
+        $filterCat = $materialCategory ? mb_strtolower(trim($materialCategory)) : '';
+        $hasSpecificFilter = $filterCat !== '' && $filterCat !== 'all' && $filterCat !== 'general';
+        $canonicalTokens = $hasSpecificFilter ? self::resolveMaterialTokens($filterCat) : [];
 
         foreach ($centres as $centre) {
             $isMatch = true;
-            if ($filterCat && $filterCat !== 'all' && $filterCat !== '') {
+            if ($hasSpecificFilter) {
                 $centreCategory = mb_strtolower($centre['category']);
                 $acceptedLower = array_map('mb_strtolower', $centre['accepted_materials']);
                 $subtypesLower = array_map('mb_strtolower', $centre['subtypes']);
+                $haystack = $centreCategory.' '.implode(' ', $acceptedLower).' '.implode(' ', $subtypesLower);
 
-                $isMatch = ($centreCategory === $filterCat)
-                    || in_array($filterCat, $acceptedLower, true)
-                    || in_array('general', $acceptedLower, true)
-                    || str_contains($centreCategory, $filterCat)
-                    || str_contains(implode(' ', $acceptedLower), $filterCat)
-                    || str_contains(implode(' ', $subtypesLower), $filterCat);
+                $isMatch = false;
+                if (! empty($canonicalTokens)) {
+                    foreach ($canonicalTokens as $token) {
+                        if ($centreCategory === $token || in_array($token, $acceptedLower, true) || str_contains($haystack, $token)) {
+                            $isMatch = true;
+                            break;
+                        }
+                    }
+                } else {
+                    // Direct exact/substring check against verified accepted materials & subtypes only
+                    $isMatch = ($centreCategory === $filterCat)
+                        || in_array($filterCat, $acceptedLower, true)
+                        || str_contains(implode(' ', $acceptedLower), $filterCat)
+                        || str_contains(implode(' ', $subtypesLower), $filterCat);
+                }
+
+                if ($strictVerifiedOnly && ! $isMatch) {
+                    continue;
+                }
             }
 
             $dist = self::calculateDistance($lat, $lng, (float) $centre['lat'], (float) $centre['lng']);
-
             $mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination='.urlencode("{$centre['name']}, {$centre['address']}");
 
             $results[] = array_merge($centre, [
                 'distance_km' => $dist,
                 'is_material_match' => $isMatch,
+                'verified_acceptance' => $isMatch,
                 'directions_url' => $mapsUrl,
             ]);
         }
 
-        // Sort by material match first (matches first), then by distance ascending
+        // Sort by verified match first, then nearest distance ascending
         usort($results, function ($a, $b) {
             if ($a['is_material_match'] !== $b['is_material_match']) {
                 return $b['is_material_match'] <=> $a['is_material_match'];
             }
+
             return $a['distance_km'] <=> $b['distance_km'];
         });
 

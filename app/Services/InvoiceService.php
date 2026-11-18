@@ -27,6 +27,32 @@ class InvoiceService
     }
 
     /**
+     * Resolve the seller's registered business address for display on Checkout and Receipts.
+     */
+    public function resolveSellerAddress(MaterialExchange $exchange): string
+    {
+        $exchange->loadMissing(['item', 'provider']);
+        $seller = $exchange->provider;
+
+        if ($seller) {
+            $sellerParts = array_values(array_filter([
+                trim((string) ($seller->registered_address ?? '')),
+                trim(implode(' ', array_filter([
+                    trim((string) ($seller->postcode ?? '')),
+                    trim((string) ($seller->city ?? '')),
+                ]))),
+                trim((string) ($seller->state ?? '')),
+            ], fn (string $v): bool => $v !== ''));
+
+            if (! empty($sellerParts)) {
+                return implode(', ', $sellerParts);
+            }
+        }
+
+        return $this->resolvePickupAddress($exchange);
+    }
+
+    /**
      * Resolve the actual collection / pickup address for an order.
      */
     public function resolvePickupAddress(MaterialExchange $exchange): string
@@ -34,6 +60,10 @@ class InvoiceService
         $exchange->loadMissing(['item', 'provider']);
         $item = $exchange->item;
         $seller = $exchange->provider;
+
+        if (! empty($exchange->collection_address) && trim((string) $exchange->collection_address) !== '') {
+            return trim((string) $exchange->collection_address);
+        }
 
         if (! empty($item?->pickup_address) && trim((string) $item->pickup_address) !== '') {
             return trim((string) $item->pickup_address);
@@ -106,7 +136,7 @@ class InvoiceService
             $exchange->loadMissing(['item', 'provider', 'requester', 'payment']);
 
             $listingType = $exchange->resolvedListingType();
-            $isFree = $listingType === 'free' || $exchange->payment_status === 'free';
+            $isFree = in_array($listingType, ['free', 'lend'], true) || $exchange->payment_status === 'free';
 
             if (! $isFree && $exchange->payment_status !== 'paid') {
                 throw new RuntimeException('A paid receipt can only be generated after verified payment.');
@@ -128,9 +158,23 @@ class InvoiceService
 
             $receiptNumber = $this->generateNextReceiptNumber();
             $pickupAddress = $this->resolvePickupAddress($exchange);
+            $sellerAddress = $this->resolveSellerAddress($exchange);
 
-            $sellerName = trim((string) ($exchange->provider?->business_name ?: ($exchange->provider?->name ?? 'Seller Business')));
-            $buyerName = trim((string) ($exchange->requester?->business_name ?: ($exchange->requester?->name ?? 'Buyer Business')));
+            $sellerName = trim((string) ($exchange->seller_business_name ?: ($exchange->provider?->business_name ?: ($exchange->provider?->name ?? 'Seller Business'))));
+            $buyerName = trim((string) ($exchange->buyer_business_name ?: ($exchange->requester?->business_name ?: ($exchange->requester?->name ?? 'Buyer Business'))));
+
+            $sellerContact = trim(implode(' | ', array_filter([
+                trim((string) ($exchange->provider?->business_phone ?? '')),
+                trim((string) ($exchange->provider?->email ?? '')),
+            ])));
+            $buyerContact = trim(implode(' | ', array_filter([
+                trim((string) ($exchange->requester?->business_phone ?? '')),
+                trim((string) ($exchange->requester?->email ?? '')),
+            ])));
+
+            $paymentReference = $isFree
+                ? ($listingType === 'lend' ? 'LEND (RM 0.00)' : 'FREE (RM 0.00)')
+                : ($resolvedPayment?->referenceDisplay() ?: ($exchange->payment_reference ?: $exchange->resolvedOrderReference()));
 
             $invoice = Invoice::create([
                 'invoice_number' => $receiptNumber,
@@ -140,12 +184,17 @@ class InvoiceService
                 'buyer_business_id' => $exchange->requester_business_id,
                 'buyer_business_name' => $buyerName !== '' ? $buyerName : 'Buyer Business',
                 'seller_business_name' => $sellerName !== '' ? $sellerName : 'Seller Business',
-                'item_name' => $item?->name ?: ($item?->title ?: "Material #{$exchange->item_id}"),
+                'seller_address' => $sellerAddress !== '' ? $sellerAddress : null,
+                'seller_contact' => $sellerContact !== '' ? $sellerContact : null,
+                'buyer_contact' => $buyerContact !== '' ? $buyerContact : null,
+                'item_name' => $exchange->item_name ?: ($item?->name ?: ($item?->title ?: "Material #{$exchange->item_id}")),
                 'quantity' => $qty,
                 'unit' => $exchange->unit ?: ($item?->unit ?: 'pcs'),
+                'unit_price' => $unitPrice,
                 'total_amount' => $finalTotal,
                 'currency' => 'myr',
                 'pickup_address' => $pickupAddress,
+                'payment_reference' => $paymentReference,
                 'payment_status' => $isFree ? 'free' : 'paid',
                 'issued_at' => now(),
             ]);

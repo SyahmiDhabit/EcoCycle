@@ -48,12 +48,14 @@ class StripePaymentController extends Controller
             : (float) ($exchange->item?->price ?? 0);
 
         $totals = $this->invoiceService->calculateTotals((float) $exchange->quantity, $unitPrice);
+        $sellerAddress = $this->invoiceService->resolveSellerAddress($exchange);
 
         return view('business.invoices.checkout', [
             'business' => $business,
             'exchange' => $exchange,
             'totals' => $totals,
             'unitPrice' => $unitPrice,
+            'sellerAddress' => $sellerAddress,
             'stripePublishableKey' => (string) config('services.stripe.key', ''),
             'stripeCurrency' => strtoupper((string) config('services.stripe.currency', 'myr')),
         ]);

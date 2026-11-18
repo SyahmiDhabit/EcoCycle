@@ -265,18 +265,19 @@ class InventoryController extends Controller
             'image_3' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'images' => ['nullable', 'array', 'max:3'],
             'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
-            'listing_type' => ['nullable', 'in:buy,free'],
+            'listing_type' => ['nullable', 'in:buy,free,lend'],
             'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
             'available_quantity' => ['nullable', 'numeric', 'min:0'],
             'pickup_location' => ['nullable', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
+            'ai_analysis_json' => ['nullable', 'string'],
             'redirect_to' => ['nullable', 'string'],
             'analysis_token' => ['nullable', 'string'],
             'publish_to_marketplace' => ['nullable', 'boolean'],
         ];
 
         if ($request->input('reusability') === 'reusable' && $isPublishingRequest) {
-            $rules['listing_type'] = ['required', 'in:buy,free'];
+            $rules['listing_type'] = ['required', 'in:buy,free,lend'];
             $rules['condition'] = ['required', Rule::in(Item::ALLOWED_CONDITIONS)];
             if ($request->input('listing_type') === 'buy') {
                 $rules['price'] = ['required', 'numeric', 'gt:0'];
@@ -376,13 +377,24 @@ class InventoryController extends Controller
         $reusability = $validated['reusability'];
         $category = trim((string) $validated['category']);
         $listingType = $validated['listing_type'] ?? 'buy';
-        $isFree = $listingType === 'free';
+        if (! in_array($listingType, Item::ALLOWED_LISTING_TYPES, true)) {
+            $listingType = 'buy';
+        }
+        $isFree = in_array($listingType, ['free', 'lend'], true);
         $condition = $validated['condition'] ?? 'Used';
-        // Price is optional during initial inventory creation (null until configured for Marketplace Sell; 0.00 for Free)
+        // Price is optional during initial inventory creation (null until configured for Marketplace Sell; 0.00 for Free/Lend)
         $price = $isFree
             ? 0.00
             : (isset($validated['price']) && $validated['price'] !== '' ? (float) $validated['price'] : null);
         $description = ! empty($validated['description']) ? $validated['description'] : "Material specifications for {$validated['name']}.";
+
+        $aiAnalysis = null;
+        if (! empty($validated['ai_analysis_json'])) {
+            $decodedAnalysis = json_decode((string) $validated['ai_analysis_json'], true);
+            if (is_array($decodedAnalysis)) {
+                $aiAnalysis = $decodedAnalysis;
+            }
+        }
 
         // Location resolution (use user entered or GPS or business profile location)
         $pickupLocation = trim((string) ($validated['pickup_location'] ?? ''));
@@ -412,7 +424,7 @@ class InventoryController extends Controller
         }
 
         $createdItem = null;
-        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $status, $imageSlots, $uploadedImages, $reusability, $listingType, $isFree, $price, $condition, $locationCity, $locationState, $resolvedPickupAddress, $isPublishingRequest, &$createdItem): void {
+        DB::transaction(function () use ($business, $validated, $description, $quantity, $category, $status, $imageSlots, $uploadedImages, $reusability, $listingType, $isFree, $price, $condition, $locationCity, $locationState, $resolvedPickupAddress, $aiAnalysis, $isPublishingRequest, &$createdItem): void {
             $createdItem = InventoryItem::create([
                 'business_id' => $business->id,
                 'name' => $validated['name'],
@@ -420,6 +432,7 @@ class InventoryController extends Controller
                 'description' => $description,
                 'category' => $category,
                 'quantity' => $quantity,
+                'original_quantity' => $quantity,
                 'unit' => $validated['unit'],
                 'reusability' => $reusability,
                 'listing_type' => $listingType,
@@ -434,6 +447,7 @@ class InventoryController extends Controller
                 'image_2' => $imageSlots[1],
                 'image_3' => $imageSlots[2],
                 'images' => $uploadedImages,
+                'ai_analysis' => $aiAnalysis,
                 'status' => $status,
                 'notes' => $validated['notes'] ?? null,
             ]);
@@ -481,6 +495,12 @@ class InventoryController extends Controller
             }
         });
 
+        // Redirect to Update Item Details when requested after Reusable AI analysis
+        if ($request->input('redirect_to') === 'edit' && $createdItem) {
+            return redirect()->route('business.inventory.edit', $createdItem)
+                ->with('status', "Material '{$validated['name']}' saved to your inventory. Review and update its details below before publishing to the Marketplace.");
+        }
+
         // Only redirect to Helper if explicitly requested
         if ($reusability === 'not_reusable' && $request->input('redirect_to') === 'helper') {
             return redirect()->route('business.helper', ['item_id' => $createdItem->id])->with('status', "Non-reusable material '{$validated['name']}' saved in inventory and opened in EcoCycle Helper.");
@@ -517,6 +537,13 @@ class InventoryController extends Controller
         $this->checkApproved();
         abort_unless($item->business_id === Auth::id(), 403);
 
+        // Enforce permanent Sold Out rule: sold-out non-lend surplus submissions cannot be restocked or reactivated
+        if ($item->isPermanentlySoldOut() && $request->filled('quantity') && (float) $request->input('quantity') > 0) {
+            return back()->withErrors([
+                'quantity' => 'This item is permanently Sold Out and cannot be restocked or reactivated. Please add a new inventory item submission for new surplus stock.',
+            ])->withInput();
+        }
+
         $wasPublished = $item->isPublishedToMarketplace();
         $targetReusability = (string) ($request->input('reusability') ?: ($item->reusability ?? 'reusable'));
         $targetListingType = (string) ($request->input('listing_type') ?: ($item->listing_type ?? 'buy'));
@@ -535,7 +562,7 @@ class InventoryController extends Controller
             'quantity' => ['nullable', 'numeric', 'min:0'],
             'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
             'reusability' => ['nullable', 'in:reusable,not_reusable'],
-            'listing_type' => ['nullable', 'in:buy,free'],
+            'listing_type' => ['nullable', 'in:buy,free,lend'],
             'price' => $priceRules,
             'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
             'pickup_address' => ['nullable', 'string', 'max:255'],
@@ -607,8 +634,15 @@ class InventoryController extends Controller
             ? (float) $validated['quantity']
             : $oldQty;
 
+        if ($item->isPermanentlySoldOut()) {
+            $quantity = 0.0;
+        }
+
         $reusability = $validated['reusability'] ?? $item->reusability ?? 'reusable';
         $listingType = $validated['listing_type'] ?? $item->listing_type ?? 'buy';
+        if (! in_array($listingType, Item::ALLOWED_LISTING_TYPES, true)) {
+            $listingType = 'buy';
+        }
         $condition = $validated['condition'] ?? $item->condition ?? 'Used';
         $pickupAddress = array_key_exists('pickup_address', $validated)
             ? (trim((string) $validated['pickup_address']) ?: null)
@@ -618,7 +652,11 @@ class InventoryController extends Controller
             $isFree = false;
             $price = null;
             $status = $quantity <= 0 ? 'out_of_stock' : 'in_stock';
-        } elseif ($listingType === 'free') {
+        } elseif ($item->isPermanentlySoldOut()) {
+            $isFree = in_array($listingType, ['free', 'lend'], true);
+            $price = $isFree ? 0.00 : ($item->price !== null ? (float) $item->price : null);
+            $status = 'sold';
+        } elseif (in_array($listingType, ['free', 'lend'], true)) {
             $isFree = true;
             $price = 0.00;
             $status = $quantity <= 0
@@ -701,6 +739,12 @@ class InventoryController extends Controller
         $this->checkApproved();
         abort_unless($item->business_id === Auth::id(), 403);
 
+        if ($item->isPermanentlySoldOut()) {
+            return back()->withErrors([
+                'quantity' => 'This item is permanently Sold Out and cannot be reactivated or republished. Please add a new inventory item submission for new surplus stock.',
+            ]);
+        }
+
         if (($item->reusability ?? 'not_reusable') !== 'reusable') {
             return back()->withErrors([
                 'reusability' => 'Only confirmed Reusable items can be published to the Marketplace. Non-Reusable items remain in Inventory.',
@@ -719,19 +763,19 @@ class InventoryController extends Controller
             ? trim((string) $request->input('pickup_address'))
             : trim((string) ($item->pickup_address ?? ''));
 
-        if (! in_array($listingType, ['buy', 'free'], true)) {
+        if (! in_array($listingType, Item::ALLOWED_LISTING_TYPES, true)) {
             return back()->withErrors([
-                'listing_type' => 'Only Sell and Free listing types are supported on the Marketplace.',
+                'listing_type' => 'Only Sell, Free, and Lend listing types are supported on the Marketplace.',
             ]);
         }
 
-        $isFree = $listingType === 'free';
+        $isFree = in_array($listingType, ['free', 'lend'], true);
         if ($isFree) {
             $price = 0.00;
         } else {
             if ($rawPrice === null || $rawPrice === '' || ! is_numeric($rawPrice) || (float) $rawPrice <= 0) {
                 return back()->withErrors([
-                    'price' => 'Sell items must have a valid Price (RM) greater than RM 0.00 before publishing. Please update the price in Edit Details.',
+                    'price' => 'Sell items must have a valid Price per Unit (RM) greater than RM 0.00 before publishing. Please update the price in Update Item Details.',
                 ]);
             }
             $price = round((float) $rawPrice, 2);
@@ -746,7 +790,11 @@ class InventoryController extends Controller
             'status' => 'active',
         ]);
 
-        $typeLabel = $isFree ? 'for Free (RM 0.00)' : 'for Sale (RM '.number_format($price, 2).')';
+        $typeLabel = match ($listingType) {
+            'free' => 'for Free (RM 0.00)',
+            'lend' => 'for Lending (RM 0.00)',
+            default => 'for Sale (RM '.number_format($price, 2).' per '.$item->unit.')',
+        };
 
         BusinessNotification::send(
             $item->business_id,
@@ -776,6 +824,12 @@ class InventoryController extends Controller
         $adjQty = (float) $validated['quantity'];
         $type = $validated['type'];
 
+        if ($type === 'stock_in' && $item->isPermanentlySoldOut()) {
+            return back()->withErrors([
+                'quantity' => 'This item is permanently Sold Out and cannot be restocked. Please add a new inventory item submission for new surplus stock.',
+            ])->withInput();
+        }
+
         if ($type === 'stock_out' && $adjQty > $currentQty) {
             return back()->withErrors([
                 'quantity' => "Cannot deduct {$adjQty} {$item->unit}. Only {$currentQty} {$item->unit} currently available in stock.",
@@ -787,7 +841,7 @@ class InventoryController extends Controller
         $change = $type === 'stock_in' ? $adjQty : -$adjQty;
 
         $status = $newQty <= 0
-            ? ($wasPublished ? 'sold' : 'out_of_stock')
+            ? 'out_of_stock'
             : ($wasPublished ? 'active' : 'in_stock');
 
         DB::transaction(function () use ($item, $newQty, $status, $type, $change, $validated, $wasPublished): void {
@@ -845,17 +899,17 @@ class InventoryController extends Controller
 
         if (($item->reusability ?? 'reusable') === 'reusable') {
             $listingType = $extraData['listing_type'] ?? $item->listing_type ?? 'buy';
-            if (! in_array($listingType, ['buy', 'free'], true)) {
+            if (! in_array($listingType, Item::ALLOWED_LISTING_TYPES, true)) {
                 $listingType = 'buy';
             }
-            $isFree = $listingType === 'free';
+            $isFree = in_array($listingType, ['free', 'lend'], true);
             $price = $isFree ? 0.00 : (isset($extraData['price']) && $extraData['price'] !== '' && $extraData['price'] !== null
                 ? (float) $extraData['price']
                 : ($item->price !== null ? (float) $item->price : null));
 
             $condition = $extraData['condition'] ?? $item->condition ?? 'Used';
             $qty = (float) $item->quantity;
-            $status = $qty > 0 ? 'active' : 'sold';
+            $status = $qty > 0 ? 'active' : ($item->isPermanentlySoldOut() ? 'sold' : 'out_of_stock');
 
             $item->update([
                 'title' => $item->name,

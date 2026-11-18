@@ -155,7 +155,8 @@ class BusinessFullSuiteTest extends TestCase
             'id' => $exchange->id,
             'payment_status' => 'paid',
             'payment_reference' => 'FPX-TEST-9988',
-            'status' => 'completed',
+            'status' => 'confirmed',
+            'delivery_status' => 'confirmed',
         ]);
         $this->assertSame(0.0, (float) $listing->fresh()->quantity);
         $this->assertSame('sold', $listing->fresh()->status);

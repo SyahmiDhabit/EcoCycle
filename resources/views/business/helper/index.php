@@ -405,14 +405,14 @@ $activeNav = 'helper';
             <div class="page-header">
                 <div>
                     <h1>EcoCycle Helper</h1>
-                    <p>Material analysis, circular repurposing recommendations, disposal guidance, and GPS matching to certified Malaysian recycling centres.</p>
+                    <p>This material has been classified as non-reusable. EcoCycle Helper provides recommendations on how to manage, recycle or dispose of the material properly.</p>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a href="/business/inventory" class="btn-reset" style="display:inline-flex;align-items:center;">
                         <span>View Inventory</span>
                     </a>
-                    <a href="/business/marketplace?tab=non_reusable" class="btn-search" style="text-decoration:none;">
-                        <span>Non-Reusable Listings</span>
+                    <a href="/business/waste-monitoring" class="btn-search" style="text-decoration:none;">
+                        <span>Waste Monitoring</span>
                     </a>
                 </div>
             </div>
@@ -472,20 +472,40 @@ $activeNav = 'helper';
 
                             <!-- Circular Recommendation Strategy -->
                             <div class="advice-section" style="border-left:3px solid var(--brand-green);">
-                                <h4>Primary Circular Strategy</h4>
+                                <h4>Recycling &amp; Waste Handling Methods</h4>
                                 <p style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#183624;" id="analysis-strategy">
                                     <?= e($initialAnalysis['action_recommendation']) ?>
                                 </p>
-                                <p style="margin:0;font-size:12.5px;color:#374151;" id="analysis-path">
+                                <p style="margin:0;font-size:12.5px;color:#374151;line-height:1.55;" id="analysis-path">
                                     <?= e($initialAnalysis['strategy']) ?>
                                 </p>
                             </div>
 
+                            <!-- What Can the Business Owner Do? -->
+                            <div class="advice-section" style="background:#f8fbf8;border-left:3px solid #143825;">
+                                <h4>What Can the Business Owner Do?</h4>
+                                <ol class="step-list" id="analysis-owner-actions">
+                                    <?php foreach (($initialAnalysis['owner_actions'] ?? $initialAnalysis['recycling_steps'] ?? []) as $act) { ?>
+                                        <li><?= e($act) ?></li>
+                                    <?php } ?>
+                                </ol>
+                            </div>
+
+                            <!-- Suggested Next Steps -->
+                            <div class="advice-section">
+                                <h4>Suggested Next Steps</h4>
+                                <ul class="step-list" id="analysis-next-steps">
+                                    <?php foreach (($initialAnalysis['recommended_next_steps'] ?? []) as $ns) { ?>
+                                        <li><?= e($ns) ?></li>
+                                    <?php } ?>
+                                </ul>
+                            </div>
+
                             <!-- Repurposing Ideas -->
                             <div class="advice-section">
-                                <h4>Upcycling &amp; Repurposing Options</h4>
+                                <h4>Alternative Recovery &amp; Repurposing Ideas</h4>
                                 <ul class="step-list" id="analysis-repurpose">
-                                    <?php foreach ($initialAnalysis['repurpose_ideas'] as $idea) { ?>
+                                    <?php foreach (($initialAnalysis['repurpose_ideas'] ?? []) as $idea) { ?>
                                         <li><?= e($idea) ?></li>
                                     <?php } ?>
                                 </ul>
@@ -493,24 +513,39 @@ $activeNav = 'helper';
 
                             <!-- Processing & Decontamination Checklist -->
                             <div class="advice-section">
-                                <h4>Technical Pre-Processing Checklist</h4>
+                                <h4>Technical Pre-Processing &amp; Preparation Checklist</h4>
                                 <ol class="step-list" id="analysis-steps">
-                                    <?php foreach ($initialAnalysis['recycling_steps'] as $step) { ?>
+                                    <?php foreach (($initialAnalysis['recycling_steps'] ?? []) as $step) { ?>
                                         <li><?= e($step) ?></li>
                                     <?php } ?>
                                 </ol>
                             </div>
 
-                            <!-- Economic & Carbon Metrics -->
+                            <!-- Qualitative Environmental & Carbon Impact (No Fabricated Statistics) -->
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="analysis-metrics">
                                 <div style="background:#f4fbf5;border:1px solid #c2dec0;border-radius:0;padding:12px 14px;">
-                                    <small style="display:block;font-size:10.5px;text-transform:uppercase;color:#1b5e20;font-weight:700;margin-bottom:2px;">Scrap Market Benchmark</small>
-                                    <strong style="font-size:13px;color:#123321;" id="analysis-value"><?= e($initialAnalysis['estimated_value_myr']) ?></strong>
+                                    <small style="display:block;font-size:10.5px;text-transform:uppercase;color:#1b5e20;font-weight:700;margin-bottom:4px;">Environmental Impact (Qualitative)</small>
+                                    <p style="margin:0;font-size:12px;color:#123321;line-height:1.5;" id="analysis-env-impact"><?= e($initialAnalysis['environmental_impact'] ?? 'Proper segregation and licensed recovery reduce landfill burden and prevent soil or waterway contamination.') ?></p>
                                 </div>
                                 <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:0;padding:12px 14px;">
-                                    <small style="display:block;font-size:10.5px;text-transform:uppercase;color:#1d4ed8;font-weight:700;margin-bottom:2px;">Carbon Offset Potential</small>
-                                    <strong style="font-size:13px;color:#1e3a8a;" id="analysis-carbon"><?= e($initialAnalysis['carbon_saving_estimate']) ?></strong>
+                                    <small style="display:block;font-size:10.5px;text-transform:uppercase;color:#1d4ed8;font-weight:700;margin-bottom:4px;">Carbon Impact Guidance (Qualitative)</small>
+                                    <p style="margin:0;font-size:12px;color:#1e3a8a;line-height:1.5;" id="analysis-carbon"><?= e($initialAnalysis['carbon_impact'] ?? $initialAnalysis['carbon_saving_estimate'] ?? 'Diverting non-reusable material to verified recycling or composting reduces emissions compared to landfill disposal or open burning.') ?></p>
                                 </div>
+                            </div>
+
+                            <!-- Improper Disposal Risks & Other Recommendations -->
+                            <div class="advice-section" style="border-left:3px solid #b45309;background:#fffbeb;">
+                                <h4 style="color:#92400e;">Risks of Improper Disposal &amp; Compliance Note</h4>
+                                <p style="margin:0 0 8px;font-size:12.5px;color:#78350f;line-height:1.5;" id="analysis-risks">
+                                    <?= e($initialAnalysis['improper_disposal_risks'] ?? 'Improper dumping or open burning can cause environmental pollution and violate Malaysian solid or scheduled waste regulations.') ?>
+                                </p>
+                                <?php if (! empty($initialAnalysis['other_recommendations'])): ?>
+                                    <div style="font-size:12px;color:#475569;padding-top:6px;border-top:1px solid #fde68a;" id="analysis-other-recs">
+                                        <strong>Additional Guidance:</strong> <?= e(implode(' ', (array) $initialAnalysis['other_recommendations'])) ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div style="font-size:12px;color:#475569;padding-top:6px;border-top:1px solid #fde68a;" id="analysis-other-recs"></div>
+                                <?php endif; ?>
                             </div>
                         <?php } else { ?>
                             <div style="text-align:center;padding:48px 20px;color:var(--text-muted);">
@@ -586,44 +621,60 @@ You can ask about material preparation, scrap prices in Malaysia, DOE licensing 
                             </div>
                         </div>
 
+                        <!-- GPS Permission / Status Notice -->
+                        <div id="gps-notice-banner" style="display:none;padding:9px 12px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;color:#92400e;font-size:12px;line-height:1.45;"></div>
+
                         <!-- Material Filter Tabs -->
                         <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;" id="material-filter-pills">
-                            <button type="button" class="prompt-chip" style="background:var(--forest-bg);color:#fff;border-color:var(--forest-bg);" onclick="filterCentres('All', this)">All Facilities</button>
+                            <button type="button" class="prompt-chip" style="background:var(--forest-bg);color:#fff;border-color:var(--forest-bg);" onclick="filterCentres('All', this)">All Verified</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Plastics', this)">Plastics</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Metals', this)">Metals &amp; Steel</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Packaging & paper', this)">Paper &amp; Cartons</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Electronics', this)">E-Waste</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Timber', this)">Timber &amp; Pallets</button>
+                            <button type="button" class="prompt-chip" onclick="filterCentres('Food & Organic Waste', this)">Food / Organic</button>
                             <button type="button" class="prompt-chip" onclick="filterCentres('Chemicals', this)">Scheduled Chemical</button>
                         </div>
                     </div>
 
                     <!-- Facility Cards List -->
                     <div class="facility-list" id="facility-list-container">
-                        <?php foreach ($nearbyCentres as $centre) { ?>
-                            <article class="facility-card" data-category="<?= e($centre['category']) ?>" data-accepted="<?= e(implode(',', $centre['accepted_materials'])) ?>">
-                                <div class="facility-header">
-                                    <div>
-                                        <h3 class="facility-name"><?= e($centre['name']) ?></h3>
-                                        <span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;border:1px solid #c2dec0;padding:2px 7px;border-radius:0;font-weight:700;">
-                                            <?= e($centre['license']) ?>
-                                        </span>
+                        <?php if (empty($nearbyCentres)) { ?>
+                            <div style="padding:18px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;color:#78350f;font-size:12.5px;line-height:1.55;">
+                                <strong style="display:block;color:#92400e;margin-bottom:6px;">No Verified Nearby Facility Found for This Material</strong>
+                                Our verified facility directory does not currently list a centre confirmed to accept <strong><?= e($selectedItem?->category ?? 'this material') ?></strong> near your selected location.
+                                <ul style="margin:8px 0 0;padding-left:18px;">
+                                    <li>Contact your local council (PBT) or state solid waste authority (SWCorp / KDEB) to confirm approved disposal channels.</li>
+                                    <li>Verify licensing under DOE Malaysia before transporting specialized or contaminated materials.</li>
+                                    <li>Keep the material segregated, dry, and clearly labelled until an authorized facility confirms acceptance.</li>
+                                </ul>
+                            </div>
+                        <?php } else { ?>
+                            <?php foreach ($nearbyCentres as $centre) { ?>
+                                <article class="facility-card" data-category="<?= e($centre['category']) ?>" data-accepted="<?= e(implode(',', $centre['accepted_materials'])) ?>">
+                                    <div class="facility-header">
+                                        <div>
+                                            <h3 class="facility-name"><?= e($centre['name']) ?></h3>
+                                            <span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;border:1px solid #c2dec0;padding:2px 7px;border-radius:0;font-weight:700;">
+                                                Verified &middot; <?= e($centre['license']) ?>
+                                            </span>
+                                        </div>
+                                        <span class="distance-pill"><?= $centre['distance_km'] ?> km away</span>
                                     </div>
-                                    <span class="distance-pill"><?= $centre['distance_km'] ?> km away</span>
-                                </div>
-                                <div class="facility-meta">
-                                    <div><strong>Address:</strong> <?= e($centre['address']) ?></div>
-                                    <div style="margin-top:2px;"><strong>Phone:</strong> <a href="tel:<?= e($centre['phone']) ?>" style="color:#1e3a8a;text-decoration:none;font-weight:600;"><?= e($centre['phone']) ?></a> &middot; <strong>Hours:</strong> <?= e($centre['operating_hours']) ?></div>
-                                    <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">
-                                        <?php foreach ($centre['subtypes'] as $sub) { ?>
-                                            <span style="font-size:10px;background:#f3f4f6;color:#4b5563;border:1px solid #e2e8f0;padding:2px 6px;border-radius:0;"><?= e($sub) ?></span>
-                                        <?php } ?>
+                                    <div class="facility-meta">
+                                        <div><strong>Address:</strong> <?= e($centre['address']) ?></div>
+                                        <div style="margin-top:2px;"><strong>Phone:</strong> <a href="tel:<?= e($centre['phone']) ?>" style="color:#1e3a8a;text-decoration:none;font-weight:600;"><?= e($centre['phone']) ?></a> &middot; <strong>Hours:</strong> <?= e($centre['operating_hours']) ?></div>
+                                        <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">
+                                            <?php foreach ($centre['subtypes'] as $sub) { ?>
+                                                <span style="font-size:10px;background:#f3f4f6;color:#4b5563;border:1px solid #e2e8f0;padding:2px 6px;border-radius:0;"><?= e($sub) ?></span>
+                                            <?php } ?>
+                                        </div>
                                     </div>
-                                </div>
-                                <a href="<?= e($centre['directions_url']) ?>" target="_blank" rel="noopener noreferrer" class="btn-directions">
-                                    <span>Get Directions on Google Maps &rarr;</span>
-                                </a>
-                            </article>
+                                    <a href="<?= e($centre['directions_url']) ?>" target="_blank" rel="noopener noreferrer" class="btn-directions">
+                                        <span>Get Directions on Google Maps &rarr;</span>
+                                    </a>
+                                </article>
+                            <?php } ?>
                         <?php } ?>
                     </div>
                 </section>
@@ -665,10 +716,25 @@ function renderAnalysis(item, a) {
     if (titleEl) titleEl.textContent = item.name;
 
     var stratEl = document.getElementById('analysis-strategy');
-    if (stratEl) stratEl.textContent = a.action_recommendation;
+    if (stratEl) stratEl.textContent = a.action_recommendation || '';
 
     var pathEl = document.getElementById('analysis-path');
-    if (pathEl) pathEl.textContent = a.strategy;
+    if (pathEl) pathEl.textContent = a.strategy || '';
+
+    var ownerList = document.getElementById('analysis-owner-actions');
+    var ownerActs = a.owner_actions || a.recycling_steps || [];
+    if (ownerList) {
+        ownerList.innerHTML = ownerActs.map(function(act) {
+            return '<li>' + escapeHtml(act) + '</li>';
+        }).join('');
+    }
+
+    var nextList = document.getElementById('analysis-next-steps');
+    if (nextList && Array.isArray(a.recommended_next_steps)) {
+        nextList.innerHTML = a.recommended_next_steps.map(function(ns) {
+            return '<li>' + escapeHtml(ns) + '</li>';
+        }).join('');
+    }
 
     var repList = document.getElementById('analysis-repurpose');
     if (repList && a.repurpose_ideas) {
@@ -684,23 +750,45 @@ function renderAnalysis(item, a) {
         }).join('');
     }
 
-    var valEl = document.getElementById('analysis-value');
-    if (valEl) valEl.textContent = a.estimated_value_myr;
+    var envEl = document.getElementById('analysis-env-impact');
+    if (envEl) envEl.textContent = a.environmental_impact || 'Proper segregation and licensed recovery reduce landfill burden and prevent environmental pollution.';
 
     var carbEl = document.getElementById('analysis-carbon');
-    if (carbEl) carbEl.textContent = a.carbon_saving_estimate;
+    if (carbEl) carbEl.textContent = a.carbon_impact || a.carbon_saving_estimate || 'Diverting non-reusable material to verified recycling or composting reduces emissions compared to landfill disposal.';
 
-    appendAssistantBubble('Loaded **' + item.name + '** (' + item.category + '). Recommended path: **' + a.action_recommendation + '**. How can I assist with handling or disposal?');
+    var riskEl = document.getElementById('analysis-risks');
+    if (riskEl) riskEl.textContent = a.improper_disposal_risks || 'Improper dumping or open burning causes environmental harm and breaches waste regulations.';
+
+    var otherEl = document.getElementById('analysis-other-recs');
+    if (otherEl) {
+        var others = Array.isArray(a.other_recommendations) ? a.other_recommendations : [];
+        otherEl.innerHTML = others.length > 0 ? ('<strong>Additional Guidance:</strong> ' + escapeHtml(others.join(' '))) : '';
+    }
+
+    appendAssistantBubble('Loaded **' + item.name + '** (' + item.category + '). Recommended path: **' + (a.action_recommendation || 'Verified disposal / recovery') + '**. How can I assist with handling or disposal?');
+}
+
+function showGpsNotice(message) {
+    var banner = document.getElementById('gps-notice-banner');
+    if (!banner) return;
+    if (!message) {
+        banner.style.display = 'none';
+        banner.textContent = '';
+        return;
+    }
+    banner.textContent = message;
+    banner.style.display = 'block';
 }
 
 function requestBrowserGPS() {
     var btn = document.getElementById('btn-request-gps');
+    showGpsNotice('');
     if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser.');
+        showGpsNotice('GPS geolocation is not supported by your browser. Please choose a Malaysian city from the dropdown to search verified recycling facilities.');
         return;
     }
 
-    if (btn) btn.innerHTML = '<span>Locating...</span>';
+    if (btn) btn.innerHTML = '<span>Requesting GPS Permission...</span>';
 
     navigator.geolocation.getCurrentPosition(
         function(pos) {
@@ -709,11 +797,15 @@ function requestBrowserGPS() {
             var pill = document.getElementById('gps-status-pill');
             if (pill) pill.textContent = 'GPS: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4);
             if (btn) btn.innerHTML = '<span>Live GPS Connected</span>';
+            showGpsNotice('');
 
             fetchNearbyCentres(currentLat, currentLng, currentCategory);
         },
         function(err) {
-            alert('Unable to retrieve your location: ' + err.message + '. Defaulting to registered business city.');
+            var reason = (err && err.code === 1)
+                ? 'Location permission was denied. You can enable browser location access anytime or select your city manually from the dropdown below.'
+                : 'Unable to retrieve your live GPS location (' + (err && err.message ? err.message : 'unavailable') + '). Showing verified facilities using your selected city.';
+            showGpsNotice(reason);
             if (btn) btn.innerHTML = '<span>Use My Current GPS Location</span>';
         },
         { enableHighAccuracy: true, timeout: 8000 }
@@ -781,7 +873,7 @@ function fetchNearbyCentres(lat, lng, category) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.success) {
-            renderNearbyCentres(data.centres);
+            renderNearbyCentres(data.centres, data.alternative_recommendations || []);
         }
     })
     .catch(function(e) {
@@ -789,12 +881,22 @@ function fetchNearbyCentres(lat, lng, category) {
     });
 }
 
-function renderNearbyCentres(centres) {
+function renderNearbyCentres(centres, alternatives) {
     var container = document.getElementById('facility-list-container');
     if (!container) return;
 
     if (!centres || centres.length === 0) {
-        container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No recycling centres found matching this filter nearby.</div>';
+        var altList = (Array.isArray(alternatives) && alternatives.length > 0) ? alternatives : [
+            'Contact your local council (PBT) or state waste authority (SWCorp / KDEB) for approved collection points.',
+            'Consult licensed Malaysian waste collectors under DOE Malaysia before transporting specialized waste.',
+            'Keep the material segregated, dry, and clearly labelled until an authorized facility confirms acceptance.'
+        ];
+        container.innerHTML = '<div style="padding:18px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;color:#78350f;font-size:12.5px;line-height:1.55;">' +
+            '<strong style="display:block;color:#92400e;margin-bottom:6px;">No Verified Nearby Facility Found for This Material</strong>' +
+            'Our verified facility directory does not currently confirm a nearby centre accepting this exact material category. Consider these alternative handling steps:' +
+            '<ul style="margin:8px 0 0;padding-left:18px;">' +
+            altList.map(function(a) { return '<li>' + escapeHtml(a) + '</li>'; }).join('') +
+            '</ul></div>';
         return;
     }
 
@@ -807,7 +909,7 @@ function renderNearbyCentres(centres) {
             '<div class="facility-header">' +
                 '<div>' +
                     '<h3 class="facility-name">' + escapeHtml(c.name) + '</h3>' +
-                    '<span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;border:1px solid #c2dec0;padding:2px 7px;border-radius:0;font-weight:700;">' + escapeHtml(c.license) + '</span>' +
+                    '<span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;border:1px solid #c2dec0;padding:2px 7px;border-radius:0;font-weight:700;">Verified &middot; ' + escapeHtml(c.license) + '</span>' +
                 '</div>' +
                 '<span class="distance-pill">' + c.distance_km + ' km away</span>' +
             '</div>' +

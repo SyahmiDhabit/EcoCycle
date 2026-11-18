@@ -2,10 +2,14 @@
 $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
 $item = $exchange->item;
 $listingType = $exchange->resolvedListingType();
-$isFree = $listingType === 'free' || (float) $exchange->total_price <= 0;
-$typeLabel = $isFree ? 'Free' : 'Sell';
+$isFree = in_array($listingType, ['free', 'lend'], true) || (float) $exchange->total_price <= 0;
+$typeLabel = $exchange->listingTypeLabel();
 $qtyFormatted = rtrim(rtrim(number_format((float) $exchange->quantity, 2, '.', ''), '0'), '.').' '.$exchange->unit;
-$itemName = $exchange->invoice?->item_name ?: ($item?->name ?: ($item?->title ?: 'Material'));
+$itemName = $exchange->item_name ?: ($exchange->invoice?->item_name ?: ($item?->name ?: ($item?->title ?: 'Material')));
+$itemPhoto = $item ? $item->getPrimaryImage() : null;
+$sellerName = trim((string) ($exchange->seller_business_name ?: ($exchange->provider?->business_name ?: ($exchange->provider?->name ?? 'Seller Business'))));
+$sellerAddressDisplay = trim((string) ($sellerAddress ?? '')) ?: app(\App\Services\InvoiceService::class)->resolveSellerAddress($exchange);
+$unitPriceDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $unitPrice, 2).' / '.$exchange->unit;
 
 $rawStatus = $exchange->normalizedPaymentStatus();
 $statusLabel = $exchange->paymentStatusLabel();
@@ -152,13 +156,30 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
                 </div>
             <?php endif; ?>
 
-            <div class="pay-card">
+            <div class="pay-card" style="max-width:720px;">
                 <div class="pay-card-header">
-                    <strong style="font-size:15px;">Payment Information</strong>
+                    <strong style="font-size:15px;">Order Checkout Summary</strong>
                     <span style="font-size:12px;color:#cde0d3;"><?= e($exchange->resolvedOrderReference()) ?></span>
                 </div>
 
                 <div class="pay-card-body">
+                    <!-- Seller Information displayed clearly at the top -->
+                    <div style="padding:14px 16px;background:#f8faf8;border:1px solid #cbd5e1;border-left:4px solid #143825;margin-bottom:18px;">
+                        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Seller Information</div>
+                        <div style="font-size:15px;font-weight:800;color:#143825;margin-bottom:3px;"><?= e($sellerName) ?></div>
+                        <div style="font-size:12.5px;color:#334155;line-height:1.45;"><?= e($sellerAddressDisplay) ?></div>
+                    </div>
+
+                    <?php if ($itemPhoto): ?>
+                        <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid #cbd5e1;background:#ffffff;margin-bottom:18px;">
+                            <img src="<?= e($itemPhoto) ?>" alt="<?= e($itemName) ?>" style="width:72px;height:72px;object-fit:cover;border:1px solid #cbd5e1;flex-shrink:0;">
+                            <div>
+                                <div style="font-size:15px;font-weight:700;color:#0f172a;"><?= e($itemName) ?></div>
+                                <div style="font-size:12.5px;color:#475569;margin-top:2px;">Quantity Selected: <strong><?= e($qtyFormatted) ?></strong> &middot; <?= e($unitPriceDisplay) ?></div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <table class="pay-table">
                         <tbody>
                             <tr>
@@ -166,12 +187,16 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
                                 <td><?= e($itemName) ?></td>
                             </tr>
                             <tr>
-                                <th>Quantity</th>
+                                <th>Quantity Selected</th>
                                 <td><?= e($qtyFormatted) ?></td>
                             </tr>
                             <tr>
-                                <th>Type</th>
+                                <th>Listing Type</th>
                                 <td><?= e($typeLabel) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Price per Unit (RM)</th>
+                                <td><?= e($unitPriceDisplay) ?></td>
                             </tr>
                             <tr>
                                 <th>Total Amount (RM)</th>
@@ -185,8 +210,8 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
                     </table>
 
                     <div class="pay-actions">
-                        <a href="<?= route('business.invoices.index') ?>" class="btn-pay-secondary">
-                            &larr; Transaction History
+                        <a href="<?= route('business.orders.show', $exchange) ?>" class="btn-pay-secondary">
+                            &larr; Order Details
                         </a>
 
                         <div style="display:flex;gap:10px;align-items:center;">
@@ -194,7 +219,7 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
                                 <form method="POST" action="<?= route('business.payments.stripe.checkout', $exchange) ?>" style="margin:0;">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn-pay-primary">
-                                        Pay Now (<?= e($totalDisplay) ?>)
+                                        Proceed to Stripe Checkout (<?= e($totalDisplay) ?>)
                                     </button>
                                 </form>
                             <?php elseif ($exchange->invoice): ?>

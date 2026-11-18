@@ -8,7 +8,8 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
 $activeNav = 'inventory';
 $isReusable = ($item->reusability ?? 'reusable') === 'reusable';
 $isPublished = $item->isPublishedToMarketplace();
-$currentListingType = ($item->listing_type === 'free') ? 'free' : 'buy';
+$isPermanentlySoldOut = $item->isPermanentlySoldOut();
+$currentListingType = in_array($item->listing_type, \App\Models\Item::ALLOWED_LISTING_TYPES, true) ? $item->listing_type : 'buy';
 $currentPrice = old('price', $item->price !== null ? number_format((float) $item->price, 2, '.', '') : '');
 $currentUnit = old('unit', $item->unit ?: 'kg');
 $currentCondition = old('condition', in_array($item->condition, \App\Models\Item::ALLOWED_CONDITIONS, true) ? $item->condition : 'Used');
@@ -21,17 +22,19 @@ $businessAddress = trim(implode(', ', array_filter([
 ])));
 $currentPickupAddress = old('pickup_address', $item->pickup_address ?: $businessAddress);
 $imageSlots = $item->getImageSlots();
+$aiAnalysis = is_array($item->ai_analysis) ? $item->ai_analysis : null;
 
-$canPublishNow = $isReusable
+$canPublishNow = ! $isPermanentlySoldOut
+    && $isReusable
     && (float) $item->quantity > 0
-    && ($item->listing_type === 'free' || ($item->price !== null && (float) $item->price > 0));
+    && (in_array($item->listing_type, ['free', 'lend'], true) || ($item->price !== null && (float) $item->price > 0));
 ?>
 <!doctype html>
 <html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Edit Inventory Details — EcoCycle</title>
+    <title>Update Item Details — EcoCycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -288,13 +291,17 @@ $canPublishNow = $isReusable
                         <a href="<?= route('business.inventory') ?>" class="edit-btn-secondary" style="padding:7px 14px;font-size:12px;margin-bottom:10px;">
                             &larr; Back to Inventory
                         </a>
-                        <h1 style="margin:6px 0 4px;font-size:22px;color:#123321;">Edit Inventory Details</h1>
+                        <h1 style="margin:6px 0 4px;font-size:22px;color:#123321;">Update Item Details</h1>
                         <p style="margin:0;font-size:13px;color:#526658;">
-                            Update material information, available quantity, and Marketplace preparation settings.
+                            Review AI suggestions, confirm material details, set listing type and price per unit, then save to your inventory.
                         </p>
                     </div>
                     <div>
-                        <?php if ($isPublished): ?>
+                        <?php if ($isPermanentlySoldOut): ?>
+                            <span style="display:inline-block;padding:6px 12px;background:#991b1b;color:#ffffff;font-size:11.5px;font-weight:700;text-transform:uppercase;">
+                                Sold Out (Permanent)
+                            </span>
+                        <?php elseif ($isPublished): ?>
                             <span style="display:inline-block;padding:6px 12px;background:#143825;color:#ffffff;font-size:11.5px;font-weight:700;text-transform:uppercase;">
                                 Published on Marketplace
                             </span>
@@ -305,6 +312,49 @@ $canPublishNow = $isReusable
                         <?php endif; ?>
                     </div>
                 </div>
+
+                <?php if ($isPermanentlySoldOut): ?>
+                    <div role="alert" style="margin-bottom:16px;padding:14px 18px;background:#fff5f4;border:1px solid #fca5a5;border-left:4px solid #b91c1c;color:#7f1d1d;font-size:13px;line-height:1.5;">
+                        <strong style="display:block;margin-bottom:4px;">This surplus submission is permanently Sold Out</strong>
+                        All <?= (float) ($item->original_quantity ?? 0) ?> <?= e($item->unit) ?> from this submission have been sold or claimed. To preserve accurate purchase and sales history, this item cannot be restocked or reactivated.
+                        <div style="margin-top:10px;">
+                            <a href="<?= route('business.inventory', ['add' => 1]) ?>" class="edit-btn-primary" style="padding:7px 14px;font-size:12px;">
+                                + Add New Item Submission
+                            </a>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($aiAnalysis && $isReusable): ?>
+                    <div class="edit-card" style="border-left:4px solid #143825;background:#f7fbf7;">
+                        <div class="edit-card-header" style="background:#eef6ed;">
+                            <h3>Google Gemini AI Suggestions (Guidance Only)</h3>
+                            <span style="font-size:11.5px;color:#143825;font-weight:600;">You control the final values below</span>
+                        </div>
+                        <div class="edit-card-body" style="padding:16px 20px;font-size:12.5px;color:#1e293b;line-height:1.55;">
+                            <div class="edit-grid-3" style="margin-bottom:10px;">
+                                <div>
+                                    <span style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Suggested Category</span>
+                                    <strong><?= e($aiAnalysis['suggested_category'] ?? $item->category) ?></strong>
+                                </div>
+                                <div>
+                                    <span style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Suggested Listing Type</span>
+                                    <strong><?= e($aiAnalysis['suggested_listing_type_label'] ?? 'Sell') ?></strong>
+                                </div>
+                                <div>
+                                    <span style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Suggested Price Range</span>
+                                    <strong><?= e($aiAnalysis['suggested_price_range'] ?? 'Set your own price per unit') ?></strong>
+                                </div>
+                            </div>
+                            <?php if (! empty($aiAnalysis['reason'])): ?>
+                                <div style="margin-top:6px;"><strong>Reason:</strong> <?= e($aiAnalysis['reason']) ?></div>
+                            <?php endif; ?>
+                            <?php if (! empty($aiAnalysis['reuse_applications'])): ?>
+                                <div style="margin-top:6px;"><strong>Suggested Reuse Applications:</strong> <?= e(is_array($aiAnalysis['reuse_applications']) ? implode(' • ', $aiAnalysis['reuse_applications']) : $aiAnalysis['reuse_applications']) ?></div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <?php if (session('status')): ?>
                     <div role="status" style="margin-bottom:16px;padding:12px 16px;background:#eaf3e8;border:1px solid #c7dbc5;border-left:3px solid #176b40;color:#176b40;font-size:13px;font-weight:600;">
@@ -372,7 +422,10 @@ $canPublishNow = $isReusable
                             <div class="edit-grid-3">
                                 <div class="edit-field" style="margin-bottom:0;">
                                     <label for="page_quantity">Available Quantity <span style="color:#b91c1c;">*</span></label>
-                                    <input id="page_quantity" name="quantity" type="number" step="0.01" min="0" required value="<?= e(old('quantity', (float) $item->quantity)) ?>" class="edit-input">
+                                    <input id="page_quantity" name="quantity" type="number" step="0.01" min="0" required value="<?= e(old('quantity', (float) $item->quantity)) ?>" class="edit-input" <?= $isPermanentlySoldOut ? 'readonly style="background:#f1f5f9;color:#64748b;"' : '' ?>>
+                                    <?php if ($item->original_quantity !== null): ?>
+                                        <span class="edit-hint">Initial submitted stock: <?= (float) $item->original_quantity ?> <?= e($item->unit) ?></span>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="edit-field" style="margin-bottom:0;">
                                     <label for="page_unit">Unit of Measurement <span style="color:#b91c1c;">*</span></label>
@@ -428,35 +481,42 @@ $canPublishNow = $isReusable
                             <!-- Reusable Marketplace Preparation Panel -->
                             <div id="reusable_marketplace_panel" style="<?= $currentReusability === 'reusable' ? '' : 'display:none;' ?>padding:18px;background:#f8faf8;border:1px solid #cbd5e1;margin-top:12px;">
                                 <div class="edit-field">
-                                    <label>Listing Type (Sell or Free)</label>
-                                    <div class="edit-grid-2">
+                                    <label>Listing Type (Sell, Free, or Lend)</label>
+                                    <div class="edit-grid-3">
                                         <label class="edit-choice-card <?= $currentListingType === 'buy' ? 'selected' : '' ?>" id="card_type_buy">
                                             <input type="radio" name="listing_type" value="buy" <?= $currentListingType === 'buy' ? 'checked' : '' ?> onchange="updateEditListingTypeUI()">
                                             <div>
                                                 <strong style="display:block;font-size:13px;color:#143825;">Sell</strong>
-                                                <span style="font-size:12px;color:#64748b;">Set a Price (RM) greater than RM 0.00. Buyers pay via Stripe.</span>
+                                                <span style="font-size:11.5px;color:#64748b;">Set Price per Unit (RM &gt; 0.00). Buyers pay via Stripe.</span>
                                             </div>
                                         </label>
                                         <label class="edit-choice-card <?= $currentListingType === 'free' ? 'selected' : '' ?>" id="card_type_free">
                                             <input type="radio" name="listing_type" value="free" <?= $currentListingType === 'free' ? 'checked' : '' ?> onchange="updateEditListingTypeUI()">
                                             <div>
                                                 <strong style="display:block;font-size:13px;color:#143825;">Free</strong>
-                                                <span style="font-size:12px;color:#64748b;">Offered at RM 0.00. No Stripe payment required.</span>
+                                                <span style="font-size:11.5px;color:#64748b;">Offered at RM 0.00. No Stripe payment required.</span>
+                                            </div>
+                                        </label>
+                                        <label class="edit-choice-card <?= $currentListingType === 'lend' ? 'selected' : '' ?>" id="card_type_lend">
+                                            <input type="radio" name="listing_type" value="lend" <?= $currentListingType === 'lend' ? 'checked' : '' ?> onchange="updateEditListingTypeUI()">
+                                            <div>
+                                                <strong style="display:block;font-size:13px;color:#143825;">Lend</strong>
+                                                <span style="font-size:11.5px;color:#64748b;">Temporary borrow (RM 0.00). Stock returns when returned.</span>
                                             </div>
                                         </label>
                                     </div>
                                 </div>
 
                                 <div class="edit-field" id="page_price_field_group" style="<?= $currentListingType === 'buy' ? '' : 'display:none;' ?>">
-                                    <label for="page_price">Price (RM)</label>
+                                    <label for="page_price">Price per Unit (RM)</label>
                                     <input id="page_price" name="price" type="number" step="0.01" min="0.01" value="<?= e($currentListingType === 'buy' ? $currentPrice : '') ?>" placeholder="e.g. 25.00" class="edit-input" style="max-width:280px;">
                                     <span class="edit-hint">
-                                        Optional while stored in Inventory only. A Price (RM) greater than RM 0.00 is required before publishing as a Sell listing.
+                                        Enter the price per single unit (e.g. per kg or per pcs). Required (greater than RM 0.00) when publishing as Sell.
                                     </span>
                                 </div>
 
-                                <div id="page_free_price_notice" style="<?= $currentListingType === 'free' ? '' : 'display:none;' ?>margin-bottom:16px;padding:10px 14px;background:#eef6ed;border:1px solid #b9dec0;color:#143825;font-size:12.5px;font-weight:600;">
-                                    Price is automatically set to RM 0.00 for Free listings. No payment is required.
+                                <div id="page_free_price_notice" style="<?= in_array($currentListingType, ['free', 'lend'], true) ? '' : 'display:none;' ?>margin-bottom:16px;padding:10px 14px;background:#eef6ed;border:1px solid #b9dec0;color:#143825;font-size:12.5px;font-weight:600;">
+                                    Price is automatically set to RM 0.00 for Free and Lend listings. No Stripe payment is required.
                                 </div>
 
                                 <div class="edit-field" style="margin-bottom:0;">
@@ -483,7 +543,7 @@ $canPublishNow = $isReusable
 
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
                         <a href="<?= route('business.inventory') ?>" class="edit-btn-secondary">Cancel</a>
-                        <button type="submit" class="edit-btn-primary">Save Changes</button>
+                        <button type="submit" class="edit-btn-primary">Save Item</button>
                     </div>
                 </form>
 
@@ -493,7 +553,14 @@ $canPublishNow = $isReusable
                         <h3>Marketplace Publishing</h3>
                     </div>
                     <div class="edit-card-body">
-                        <?php if (! $isReusable): ?>
+                        <?php if ($isPermanentlySoldOut): ?>
+                            <p style="margin:0 0 14px;font-size:13px;color:#991b1b;line-height:1.5;">
+                                This item is permanently <strong>Sold Out</strong> and cannot be republished. Add a new inventory item submission for new surplus stock.
+                            </p>
+                            <a href="<?= route('business.inventory', ['add' => 1]) ?>" class="edit-btn-primary">
+                                + Add New Item Submission
+                            </a>
+                        <?php elseif (! $isReusable): ?>
                             <p style="margin:0 0 14px;font-size:13px;color:#475569;line-height:1.5;">
                                 This material is classified as <strong>Non-Reusable</strong> and cannot be published to the Marketplace. It remains in your Inventory for waste handling.
                             </p>
@@ -515,15 +582,19 @@ $canPublishNow = $isReusable
                             <div class="publish-summary-grid">
                                 <div class="publish-summary-cell">
                                     <small>Listing Type</small>
-                                    <strong><?= ($item->listing_type === 'free') ? 'Free' : 'Sell' ?></strong>
+                                    <strong><?= match ($item->listing_type) {
+                                        'free' => 'Free',
+                                        'lend' => 'Lend',
+                                        default => 'Sell',
+                                    } ?></strong>
                                 </div>
                                 <div class="publish-summary-cell">
-                                    <small>Price (RM)</small>
+                                    <small>Price per Unit (RM)</small>
                                     <strong>
-                                        <?php if ($item->listing_type === 'free'): ?>
+                                        <?php if (in_array($item->listing_type, ['free', 'lend'], true)): ?>
                                             RM 0.00
                                         <?php elseif ($item->price !== null && (float) $item->price > 0): ?>
-                                            RM <?= number_format((float) $item->price, 2) ?>
+                                            RM <?= number_format((float) $item->price, 2) ?> / <?= e($item->unit) ?>
                                         <?php else: ?>
                                             <span style="color:#b91c1c;">Not set</span>
                                         <?php endif; ?>
@@ -713,18 +784,19 @@ $canPublishNow = $isReusable
         var priceInput = document.getElementById('page_price');
         var cardBuy = document.getElementById('card_type_buy');
         var cardFree = document.getElementById('card_type_free');
+        var cardLend = document.getElementById('card_type_lend');
 
-        if (val === 'free') {
+        if (cardBuy) cardBuy.classList.toggle('selected', val === 'buy');
+        if (cardFree) cardFree.classList.toggle('selected', val === 'free');
+        if (cardLend) cardLend.classList.toggle('selected', val === 'lend');
+
+        if (val === 'free' || val === 'lend') {
             if (priceGroup) priceGroup.style.display = 'none';
             if (freeNotice) freeNotice.style.display = 'block';
             if (priceInput) priceInput.value = '';
-            if (cardBuy) cardBuy.classList.remove('selected');
-            if (cardFree) cardFree.classList.add('selected');
         } else {
             if (priceGroup) priceGroup.style.display = 'block';
             if (freeNotice) freeNotice.style.display = 'none';
-            if (cardBuy) cardBuy.classList.add('selected');
-            if (cardFree) cardFree.classList.remove('selected');
         }
     }
 

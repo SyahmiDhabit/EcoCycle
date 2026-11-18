@@ -765,7 +765,8 @@ class MarketplaceAndInventoryTest extends TestCase
 
         $exchange->refresh();
         $this->assertSame('paid', $exchange->payment_status);
-        $this->assertSame('completed', $exchange->status);
+        $this->assertSame('confirmed', $exchange->status);
+        $this->assertSame('confirmed', $exchange->delivery_status);
         $this->assertSame('FPX-TEST-9988', $exchange->payment_reference);
 
         // 5. Verify quantity was automatically deducted from item (100 - 30 = 70)

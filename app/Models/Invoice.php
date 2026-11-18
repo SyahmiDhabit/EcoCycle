@@ -15,13 +15,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'buyer_business_id',
     'buyer_business_name',
     'seller_business_name',
+    'seller_address',
+    'seller_contact',
+    'buyer_contact',
     'item_name',
     'quantity',
     'unit',
+    'unit_price',
     'total_amount',
     'currency',
     'pickup_address',
     'payment_status',
+    'payment_reference',
     'issued_at',
 ])]
 class Invoice extends Model
@@ -34,6 +39,7 @@ class Invoice extends Model
     {
         return [
             'quantity' => 'decimal:2',
+            'unit_price' => 'decimal:2',
             'total_amount' => 'decimal:2',
             'issued_at' => 'datetime',
         ];
@@ -67,6 +73,11 @@ class Invoice extends Model
     public function formattedTotal(): string
     {
         return 'RM '.number_format((float) $this->total_amount, 2);
+    }
+
+    public function formattedUnitPrice(): string
+    {
+        return 'RM '.number_format((float) $this->unit_price, 2);
     }
 
     public function formattedQuantity(): string

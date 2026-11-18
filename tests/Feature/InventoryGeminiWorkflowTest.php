@@ -303,25 +303,25 @@ class InventoryGeminiWorkflowTest extends TestCase
             ->assertViewHas('listings', fn ($listings): bool => ! $listings->contains('id', $item->id))
             ->assertDontSee('Standard Heavy-Duty Wooden Pallets');
 
-        // Inventory page shows Edit Details and Publish actions for this unpublished reusable item
+        // Inventory page shows Update Details and Publish actions for this unpublished reusable item
         $this->actingAs($business)
             ->get(route('business.inventory'))
             ->assertOk()
             ->assertSee('Standard Heavy-Duty Wooden Pallets')
-            ->assertSee('Edit Details')
+            ->assertSee('Update Details')
             ->assertSee('Publish');
 
-        // Step 4: Cannot publish Sell item with missing/zero price before setting Price (RM) in Edit Details
+        // Step 4: Cannot publish Sell item with missing/zero price before setting Price per Unit (RM) in Update Item Details
         $this->actingAs($business)
             ->post(route('business.inventory.publish', $item))
             ->assertSessionHasErrors('price');
 
-        // Open Edit Details page, update quantity, Sell listing type, Price (RM) > 0, and Pickup Address
+        // Open Update Item Details page, update quantity, Sell listing type, Price per Unit (RM) > 0, and Pickup Address
         $this->actingAs($business)
             ->get(route('business.inventory.edit', $item))
             ->assertOk()
-            ->assertSee('Edit Inventory Details')
-            ->assertSee('Price (RM)')
+            ->assertSee('Update Item Details')
+            ->assertSee('Price per Unit (RM)')
             ->assertSee('Collection / Pickup Address');
 
         $this->actingAs($business)

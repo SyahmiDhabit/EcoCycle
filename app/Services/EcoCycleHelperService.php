@@ -45,6 +45,9 @@ class EcoCycleHelperService
             'has_images' => ! empty($images),
             'image_count' => count($images),
             'ai_source' => $geminiAnalysis ? 'Google Gemini AI' : 'EcoCycle Expert Engine',
+            'estimated_value_myr' => 'Varies by licensed Malaysian recycler, sorting purity, and batch volume',
+            'carbon_impact' => $analysis['carbon_saving_estimate'] ?? 'Diverting non-reusable material to verified recovery or recycling helps reduce greenhouse gas emissions compared to landfill disposal or open burning.',
+            'improper_disposal_risks' => $analysis['disposal_warning'] ?? 'Improper disposal or open dumping can cause pollution and regulatory penalties.',
         ], $analysis);
     }
 
@@ -285,33 +288,52 @@ Evaluate this material thoroughly using BOTH the visual evidence from the attach
    - Set "category_confidence" to "high" if clearly identifiable, "medium" if reasonably identifiable, or "low" if the photos and text are too vague or contradictory to identify confidently (in which case leave "suggested_category" as "").
 
 2. Reusability Classification (taking visual wear/damage and Material Condition "{$condition}" into account):
-   - "reusable": If the material visible in the photo(s) is structurally sound, clean, durable, multi-use, or can be directly reused, repurposed, or resold to other Malaysian businesses (e.g. intact wooden pallets, clean cardboard boxes, metal bars/sheets, working parts, surplus fabric rolls, reusable drums/containers).
+   - "reusable": If the material visible in the photo(s) is structurally sound, clean, durable, multi-use, or can be directly reused, repurposed, or resold to other Malaysian businesses.
    - "not_reusable": If the material visible in the photo(s) is severely damaged/broken beyond reuse, single-use cutoffs, food/organic waste, contaminated, shredded, slag, sludge, hazardous waste, or degraded scrap that cannot be directly reused without industrial recycling, smelting, granulation, composting, or licensed disposal.
 
-3. Provide a clear, concise reason referencing the observed material condition and visual state explaining why it is classified as Reusable or Non-Reusable.
+3. For Reusable materials, provide suggestions (treated as editable suggestions for the business owner):
+   - "suggested_condition": One of "New", "Damaged", or "Used".
+   - "suggested_listing_type": One of "buy" (Sell), "free" (Free), or "lend" (Lend).
+   - "suggested_price_range": Estimated MYR price or price range per {$unit} considering category, condition, quantity, unit, and Malaysian market value (e.g., "RM 8.00 - RM 12.00 per {$unit}", or "RM 0.00 (Free / Lend recommended)" if free/lend).
+   - "reuse_applications": 2-3 practical reuse applications.
 
-4. Provide 3 specific recommended next actions.
+4. For Non-Reusable materials (and general circular guidance), provide qualitative environmental and carbon impact explanations.
+   IMPORTANT: Do NOT invent exact numerical carbon savings, emission numbers, or unverified statistics. Explain potential environmental and carbon impacts qualitatively.
 
-5. Provide recycling and repurposing guidance.
-
-Return ONLY a valid JSON object matching this schema (no markdown backticks, no markdown formatting):
+Return ONLY a valid JSON object matching this schema (no markdown backticks):
 {
   "suggested_category": "Dynamic concise Title Case material category name",
   "category_confidence": "high",
   "suggested_reusability": "reusable",
   "classification_label": "Reusable",
+  "suggested_condition": "Used",
+  "suggested_listing_type": "buy",
+  "suggested_price_range": "RM 8.00 - RM 12.00 per kg",
+  "reuse_applications": [
+    "Practical reuse application 1",
+    "Practical reuse application 2"
+  ],
   "reason": "Clear explanation based on the photos, condition, and specifications",
   "recommended_actions": [
-    "Recommended action 1",
-    "Recommended action 2",
-    "Recommended action 3"
+    "Recommended next step 1",
+    "Recommended next step 2",
+    "Recommended next step 3"
   ],
-  "recycling_recommendations": "Concrete recycling steps and processes",
+  "other_recommendations": "Other relevant practical recommendations",
+  "recycling_recommendations": "Possible recycling methods and processes",
   "repurposing_ideas": [
-    "Upcycling or repurposing idea 1",
-    "Upcycling or repurposing idea 2"
+    "Possible repurposing method 1",
+    "Possible repurposing method 2"
   ],
-  "disposal_method": "Compliant disposal and landfill diversion guidance"
+  "disposal_method": "Recommended compliant waste handling method",
+  "environmental_impact": "Qualitative explanation of potential environmental impact",
+  "carbon_impact": "Qualitative explanation of potential carbon impact without invented exact figures",
+  "improper_disposal_risks": "Risks of improper disposal or landfilling",
+  "owner_actions": [
+    "Practical step the business owner can perform 1",
+    "Practical step the business owner can perform 2",
+    "Practical step the business owner can perform 3"
+  ]
 }
 PROMPT;
 
@@ -380,17 +402,45 @@ PROMPT;
             $confidence = $rawConfidence;
         }
 
+        $suggestedCondition = trim((string) ($decoded['suggested_condition'] ?? $condition));
+        if (! in_array($suggestedCondition, Item::ALLOWED_CONDITIONS, true)) {
+            $suggestedCondition = in_array($condition, Item::ALLOWED_CONDITIONS, true) ? $condition : 'Used';
+        }
+
+        $rawListingType = strtolower(trim((string) ($decoded['suggested_listing_type'] ?? 'buy')));
+        $suggestedListingType = match (true) {
+            str_contains($rawListingType, 'free') => 'free',
+            str_contains($rawListingType, 'lend') || str_contains($rawListingType, 'borrow') => 'lend',
+            default => 'buy',
+        };
+
+        $listingTypeLabel = match ($suggestedListingType) {
+            'free' => 'Free',
+            'lend' => 'Lend',
+            default => 'Sell',
+        };
+
         return [
             'suggested_category' => $category,
             'category_confidence' => $confidence,
             'needs_category_review' => ($confidence === 'low' || $category === ''),
             'suggested_reusability' => $reusability,
             'classification_label' => $label,
+            'suggested_condition' => $suggestedCondition,
+            'suggested_listing_type' => $suggestedListingType,
+            'suggested_listing_type_label' => $listingTypeLabel,
+            'suggested_price_range' => trim((string) ($decoded['suggested_price_range'] ?? ($suggestedListingType === 'buy' ? "Market rate per {$unit} (editable by owner)" : 'RM 0.00'))),
+            'reuse_applications' => (array) ($decoded['reuse_applications'] ?? []),
             'reason' => $decoded['reason'] ?? 'Material evaluated based on uploaded photos and specifications.',
             'recommended_actions' => (array) ($decoded['recommended_actions'] ?? []),
+            'other_recommendations' => (string) ($decoded['other_recommendations'] ?? 'Store cleanly and confirm specifications before listing or disposal.'),
             'recycling_recommendations' => $decoded['recycling_recommendations'] ?? 'Recycle with certified recovery partners.',
             'repurposing_ideas' => (array) ($decoded['repurposing_ideas'] ?? []),
             'disposal_method' => $decoded['disposal_method'] ?? 'Divert from landfill into certified circular channels.',
+            'environmental_impact' => (string) ($decoded['environmental_impact'] ?? 'Proper material recovery helps reduce landfill volume and limits soil or water pollution.'),
+            'carbon_impact' => (string) ($decoded['carbon_impact'] ?? 'Recovering and recycling secondary materials generally lowers lifecycle greenhouse gas emissions compared to producing virgin materials, though exact emissions depend on transport and processing methods.'),
+            'improper_disposal_risks' => (string) ($decoded['improper_disposal_risks'] ?? 'Improper disposal or open dumping can cause environmental contamination, regulatory penalties, and loss of recoverable resources.'),
+            'owner_actions' => (array) ($decoded['owner_actions'] ?? []),
             'images_analyzed' => $imageCount,
             'ai_source' => 'Google Gemini AI',
         ];
@@ -494,11 +544,27 @@ PROMPT;
             'needs_category_review' => ($confidence === 'low' || $category === ''),
             'suggested_reusability' => $reusability,
             'classification_label' => $label,
+            'suggested_condition' => in_array($condition, Item::ALLOWED_CONDITIONS, true) ? $condition : 'Used',
+            'suggested_listing_type' => $reusability === 'reusable' ? 'buy' : 'free',
+            'suggested_listing_type_label' => $reusability === 'reusable' ? 'Sell' : 'Free',
+            'suggested_price_range' => $reusability === 'reusable' ? "Suggested market rate per {$unit} (editable by owner)" : 'RM 0.00',
+            'reuse_applications' => $reusability === 'reusable'
+                ? ['Direct reuse by local manufacturing or logistics partners', 'Secondary workshop fabrication or packaging support']
+                : [],
             'reason' => $reason,
             'recommended_actions' => $actions,
+            'other_recommendations' => 'Review material cleanliness, confirm quantity, and store in dry conditions prior to collection.',
             'recycling_recommendations' => $recycling,
             'repurposing_ideas' => $repurposing,
             'disposal_method' => $disposal,
+            'environmental_impact' => 'Proper segregation and recovery prevents landfill accumulation and reduces local soil and water contamination.',
+            'carbon_impact' => 'Diverting this material into reuse or recycling avoids energy-intensive virgin production; exact carbon savings depend on local processing and transport distances.',
+            'improper_disposal_risks' => 'Improper dumping or open burning can cause air/water pollution and regulatory non-compliance under Malaysian environmental regulations.',
+            'owner_actions' => [
+                'Separate materials cleanly by type and remove surface contaminants.',
+                'Store securely in labelled containers away from moisture or rain.',
+                'Contact a verified Malaysian recycling or waste management facility for proper handling.',
+            ],
             'images_analyzed' => $imageCount,
             'ai_source' => 'EcoCycle Expert Engine',
         ];
@@ -569,26 +635,32 @@ PROMPT;
     {
         $prompt = <<<PROMPT
 You are EcoCycle AI, an expert industrial circular economy and waste recovery consultant in Malaysia.
-Analyze the following industrial material/scrap:
+Analyze the following non-reusable material:
 
 Material Name: {$name}
 Category: {$category}
 Description: {$description}
 Condition: {$condition}
 Quantity: {$quantity} {$unit}
-Classification: Non-reusable / Scrap
+Classification: Non-Reusable
 
-Provide an actionable, technical circular economy analysis formatted STRICTLY as a raw JSON object (no markdown wrapping, no code fences) with the exact following keys:
+IMPORTANT: Do NOT invent exact numerical carbon savings, emission values, or unverified environmental statistics. Provide clear, honest qualitative explanations of environmental and carbon impacts instead.
+
+Provide an actionable circular economy analysis formatted STRICTLY as a raw JSON object (no markdown wrapping) with these keys:
 {
-  "strategy": "Primary technical circular strategy title (string)",
-  "primary_path": "Short primary recovery pathway name e.g. Mechanical Repelletizing, Secondary Smelting, Industrial Composting (string)",
-  "action_recommendation": "Main recommended action e.g. Shred & Granulate into Flake, Smelt into Ingot, Digest into Biogas (string)",
-  "repurpose_ideas": ["3 practical upcycling or repurposing ideas as an array of strings"],
-  "recycling_steps": ["Step 1: ...", "Step 2: ...", "Step 3: ...", "Step 4: ...", "Step 5: ..."],
-  "disposal_warning": "Environmental hazard or landfill diversion note (string)",
-  "estimated_value_myr": "Estimated scrap price benchmark range in Malaysian Ringgit per unit/kg (string)",
-  "carbon_saving_estimate": "Estimated kg of CO2e avoided by recycling instead of virgin production or landfilling (string)",
-  "compliance_note": "Malaysian Department of Environment (DOE) / Act 672 / Scheduled Waste regulatory compliance guidance (string)"
+  "strategy": "Primary circular waste handling strategy title (string)",
+  "primary_path": "Short primary recovery pathway name (string)",
+  "action_recommendation": "Main recommended next step (string)",
+  "recommended_next_steps": ["Step 1", "Step 2", "Step 3"],
+  "repurpose_ideas": ["Possible repurposing method 1", "Possible repurposing method 2"],
+  "recycling_steps": ["Possible recycling method 1", "Possible recycling method 2", "Possible recycling method 3"],
+  "waste_handling_methods": "Recommended compliant waste handling methods (string)",
+  "environmental_impact": "Qualitative explanation of potential environmental impact (string)",
+  "carbon_saving_estimate": "Qualitative explanation of potential carbon impact without invented exact figures (string)",
+  "disposal_warning": "Risks of improper disposal or landfilling (string)",
+  "owner_actions": ["Practical action the business owner can do themselves 1", "Practical action 2", "Practical action 3", "Practical action 4"],
+  "other_recommendations": "Other relevant practical recommendations (string)",
+  "compliance_note": "Malaysian Department of Environment (DOE) / Act 672 / Scheduled Waste compliance guidance (string)"
 }
 PROMPT;
 
@@ -617,13 +689,17 @@ PROMPT;
         return [
             'strategy' => $decoded['strategy'] ?? 'Industrial Circular Recovery',
             'primary_path' => $decoded['primary_path'] ?? 'Material Valorization',
-            'action_recommendation' => $decoded['action_recommendation'] ?? 'Recycle into secondary raw material',
+            'action_recommendation' => $decoded['action_recommendation'] ?? 'Segregate and route to a certified recovery facility',
+            'recommended_next_steps' => (array) ($decoded['recommended_next_steps'] ?? []),
             'repurpose_ideas' => (array) ($decoded['repurpose_ideas'] ?? []),
             'recycling_steps' => (array) ($decoded['recycling_steps'] ?? []),
-            'disposal_warning' => $decoded['disposal_warning'] ?? 'Divert from landfill into certified recycling streams.',
-            'estimated_value_myr' => $decoded['estimated_value_myr'] ?? 'Subject to market scrap pricing',
-            'carbon_saving_estimate' => $decoded['carbon_saving_estimate'] ?? 'Significant carbon footprint reduction achieved by circular recovery.',
-            'compliance_note' => $decoded['compliance_note'] ?? 'Comply with Malaysian environmental regulations.',
+            'waste_handling_methods' => (string) ($decoded['waste_handling_methods'] ?? 'Segregate, store safely, and transfer to licensed Malaysian waste recovery facilities.'),
+            'environmental_impact' => (string) ($decoded['environmental_impact'] ?? 'Proper waste recovery helps prevent landfill overflow and reduces local land and water pollution.'),
+            'carbon_saving_estimate' => (string) ($decoded['carbon_saving_estimate'] ?? 'Recycling secondary materials generally reduces energy use and lifecycle greenhouse gas emissions compared to extracting virgin resources, though exact reductions depend on material purity and transport.'),
+            'disposal_warning' => (string) ($decoded['disposal_warning'] ?? 'Improper disposal or open dumping can cause pollution and regulatory penalties.'),
+            'owner_actions' => (array) ($decoded['owner_actions'] ?? []),
+            'other_recommendations' => (string) ($decoded['other_recommendations'] ?? 'Keep transfer records and confirm facility acceptance before dispatch.'),
+            'compliance_note' => (string) ($decoded['compliance_note'] ?? 'Comply with Malaysian environmental regulations.'),
         ];
     }
 
@@ -675,144 +751,244 @@ PROMPT;
         // 1. Plastics
         if (str_contains($cat, 'plastic') || str_contains($text, 'plastic') || str_contains($text, 'polymer') || str_contains($text, 'hdpe') || str_contains($text, 'pet') || str_contains($text, 'resin') || str_contains($text, 'film') || str_contains($text, 'bottle')) {
             return [
-                'strategy' => 'Mechanical Grinding, Optical Sorting & Hot-Melt Repelletizing',
+                'strategy' => 'Polymer Segregation, Granulation & Mechanical Recycling',
                 'primary_path' => 'Industrial Plastic Recovery',
-                'action_recommendation' => 'Recycle / Extrude into Post-Industrial Recycled (PIR) Resin',
+                'action_recommendation' => 'Segregate by resin type and send to a verified plastic recycler',
+                'recommended_next_steps' => [
+                    'Separate plastics by resin code (e.g., HDPE, PP, PET, LDPE).',
+                    'Remove adhesives, labels, food residue, and metal fasteners.',
+                    'Arrange transfer to a verified Malaysian plastic recycling facility.',
+                ],
                 'repurpose_ideas' => [
-                    'Shred and mold into durable secondary transport pallets or warehouse storage bins.',
-                    'Extrude into commercial drainage piping, agricultural irrigation tubing, or electrical conduit.',
-                    'Compound with mineral filler for composite lumber and outdoor decking tiles.',
+                    'Granulate clean offcuts for secondary industrial trays, crates, or drainage fittings.',
+                    'Compound with fillers for outdoor composite boards or protective barriers.',
                 ],
                 'recycling_steps' => [
-                    'Step 1: Polymer Segregation — Verify resin code (PET #1, HDPE #2, PP #5). Avoid cross-polymer mixing.',
-                    'Step 2: Decontamination — Remove tape, adhesive stickers, and metallic inserts.',
-                    'Step 3: Size Reduction — Granulate with a heavy-duty industrial granulator to 8-10mm regrind flake.',
-                    'Step 4: Density Wash Bath — Float-sink separation to discard dirt and heavy contaminants.',
-                    'Step 5: Extrusion Pelleting — Melt-filter and strand pelletize for blending with virgin resin (up to 30-50%).',
+                    'Verify resin code and keep incompatible polymers separated.',
+                    'Wash or brush off surface dirt and oil residues before baling.',
+                    'Mechanical shredding and re-pelletizing into post-industrial recycled resin.',
                 ],
-                'disposal_warning' => 'Do NOT dispose via landfill or open combustion. Clean thermoplastics retain 70-85% of mechanical tensile strength when recycled.',
-                'estimated_value_myr' => 'RM 1.20 - RM 2.80 per kg (Clean regrind / flake)',
-                'carbon_saving_estimate' => 'Approx. ' . round($qty * 1.8, 1) . ' kg CO₂e avoided compared to virgin petrochemical synthesis.',
-                'compliance_note' => 'Non-scheduled industrial solid waste under Act 672. Clean production cutoffs are exempt from Scheduled Waste (SW) licensing.',
+                'waste_handling_methods' => 'Store dry in clean jumbo bags or covered bins and transfer to a licensed plastic reprocessor. Avoid mixing with general refuse.',
+                'environmental_impact' => 'Plastics persist for decades in landfills and waterways, breaking into microplastics if not recovered.',
+                'carbon_saving_estimate' => 'Mechanical recycling of clean plastics typically uses significantly less energy and avoids fossil-fuel feedstock extraction compared to producing virgin plastic; exact emissions depend on sorting and transport.',
+                'disposal_warning' => 'Improper disposal or open burning of plastics releases toxic fumes and contributes to persistent microplastic pollution.',
+                'owner_actions' => [
+                    'Separate clean plastics by resin type (HDPE, PP, LDPE, PET).',
+                    'Remove tape, stickers, and metallic inserts before storage.',
+                    'Store under cover away from sunlight and rainwater.',
+                    'Contact a verified plastic recycling facility to confirm batch acceptance.',
+                ],
+                'other_recommendations' => 'Keep clear and coloured plastics separate to improve recyclability.',
+                'compliance_note' => 'Clean industrial plastic cutoffs are generally non-scheduled solid waste under Act 672; chemically contaminated plastic containers may require DOE scheduled waste handling.',
             ];
         }
 
         // 2. Metals
         if (str_contains($cat, 'metal') || str_contains($text, 'metal') || str_contains($text, 'steel') || str_contains($text, 'iron') || str_contains($text, 'copper') || str_contains($text, 'aluminium') || str_contains($text, 'aluminum') || str_contains($text, 'brass') || str_contains($text, 'swarf')) {
-            $isNonFerrous = str_contains($text, 'copper') || str_contains($text, 'aluminium') || str_contains($text, 'aluminum') || str_contains($text, 'brass');
             return [
-                'strategy' => 'Magnetic / Eddy Current Separation and Secondary Induction Smelting',
-                'primary_path' => 'Continuous Scrap Smelting & Ingot Casting',
-                'action_recommendation' => 'Smelt / Re-roll into High-Grade Structural or Alloy Stock',
+                'strategy' => 'Metal Sorting, Oil Draining & Secondary Smelting',
+                'primary_path' => 'Scrap Metal Smelting & Recovery',
+                'action_recommendation' => 'Separate ferrous and non-ferrous metals for licensed metal recycling',
+                'recommended_next_steps' => [
+                    'Separate ferrous (steel/iron) from non-ferrous (aluminium/copper/brass) metals.',
+                    'Drain cutting oils or coolants from shavings/swarf before transport.',
+                    'Deliver or arrange pickup with a verified metal recovery facility.',
+                ],
                 'repurpose_ideas' => [
-                    'Structural offcuts: Fabricate equipment brackets, machine baseplates, or workshop shelving frames.',
-                    'Clean sheet offcuts: Stamp into washers, reinforcement shims, or cable duct covers.',
-                    'Turnings/swarf: Briquette with hydraulic compactor for direct furnace charging.',
+                    'Reuse intact heavy offcuts for workshop brackets, baseplates, or fixtures.',
+                    'Compact clean metal turnings into briquettes for direct foundry remelting.',
                 ],
                 'recycling_steps' => [
-                    'Step 1: Oil Removal — Centrifuge or degrease swarf to remove cutting fluids and machining coolants.',
-                    'Step 2: Magnetic Sorting — Separate ferrous steel/iron from non-ferrous aluminum/copper/brass.',
-                    'Step 3: High-Density Baling — Compress sheet metal cutoffs into uniform 30x30cm furnace charge cubes.',
-                    'Step 4: Induction Melting — Re-melt in electric induction furnace with minimal oxidation slag loss (<3%).',
+                    'Magnetic and visual sorting by alloy type.',
+                    'Degreasing or draining residual machining fluids.',
+                    'Compacting/baling followed by secondary furnace smelting into new metal stock.',
                 ],
-                'disposal_warning' => 'Metals are infinitely recyclable. Zero material degradation over infinite remelting cycles.',
-                'estimated_value_myr' => $isNonFerrous ? 'RM 12.00 - RM 28.00 per kg (Non-ferrous copper/aluminum/brass)' : 'RM 1.10 - RM 1.80 per kg (Heavy melting steel / plate)',
-                'carbon_saving_estimate' => 'Approx. ' . round($qty * 2.5, 1) . ' kg CO₂e saved compared to iron ore blast furnace extraction.',
-                'compliance_note' => 'Oily swarf containing cutting fluid may be classified as SW305/SW306 if oil content exceeds threshold. Ensure oil draining before transport.',
+                'waste_handling_methods' => 'Store in covered steel skips or drip-contained drums to prevent oil runoff into drains.',
+                'environmental_impact' => 'Uncontrolled disposal of oily metal scrap can leach lubricants and heavy metals into soil and waterways.',
+                'carbon_saving_estimate' => 'Remelting scrap steel and aluminium requires substantially less energy than mining and refining primary ore, reducing overall greenhouse gas emissions qualitatively.',
+                'disposal_warning' => 'Never dump oily swarf or sharp metal scrap in municipal bins; untreated cutting fluids can contaminate stormwater drains.',
+                'owner_actions' => [
+                    'Sort steel/iron separately from copper, brass, and aluminium.',
+                    'Drain machining fluids into proper containment trays.',
+                    'Store dry to prevent heavy rusting and contamination.',
+                    'Verify licensing with the receiving metal recycler before dispatch.',
+                ],
+                'other_recommendations' => 'Keep alloy grades separated to improve recovery efficiency.',
+                'compliance_note' => 'Oily swarf containing cutting fluid may be classified under DOE Scheduled Waste (SW305/SW306) if oil content is significant; drain fluids properly and consult DOE guidelines.',
             ];
         }
 
         // 3. Packaging & Paper / Cardboard
         if (str_contains($cat, 'paper') || str_contains($cat, 'packaging') || str_contains($text, 'carton') || str_contains($text, 'box') || str_contains($text, 'cardboard') || str_contains($text, 'paper')) {
             return [
-                'strategy' => 'Hydrapulping, De-inking & Secondary Kraft Paper Board Milling',
-                'primary_path' => 'Repulping & Corrugated Core Manufacturing',
-                'action_recommendation' => 'Hydrapulp into Recycled Fluting & Kraft Medium',
+                'strategy' => 'Dry Segregation, Baling & Paper Mill Repulping',
+                'primary_path' => 'Cellulose Fiber Repulping',
+                'action_recommendation' => 'Keep dry, flatten/bale, and send to a paper recycling mill',
+                'recommended_next_steps' => [
+                    'Separate clean dry cardboard and paper from oily or wax-coated packaging.',
+                    'Flatten cartons and remove excessive plastic tape or strapping.',
+                    'Store indoors until collection by a verified paper recycler.',
+                ],
                 'repurpose_ideas' => [
-                    'Perforate with cardboard shredder to produce high-protective void fill packaging cushioning.',
-                    'Reuse sturdy carton outer boxes for warehouse inter-facility product transfer.',
-                    'Die-cut clean sheets into divider partitions for breakable component shipping.',
+                    'Shred clean corrugated sheets into protective void-fill cushioning for shipping.',
+                    'Cut intact board sections into internal pallet layer pads or dividers.',
                 ],
                 'recycling_steps' => [
-                    'Step 1: Dry Contamination Segregation — Ensure moisture content < 12%. Remove wax-coated or oily food paper.',
-                    'Step 2: De-taping — Strip wide vinyl packing tape and heavy metal box staples.',
-                    'Step 3: Compact Baling — Bale into 300kg industrial mill cubes to optimize flatbed transport economics.',
-                    'Step 4: Hydrapulper Batching — Agitate with water into cellulose slurry, screen out residual fibers.',
+                    'Sort clean kraft/corrugated cartons from contaminated or laminated paper.',
+                    'Compact or bale dry paper to reduce transport trips.',
+                    'Hydrapulping and screening at a paper mill to produce recycled linerboard.',
                 ],
-                'disposal_warning' => 'Keep completely sheltered from rain. Wet cardboard rapidly degrades cellulose fiber tensile index.',
-                'estimated_value_myr' => 'RM 0.35 - RM 0.65 per kg (Old Corrugated Cartons - OCC / Kraft)',
-                'carbon_saving_estimate' => 'Approx. ' . round($qty * 1.3, 1) . ' kg CO₂e avoided and ' . round($qty * 0.017, 2) . ' mature trees preserved.',
-                'compliance_note' => 'General industrial recyclable solid waste. No scheduled waste license required.',
+                'waste_handling_methods' => 'Keep strictly sheltered from rain and moisture; wet or mouldy cardboard loses fiber strength and may be rejected by paper mills.',
+                'environmental_impact' => 'Landfilling paper and cardboard wastes recoverable cellulose fiber and generates methane as organic fibers decompose anaerobically.',
+                'carbon_saving_estimate' => 'Repulping paper reduces demand for virgin wood pulp and avoids landfill methane emissions qualitatively; exact carbon figures depend on transport and mill energy sources.',
+                'disposal_warning' => 'Do not burn waste cardboard or mix wet organic waste with clean recyclable paper bales.',
+                'owner_actions' => [
+                    'Keep paper and cardboard completely dry under sheltered storage.',
+                    'Remove plastic wraps, foam inserts, and heavy metal staples.',
+                    'Flatten boxes neatly to maximize storage and transport efficiency.',
+                    'Contact a verified paper recycling mill or MRF for pickup.',
+                ],
+                'other_recommendations' => 'Separate clean corrugated cartons from mixed office paper for higher recovery quality.',
+                'compliance_note' => 'Clean commercial paper and cardboard are non-scheduled recyclables under Malaysian Act 672.',
             ];
         }
 
         // 4. Timber & Wood
         if (str_contains($cat, 'timber') || str_contains($cat, 'wood') || str_contains($text, 'timber') || str_contains($text, 'wood') || str_contains($text, 'pallet') || str_contains($text, 'plywood') || str_contains($text, 'sawdust')) {
             return [
-                'strategy' => 'Chipping, De-nailing, Biomass Pelleting or Secondary Pallet Refurbishment',
-                'primary_path' => 'Industrial Biomass Fuel or Composite Wood Boards',
-                'action_recommendation' => 'Refurbish Pallets or Chip into Boiler Biomass Pellets',
+                'strategy' => 'De-nailing, Wood Chipping & Biomass / Composite Recovery',
+                'primary_path' => 'Wood Chipping & Biomass Recovery',
+                'action_recommendation' => 'Separate treated from untreated wood and route to a wood recovery facility',
+                'recommended_next_steps' => [
+                    'Separate clean untreated timber from painted, laminated, or chemically treated wood.',
+                    'Remove protruding nails, metal brackets, and plastic strapping where safe.',
+                    'Send to a verified wood recycling or biomass facility.',
+                ],
                 'repurpose_ideas' => [
-                    'Pallet planks: Replace cracked bottom deckboards to restore damaged pallets back to circulation.',
-                    'Heavy timber balks: Cut into dunnage chocks and forklift support skids.',
-                    'Clean wood chips: Compress into heat-treated animal bedding or landscape mulch.',
+                    'Salvage intact boards to repair warehouse pallets or dunnage skids.',
+                    'Use clean untreated wood chips for landscaping mulch or industrial biomass fuel.',
                 ],
                 'recycling_steps' => [
-                    'Step 1: Metal Detection — Pass over magnetic roller to extract hidden nails, staples, and screws.',
-                    'Step 2: Drum Chipping — Chip offcuts into 20-50mm woodchips.',
-                    'Step 3: Moisture Conditioning — Rotary kiln dry to 10-12% target moisture.',
-                    'Step 4: Ring-Die Extrusion — Compress through 8mm die into high-calorific bio-energy wood pellets (4,200 kcal/kg).',
+                    'Inspection to segregate untreated timber from chemically treated wood.',
+                    'Metal extraction (nails/screws) followed by industrial wood chipping.',
+                    'Conversion into particleboard feedstock, mulch, or biomass boiler pellets.',
                 ],
-                'disposal_warning' => 'Prohibited from open burning under Environmental Quality Act (Clean Air Regulations).',
-                'estimated_value_myr' => 'RM 12.00 - RM 25.00 per refurbished pallet / RM 280 - RM 360 per tonne biomass chip',
-                'carbon_saving_estimate' => 'Approx. ' . round($qty * 1.1, 1) . ' kg CO₂e sequestered in durable circular products.',
-                'compliance_note' => 'Treated timber with CCA (Copper Chrome Arsenic) must be handled separately from clean wood waste.',
+                'waste_handling_methods' => 'Store dry off the ground and never burn wood waste on site.',
+                'environmental_impact' => 'Improper dumping wastes forestry resources and decomposing wood in landfills releases methane; open burning creates particulate air pollution.',
+                'carbon_saving_estimate' => 'Keeping wood fiber in composite products or sustainable biomass loops delays carbon release compared to landfilling or virgin timber harvesting; exact carbon impact varies by end use.',
+                'disposal_warning' => 'Open burning of wood waste is prohibited under Malaysian Environmental Quality (Clean Air) Regulations. Chemically treated wood must never be composted or burned.',
+                'owner_actions' => [
+                    'Segregate untreated natural wood from painted or chemically treated timber.',
+                    'Extract loose nails and metal fittings safely.',
+                    'Keep stacked in a dry area to prevent rot and pest infestation.',
+                    'Coordinate with a verified timber recycler or pallet refurbisher.',
+                ],
+                'other_recommendations' => 'Inspect pallets for reusable deckboards before sending broken pieces for chipping.',
+                'compliance_note' => 'Untreated wood waste falls under general solid waste; chemically treated wood (e.g., CCA-treated timber) requires specialist licensed disposal.',
             ];
         }
 
         // 5. Electronics / E-Waste
         if (str_contains($cat, 'electronic') || str_contains($text, 'electronic') || str_contains($text, 'circuit') || str_contains($text, 'pcb') || str_contains($text, 'battery') || str_contains($text, 'cable') || str_contains($text, 'e-waste')) {
             return [
-                'strategy' => 'Certified Pyrometallurgical & Hydrometallurgical Precious Metal Refining',
-                'primary_path' => 'DOE Licensed E-Waste Precious Metal Recovery',
-                'action_recommendation' => 'Transfer to Licensed Scheduled Waste Recovery Facility (SW110)',
+                'strategy' => 'DOE-Licensed E-Waste Dismantling & Material Recovery',
+                'primary_path' => 'Licensed Scheduled Waste (SW110) E-Waste Recovery',
+                'action_recommendation' => 'Transfer strictly to a DOE-licensed e-waste recovery facility',
+                'recommended_next_steps' => [
+                    'Isolate damaged batteries and leaking components in dry, fire-safe containment.',
+                    'Do not dismantle hazardous assemblies (CRT screens, lithium packs) manually on site.',
+                    'Arrange transfer through a DOE-licensed SW110 e-waste collector.',
+                ],
                 'repurpose_ideas' => [
-                    'Functional testing: Recover high-value components (IC chips, relays, power transistors, heat sinks).',
-                    'Wire harnesses: Strip insulation with mechanical wire stripper to yield 99.9% bare bright copper.',
-                    'Chassis casings: Separate polycarbonate/ABS and aluminum enclosures for raw material recycling.',
+                    'Salvage non-hazardous mechanical enclosures or brackets if intact and safe.',
+                    'Strip clean insulated copper wiring only via appropriate electrical recyclers.',
                 ],
                 'recycling_steps' => [
-                    'Step 1: Manual Demanufacturing — Remove hazardous batteries, mercury switches, and capacitors.',
-                    'Step 2: Multi-Stage Shredding — Two-shaft shredder followed by hammer mill granulation.',
-                    'Step 3: Electrostatic Separation — Separate non-conductive fiberglass substrate from copper/tin tracks.',
-                    'Step 4: Chemical Leaching / Electrowinning — Gold, silver, and palladium recovery in closed-loop hydrometallurgy.',
+                    'Safe depollution and removal of batteries, capacitors, and mercury components.',
+                    'Mechanical shredding and sorting of plastics, ferrous metals, and circuit boards.',
+                    'Licensed metallurgical recovery of copper and precious metals.',
                 ],
-                'disposal_warning' => 'CRITICAL: Must NEVER be sent to municipal landfills. Strict DOE enforcement under Act 127.',
-                'estimated_value_myr' => 'RM 8.00 - RM 45.00 per kg depending on gold/copper plating grade',
-                'carbon_saving_estimate' => 'Approx. ' . round($qty * 3.8, 1) . ' kg CO₂e saved compared to primary mineral mining.',
-                'compliance_note' => 'Classified as Scheduled Waste (SW110). Consignment note (e-Consignment) required via DOE ASIS system.',
+                'waste_handling_methods' => 'Store indoors in labelled, weather-proof containers and log consignment via DOE e-SWIS for licensed collection.',
+                'environmental_impact' => 'Electronics contain heavy metals (lead, mercury, cadmium) and flame retardants that can severely pollute soil and groundwater if landfilled.',
+                'carbon_saving_estimate' => 'Recovering metals from e-waste avoids energy-intensive mining and refining of primary ores qualitatively; exact emissions depend on recovery technology.',
+                'disposal_warning' => 'CRITICAL: Electronic waste must NEVER be placed in municipal rubbish bins or burned. Strict enforcement applies under Malaysian DOE Act 127.',
+                'owner_actions' => [
+                    'Separate batteries and power packs safely from other e-waste.',
+                    'Store dry indoors with clear Scheduled Waste (SW110) labelling.',
+                    'Verify the collector holds an active Malaysian DOE license.',
+                    'Retain e-Consignment disposal records for compliance.',
+                ],
+                'other_recommendations' => 'Wipe or physically destroy data-bearing storage media before transferring IT hardware.',
+                'compliance_note' => 'Classified as Scheduled Waste (SW110) under the Environmental Quality (Scheduled Wastes) Regulations 2005. Must be handled by DOE-licensed facilities.',
             ];
         }
 
-        // 6. Default / General Industrial Material
+        // 6. Food / Organic Waste
+        if (str_contains($cat, 'food') || str_contains($cat, 'organic') || str_contains($text, 'sisa makanan') || str_contains($text, 'food') || str_contains($text, 'organic') || str_contains($text, 'vegetable') || str_contains($text, 'sayur') || str_contains($text, 'compost')) {
+            return [
+                'strategy' => 'Source Segregation, Composting or Anaerobic Bio-Conversion',
+                'primary_path' => 'Organic Composting & Bio-Recovery',
+                'action_recommendation' => 'Segregate clean organic waste from packaging and send for composting or biogas recovery',
+                'recommended_next_steps' => [
+                    'Separate organic food waste completely from plastic wrappers, foil, and cutlery.',
+                    'Drain excess liquid and store in sealed, odour-controlled bins.',
+                    'Arrange frequent collection by an organic composting or biogas facility.',
+                ],
+                'repurpose_ideas' => [
+                    'Convert clean vegetable/plant trimmings into on-site or community compost.',
+                    'Channel suitable food processing by-products to certified Black Soldier Fly (BSFL) bio-conversion.',
+                ],
+                'recycling_steps' => [
+                    'Strict source separation to remove all non-biodegradable packaging.',
+                    'Controlled aerobic composting or anaerobic digestion for biogas generation.',
+                    'Curing into soil conditioner or bio-fertiliser.',
+                ],
+                'waste_handling_methods' => 'Use sealed food-grade bins, keep cool or shaded, and schedule frequent pickups to prevent pests and leachate.',
+                'environmental_impact' => 'Organic waste sent to landfills produces leachate that can contaminate groundwater and emits methane gas during anaerobic decay.',
+                'carbon_saving_estimate' => 'Diverting organic waste to composting or controlled biogas digestion significantly reduces methane emissions compared to open landfilling; exact reductions depend on composition and treatment method.',
+                'disposal_warning' => 'Leaving organic waste unsealed attracts pests, causes odour nuisance, and pollutes storm drains with organic leachate.',
+                'owner_actions' => [
+                    'Remove all plastic bags, containers, and utensils from food waste.',
+                    'Drain excess liquids before placing into sealed organic bins.',
+                    'Wash collection bins regularly to maintain hygiene.',
+                    'Coordinate regular pickups with a certified organic waste processor.',
+                ],
+                'other_recommendations' => 'Track recurring food waste batches to help reduce over-ordering or preparation losses.',
+                'compliance_note' => 'Handled under Malaysian Solid Waste and Public Cleansing Management Act 2007 (Act 672) commercial waste guidelines.',
+            ];
+        }
+
+        // 7. Default / General Non-Reusable Industrial Material
         return [
-            'strategy' => 'Industrial Materials Recovery Facility (MRF) Mechanical Classification',
-            'primary_path' => 'Solid Material Separation & Secondary Feedstock Recovery',
-            'action_recommendation' => 'Segregate into Monostreams for Circular Remanufacturing',
+            'strategy' => 'Material Characterization, Segregation & Licensed Waste Recovery',
+            'primary_path' => 'Materials Recovery & Compliant Disposal',
+            'action_recommendation' => 'Segregate cleanly by material type and verify acceptance with a licensed recovery facility',
+            'recommended_next_steps' => [
+                'Identify the exact material composition and check for any hazardous contamination.',
+                'Segregate from general office or kitchen waste to prevent cross-contamination.',
+                'Contact a licensed Malaysian waste management or recovery facility to verify acceptance.',
+            ],
             'repurpose_ideas' => [
-                'Audit process scrap generation to minimize raw material trimming loss at source.',
-                'Exchange on EcoCycle Reusable Marketplace with matching manufacturing partners.',
-                'Explore Refuse-Derived Fuel (RDF) energy recovery for non-recyclable combustible fractions.',
+                'Check whether clean sub-components can be separated and reused internally.',
+                'Review production processes to minimize future offcuts or spoilage.',
             ],
             'recycling_steps' => [
-                'Step 1: Characterize Material Composition — Determine exact resin, alloy, fiber, or chemical makeup.',
-                'Step 2: Clean Storage — Segregate from general plant garbage in weather-protected bins.',
-                'Step 3: Route via GPS Recycling Locator — Match with certified Malaysian circular processors.',
+                'Sort and label materials clearly by composition.',
+                'Remove foreign contaminants such as oil, tape, or mixed rubbish.',
+                'Transfer to a verified recovery or licensed waste management facility.',
             ],
-            'disposal_warning' => 'Ensure complete separation from organic and contaminated waste streams.',
-            'estimated_value_myr' => 'Assessed upon batch inspection by specialized circular recycler',
-            'carbon_saving_estimate' => 'Approx. ' . round($qty * 1.2, 1) . ' kg CO₂e avoided through landfill diversion.',
-            'compliance_note' => 'Verify whether material is general commercial solid waste (Act 672) or Scheduled Waste (Act 127).',
+            'waste_handling_methods' => 'Store securely in labelled, weather-protected containers and engage a licensed waste contractor if no specific recycling pathway is available.',
+            'environmental_impact' => 'Unsegregated industrial waste increases landfill burden and risks environmental pollution if hazardous substances are present.',
+            'carbon_saving_estimate' => 'Separating recoverable fractions for recycling generally helps reduce lifecycle greenhouse gas emissions compared to landfilling and virgin production, though exact impacts cannot be quantified without material-specific lab data.',
+            'disposal_warning' => 'Never burn or illegally dump industrial waste; always verify whether materials require scheduled waste licensing.',
+            'owner_actions' => [
+                'Separate materials according to type and cleanliness.',
+                'Clean or drain loose contaminants where safe to do so.',
+                'Store materials safely in labelled containers away from drains.',
+                'Contact suitable licensed recycling or waste disposal contractors to verify acceptance.',
+            ],
+            'other_recommendations' => 'Keep disposal receipts and waste logs for your business environmental records.',
+            'compliance_note' => 'Verify whether the material falls under general commercial solid waste (Act 672) or DOE Scheduled Waste (Act 127).',
         ];
     }
 

@@ -49,8 +49,8 @@ class StripePaymentService
         }
 
         $listingType = $exchange->resolvedListingType();
-        if ($listingType === 'free' || (bool) $item->is_free) {
-            throw new RuntimeException('Free items do not require Stripe payment.');
+        if ($listingType === 'free' || $listingType === 'lend' || (bool) $item->is_free) {
+            throw new RuntimeException('Free and Lend items do not require Stripe payment.');
         }
 
         if ($listingType !== 'buy') {
@@ -65,8 +65,8 @@ class StripePaymentService
             throw new RuntimeException('This order has been refunded and cannot be paid again.');
         }
 
-        // Prevent overselling before redirecting buyer to Stripe Checkout
-        if ((float) $item->quantity < (float) $exchange->quantity) {
+        // Prevent overselling or purchasing permanently Sold Out items before redirecting buyer to Stripe Checkout
+        if ($item->isPermanentlySoldOut() || $item->status !== 'active' || (float) $item->quantity < (float) $exchange->quantity) {
             throw new RuntimeException("Insufficient stock available. Only {$item->quantity} {$item->unit} remaining.");
         }
 
@@ -411,22 +411,31 @@ class StripePaymentService
 
             $reference = $payment->referenceDisplay();
 
-            $exchange->update([
-                'payment_status' => 'paid',
-                'payment_reference' => $reference,
-                'paid_at' => $paidAt,
-                'status' => 'completed',
-                'completed_at' => $paidAt,
-            ]);
-
-            // Deduct purchased stock atomically with row lock (strictly once)
+            // Lock item row and verify sufficient stock before completing deduction (prevents race-condition overselling)
             $lockedItem = Item::query()
                 ->where('id', $exchange->item_id)
                 ->lockForUpdate()
                 ->first();
 
+            if ($lockedItem && (float) $lockedItem->quantity < (float) $exchange->quantity) {
+                Log::error('Stripe webhook received but remaining stock is insufficient to fulfill order', [
+                    'exchange_id' => $exchange->id,
+                    'item_id' => $lockedItem->id,
+                    'available' => $lockedItem->quantity,
+                    'requested' => $exchange->quantity,
+                ]);
+            }
+
+            $exchange->update([
+                'payment_status' => 'paid',
+                'payment_reference' => $reference,
+                'paid_at' => $paidAt,
+                'status' => 'confirmed',
+                'delivery_status' => 'confirmed',
+            ]);
+
             if ($lockedItem) {
-                $newQty = max(0, (float) $lockedItem->quantity - (float) $exchange->quantity);
+                $newQty = max(0, round((float) $lockedItem->quantity - (float) $exchange->quantity, 2));
                 $lockedItem->update([
                     'quantity' => $newQty,
                     'status' => $newQty <= 0 ? 'sold' : 'active',
@@ -441,6 +450,13 @@ class StripePaymentService
                     'notes' => "Sold via Order {$exchange->resolvedOrderReference()} (Stripe Ref: {$reference})",
                 ]);
             }
+
+            // Log verified payment confirmation in delivery status timeline (order is NOT automatically marked Delivered)
+            $exchange->recordStatusChange(
+                'confirmed',
+                $exchange->requester_business_id,
+                "Stripe payment verified (Ref: {$reference}). Order confirmed and awaiting seller preparation."
+            );
 
             // Generate exactly one EcoCycle Receipt idempotently
             $invoice = $this->invoiceService->generateForOrder($exchange, $payment);

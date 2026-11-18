@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'item_id',
     'listing_id',
+    'material_exchange_id',
     'seller_business_id',
     'reviewer_business_id',
     'rating',
@@ -62,6 +63,11 @@ class MarketplaceReview extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_business_id');
+    }
+
+    public function exchange(): BelongsTo
+    {
+        return $this->belongsTo(MaterialExchange::class, 'material_exchange_id');
     }
 
     public function reviewer(): BelongsTo

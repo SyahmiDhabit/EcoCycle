@@ -2,6 +2,25 @@
 $buyerName = trim((string) ($invoice->buyer_business_name ?: ($invoice->buyer?->business_name ?: ($invoice->buyer?->name ?? 'Buyer Business'))));
 $sellerName = trim((string) ($invoice->seller_business_name ?: ($invoice->seller?->business_name ?: ($invoice->seller?->name ?? 'Seller Business'))));
 
+$sellerAddress = trim((string) ($invoice->seller_address ?? ''));
+if ($sellerAddress === '' && $invoice->exchange) {
+    $sellerAddress = app(\App\Services\InvoiceService::class)->resolveSellerAddress($invoice->exchange);
+}
+$sellerContact = trim((string) ($invoice->seller_contact ?? ''));
+if ($sellerContact === '' && $invoice->seller) {
+    $sellerContact = trim(implode(' | ', array_filter([
+        trim((string) ($invoice->seller->business_phone ?? '')),
+        trim((string) ($invoice->seller->email ?? '')),
+    ])));
+}
+$buyerContact = trim((string) ($invoice->buyer_contact ?? ''));
+if ($buyerContact === '' && $invoice->buyer) {
+    $buyerContact = trim(implode(' | ', array_filter([
+        trim((string) ($invoice->buyer->business_phone ?? '')),
+        trim((string) ($invoice->buyer->email ?? '')),
+    ])));
+}
+
 $pickupAddress = trim((string) ($invoice->pickup_address ?? ''));
 if ($pickupAddress === '' && $invoice->exchange) {
     $pickupAddress = app(\App\Services\InvoiceService::class)->resolvePickupAddress($invoice->exchange);
@@ -12,8 +31,10 @@ if ($pickupAddress === '') {
 
 $statusLabel = $invoice->statusLabel();
 $qtyFormatted = $invoice->formattedQuantity();
-$dateFormatted = $invoice->issued_at ? $invoice->issued_at->format('d M Y') : date('d M Y');
+$dateFormatted = $invoice->issued_at ? $invoice->issued_at->format('d M Y, h:i A') : date('d M Y');
+$unitPriceFormatted = $invoice->formattedUnitPrice();
 $totalFormatted = $invoice->formattedTotal();
+$paymentRef = trim((string) ($invoice->payment_reference ?: ($invoice->payment?->referenceDisplay() ?: ($invoice->exchange?->payment_reference ?: 'N/A'))));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -178,9 +199,16 @@ $totalFormatted = $invoice->formattedTotal();
             <?php endif; ?>
 
             <div class="receipt-toolbar">
-                <a href="<?= route('business.invoices.index') ?>" class="btn-rcp-secondary">
-                    &larr; Back to Transaction History
-                </a>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <a href="<?= route('business.invoices.index') ?>" class="btn-rcp-secondary">
+                        &larr; Back to Receipts
+                    </a>
+                    <?php if ($invoice->exchange): ?>
+                        <a href="<?= route('business.orders.show', $invoice->exchange) ?>" class="btn-rcp-secondary">
+                            Track Order
+                        </a>
+                    <?php endif; ?>
+                </div>
                 <div style="display:flex;gap:10px;align-items:center;">
                     <button type="button" onclick="window.print()" class="btn-rcp-secondary">
                         Print Receipt
@@ -208,23 +236,40 @@ $totalFormatted = $invoice->formattedTotal();
                 </div>
 
                 <div class="receipt-body">
+                    <!-- Seller & Buyer Information Grid -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+                        <div style="padding:14px 16px;background:#f8faf8;border:1px solid #cbd5e1;">
+                            <div style="font-size:11px;font-weight:700;color:#143825;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Seller Information</div>
+                            <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px;"><?= e($sellerName) ?></div>
+                            <?php if ($sellerAddress !== ''): ?>
+                                <div style="font-size:12.5px;color:#475569;line-height:1.45;margin-bottom:4px;"><?= e($sellerAddress) ?></div>
+                            <?php endif; ?>
+                            <?php if ($sellerContact !== ''): ?>
+                                <div style="font-size:12px;color:#334155;"><?= e($sellerContact) ?></div>
+                            <?php endif; ?>
+                        </div>
+                        <div style="padding:14px 16px;background:#ffffff;border:1px solid #cbd5e1;">
+                            <div style="font-size:11px;font-weight:700;color:#143825;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Buyer Information</div>
+                            <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px;"><?= e($buyerName) ?></div>
+                            <?php if ($buyerContact !== ''): ?>
+                                <div style="font-size:12px;color:#334155;"><?= e($buyerContact) ?></div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
                     <table class="receipt-table">
                         <tbody>
                             <tr>
-                                <th>Receipt Number</th>
+                                <th>Receipt ID</th>
                                 <td style="font-family:monospace;font-weight:700;"><?= e($invoice->invoice_number) ?></td>
                             </tr>
                             <tr>
-                                <th>Transaction Date</th>
+                                <th>Payment ID / Reference</th>
+                                <td style="font-family:monospace;"><?= e($paymentRef) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Purchase Date</th>
                                 <td><?= e($dateFormatted) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Buyer Business Name</th>
-                                <td><?= e($buyerName) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Seller Business Name</th>
-                                <td><?= e($sellerName) ?></td>
                             </tr>
                             <tr>
                                 <th>Item Name</th>
@@ -233,6 +278,10 @@ $totalFormatted = $invoice->formattedTotal();
                             <tr>
                                 <th>Quantity and Unit</th>
                                 <td><?= e($qtyFormatted) ?></td>
+                            </tr>
+                            <tr>
+                                <th>Price per Unit (RM)</th>
+                                <td><?= e($unitPriceFormatted) ?></td>
                             </tr>
                             <tr class="receipt-total-row">
                                 <th>Total Amount (RM)</th>

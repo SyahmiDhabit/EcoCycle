@@ -53,9 +53,9 @@ class EcoCycleHelperController extends Controller
         // Default coordinates based on business city/state
         $defaultCoords = RecyclingCentreLocatorService::getCityCoordinates($business->city ?: 'Shah Alam', $business->state ?: 'Selangor');
 
-        // Nearby centres for selected item's category
+        // Nearby verified centres for selected item's category
         $materialCat = $selectedItem?->category ?? 'General';
-        $nearbyCentres = RecyclingCentreLocatorService::findNearby($defaultCoords['lat'], $defaultCoords['lng'], $materialCat, 8);
+        $nearbyCentres = RecyclingCentreLocatorService::findNearby($defaultCoords['lat'], $defaultCoords['lng'], $materialCat, 8, true);
 
         return view('business.helper.index', [
             'business' => $business,
@@ -64,6 +64,7 @@ class EcoCycleHelperController extends Controller
             'initialAnalysis' => $initialAnalysis,
             'defaultCoords' => $defaultCoords,
             'nearbyCentres' => $nearbyCentres,
+            'verifiedMatchFound' => ! empty($nearbyCentres),
             'activeNav' => 'helper',
         ]);
     }
@@ -113,7 +114,7 @@ class EcoCycleHelperController extends Controller
         /** @var User $business */
         $business = Auth::user();
         $coords = RecyclingCentreLocatorService::getCityCoordinates($business->city ?: 'Shah Alam', $business->state ?: 'Selangor');
-        $nearby = RecyclingCentreLocatorService::findNearby($coords['lat'], $coords['lng'], $item->category, 6);
+        $nearby = RecyclingCentreLocatorService::findNearby($coords['lat'], $coords['lng'], $item->category, 6, true);
 
         return response()->json([
             'success' => true,
@@ -131,6 +132,7 @@ class EcoCycleHelperController extends Controller
             ],
             'analysis' => $analysis,
             'nearby_centres' => $nearby,
+            'verified_match_found' => ! empty($nearby),
         ]);
     }
 
@@ -144,16 +146,27 @@ class EcoCycleHelperController extends Controller
             'category' => ['nullable', 'string', 'max:100'],
         ]);
 
+        $category = $validated['category'] ?? null;
         $centres = RecyclingCentreLocatorService::findNearby(
             (float) $validated['lat'],
             (float) $validated['lng'],
-            $validated['category'] ?? null,
-            12
+            $category,
+            12,
+            true
         );
+
+        $alternativeRecommendations = empty($centres) ? [
+            'Contact your local council (PBT) or state solid waste authority (SWCorp / KDEB Waste Management) to verify approved collection points for this material.',
+            'Consult licensed Malaysian waste collectors registered under the Department of Environment (DOE Malaysia) before transporting specialized or contaminated materials.',
+            'Keep the material segregated, dry, and clearly labelled at your premises until an authorized facility confirms acceptance.',
+        ] : [];
 
         return response()->json([
             'success' => true,
             'centres' => $centres,
+            'verified_match_found' => ! empty($centres),
+            'category' => $category,
+            'alternative_recommendations' => $alternativeRecommendations,
         ]);
     }
 }

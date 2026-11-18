@@ -790,7 +790,9 @@ $activeNav = 'inventory';
                                             <span style="font-size:14px;font-weight:700;color:#173e2c;"><?= (float) $item->quantity ?></span> <?= e($item->unit) ?>
                                         </td>
                                         <td data-label="Status">
-                                            <?php if ($item->status === 'out_of_stock' || (float) $item->quantity <= 0): ?>
+                                            <?php if ($item->isPermanentlySoldOut()): ?>
+                                                <span class="status status-out-of-stock" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5;">Sold Out</span>
+                                            <?php elseif ($item->status === 'out_of_stock' || (float) $item->quantity <= 0): ?>
                                                 <span class="status status-out-of-stock">Out of stock</span>
                                             <?php else: ?>
                                                 <span class="status status-in-stock">In stock</span>
@@ -798,16 +800,20 @@ $activeNav = 'inventory';
                                         </td>
                                         <td data-label="Actions" style="text-align:right;">
                                             <div class="action-group">
-                                                <div class="action-stock-pair">
-                                                    <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
-                                                        + In
-                                                    </button>
-                                                    <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
-                                                        - Out
-                                                    </button>
-                                                </div>
+                                                <?php if (! $item->isPermanentlySoldOut()): ?>
+                                                    <div class="action-stock-pair">
+                                                        <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
+                                                            + In
+                                                        </button>
+                                                        <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
+                                                            - Out
+                                                        </button>
+                                                    </div>
+                                                <?php endif; ?>
                                                 <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                                    <?php if ($item->isPublishedToMarketplace()): ?>
+                                                    <?php if ($item->isPermanentlySoldOut()): ?>
+                                                        <span class="btn-owner-only" title="Permanently Sold Out — create a new submission for new surplus stock">Sold Out</span>
+                                                    <?php elseif ($item->isPublishedToMarketplace()): ?>
                                                         <a href="<?= route('business.marketplace', ['q' => $item->name]) ?>" class="btn-market-live" title="View live listing on Marketplace">
                                                             On Market
                                                         </a>
@@ -821,8 +827,8 @@ $activeNav = 'inventory';
                                                         EcoCycle Helper
                                                     </a>
                                                 <?php endif; ?>
-                                                <a href="<?= route('business.inventory.edit', $item) ?>" class="btn-edit" title="Edit details">
-                                                    Edit Details
+                                                <a href="<?= route('business.inventory.edit', $item) ?>" class="btn-edit" title="Update item details">
+                                                    Update Details
                                                 </a>
                                                 <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;margin:0;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
                                                     <?= csrf_field() ?>
@@ -855,7 +861,9 @@ $activeNav = 'inventory';
                                             <span class="badge-not-reusable" style="font-size:11px;padding:3px 8px;">Non-Reusable</span>
                                         <?php endif; ?>
 
-                                        <?php if ($item->status === 'out_of_stock' || (float)$item->quantity <= 0): ?>
+                                        <?php if ($item->isPermanentlySoldOut()): ?>
+                                            <span class="status status-out-of-stock" style="font-size:11px;background:#fee2e2;color:#991b1b;border-color:#fca5a5;">Sold Out</span>
+                                        <?php elseif ($item->status === 'out_of_stock' || (float)$item->quantity <= 0): ?>
                                             <span class="status status-out-of-stock" style="font-size:11px;">Out of stock</span>
                                         <?php else: ?>
                                             <span class="status status-in-stock" style="font-size:11px;">In stock</span>
@@ -899,8 +907,10 @@ $activeNav = 'inventory';
                                         <div class="catalog-price-tag">
                                             <?php if (($item->listing_type ?? 'buy') === 'free'): ?>
                                                 <span style="color:#16a34a;font-weight:800;">FREE (RM 0.00)</span>
+                                            <?php elseif (($item->listing_type ?? 'buy') === 'lend'): ?>
+                                                <span style="color:#1d4ed8;font-weight:800;">LEND (RM 0.00)</span>
                                             <?php elseif ($item->price !== null && (float) $item->price > 0): ?>
-                                                <span>RM <?= number_format((float) $item->price, 2) ?></span>
+                                                <span>RM <?= number_format((float) $item->price, 2) ?> / <?= e($item->unit) ?></span>
                                             <?php else: ?>
                                                 <span style="font-size:12px;font-weight:600;color:#64748b;">Price not set</span>
                                             <?php endif; ?>
@@ -909,18 +919,24 @@ $activeNav = 'inventory';
                                 </div>
 
                                 <div class="catalog-card-actions">
-                                    <div class="action-stock-pair">
-                                        <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
-                                            + In
-                                        </button>
-                                        <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
-                                            - Out
-                                        </button>
-                                    </div>
+                                    <?php if (! $item->isPermanentlySoldOut()): ?>
+                                        <div class="action-stock-pair">
+                                            <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
+                                                + In
+                                            </button>
+                                            <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
+                                                - Out
+                                            </button>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="btn-owner-only">Sold Out</span>
+                                    <?php endif; ?>
 
                                     <div style="display:inline-flex;gap:5px;align-items:center;">
                                         <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                            <?php if ($item->isPublishedToMarketplace()): ?>
+                                            <?php if ($item->isPermanentlySoldOut()): ?>
+                                                <!-- Locked permanently Sold Out -->
+                                            <?php elseif ($item->isPublishedToMarketplace()): ?>
                                                 <a href="<?= route('business.marketplace', ['q' => $item->name]) ?>" class="btn-market-live" title="View on Marketplace">
                                                     On Market
                                                 </a>
@@ -935,8 +951,8 @@ $activeNav = 'inventory';
                                             </a>
                                         <?php endif; ?>
 
-                                        <a href="<?= route('business.inventory.edit', $item) ?>" class="btn-edit" title="Edit details">
-                                            Edit Details
+                                        <a href="<?= route('business.inventory.edit', $item) ?>" class="btn-edit" title="Update item details">
+                                            Update Details
                                         </a>
 
                                         <form method="POST" action="<?= route('business.inventory.destroy', $item) ?>" style="display:inline;margin:0;" onsubmit="return confirm('Are you sure you want to delete this inventory item?');">
@@ -985,7 +1001,9 @@ $activeNav = 'inventory';
             <input type="hidden" name="saved_images" id="add_saved_images" value="">
             <input type="hidden" name="saved_image_slots" id="add_saved_image_slots" value="">
             <input type="hidden" name="analysis_token" id="add_analysis_token" value="">
+            <input type="hidden" name="ai_analysis_json" id="add_ai_analysis_json" value="">
             <input type="hidden" name="reusability" id="add_reusability_hidden" value="">
+            <input type="hidden" name="listing_type" id="add_listing_type_hidden" value="buy">
             <input type="hidden" name="redirect_to" id="add_redirect_to" value="inventory">
             <input type="hidden" name="publish_to_marketplace" id="add_publish_to_marketplace" value="0">
 
@@ -1070,9 +1088,9 @@ $activeNav = 'inventory';
                         <div class="rect-loading-track">
                             <div class="rect-loading-bar"></div>
                         </div>
-                        <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Analyzing Material &amp; Photos...</h4>
+                        <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Analyzing Material with Google Gemini AI...</h4>
                         <p style="font-size:13px;color:#64748b;margin:0 auto;max-width:440px;line-height:1.5;">
-                            Please wait while your uploaded photos and material details are analyzed to determine category, reusability, and recommended action.
+                            Analyzing material details and photos. Please wait a moment...
                         </p>
                     </div>
                 </div>
@@ -1082,7 +1100,7 @@ $activeNav = 'inventory';
                     <!-- Material Analysis Result Container -->
                     <div class="add-rect-box" style="margin-bottom:20px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;">
-                            <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Material Analysis Result</h4>
+                            <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Google Gemini AI Material Analysis Result</h4>
                             <button type="button" id="btn_retry_analysis" class="add-btn-utility" onclick="startGeminiAnalysis()" style="display:none;">
                                 Retry Analysis
                             </button>
@@ -1092,10 +1110,10 @@ $activeNav = 'inventory';
                             The material category could not be confidently identified from the provided details. You may click <strong>Retry Analysis</strong> or enter the appropriate category below before saving.
                         </div>
 
-                        <div class="add-grid-2" style="margin-bottom:14px;">
+                        <div class="add-grid-2" style="margin-bottom:12px;">
                             <div class="add-rect-card">
                                 <label for="add_category_input" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;">
-                                    Suggested Category <span style="color:#b91c1c;">*</span>
+                                    1. Suggested Item Category <span style="color:#b91c1c;">*</span>
                                 </label>
                                 <input id="add_category_input" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter or confirm material category" class="add-input-field" style="font-weight:700;color:#0f172a;padding:8px 10px;font-size:13.5px;">
                                 <div id="ai_category_hint" style="font-size:11px;color:#64748b;margin-top:5px;">
@@ -1104,17 +1122,46 @@ $activeNav = 'inventory';
                             </div>
                             <div class="add-rect-card">
                                 <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Classification</div>
-                                <div id="ai_result_classification" style="font-size:14px;font-weight:700;color:#18422d;padding-top:6px;">-</div>
+                                <div id="ai_result_classification" style="font-size:15px;font-weight:800;color:#18422d;padding-top:6px;">-</div>
                             </div>
                         </div>
 
-                        <div class="add-rect-card" style="margin-bottom:14px;">
+                        <!-- Reusable-specific Suggestions (Condition, Listing Type, Price Range, Reuse Applications, Other Recommendations) -->
+                        <div id="ai_reusable_suggestions_block" style="display:none;margin-bottom:12px;">
+                            <div class="add-grid-3" style="margin-bottom:12px;">
+                                <div class="add-rect-card">
+                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Condition</div>
+                                    <div id="ai_result_condition" style="font-size:13.5px;font-weight:700;color:#0f172a;">-</div>
+                                </div>
+                                <div class="add-rect-card">
+                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Listing Type</div>
+                                    <div id="ai_result_listing_type" style="font-size:13.5px;font-weight:700;color:#18422d;">-</div>
+                                </div>
+                                <div class="add-rect-card">
+                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Price Range (Guidance)</div>
+                                    <div id="ai_result_price_range" style="font-size:13px;font-weight:700;color:#143825;">-</div>
+                                </div>
+                            </div>
+
+                            <div class="add-grid-2" style="margin-bottom:12px;">
+                                <div class="add-rect-card">
+                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Reuse Applications</div>
+                                    <p id="ai_result_reuse_apps" style="margin:0;font-size:12.5px;color:#334155;line-height:1.5;">-</p>
+                                </div>
+                                <div class="add-rect-card">
+                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Other Recommendations</div>
+                                    <p id="ai_result_other_recs" style="margin:0;font-size:12.5px;color:#334155;line-height:1.5;">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="add-rect-card" style="margin-bottom:12px;">
                             <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Reason for Classification</div>
                             <p id="ai_result_reason" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
                         </div>
 
                         <div class="add-rect-card">
-                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Recommended Action</div>
+                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Next Steps</div>
                             <p id="ai_result_recommendation" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
                         </div>
                     </div>
@@ -1130,7 +1177,7 @@ $activeNav = 'inventory';
                                 <div>
                                     <span style="font-weight:700;color:#18422d;font-size:13px;display:block;">Reusable</span>
                                     <span style="font-size:12px;color:#64748b;line-height:1.45;display:block;margin-top:4px;">
-                                        Save in Inventory. You can publish this item to the Marketplace later from your Inventory list.
+                                        Save in Inventory and proceed to Update Item Details to set Sell, Free, or Lend options before publishing.
                                     </span>
                                 </div>
                             </label>
@@ -1139,7 +1186,7 @@ $activeNav = 'inventory';
                                 <div>
                                     <span style="font-weight:700;color:#334155;font-size:13px;display:block;">Non-Reusable</span>
                                     <span style="font-size:12px;color:#64748b;line-height:1.45;display:block;margin-top:4px;">
-                                        Save in Inventory only. Non-reusable items cannot be published to the Marketplace and can be handled through EcoCycle Helper.
+                                        Save in Inventory only. Non-reusable items cannot be published to the Marketplace and open in EcoCycle Helper.
                                     </span>
                                 </div>
                             </label>
@@ -1148,17 +1195,17 @@ $activeNav = 'inventory';
 
                     <!-- Reusable Save Info Notice -->
                     <div id="add_section_reusable" class="add-rect-box" style="display:none;background:#f0fdf4;border-color:#b9dec0;">
-                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#18422d;">Saved to Inventory Only</h4>
+                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#18422d;">Next Step: Update Item Details</h4>
                         <p style="margin:0;font-size:12.5px;color:#2c523b;line-height:1.5;">
-                            Clicking <strong>Add to Inventory</strong> stores this item in your Inventory without publishing it automatically. When you are ready to offer it for Sell or Free, use the <strong>Publish</strong> action in Inventory.
+                            AI suggestions above are guidance only. Click <strong>Update Item Details</strong> to save this item to your Inventory and review/edit the final Category, Listing Type (Sell, Free, or Lend), Price per Unit, and Pickup Address before publishing to the Marketplace.
                         </p>
                     </div>
 
                     <!-- Non-Reusable Restriction Notice -->
                     <div id="add_section_not_reusable" class="add-rect-box" style="display:none;">
-                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#334155;">Inventory Only (EcoCycle Helper Available)</h4>
+                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#334155;">Next Step: EcoCycle Helper</h4>
                         <p style="margin:0;font-size:12.5px;color:#475569;line-height:1.5;">
-                            Non-reusable items cannot be published to the Marketplace. This item will be saved in your Inventory where you can open <strong>EcoCycle Helper</strong> for recycling and disposal guidance.
+                            Non-reusable items cannot be published to the Marketplace. Click <strong>Save &amp; Open EcoCycle Helper</strong> to save this record and view safe recycling, disposal, and verified nearby facility recommendations.
                         </p>
                     </div>
                 </div>
@@ -1167,15 +1214,21 @@ $activeNav = 'inventory';
             <!-- Modal Footer -->
             <div class="modal-footer" id="add_modal_footer">
                 <button type="button" class="add-btn-secondary" onclick="closeAddModal()">Cancel</button>
-                <div style="display:flex;align-items:center;gap:12px;">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                     <button type="button" class="add-btn-primary" id="btn_trigger_ai" onclick="startGeminiAnalysis()">
-                        Analyze Material
+                        Analyze Item
                     </button>
                     <button type="button" class="add-btn-secondary" id="btn_back_to_details" onclick="backToAddDetails()" style="display:none;">
-                        Edit Details
+                        Back to Details
                     </button>
-                    <button type="submit" class="add-btn-primary" id="btn_submit_inventory" style="display:none;">
-                        Add to Inventory
+                    <button type="submit" class="add-btn-secondary" id="btn_submit_inventory" onclick="document.getElementById('add_redirect_to').value='inventory';" style="display:none;">
+                        Save to Inventory
+                    </button>
+                    <button type="submit" class="add-btn-primary" id="btn_submit_update_details" onclick="document.getElementById('add_redirect_to').value='edit';" style="display:none;">
+                        Update Item Details &rarr;
+                    </button>
+                    <button type="submit" class="add-btn-primary" id="btn_submit_open_helper" onclick="document.getElementById('add_redirect_to').value='helper';" style="display:none;">
+                        Save &amp; Open EcoCycle Helper &rarr;
                     </button>
                 </div>
             </div>
@@ -1414,19 +1467,24 @@ $activeNav = 'inventory';
                     </div>
                 </div>
 
-                <!-- Listing Option (Sell or Free) -->
+                <!-- Listing Option (Sell, Free, or Lend) -->
                 <div class="form-group">
                     <label>Listing Option *</label>
-                    <div class="offer-toggle-grid" style="grid-template-columns:1fr 1fr;">
+                    <div class="offer-toggle-grid" style="grid-template-columns:1fr 1fr 1fr;">
                         <label class="offer-toggle-card">
                             <input type="radio" name="listing_type" id="lm_type_buy" value="buy" checked onchange="handleListingTypeChange('buy', 'lm')">
                             <span class="offer-label">Sell</span>
-                            <span class="offer-sub">Set RM price</span>
+                            <span class="offer-sub">Set RM price / unit</span>
                         </label>
                         <label class="offer-toggle-card">
                             <input type="radio" name="listing_type" id="lm_type_free" value="free" onchange="handleListingTypeChange('free', 'lm')">
                             <span class="offer-label">Free</span>
-                            <span class="offer-sub">RM 0.00 Giveaway</span>
+                            <span class="offer-sub">RM 0.00 Claim</span>
+                        </label>
+                        <label class="offer-toggle-card">
+                            <input type="radio" name="listing_type" id="lm_type_lend" value="lend" onchange="handleListingTypeChange('lend', 'lm')">
+                            <span class="offer-label">Lend</span>
+                            <span class="offer-sub">Temporary Borrow</span>
                         </label>
                     </div>
                 </div>
@@ -1458,9 +1516,9 @@ $activeNav = 'inventory';
                 </div>
 
                 <div class="form-group" id="lm_price_group">
-                    <label for="lm_price" id="lm_price_label">Price (RM) *</label>
+                    <label for="lm_price" id="lm_price_label">Price per Unit (RM) *</label>
                     <input id="lm_price" name="price" type="number" step="0.01" min="0.01" placeholder="e.g. 15.00">
-                    <small id="lm_price_hint" style="color:#6f7b72;font-size:11px;">Enter a Price (RM) greater than RM 0.00 for Sell listings.</small>
+                    <small id="lm_price_hint" style="color:#6f7b72;font-size:11px;">Enter a Price per Unit (RM) greater than RM 0.00 for Sell listings.</small>
                 </div>
 
                 <div class="form-group">
@@ -1638,7 +1696,7 @@ function handleListingTypeChange(type, prefix) {
     var priceInput = document.getElementById(prefix + '_price');
     var priceHint = document.getElementById(prefix + '_price_hint');
 
-    if (type === 'free') {
+    if (type === 'free' || type === 'lend') {
         if (priceGroup) {
             priceGroup.style.display = 'none';
         }
@@ -1648,7 +1706,9 @@ function handleListingTypeChange(type, prefix) {
             priceInput.required = false;
         }
         if (priceHint) {
-            priceHint.textContent = 'Free listings are offered at RM 0.00.';
+            priceHint.textContent = type === 'lend'
+                ? 'Lend listings are offered at RM 0.00 with stock returned upon completion.'
+                : 'Free listings are offered at RM 0.00.';
         }
     } else {
         if (priceGroup) {
@@ -1662,7 +1722,7 @@ function handleListingTypeChange(type, prefix) {
             priceInput.required = true;
         }
         if (priceHint) {
-            priceHint.textContent = 'Enter a Price (RM) greater than RM 0.00 for Sell listings.';
+            priceHint.textContent = 'Enter a Price per Unit (RM) greater than RM 0.00 for Sell listings.';
         }
     }
 }
@@ -1692,10 +1752,14 @@ function setAddModalStageActions(stage) {
     var btnAi = document.getElementById('btn_trigger_ai');
     var btnBack = document.getElementById('btn_back_to_details');
     var btnSubmit = document.getElementById('btn_submit_inventory');
+    var btnUpdateDetails = document.getElementById('btn_submit_update_details');
+    var btnOpenHelper = document.getElementById('btn_submit_open_helper');
 
     if (btnAi) btnAi.style.display = 'none';
     if (btnBack) btnBack.style.display = 'none';
     if (btnSubmit) btnSubmit.style.display = 'none';
+    if (btnUpdateDetails) btnUpdateDetails.style.display = 'none';
+    if (btnOpenHelper) btnOpenHelper.style.display = 'none';
 
     if (stage === 'stage_1') {
         if (btnAi) btnAi.style.display = 'inline-block';
@@ -1704,6 +1768,12 @@ function setAddModalStageActions(stage) {
     } else if (stage === 'stage_2') {
         if (btnBack) btnBack.style.display = 'inline-block';
         if (btnSubmit) btnSubmit.style.display = 'inline-block';
+        var currentChoice = document.getElementById('add_reusability_hidden') ? document.getElementById('add_reusability_hidden').value : 'reusable';
+        if (currentChoice === 'not_reusable') {
+            if (btnOpenHelper) btnOpenHelper.style.display = 'inline-block';
+        } else {
+            if (btnUpdateDetails) btnUpdateDetails.style.display = 'inline-block';
+        }
     }
 }
 
@@ -2034,6 +2104,10 @@ function startGeminiAnalysis() {
         }
 
         var analysis = data.analysis;
+        var aiJsonInput = document.getElementById('add_ai_analysis_json');
+        if (aiJsonInput) {
+            try { aiJsonInput.value = JSON.stringify(analysis); } catch (e) { aiJsonInput.value = ''; }
+        }
         var suggestedCat = (analysis.suggested_category || '').trim();
         var needsReview = Boolean(analysis.needs_category_review) || analysis.category_confidence === 'low' || suggestedCat === '';
 
@@ -2059,6 +2133,38 @@ function startGeminiAnalysis() {
             classEl.style.color = isReusable ? '#18422d' : '#334155';
         }
 
+        // Populate all 8 Reusable AI suggestion fields
+        var reusBlock = document.getElementById('ai_reusable_suggestions_block');
+        if (reusBlock) {
+            reusBlock.style.display = isReusable ? 'block' : 'none';
+        }
+        var condOut = document.getElementById('ai_result_condition');
+        if (condOut) condOut.textContent = analysis.suggested_condition || condition || 'Used';
+
+        var ltOut = document.getElementById('ai_result_listing_type');
+        if (ltOut) ltOut.textContent = analysis.suggested_listing_type_label || 'Sell';
+
+        var ltHidden = document.getElementById('add_listing_type_hidden');
+        if (ltHidden) {
+            var suggestedLt = (analysis.suggested_listing_type || 'buy').toLowerCase();
+            ltHidden.value = (suggestedLt === 'free' || suggestedLt === 'lend') ? suggestedLt : 'buy';
+        }
+
+        var priceOut = document.getElementById('ai_result_price_range');
+        if (priceOut) priceOut.textContent = analysis.suggested_price_range || 'Owner sets final price per unit';
+
+        var appsOut = document.getElementById('ai_result_reuse_apps');
+        if (appsOut) {
+            var apps = analysis.reuse_applications || [];
+            appsOut.textContent = Array.isArray(apps) && apps.length > 0 ? apps.join(' • ') : 'Direct reuse by verified Malaysian businesses.';
+        }
+
+        var otherOut = document.getElementById('ai_result_other_recs');
+        if (otherOut) {
+            var others = analysis.other_recommendations || [];
+            otherOut.textContent = Array.isArray(others) && others.length > 0 ? others.join(' ') : 'Verify dimensions, quantity, and pickup address before publishing.';
+        }
+
         var reasonEl = document.getElementById('ai_result_reason');
         if (reasonEl) {
             reasonEl.textContent = analysis.reason || 'Material evaluated based on uploaded photos, condition, and specifications.';
@@ -2068,11 +2174,11 @@ function startGeminiAnalysis() {
         if (recEl) {
             var actions = analysis.recommended_actions || [];
             if (Array.isArray(actions)) {
-                recEl.textContent = actions.join(' ') || (isReusable ? 'Save to Inventory and publish to EcoCycle Marketplace when ready.' : 'Save to Inventory and manage via EcoCycle Helper for recycling or disposal guidance.');
+                recEl.textContent = actions.join(' ') || (isReusable ? 'Proceed to Update Item Details to confirm price and listing type before publishing to EcoCycle Marketplace.' : 'Save to Inventory and open EcoCycle Helper for recycling or disposal guidance.');
             } else if (typeof actions === 'string') {
                 recEl.textContent = actions;
             } else {
-                recEl.textContent = isReusable ? 'Save to Inventory and publish to EcoCycle Marketplace when ready.' : 'Save to Inventory and manage via EcoCycle Helper for recycling or disposal guidance.';
+                recEl.textContent = isReusable ? 'Proceed to Update Item Details to confirm price and listing type before publishing to EcoCycle Marketplace.' : 'Save to Inventory and open EcoCycle Helper for recycling or disposal guidance.';
             }
         }
 
@@ -2104,7 +2210,10 @@ function selectDecision(choice) {
 
     // Always save to Inventory ONLY (never auto-publish to Marketplace)
     document.getElementById('add_publish_to_marketplace').value = '0';
-    document.getElementById('add_redirect_to').value = 'inventory';
+
+    var btnUpdateDetails = document.getElementById('btn_submit_update_details');
+    var btnOpenHelper = document.getElementById('btn_submit_open_helper');
+    var reusBlock = document.getElementById('ai_reusable_suggestions_block');
 
     if (choice === 'reusable') {
         if (radioReusable) radioReusable.checked = true;
@@ -2119,6 +2228,9 @@ function selectDecision(choice) {
         }
         if (secReusable) secReusable.style.display = 'block';
         if (secNotReusable) secNotReusable.style.display = 'none';
+        if (reusBlock) reusBlock.style.display = 'block';
+        if (btnUpdateDetails) btnUpdateDetails.style.display = 'inline-block';
+        if (btnOpenHelper) btnOpenHelper.style.display = 'none';
     } else {
         if (radioReusable) radioReusable.checked = false;
         if (radioNotReusable) radioNotReusable.checked = true;
@@ -2132,12 +2244,15 @@ function selectDecision(choice) {
         }
         if (secReusable) secReusable.style.display = 'none';
         if (secNotReusable) secNotReusable.style.display = 'block';
+        if (reusBlock) reusBlock.style.display = 'none';
+        if (btnUpdateDetails) btnUpdateDetails.style.display = 'none';
+        if (btnOpenHelper) btnOpenHelper.style.display = 'inline-block';
     }
 }
 
 function validateInventoryAddForm(form) {
     if (!addAnalysisCompleted) {
-        showAddAnalysisError('Please click Analyze Material and review the AI suggestion before adding this item to Inventory.');
+        showAddAnalysisError('Please click Analyze Item and review the AI suggestion before saving this item to Inventory.');
         return false;
     }
 
@@ -2170,7 +2285,6 @@ function validateInventoryAddForm(form) {
     }
 
     document.getElementById('add_publish_to_marketplace').value = '0';
-    document.getElementById('add_redirect_to').value = 'inventory';
 
     return true;
 }
@@ -2406,11 +2520,14 @@ function openListMarketModal(id, name, category, unit, quantity, reusability, de
     if (document.getElementById('lm_pickup_address')) {
         document.getElementById('lm_pickup_address').value = pickupAddress || '';
     }
-    var resolvedType = (listingType === 'free') ? 'free' : 'buy';
+    var resolvedType = (listingType === 'free' || listingType === 'lend') ? listingType : 'buy';
     var buyRadio = document.getElementById('lm_type_buy');
     var freeRadio = document.getElementById('lm_type_free');
+    var lendRadio = document.getElementById('lm_type_lend');
     if (resolvedType === 'free' && freeRadio) {
         freeRadio.checked = true;
+    } else if (resolvedType === 'lend' && lendRadio) {
+        lendRadio.checked = true;
     } else if (buyRadio) {
         buyRadio.checked = true;
     }
@@ -2726,6 +2843,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (savedView === 'catalog') {
         switchInventoryView('catalog');
+    }
+    if (urlParams.get('add') === '1') {
+        openAddModal();
     }
 });
 </script>

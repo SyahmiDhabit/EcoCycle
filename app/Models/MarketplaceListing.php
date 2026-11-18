@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'description',
     'category',
     'quantity',
+    'original_quantity',
     'unit',
     'price',
     'is_free',
@@ -29,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'image_2',
     'image_3',
     'images',
+    'ai_analysis',
     'status',
     'notes',
 ])]
@@ -75,10 +77,25 @@ class MarketplaceListing extends Model
     {
         return [
             'quantity' => 'decimal:2',
+            'original_quantity' => 'decimal:2',
             'price' => 'decimal:2',
             'is_free' => 'boolean',
             'images' => 'array',
+            'ai_analysis' => 'array',
         ];
+    }
+
+    /**
+     * Once a non-lend item's available quantity reaches 0 via sales/claims, it is permanently Sold Out.
+     */
+    public function isPermanentlySoldOut(): bool
+    {
+        $rawStatus = (string) ($this->attributes['status'] ?? '');
+        $listingType = strtolower(trim((string) ($this->attributes['listing_type'] ?? 'buy')));
+
+        return $listingType !== 'lend'
+            && (float) ($this->attributes['quantity'] ?? 0) <= 0
+            && in_array($rawStatus, ['sold', 'completed'], true);
     }
 
     /**

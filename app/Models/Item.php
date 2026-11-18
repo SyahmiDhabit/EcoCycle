@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'description',
     'category',
     'quantity',
+    'original_quantity',
     'unit',
     'price',
     'is_free',
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'image_2',
     'image_3',
     'images',
+    'ai_analysis',
     'status',
     'notes',
 ])]
@@ -41,6 +43,12 @@ class Item extends Model
         'New',
         'Damaged',
         'Used',
+    ];
+
+    public const ALLOWED_LISTING_TYPES = [
+        'buy',
+        'free',
+        'lend',
     ];
 
     /**
@@ -92,24 +100,22 @@ class Item extends Model
 
     public function getItemTypeAttribute(): ?string
     {
-        return $this->attributes['item_type'] ?? $this->attributes['listing_type'] ?? 'buy';
+        return $this->attributes['listing_type'] ?? 'buy';
     }
 
     public function setItemTypeAttribute($value): void
     {
         $this->attributes['listing_type'] = $value;
-        $this->attributes['item_type'] = $value;
     }
 
     public function getListingTypeAttribute(): ?string
     {
-        return $this->attributes['listing_type'] ?? $this->attributes['item_type'] ?? 'buy';
+        return $this->attributes['listing_type'] ?? 'buy';
     }
 
     public function setListingTypeAttribute($value): void
     {
         $this->attributes['listing_type'] = $value;
-        $this->attributes['item_type'] = $value;
     }
 
     public function getItemIdAttribute(): ?int
@@ -126,10 +132,25 @@ class Item extends Model
     {
         return [
             'quantity' => 'decimal:2',
+            'original_quantity' => 'decimal:2',
             'price' => 'decimal:2',
             'is_free' => 'boolean',
             'images' => 'array',
+            'ai_analysis' => 'array',
         ];
+    }
+
+    public function isPermanentlySoldOut(): bool
+    {
+        $rawStatus = $this->attributes['status'] ?? '';
+        $qty = (float) ($this->attributes['quantity'] ?? 0);
+        $listingType = $this->attributes['listing_type'] ?? 'buy';
+
+        if ($listingType === 'lend') {
+            return false;
+        }
+
+        return $qty <= 0 && in_array($rawStatus, ['sold', 'completed'], true);
     }
 
     /**

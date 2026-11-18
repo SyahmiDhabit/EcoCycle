@@ -21,10 +21,30 @@ class InvoicePdfGenerator
      */
     public function generate(Invoice $invoice): string
     {
-        $invoice->loadMissing(['seller', 'buyer', 'exchange']);
+        $invoice->loadMissing(['seller', 'buyer', 'exchange', 'payment']);
 
         $buyerName = trim((string) ($invoice->buyer_business_name ?: ($invoice->buyer?->business_name ?: ($invoice->buyer?->name ?? 'Buyer Business'))));
         $sellerName = trim((string) ($invoice->seller_business_name ?: ($invoice->seller?->business_name ?: ($invoice->seller?->name ?? 'Seller Business'))));
+
+        $sellerAddress = trim((string) ($invoice->seller_address ?? ''));
+        if ($sellerAddress === '' && $invoice->exchange) {
+            $sellerAddress = app(InvoiceService::class)->resolveSellerAddress($invoice->exchange);
+        }
+        $sellerContact = trim((string) ($invoice->seller_contact ?? ''));
+        if ($sellerContact === '' && $invoice->seller) {
+            $sellerContact = trim(implode(' | ', array_filter([
+                trim((string) ($invoice->seller->business_phone ?? '')),
+                trim((string) ($invoice->seller->email ?? '')),
+            ])));
+        }
+
+        $buyerContact = trim((string) ($invoice->buyer_contact ?? ''));
+        if ($buyerContact === '' && $invoice->buyer) {
+            $buyerContact = trim(implode(' | ', array_filter([
+                trim((string) ($invoice->buyer->business_phone ?? '')),
+                trim((string) ($invoice->buyer->email ?? '')),
+            ])));
+        }
 
         $pickupAddress = trim((string) ($invoice->pickup_address ?? ''));
         if ($pickupAddress === '' && $invoice->exchange) {
@@ -36,48 +56,79 @@ class InvoicePdfGenerator
 
         $statusLabel = $invoice->statusLabel();
         $qtyFormatted = $invoice->formattedQuantity();
-        $dateFormatted = $invoice->issued_at ? $invoice->issued_at->format('d M Y') : date('d M Y');
+        $dateFormatted = $invoice->issued_at ? $invoice->issued_at->format('d M Y, h:i A') : date('d M Y');
+        $unitPriceFormatted = $invoice->formattedUnitPrice();
         $totalFormatted = $invoice->formattedTotal();
+        $paymentRef = trim((string) ($invoice->payment_reference ?: ($invoice->payment?->referenceDisplay() ?: ($invoice->exchange?->payment_reference ?: 'N/A'))));
 
         $ops = [];
         $contentWidth = self::PAGE_WIDTH - (self::MARGIN * 2);
 
         // 1. EcoCycle Header Banner with EcoCycle Name & Vector Leaf Logo
-        $headerH = 74.0;
-        $headerTopY = self::PAGE_HEIGHT - 44.0;
+        $headerH = 68.0;
+        $headerTopY = self::PAGE_HEIGHT - 40.0;
         $headerBottomY = $headerTopY - $headerH;
         $ops[] = $this->rect(self::MARGIN, $headerBottomY, $contentWidth, $headerH, [0.078, 0.220, 0.145], [0.078, 0.220, 0.145]);
 
         // Vector EcoCycle Leaf Logo Box
-        $logoX = self::MARGIN + 18.0;
-        $logoY = $headerBottomY + 19.0;
+        $logoX = self::MARGIN + 16.0;
+        $logoY = $headerBottomY + 16.0;
         $ops[] = $this->rect($logoX, $logoY, 36.0, 36.0, [1.0, 1.0, 1.0], [0.80, 0.88, 0.82], 0.8);
         $ops[] = $this->drawEcoCycleLeaf($logoX + 8.0, $logoY + 7.0);
 
-        $ops[] = $this->text(self::MARGIN + 66.0, $headerBottomY + 41.0, 'EcoCycle Receipt', 'F2', 18.0, [1.0, 1.0, 1.0]);
-        $ops[] = $this->text(self::MARGIN + 66.0, $headerBottomY + 23.0, 'EcoCycle Malaysia Marketplace', 'F1', 9.5, [0.82, 0.90, 0.84]);
+        $ops[] = $this->text(self::MARGIN + 64.0, $headerBottomY + 38.0, 'EcoCycle Receipt', 'F2', 17.0, [1.0, 1.0, 1.0]);
+        $ops[] = $this->text(self::MARGIN + 64.0, $headerBottomY + 21.0, 'EcoCycle Malaysia Marketplace Transaction Receipt', 'F1', 9.0, [0.82, 0.90, 0.84]);
 
         // Status label on top right
-        $ops[] = $this->textRight(self::PAGE_WIDTH - self::MARGIN - 18.0, $headerBottomY + 33.0, strtoupper($statusLabel), 'F2', 12.0, [1.0, 1.0, 1.0]);
+        $ops[] = $this->textRight(self::PAGE_WIDTH - self::MARGIN - 16.0, $headerBottomY + 30.0, strtoupper($statusLabel), 'F2', 11.5, [1.0, 1.0, 1.0]);
 
-        // 2. Clean Essential Receipt Table (Exact Required Fields Only)
+        // 2. Seller & Buyer Information Side-by-Side Boxes
+        $infoTopY = $headerBottomY - 16.0;
+        $halfW = ($contentWidth - 12.0) / 2.0;
+        $sellerAddrLines = array_slice($this->wrapText($sellerAddress !== '' ? $sellerAddress : $pickupAddress, 36), 0, 3);
+        $infoBoxH = max(84.0, 56.0 + (count($sellerAddrLines) * 12.0));
+        $infoBottomY = $infoTopY - $infoBoxH;
+
+        // Seller Box
+        $ops[] = $this->rect(self::MARGIN, $infoBottomY, $halfW, $infoBoxH, [0.980, 0.988, 0.980], [0.796, 0.835, 0.882], 0.8);
+        $ops[] = $this->text(self::MARGIN + 12.0, $infoTopY - 16.0, 'SELLER INFORMATION', 'F2', 8.5, [0.078, 0.220, 0.145]);
+        $ops[] = $this->text(self::MARGIN + 12.0, $infoTopY - 31.0, $this->truncate($sellerName, 36), 'F2', 10.0, [0.059, 0.090, 0.165]);
+        $sY = $infoTopY - 45.0;
+        foreach ($sellerAddrLines as $line) {
+            $ops[] = $this->text(self::MARGIN + 12.0, $sY, $line, 'F1', 8.5, [0.278, 0.333, 0.412]);
+            $sY -= 12.0;
+        }
+        if ($sellerContact !== '') {
+            $ops[] = $this->text(self::MARGIN + 12.0, max($infoBottomY + 9.0, $sY - 2.0), $this->truncate($sellerContact, 40), 'F1', 8.2, [0.278, 0.333, 0.412]);
+        }
+
+        // Buyer Box
+        $buyerBoxX = self::MARGIN + $halfW + 12.0;
+        $ops[] = $this->rect($buyerBoxX, $infoBottomY, $halfW, $infoBoxH, [1.0, 1.0, 1.0], [0.796, 0.835, 0.882], 0.8);
+        $ops[] = $this->text($buyerBoxX + 12.0, $infoTopY - 16.0, 'BUYER INFORMATION', 'F2', 8.5, [0.078, 0.220, 0.145]);
+        $ops[] = $this->text($buyerBoxX + 12.0, $infoTopY - 31.0, $this->truncate($buyerName, 36), 'F2', 10.0, [0.059, 0.090, 0.165]);
+        if ($buyerContact !== '') {
+            $ops[] = $this->text($buyerBoxX + 12.0, $infoTopY - 46.0, $this->truncate($buyerContact, 40), 'F1', 8.5, [0.278, 0.333, 0.412]);
+        }
+
+        // 3. Transaction Details Table
         $rows = [
-            ['Receipt Number', (string) $invoice->invoice_number],
-            ['Transaction Date', $dateFormatted],
-            ['Buyer Business Name', $buyerName],
-            ['Seller Business Name', $sellerName],
+            ['Receipt ID', (string) $invoice->invoice_number],
+            ['Payment Reference', $paymentRef],
+            ['Purchase Date', $dateFormatted],
             ['Item Name', (string) $invoice->item_name],
             ['Quantity and Unit', $qtyFormatted],
+            ['Price per Unit (RM)', $unitPriceFormatted],
             ['Total Amount (RM)', $totalFormatted],
             ['Payment Status', $statusLabel],
         ];
 
-        $labelColW = 190.0;
+        $labelColW = 185.0;
         $valColW = $contentWidth - $labelColW;
-        $currentTopY = $headerBottomY - 22.0;
+        $currentTopY = $infoBottomY - 16.0;
 
         foreach ($rows as $idx => [$label, $value]) {
-            $rowH = 34.0;
+            $rowH = 30.0;
             $rowBottomY = $currentTopY - $rowH;
             $isTotalRow = ($label === 'Total Amount (RM)');
 
@@ -87,41 +138,41 @@ class InvoicePdfGenerator
             $ops[] = $this->rect(self::MARGIN, $rowBottomY, $labelColW, $rowH, $bg, $borderColor, 0.8);
             $ops[] = $this->rect(self::MARGIN + $labelColW, $rowBottomY, $valColW, $rowH, $bg, $borderColor, 0.8);
 
-            $textY = $rowBottomY + 12.5;
-            $ops[] = $this->text(self::MARGIN + 14.0, $textY, $label, 'F2', 9.5, [0.278, 0.333, 0.412]);
+            $textY = $rowBottomY + 11.0;
+            $ops[] = $this->text(self::MARGIN + 14.0, $textY, $label, 'F2', 9.2, [0.278, 0.333, 0.412]);
 
             $valColor = $isTotalRow
                 ? [0.078, 0.220, 0.145]
                 : ($label === 'Payment Status' ? [0.082, 0.502, 0.239] : [0.059, 0.090, 0.165]);
-            $valFont = ($isTotalRow || $label === 'Receipt Number' || $label === 'Payment Status') ? 'F2' : 'F1';
-            $valSize = $isTotalRow ? 11.5 : 10.0;
+            $valFont = ($isTotalRow || $label === 'Receipt ID' || $label === 'Payment Status') ? 'F2' : 'F1';
+            $valSize = $isTotalRow ? 11.0 : 9.6;
 
             $ops[] = $this->text(self::MARGIN + $labelColW + 14.0, $textY, $this->truncate($value, 48), $valFont, $valSize, $valColor);
 
             $currentTopY = $rowBottomY;
         }
 
-        // 3. Collection / Pickup Address Row (multi-line support)
+        // 4. Collection / Pickup Address Row (multi-line support)
         $addressLines = array_slice($this->wrapText($pickupAddress, 46), 0, 4);
         if (empty($addressLines)) {
             $addressLines = ['To be confirmed with seller'];
         }
-        $addrRowH = max(44.0, 22.0 + (count($addressLines) * 14.0));
+        $addrRowH = max(42.0, 20.0 + (count($addressLines) * 13.5));
         $addrBottomY = $currentTopY - $addrRowH;
 
         $ops[] = $this->rect(self::MARGIN, $addrBottomY, $labelColW, $addrRowH, [0.980, 0.988, 0.980], [0.796, 0.835, 0.882], 0.8);
         $ops[] = $this->rect(self::MARGIN + $labelColW, $addrBottomY, $valColW, $addrRowH, [1.0, 1.0, 1.0], [0.796, 0.835, 0.882], 0.8);
 
-        $ops[] = $this->text(self::MARGIN + 14.0, $currentTopY - 22.0, 'Collection / Pickup Address', 'F2', 9.5, [0.278, 0.333, 0.412]);
+        $ops[] = $this->text(self::MARGIN + 14.0, $currentTopY - 21.0, 'Collection / Pickup Address', 'F2', 9.2, [0.278, 0.333, 0.412]);
 
-        $addrY = $currentTopY - 20.0;
+        $addrY = $currentTopY - 19.0;
         foreach ($addressLines as $line) {
-            $ops[] = $this->text(self::MARGIN + $labelColW + 14.0, $addrY, $line, 'F1', 9.8, [0.059, 0.090, 0.165]);
-            $addrY -= 14.0;
+            $ops[] = $this->text(self::MARGIN + $labelColW + 14.0, $addrY, $line, 'F1', 9.4, [0.059, 0.090, 0.165]);
+            $addrY -= 13.5;
         }
 
-        // 4. Clean Minimal Footer
-        $footerY = $addrBottomY - 30.0;
+        // 5. Clean Minimal Footer
+        $footerY = $addrBottomY - 28.0;
         $ops[] = $this->line(self::MARGIN, $footerY + 14.0, self::PAGE_WIDTH - self::MARGIN, $footerY + 14.0, [0.796, 0.835, 0.882], 0.6);
         $ops[] = $this->text(self::MARGIN, $footerY, 'EcoCycle Malaysia - Electronic Transaction Receipt (MYR)', 'F1', 8.5, [0.45, 0.51, 0.59]);
 

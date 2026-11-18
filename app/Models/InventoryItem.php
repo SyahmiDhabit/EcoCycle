@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'description',
     'category',
     'quantity',
+    'original_quantity',
     'unit',
     'status',
     'reusability',
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'image_2',
     'image_3',
     'images',
+    'ai_analysis',
     'notes',
 ])]
 class InventoryItem extends Model
@@ -42,6 +44,23 @@ class InventoryItem extends Model
     {
         return ($this->reusability ?? '') === 'reusable'
             && in_array($this->attributes['status'] ?? '', ['active', 'sold'], true);
+    }
+
+    /**
+     * Permanently Sold Out / Completed once a non-lend surplus submission's available quantity hits 0
+     * via sales/claims (cannot be restocked or reactivated — new surplus requires a new submission).
+     */
+    public function isPermanentlySoldOut(): bool
+    {
+        $rawStatus = $this->attributes['status'] ?? '';
+        $qty = (float) ($this->attributes['quantity'] ?? 0);
+        $listingType = $this->attributes['listing_type'] ?? 'buy';
+
+        if ($listingType === 'lend') {
+            return false;
+        }
+
+        return $qty <= 0 && in_array($rawStatus, ['sold', 'completed'], true);
     }
 
     public function getStatusAttribute(): string
@@ -81,8 +100,11 @@ class InventoryItem extends Model
     {
         return [
             'quantity' => 'decimal:2',
+            'original_quantity' => 'decimal:2',
             'price' => 'decimal:2',
+            'is_free' => 'boolean',
             'images' => 'array',
+            'ai_analysis' => 'array',
         ];
     }
 

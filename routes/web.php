@@ -14,7 +14,9 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\MyListingController;
+use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TransactionController;
@@ -68,6 +70,12 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::post('/business/transactions/{exchange}/request-payment', [TransactionController::class, 'requestPayment'])->name('business.transactions.request-payment');
     Route::post('/business/transactions/{exchange}/mark-paid', [TransactionController::class, 'markPaid'])->name('business.transactions.mark-paid');
 
+    Route::get('/business/orders', [OrderTrackingController::class, 'index'])->name('business.orders.index');
+    Route::get('/business/orders/{exchange}', [OrderTrackingController::class, 'show'])->name('business.orders.show');
+    Route::post('/business/orders/{exchange}/status', [OrderTrackingController::class, 'updateStatus'])->name('business.orders.status');
+    Route::post('/business/orders/{exchange}/return', [OrderTrackingController::class, 'markReturned'])->name('business.orders.return');
+    Route::post('/business/orders/{exchange}/review', [ReviewController::class, 'store'])->name('business.orders.review');
+
     Route::get('/business/orders/{exchange}/checkout', [StripePaymentController::class, 'review'])->name('business.orders.checkout');
     Route::post('/business/payments/stripe/checkout/{exchange}', [StripePaymentController::class, 'checkout'])->name('business.payments.stripe.checkout');
     Route::get('/business/payments/stripe/success', [StripePaymentController::class, 'success'])->name('business.payments.stripe.success');
@@ -76,6 +84,9 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::get('/business/invoices', [InvoiceController::class, 'index'])->name('business.invoices.index');
     Route::get('/business/invoices/{invoice}', [InvoiceController::class, 'show'])->name('business.invoices.show');
     Route::get('/business/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('business.invoices.pdf');
+
+    // Verified Buyer & Seller Reviews
+    Route::get('/business/reviews', [ReviewController::class, 'index'])->name('business.reviews.index');
 
     // My Listings & Reviews
     Route::get('/business/my-listings', [MyListingController::class, 'index'])->name('business.listings');

@@ -6,10 +6,12 @@ use App\Models\BusinessNotification;
 use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\MarketplaceListing;
+use App\Models\MarketplaceReview;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -86,13 +88,15 @@ class MarketplaceController extends Controller
             });
         }
 
-        if ($listingType !== '' && in_array($listingType, ['buy', 'free'], true)) {
+        if ($listingType !== '' && in_array($listingType, Item::ALLOWED_LISTING_TYPES, true)) {
             if ($listingType === 'free') {
                 $query->where(function ($q) {
-                    $q->where('listing_type', 'free')->orWhere('is_free', true);
+                    $q->where('listing_type', 'free')->orWhere(function ($q2) {
+                        $q2->where('is_free', true)->where('listing_type', '!=', 'lend');
+                    });
                 });
             } else {
-                $query->where('listing_type', 'buy');
+                $query->where('listing_type', $listingType);
             }
         }
 
@@ -101,6 +105,24 @@ class MarketplaceController extends Controller
         }
 
         $listings = $query->latest()->get();
+
+        // Aggregate verified seller ratings for displayed Marketplace cards
+        $sellerIds = $listings->pluck('business_id')->unique()->filter()->values();
+        $sellerRatings = [];
+        if ($sellerIds->isNotEmpty()) {
+            $ratingRows = MarketplaceReview::query()
+                ->select('seller_business_id', DB::raw('AVG(rating) as avg_rating'), DB::raw('COUNT(*) as review_count'))
+                ->whereIn('seller_business_id', $sellerIds)
+                ->groupBy('seller_business_id')
+                ->get();
+
+            foreach ($ratingRows as $row) {
+                $sellerRatings[(int) $row->seller_business_id] = [
+                    'avg' => round((float) $row->avg_rating, 1),
+                    'count' => (int) $row->review_count,
+                ];
+            }
+        }
 
         // Counts for tabs (published marketplace listings only)
         $reusableCount = MarketplaceListing::query()
@@ -154,6 +176,7 @@ class MarketplaceController extends Controller
         return view('business.marketplace.index', [
             'business' => $business,
             'listings' => $listings,
+            'sellerRatings' => $sellerRatings,
             'categories' => $categories,
             'locations' => $locations,
             'myInventoryItems' => $myInventoryItems,
@@ -188,7 +211,7 @@ class MarketplaceController extends Controller
             'category' => ['required', 'string', 'max:100'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
-            'listing_type' => ['required', 'in:buy,free'],
+            'listing_type' => ['required', 'in:buy,free,lend'],
             'reusability' => ['required', 'in:reusable'],
             'price' => $priceRules,
             'condition' => ['nullable', Rule::in(Item::ALLOWED_CONDITIONS)],
@@ -206,7 +229,7 @@ class MarketplaceController extends Controller
 
         $reusability = $validated['reusability'] ?? 'reusable';
         $listingType = $validated['listing_type'];
-        $isFree = $listingType === 'free';
+        $isFree = in_array($listingType, ['free', 'lend'], true);
         $price = $isFree ? 0.00 : round((float) $validated['price'], 2);
         $description = ! empty($validated['description']) ? $validated['description'] : 'Reusable material available on EcoCycle Marketplace.';
         $condition = ! empty($validated['condition']) ? $validated['condition'] : 'Used';
@@ -229,11 +252,16 @@ class MarketplaceController extends Controller
             }
         }
 
-        // If inventory item is specified, ensure it belongs to the user and is reusable
+        // If inventory item is specified, ensure it belongs to the user, is reusable, and is not permanently Sold Out
         $inventoryItemId = $validated['inventory_item_id'] ?? null;
         if ($inventoryItemId) {
             $listing = MarketplaceListing::find($inventoryItemId);
             abort_unless($listing && $listing->business_id === $business->id, 403);
+            if ($listing->isPermanentlySoldOut()) {
+                return back()->withErrors([
+                    'quantity' => 'This item is permanently Sold Out and cannot be reactivated. Please add a new inventory item submission for new surplus stock.',
+                ]);
+            }
             if ($listing->reusability === 'not_reusable') {
                 return back()->with('error', 'This item is marked as Not Reusable (Scrap). Only reusable materials can be listed on the public marketplace.');
             }
@@ -246,6 +274,7 @@ class MarketplaceController extends Controller
                 'description' => $description,
                 'category' => $validated['category'],
                 'quantity' => (float) $validated['quantity'],
+                'original_quantity' => $listing->original_quantity ?? (float) $validated['quantity'],
                 'unit' => $validated['unit'],
                 'listing_type' => $listingType,
                 'reusability' => $reusability,
@@ -274,6 +303,7 @@ class MarketplaceController extends Controller
                 'description' => $description,
                 'category' => $validated['category'],
                 'quantity' => (float) $validated['quantity'],
+                'original_quantity' => (float) $validated['quantity'],
                 'unit' => $validated['unit'],
                 'listing_type' => $listingType,
                 'reusability' => $reusability,
@@ -305,6 +335,7 @@ class MarketplaceController extends Controller
 
         $typeLabel = match ($listingType) {
             'free' => 'for Free Claim',
+            'lend' => 'for Lending',
             default => 'for Sale',
         };
 

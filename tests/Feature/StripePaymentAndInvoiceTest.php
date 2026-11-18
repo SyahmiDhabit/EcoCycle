@@ -98,18 +98,21 @@ class StripePaymentAndInvoiceTest extends TestCase
         $this->assertDatabaseCount('payment', 1);
         $this->assertDatabaseCount('invoice', 0);
 
-        // 2. Simple Payment page shows minimal required fields: Item Name, Quantity, Type, Total Amount (RM), Payment Status
+        // 2. Checkout page shows Seller Business Name & Address at top + Item details, Price per Unit, Total Amount, Payment Status
         $this->actingAs($buyer)
             ->get(route('business.orders.checkout', $exchange))
             ->assertOk()
+            ->assertSee('GreenMetal Sdn Bhd')
+            ->assertSee('No. 18, Jalan Industri 2')
             ->assertSee('Item Name')
             ->assertSee('Industrial HDPE Pallets')
-            ->assertSee('Quantity')
+            ->assertSee('Quantity Selected')
             ->assertSee('5 pcs')
             ->assertSee('Sell')
+            ->assertSee('RM 30.00 / pcs')
             ->assertSee('RM 150.00')
             ->assertSee('Pending')
-            ->assertSee('Pay Now');
+            ->assertSee('Proceed to Stripe Checkout');
 
         // 3. Buyer clicks Pay Now -> creates Stripe Checkout Session with MYR 15000 sen & reuses single payment row
         $this->actingAs($buyer)
@@ -184,7 +187,8 @@ class StripePaymentAndInvoiceTest extends TestCase
         $payment->refresh();
         $item->refresh();
         $this->assertSame('paid', $exchange->payment_status);
-        $this->assertSame('completed', $exchange->status);
+        $this->assertSame('confirmed', $exchange->status);
+        $this->assertSame('confirmed', $exchange->delivery_status);
         $this->assertSame('paid', $payment->status);
         $this->assertNotNull($payment->paid_at);
         $this->assertEquals(15.00, (float) $item->quantity);
@@ -219,19 +223,20 @@ class StripePaymentAndInvoiceTest extends TestCase
             ->assertRedirect(route('business.invoices.show', $receipt));
         Http::assertSentCount(1);
 
-        // 9. Simple EcoCycle Receipt HTML and PDF contain exact 10 elements
+        // 9. EcoCycle Receipt HTML and PDF contain Seller Info, Buyer Info, and Transaction Details
         $this->actingAs($buyer)
             ->get(route('business.invoices.show', $receipt))
             ->assertOk()
             ->assertSee('EcoCycle Receipt')
             ->assertSee($receipt->invoice_number)
-            ->assertSee('Transaction Date')
-            ->assertSee('Buyer Business Name')
+            ->assertSee('Purchase Date')
+            ->assertSee('Buyer Information')
             ->assertSee('Klang Packaging Bhd')
-            ->assertSee('Seller Business Name')
+            ->assertSee('Seller Information')
             ->assertSee('GreenMetal Sdn Bhd')
             ->assertSee('Industrial HDPE Pallets')
             ->assertSee('5 pcs')
+            ->assertSee('RM 30.00')
             ->assertSee('RM 150.00')
             ->assertSee($pickupAddress)
             ->assertSee('Paid');
@@ -432,28 +437,25 @@ class StripePaymentAndInvoiceTest extends TestCase
             'pickup_address' => $pickupAddress,
         ]);
 
-        $this->actingAs($buyer)
+        $claimResp = $this->actingAs($buyer)
             ->post(route('business.marketplace.exchange', $freeItem), [
                 'quantity' => 4,
                 'proceed_to_checkout' => 1,
-            ])
-            ->assertRedirect(route('business.transactions', ['tab' => 'purchases']));
+            ]);
 
         // Zero Stripe calls made
         Http::assertNothingSent();
 
         $freeOrder = MaterialExchange::where('item_id', $freeItem->id)->firstOrFail();
+        $claimResp->assertRedirect(route('business.orders.show', $freeOrder));
         $this->assertEquals(0.00, (float) $freeOrder->total_price);
         $this->assertSame('free', $freeOrder->payment_status);
-        $this->assertSame('completed', $freeOrder->status);
+        $this->assertSame('confirmed', $freeOrder->status);
+        $this->assertSame('confirmed', $freeOrder->delivery_status);
         $this->assertEquals(16.00, (float) $freeItem->fresh()->quantity);
 
-        // Single Free Payment record stored with RM 0.00 and no Stripe IDs
-        $payment = Payment::where('material_exchange_id', $freeOrder->id)->firstOrFail();
-        $this->assertEquals(0.00, (float) $payment->amount);
-        $this->assertSame('free', $payment->status);
-        $this->assertNull($payment->stripe_checkout_session_id);
-        $this->assertNull($payment->stripe_payment_intent_id);
+        // No Stripe payment record is created for free claims
+        $this->assertSame(0, Payment::where('material_exchange_id', $freeOrder->id)->count());
 
         // Simple Free receipt generated automatically without Stripe
         $receipt = Invoice::where('material_exchange_id', $freeOrder->id)->firstOrFail();
@@ -523,7 +525,7 @@ class StripePaymentAndInvoiceTest extends TestCase
         $seller = $this->createApprovedBusiness('Rules Seller Bhd');
         $buyer = $this->createApprovedBusiness('Rules Buyer Bhd');
 
-        foreach (['borrow', 'lend', 'exchange', 'barter'] as $invalidType) {
+        foreach (['borrow', 'exchange', 'barter'] as $invalidType) {
             $this->actingAs($seller)
                 ->post(route('business.marketplace.store'), [
                     'title' => "Invalid {$invalidType} Listing",

@@ -256,6 +256,40 @@ class RecyclingCentreLocatorService
     }
 
     /**
+     * Resolve GPS coordinates from an SME company's registered address, city, and state.
+     * Never relies on a fixed hardcoded city; prioritizes the registered business profile.
+     *
+     * @return array{lat: float, lng: float}
+     */
+    public static function getBusinessCoordinates(\App\Models\User $business): array
+    {
+        $city = (string) ($business->city ?? '');
+        $state = (string) ($business->state ?? '');
+        $address = (string) ($business->registered_address ?? '');
+
+        if (trim($city) !== '') {
+            return self::getCityCoordinates($city, $state);
+        }
+
+        // Search address string for recognized Malaysian cities/localities
+        $addressLower = mb_strtolower($address);
+        $cities = [
+            'shah alam', 'subang jaya', 'petaling jaya', 'klang', 'kuala lumpur', 'rawang',
+            'putrajaya', 'cyberjaya', 'georgetown', 'butterworth', 'perai', 'sungai petani',
+            'ipoh', 'johor bahru', 'pasir gudang', 'kulai', 'melaka', 'seremban', 'kuantan',
+            'kuching', 'bintulu', 'miri', 'kota kinabalu', 'sandakan',
+        ];
+
+        foreach ($cities as $candidate) {
+            if (str_contains($addressLower, $candidate)) {
+                return self::getCityCoordinates($candidate, $state);
+            }
+        }
+
+        return self::getCityCoordinates($city, $state);
+    }
+
+    /**
      * Approximate default latitude and longitude for Malaysian cities.
      */
     public static function getCityCoordinates(string $city, string $state = ''): array

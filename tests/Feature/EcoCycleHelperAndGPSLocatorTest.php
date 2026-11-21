@@ -378,19 +378,20 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
             'status' => 'in_stock',
         ]);
 
-        // 1. Helper page lists ONLY Non-Reusable items and includes interactive map & chat interface
+        // 1. Helper page lists ONLY Non-Reusable items, renders interactive GPS map and no chatbox
         $indexResponse = $this->actingAs($business)->get(route('business.helper'));
         $indexResponse->assertOk();
         $indexResponse->assertSee('Shattered Industrial Safety Glass');
         $indexResponse->assertDontSee('Reusable Steel Warehouse Racks');
         $indexResponse->assertSee('id="ecocycle-gps-map"', false);
-        $indexResponse->assertSee('id="helper-chat-panel"', false);
+        $indexResponse->assertDontSee('id="helper-chat-panel"', false);
+        $indexResponse->assertDontSee('id="chat-form"', false);
 
         // 2. Passing a Reusable item_id via query string is ignored and not displayed
         $reusableQueryResponse = $this->actingAs($business)->get(route('business.helper', ['item_id' => $reusableItem->id]));
         $reusableQueryResponse->assertOk();
         $reusableQueryResponse->assertDontSee('Reusable Steel Warehouse Racks');
-        $reusableQueryResponse->assertSee('Select a Non-Reusable Item or Ask a Question');
+        $reusableQueryResponse->assertSee('Select a Non-Reusable Item');
 
         // 3. Direct analyze API endpoint rejects Reusable items with HTTP 422
         $analyzeReusableResponse = $this->actingAs($business)->getJson(route('business.helper.analyze', $reusableItem->id));
@@ -403,5 +404,79 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $analyzeNonReusableResponse = $this->actingAs($business)->getJson(route('business.helper.analyze', $nonReusableItem->id));
         $analyzeNonReusableResponse->assertOk();
         $this->assertSame('Shattered Industrial Safety Glass', $analyzeNonReusableResponse->json('item.name'));
+    }
+
+    public function test_ecocycle_helper_uses_sme_company_address_as_gps_reference_and_carries_stored_ai_analysis(): void
+    {
+        $business = User::factory()->create([
+            'business_name' => 'Apex Manufacturing Sdn Bhd',
+            'account_status' => 'approved',
+            'registered_address' => 'Lot 45, Kawasan Perindustrian Bukit Raja, Jalan Meru',
+            'city' => 'Klang',
+            'postcode' => '41050',
+            'state' => 'Selangor',
+        ]);
+
+        $storedAnalysis = [
+            'strategy' => 'Certified Secondary Smelting & Thermal Recovery',
+            'action_recommendation' => 'Segregate heavy steel offcuts from light scrap',
+            'owner_actions' => [
+                'Bundle offcuts in steel bins with SWCorp certified labelling',
+                'Schedule authorized industrial hauler pickup for Klang scrap depot',
+            ],
+            'repurpose_ideas' => ['Direct blast furnace feed for rebar manufacturing'],
+            'environmental_impact' => 'Prevents heavy metal leaching and conserves raw iron ore mining.',
+            'carbon_impact' => 'Saves approx 1.8 tons CO2e per ton of recovered secondary steel.',
+            'improper_disposal_risks' => 'Dumping heavy industrial metal violates DOE Environmental Quality Act.',
+            'estimated_value_myr' => 'RM 1.20 - RM 1.80 per kg',
+        ];
+
+        $nonReusableItem = InventoryItem::create([
+            'business_id' => $business->id,
+            'name' => 'Heavy Structural Steel Offcuts',
+            'category' => 'Metals & machinery',
+            'quantity' => 1500,
+            'unit' => 'kg',
+            'condition' => 'Scrap / Cutoffs',
+            'reusability' => 'not_reusable',
+            'listing_type' => 'buy',
+            'price' => 1.50,
+            'ai_analysis' => $storedAnalysis,
+            'status' => 'in_stock',
+        ]);
+
+        // 1. Visit EcoCycle Helper - verifies registered company address is displayed as GPS reference
+        $response = $this->actingAs($business)->get(route('business.helper', ['item_id' => $nonReusableItem->id]));
+
+        $response->assertOk();
+        // SME Registered Address reference
+        $response->assertSee('Apex Manufacturing Sdn Bhd');
+        $response->assertSee('Klang');
+        $response->assertSee('41050');
+        $response->assertSee('Registered Company Address (Main GPS Reference)');
+
+        // Carried-forward AI analysis results from Add New Inventory (NO re-analysis)
+        $response->assertSee('Certified Secondary Smelting &amp; Thermal Recovery', false);
+        $response->assertSee('Segregate heavy steel offcuts from light scrap');
+        $response->assertSee('Bundle offcuts in steel bins with SWCorp certified labelling');
+        $response->assertSee('Direct blast furnace feed for rebar manufacturing');
+        $response->assertSee('Prevents heavy metal leaching and conserves raw iron ore mining.');
+
+        // NO chatbot elements
+        $response->assertDontSee('id="helper-chat-panel"', false);
+        $response->assertDontSee('id="chat-form"', false);
+        $response->assertDontSee('id="chat-input"', false);
+
+        // Interactive GPS Map and nearby facility
+        $response->assertSee('id="ecocycle-gps-map"', false);
+        $response->assertSee('Shan Poornam Metals (Selangor Regional Depot)');
+        $response->assertSee('Southern Steel Circular Recovery Hub');
+
+        // 2. Direct API call to analyze endpoint returns stored AI analysis directly
+        $apiResponse = $this->actingAs($business)->getJson(route('business.helper.analyze', $nonReusableItem->id));
+        $apiResponse->assertOk();
+        $this->assertSame('Certified Secondary Smelting & Thermal Recovery', $apiResponse->json('analysis.strategy'));
+        $this->assertSame('Segregate heavy steel offcuts from light scrap', $apiResponse->json('analysis.action_recommendation'));
+        $this->assertNotEmpty($apiResponse->json('nearby_centres'));
     }
 }

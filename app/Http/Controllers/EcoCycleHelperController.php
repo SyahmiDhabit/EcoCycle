@@ -38,24 +38,46 @@ class EcoCycleHelperController extends Controller
         $initialAnalysis = null;
         if ($itemId = $request->query('item_id')) {
             $selectedItem = $items->firstWhere('id', (int) $itemId);
-            if ($selectedItem) {
+        } elseif ($items->isNotEmpty()) {
+            $selectedItem = $items->first();
+        }
+
+        if ($selectedItem) {
+            // Carry existing AI analysis results generated during Add New Inventory directly
+            $initialAnalysis = $selectedItem->ai_analysis;
+            if (empty($initialAnalysis)) {
                 $initialAnalysis = $helper->analyze($selectedItem);
             }
         }
 
-        // Default coordinates based on business city/state
-        $defaultCoords = RecyclingCentreLocatorService::getCityCoordinates($business->city ?: 'Shah Alam', $business->state ?: 'Selangor');
+        // Use registered SME company's address as the main reference point for GPS and location searches
+        $businessAddress = trim(implode(', ', array_filter([
+            $business->registered_address,
+            $business->postcode,
+            $business->city,
+            $business->state,
+        ])));
+        if ($businessAddress === '') {
+            $businessAddress = 'Registered SME Premises';
+        }
 
-        // Nearby verified centres for selected non-reusable item's category (or all verified if no item selected yet)
+        $businessCoords = RecyclingCentreLocatorService::getBusinessCoordinates($business);
+
+        // Nearby verified centres for selected non-reusable item's category near registered company address
         $materialCat = $selectedItem?->category;
-        $nearbyCentres = RecyclingCentreLocatorService::findNearby($defaultCoords['lat'], $defaultCoords['lng'], $materialCat, 10, true);
+        $nearbyCentres = RecyclingCentreLocatorService::findNearby($businessCoords['lat'], $businessCoords['lng'], $materialCat, 10, true);
+        if (empty($nearbyCentres)) {
+            $nearbyCentres = RecyclingCentreLocatorService::findNearby($businessCoords['lat'], $businessCoords['lng'], null, 8, false);
+        }
 
         return view('business.helper.index', [
             'business' => $business,
+            'businessAddress' => $businessAddress,
+            'businessCoords' => $businessCoords,
+            'defaultCoords' => $businessCoords,
             'items' => $items,
             'selectedItem' => $selectedItem,
             'initialAnalysis' => $initialAnalysis,
-            'defaultCoords' => $defaultCoords,
             'nearbyCentres' => $nearbyCentres,
             'verifiedMatchFound' => ! empty($nearbyCentres),
             'googleMapsApiKey' => trim((string) config('services.google_maps.api_key', '')),
@@ -112,12 +134,19 @@ class EcoCycleHelperController extends Controller
             ], 422);
         }
 
-        $analysis = $helper->analyze($item);
+        // Carry forward existing AI analysis results from Add New Inventory; fallback to helper only if missing
+        $analysis = $item->ai_analysis;
+        if (empty($analysis)) {
+            $analysis = $helper->analyze($item);
+        }
 
         /** @var User $business */
         $business = Auth::user();
-        $coords = RecyclingCentreLocatorService::getCityCoordinates($business->city ?: 'Shah Alam', $business->state ?: 'Selangor');
-        $nearby = RecyclingCentreLocatorService::findNearby($coords['lat'], $coords['lng'], $item->category, 8, true);
+        $coords = RecyclingCentreLocatorService::getBusinessCoordinates($business);
+        $nearby = RecyclingCentreLocatorService::findNearby($coords['lat'], $coords['lng'], $item->category, 10, true);
+        if (empty($nearby)) {
+            $nearby = RecyclingCentreLocatorService::findNearby($coords['lat'], $coords['lng'], null, 8, false);
+        }
 
         return response()->json([
             'success' => true,

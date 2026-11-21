@@ -5,6 +5,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 
 /** @var User $business */
+/** @var string $businessAddress */
+/** @var array{lat: float, lng: float} $businessCoords */
 /** @var Collection<int, Item> $items */
 /** @var Item|null $selectedItem */
 /** @var array<string, mixed>|null $initialAnalysis */
@@ -13,6 +15,14 @@ use Illuminate\Database\Eloquent\Collection;
 /** @var string $googleMapsApiKey */
 
 $companyName = $business->business_name ?: ($business->name ?? 'EcoCycle Business');
+$businessAddress = $businessAddress ?? trim(implode(', ', array_filter([
+    $business->registered_address,
+    $business->postcode,
+    $business->city,
+    $business->state,
+]))) ?: 'Registered Company Premises';
+$businessCoords = $businessCoords ?? ($defaultCoords ?? ['lat' => 3.0738, 'lng' => 101.5183]);
+$defaultCoords = $businessCoords;
 $activeNav = 'helper';
 $googleMapsApiKey = trim((string) ($googleMapsApiKey ?? ''));
 $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
@@ -25,7 +35,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
     <title>EcoCycle Helper &amp; Google Maps GPS Locator &mdash; EcoCycle</title>
     <meta name="csrf-token" content="<?= csrf_token() ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <?php if ($googleMapsApiKey === ''): ?>
@@ -35,7 +45,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
     <style>
         .helper-grid {
             display: grid;
-            grid-template-columns: 1.08fr 0.92fr;
+            grid-template-columns: 1.05fr 0.95fr;
             gap: 20px;
             align-items: start;
         }
@@ -101,7 +111,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
         }
         .helper-welcome-box p {
             margin: 0 auto 18px;
-            max-width: 460px;
+            max-width: 480px;
             font-size: 13px;
             color: #526658;
             line-height: 1.55;
@@ -110,16 +120,17 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 18px;
+            padding: 14px 18px;
             background: #ffffff;
             border-bottom: 1px solid var(--card-border);
         }
         .selected-item-thumb {
-            width: 52px;
-            height: 52px;
+            width: 56px;
+            height: 56px;
             object-fit: cover;
             border: 1px solid var(--card-border);
             flex-shrink: 0;
+            background: #f1f5f2;
         }
         .metric-badge {
             display: inline-flex;
@@ -132,121 +143,93 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
         .metric-badge.green { background: #e8f5e9; color: #1b5e20; border: 1px solid #c2dec0; }
         .metric-badge.amber { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .metric-badge.blue { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .metric-badge.red { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
-        /* Chat Interface */
-        .chat-messages {
-            padding: 16px 18px;
-            max-height: 520px;
-            min-height: 300px;
-            overflow-y: auto;
+        /* Guidance Content Sections (Clean structured display - No Chatbox) */
+        .guidance-body {
+            padding: 18px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            background: #f8faf8;
+            gap: 14px;
+            background: #fafdfa;
         }
-        .chat-bubble {
-            max-width: 92%;
-            padding: 12px 15px;
-            border-radius: 0;
-            font-size: 13px;
-            line-height: 1.55;
-        }
-        .chat-bubble.assistant {
-            align-self: flex-start;
+        .guidance-section {
             background: #ffffff;
             border: 1px solid var(--card-border);
-            color: #1f2937;
-            width: 100%;
-            box-sizing: border-box;
+            padding: 14px 16px;
         }
-        .chat-bubble.user {
-            align-self: flex-end;
-            background: var(--forest-bg);
-            color: #ffffff;
-            border: 1px solid var(--forest-bg);
-            white-space: pre-wrap;
+        .guidance-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
         }
-        .chat-guidance-block {
-            margin-top: 10px;
-            padding: 10px 12px;
-            background: #f9fbf9;
-            border: 1px solid #d5e2d5;
-            border-left: 3px solid #143825;
-        }
-        .chat-guidance-block h5 {
-            margin: 0 0 5px;
-            font-size: 12px;
+        .guidance-section-title {
+            font-size: 13px;
             font-weight: 700;
             color: #143825;
             text-transform: uppercase;
             letter-spacing: 0.03em;
-        }
-        .chat-guidance-list {
             margin: 0;
-            padding-left: 18px;
-            font-size: 12.5px;
-            color: #334155;
-            line-height: 1.55;
         }
-        .chat-guidance-list li {
+        .guidance-list {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: #334155;
+            line-height: 1.6;
+        }
+        .guidance-list li {
+            margin-bottom: 6px;
+        }
+        .guidance-list li:last-child {
+            margin-bottom: 0;
+        }
+        .impact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 600px) {
+            .impact-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .impact-card {
+            padding: 11px 13px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .impact-card.green {
+            background: #f4fbf5;
+            border: 1px solid #c2dec0;
+            color: #143825;
+        }
+        .impact-card.blue {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e3a8a;
+        }
+        .impact-card-title {
+            display: block;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.04em;
             margin-bottom: 4px;
         }
-        .chat-prompts {
-            padding: 10px 16px;
-            background: #f4f7f3;
-            border-top: 1px solid var(--card-border);
-            display: flex;
-            gap: 6px;
-            overflow-x: auto;
-            white-space: nowrap;
+        .risk-warning-card {
+            padding: 12px 14px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-left: 4px solid #b45309;
+            color: #78350f;
+            font-size: 12.5px;
+            line-height: 1.55;
         }
-        .prompt-chip {
-            padding: 6px 11px;
-            border-radius: 0;
-            background: #ffffff;
-            border: 1px solid var(--input-border);
-            font-size: 11.5px;
-            font-weight: 600;
-            color: var(--text-primary);
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .prompt-chip:hover {
-            background: #eef6ec;
-            border-color: var(--brand-green);
-            color: var(--brand-green);
-        }
-        .chat-input-bar {
-            padding: 12px 16px;
-            display: flex;
-            gap: 8px;
-            background: #ffffff;
-            border-top: 1px solid var(--card-border);
-        }
-        .chat-input-bar input {
-            flex: 1;
-            padding: 10px 12px;
-            border: 1px solid var(--input-border);
-            border-radius: 0;
-            font-size: 13px;
-            outline: none;
-        }
-        .chat-input-bar input:focus {
-            border-color: var(--brand-green);
-        }
-        .chat-send-btn {
-            background: var(--forest-bg);
-            color: #ffffff;
-            border: 1px solid var(--forest-bg);
-            padding: 0 18px;
-            border-radius: 0;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .chat-send-btn:hover { background: #0d2b1b; }
 
-        /* Google Maps GPS Panel */
+        /* GPS Location & Map Controls */
         .gps-controls {
             padding: 12px 16px;
             background: var(--surface-subtle);
@@ -255,15 +238,36 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             flex-direction: column;
             gap: 10px;
         }
+        .reference-address-box {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 9px 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .reference-address-icon {
+            color: #143825;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .reference-address-text {
+            font-size: 12px;
+            color: #1e293b;
+            line-height: 1.45;
+        }
         .gps-btn-live {
             background: var(--forest-bg);
             color: #ffffff;
             border: 1px solid var(--forest-bg);
-            padding: 8px 13px;
+            padding: 7px 12px;
             border-radius: 0;
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 700;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .gps-btn-live:hover { background: #0d2b1b; }
         .map-mode-btn {
@@ -282,18 +286,19 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
         }
         #ecocycle-gps-map {
             width: 100%;
-            height: 330px;
+            height: 340px;
             background: #e5ece5;
             border-bottom: 1px solid var(--card-border);
             z-index: 1;
         }
         .facility-list {
             padding: 14px 16px;
-            max-height: 390px;
+            max-height: 480px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            background: #fafafa;
         }
         .facility-card {
             background: #ffffff;
@@ -304,6 +309,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             flex-direction: column;
             gap: 6px;
             cursor: pointer;
+            transition: border-color 0.15s ease;
         }
         .facility-card:hover {
             border-color: var(--brand-green);
@@ -316,7 +322,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             gap: 8px;
         }
         .facility-name {
-            font-size: 13px;
+            font-size: 13.5px;
             font-weight: 700;
             color: #123321;
             margin: 0 0 3px;
@@ -336,17 +342,17 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             line-height: 1.45;
         }
         .btn-directions {
-            margin-top: 3px;
+            margin-top: 4px;
             background: var(--forest-bg);
             color: #ffffff;
             border: 1px solid var(--forest-bg);
             text-decoration: none;
-            font-size: 11px;
+            font-size: 11.5px;
             font-weight: 600;
-            padding: 6px 11px;
+            padding: 6px 12px;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
         }
         .btn-directions:hover { background: #0d2b1b; }
         .leaflet-container {
@@ -367,22 +373,22 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                 </div>
             <?php endif; ?>
 
-            <!-- Header Banner -->
+            <!-- Page Header -->
             <div class="page-header">
                 <div>
                     <h1>EcoCycle Helper</h1>
                     <p>This material has been classified as non-reusable. EcoCycle Helper provides recommendations on how to manage, recycle or dispose of the material properly.</p>
                 </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                     <a href="/business/inventory" class="btn-reset" style="display:inline-flex;align-items:center;">
                         <span>Inventory Items</span>
                     </a>
                 </div>
             </div>
 
-            <!-- Main Helper Grid: Left = Material Analysis & Chat Guidance, Right = Interactive Google Maps GPS Locator -->
+            <!-- Main Helper Grid: Left = Material Analysis & Recommendations, Right = Google Maps GPS Locator & Suitable Places -->
             <div class="helper-grid">
-                <!-- Left Column: Non-Reusable Item Selector + Chat Guidance -->
+                <!-- Left Column: Non-Reusable Item Selector + Carried-Forward AI Guidance (NO CHATBOX) -->
                 <section class="helper-card">
                     <div class="helper-card-header">
                         <h2 class="helper-card-title">Material Analysis &amp; Disposal Guidance</h2>
@@ -398,7 +404,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                             <?php if ($items->isEmpty()): ?>
                                 <option value="">No Non-Reusable items in your inventory yet</option>
                             <?php else: ?>
-                                <option value="">-- Select a Non-Reusable item to open chat guidance --</option>
+                                <option value="">-- Select a Non-Reusable item to view guidance --</option>
                                 <?php foreach ($items as $it): ?>
                                     <option value="<?= $it->id ?>" <?= $selectedItem && $selectedItem->id === $it->id ? 'selected' : '' ?>>
                                         <?= e($it->name ?: $it->title) ?> (<?= (float) $it->quantity ?> <?= e($it->unit) ?> &middot; <?= e($it->category) ?>)
@@ -408,25 +414,20 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                         </select>
                     </div>
 
-                    <!-- Initial Welcome Prompt (Hidden once an item is selected or a question is submitted) -->
-                    <div id="helper-welcome-state" class="helper-welcome-box" style="<?= $hasSelected ? 'display:none;' : '' ?>">
-                        <h3>Select a Non-Reusable Item or Ask a Question</h3>
+                    <!-- Empty / No Selection State -->
+                    <div id="helper-empty-state" class="helper-welcome-box" style="<?= $hasSelected ? 'display:none;' : '' ?>">
+                        <h3>Select a Non-Reusable Item</h3>
                         <p>
-                            EcoCycle Helper exclusively supports <strong>Non-Reusable</strong> materials from your inventory. Choose an item above or type a question below to open the guidance chat with recycling steps, safe disposal methods, and verified nearby facilities.
+                            EcoCycle Helper exclusively supports <strong>Non-Reusable</strong> materials. Select an item from your inventory above to review its material analysis, handling steps, and nearby certified recycling facilities.
                         </p>
                         <?php if ($items->isEmpty()): ?>
-                            <div style="margin-bottom:16px;padding:10px 14px;background:#ffffff;border:1px solid #cbd5e1;font-size:12.5px;color:#475569;display:inline-block;">
-                                No Non-Reusable items found in your inventory yet. Add an item in <a href="/business/inventory?add=1" style="color:#143825;font-weight:700;">Inventory Items</a> or ask a general disposal question below.
+                            <div style="margin-bottom:16px;padding:12px 16px;background:#ffffff;border:1px solid #cbd5e1;font-size:12.5px;color:#475569;display:inline-block;">
+                                No Non-Reusable items found in your inventory yet. Add non-reusable materials in <a href="/business/inventory?add=1" style="color:#143825;font-weight:700;">Inventory Items</a>.
                             </div>
                         <?php endif; ?>
-                        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-                            <button type="button" class="prompt-chip" onclick="askQuickPrompt(this)">How should we dispose of contaminated plastic packaging?</button>
-                            <button type="button" class="prompt-chip" onclick="askQuickPrompt(this)">What are DOE rules for industrial e-waste in Malaysia?</button>
-                            <button type="button" class="prompt-chip" onclick="askQuickPrompt(this)">How do we manage spoiled organic waste safely?</button>
-                        </div>
                     </div>
 
-                    <!-- Selected Non-Reusable Item Summary Strip -->
+                    <!-- Selected Item Strip -->
                     <div id="selected-item-strip" class="selected-item-strip" style="<?= $hasSelected ? '' : 'display:none;' ?>">
                         <img id="strip-item-img" src="<?= $hasSelected && $selectedItem->getPrimaryImage() ? e($selectedItem->getPrimaryImage()) : '/images/figma/ecocycle-leaf.svg' ?>" alt="Selected material" class="selected-item-thumb">
                         <div style="flex:1;min-width:0;">
@@ -434,92 +435,82 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                                 <span class="metric-badge amber">Non-Reusable</span>
                                 <span class="metric-badge green" id="strip-item-category"><?= $hasSelected ? e($selectedItem->category) : '' ?></span>
                                 <span class="metric-badge blue" id="strip-item-qty"><?= $hasSelected ? ((float) $selectedItem->quantity).' '.e($selectedItem->unit) : '' ?></span>
+                                <span class="metric-badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;" id="strip-item-condition"><?= $hasSelected ? e($selectedItem->condition) : '' ?></span>
                             </div>
-                            <strong id="strip-item-name" style="font-size:14px;color:#123321;display:block;"><?= $hasSelected ? e($selectedItem->name ?: $selectedItem->title) : '' ?></strong>
+                            <strong id="strip-item-name" style="font-size:15px;color:#123321;display:block;"><?= $hasSelected ? e($selectedItem->name ?: $selectedItem->title) : '' ?></strong>
                         </div>
                     </div>
 
-                    <!-- Interactive Chat Interface (Opens when an item is selected OR when a question is submitted) -->
-                    <div id="helper-chat-panel" style="<?= $hasSelected ? 'display:flex;flex-direction:column;' : 'display:none;flex-direction:column;' ?>">
-                        <div class="chat-messages" id="chat-messages">
-                            <?php if ($hasSelected && $initialAnalysis): ?>
-                                <div class="chat-bubble assistant">
-                                    <div style="font-weight:800;font-size:14px;color:#143825;margin-bottom:4px;">
-                                        Material Analysis &amp; Recommendations: <?= e($selectedItem->name ?: $selectedItem->title) ?>
-                                    </div>
-                                    <p style="margin:0 0 8px;color:#334155;">
-                                        <strong>Recommended Handling:</strong> <?= e($initialAnalysis['action_recommendation'] ?? '') ?> &mdash; <?= e($initialAnalysis['strategy'] ?? '') ?>
-                                    </p>
-
-                                    <div class="chat-guidance-block">
-                                        <h5>What Can the Business Owner Do?</h5>
-                                        <ol class="chat-guidance-list">
-                                            <?php foreach (($initialAnalysis['owner_actions'] ?? $initialAnalysis['recycling_steps'] ?? []) as $act): ?>
-                                                <li><?= e($act) ?></li>
-                                            <?php endforeach; ?>
-                                        </ol>
-                                    </div>
-
-                                    <?php if (! empty($initialAnalysis['repurpose_ideas'])): ?>
-                                        <div class="chat-guidance-block">
-                                            <h5>Alternative Recovery &amp; Repurposing Options</h5>
-                                            <ul class="chat-guidance-list">
-                                                <?php foreach ($initialAnalysis['repurpose_ideas'] as $idea): ?>
-                                                    <li><?= e($idea) ?></li>
-                                                <?php endforeach; ?>
-                                            </ul>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
-                                        <div style="padding:9px 11px;background:#f4fbf5;border:1px solid #c2dec0;">
-                                            <strong style="display:block;font-size:10.5px;text-transform:uppercase;color:#1b5e20;margin-bottom:3px;">Environmental Impact (Qualitative)</strong>
-                                            <span style="font-size:12px;color:#123321;"><?= e($initialAnalysis['environmental_impact'] ?? 'Proper segregation and licensed recovery reduce landfill burden and prevent pollution.') ?></span>
-                                        </div>
-                                        <div style="padding:9px 11px;background:#eff6ff;border:1px solid #bfdbfe;">
-                                            <strong style="display:block;font-size:10.5px;text-transform:uppercase;color:#1d4ed8;margin-bottom:3px;">Carbon Impact Guidance (Qualitative)</strong>
-                                            <span style="font-size:12px;color:#1e3a8a;"><?= e($initialAnalysis['carbon_impact'] ?? $initialAnalysis['carbon_saving_estimate'] ?? 'Diverting non-reusable material to verified recycling helps reduce emissions compared to landfill disposal.') ?></span>
-                                        </div>
-                                    </div>
-
-                                    <div style="margin-top:10px;padding:9px 11px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;font-size:12px;color:#78350f;">
-                                        <strong>Disposal Risks &amp; Compliance:</strong> <?= e($initialAnalysis['improper_disposal_risks'] ?? $initialAnalysis['disposal_warning'] ?? '') ?>
-                                    </div>
-
-                                    <div class="chat-guidance-block" style="margin-top:10px;">
-                                        <h5>Suitable Verified Facilities Nearby</h5>
-                                        <?php if (! empty($nearbyCentres)): ?>
-                                            <ul class="chat-guidance-list">
-                                                <?php foreach (array_slice($nearbyCentres, 0, 3) as $c): ?>
-                                                    <li><strong><?= e($c['name']) ?></strong> (<?= $c['distance_km'] ?> km) &mdash; <?= e($c['address']) ?></li>
-                                                <?php endforeach; ?>
-                                            </ul>
-                                            <div style="font-size:11.5px;color:#526658;margin-top:4px;">Click any marker on the interactive map on the right for full facility details and Google Maps directions.</div>
-                                        <?php else: ?>
-                                            <p style="margin:0;font-size:12px;color:#92400e;">No verified facility in our directory explicitly matches this category near your current location. Check your local council (PBT) or DOE Malaysia licensed collectors before transport.</p>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
+                    <!-- Carried-Forward Analysis & Guidance Details (Direct display, NO CHATBOT) -->
+                    <div id="guidance-display-panel" class="guidance-body" style="<?= $hasSelected ? '' : 'display:none;' ?>">
+                        <!-- 1. Strategy & Recommended Handling -->
+                        <div class="guidance-section" style="border-left:4px solid #143825;">
+                            <div class="guidance-section-header">
+                                <h3 class="guidance-section-title">Recommended Handling &amp; Strategy</h3>
+                                <span id="guidance-value-badge" style="font-size:11px;font-weight:700;color:#15803d;background:#e8f5e9;padding:2px 7px;">
+                                    <?= $hasSelected && !empty($initialAnalysis['estimated_value_myr']) ? e($initialAnalysis['estimated_value_myr']) : 'Industrial Waste Recovery' ?>
+                                </span>
+                            </div>
+                            <p id="guidance-handling-text" style="margin:0;font-size:13.5px;color:#1e293b;font-weight:600;line-height:1.5;">
+                                <?= $hasSelected ? e(($initialAnalysis['action_recommendation'] ?? '') . (!empty($initialAnalysis['strategy']) ? ' — ' . $initialAnalysis['strategy'] : '')) : '' ?>
+                            </p>
                         </div>
 
-                        <!-- Quick Follow-Up Prompt Chips -->
-                        <div class="chat-prompts">
-                            <button type="button" class="prompt-chip" onclick="askQuickPrompt(this)">How should we store and prepare this before pickup?</button>
-                            <button type="button" class="prompt-chip" onclick="askQuickPrompt(this)">Are there DOE or licensing requirements for this material?</button>
-                            <button type="button" class="prompt-chip" onclick="askQuickPrompt(this)">What are the best recycling and repurposing options?</button>
-                            <button type="button" class="prompt-chip" onclick="askQuickPrompt(this)">Which nearby verified facility should we contact?</button>
+                        <!-- 2. What Can the Business Owner Do? (Actionable steps) -->
+                        <div class="guidance-section">
+                            <div class="guidance-section-header">
+                                <h3 class="guidance-section-title">What Can the Business Owner Do?</h3>
+                            </div>
+                            <ol class="guidance-list" id="guidance-owner-actions">
+                                <?php if ($hasSelected): ?>
+                                    <?php foreach (($initialAnalysis['owner_actions'] ?? $initialAnalysis['recycling_steps'] ?? []) as $step): ?>
+                                        <li><?= e($step) ?></li>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </ol>
+                        </div>
+
+                        <!-- 3. Alternative Recovery & Repurposing Options -->
+                        <div class="guidance-section" id="guidance-repurpose-box" style="<?= $hasSelected && !empty($initialAnalysis['repurpose_ideas']) ? '' : 'display:none;' ?>">
+                            <div class="guidance-section-header">
+                                <h3 class="guidance-section-title">Alternative Recovery &amp; Repurposing Options</h3>
+                            </div>
+                            <ul class="guidance-list" id="guidance-repurpose-ideas">
+                                <?php if ($hasSelected && !empty($initialAnalysis['repurpose_ideas'])): ?>
+                                    <?php foreach ($initialAnalysis['repurpose_ideas'] as $idea): ?>
+                                        <li><?= e($idea) ?></li>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
+
+                        <!-- 4. Qualitative Environmental & Carbon Impact Guidance -->
+                        <div class="impact-grid">
+                            <div class="impact-card green">
+                                <span class="impact-card-title" style="color:#1b5e20;">Environmental Impact (Qualitative)</span>
+                                <span id="guidance-env-impact">
+                                    <?= $hasSelected ? e($initialAnalysis['environmental_impact'] ?? 'Proper segregation and licensed recovery reduce landfill burden and prevent environmental pollution.') : 'Proper segregation and licensed recovery reduce landfill burden and prevent environmental pollution.' ?>
+                                </span>
+                            </div>
+                            <div class="impact-card blue">
+                                <span class="impact-card-title" style="color:#1d4ed8;">Carbon Impact Guidance (Qualitative)</span>
+                                <span id="guidance-carbon-impact">
+                                    <?= $hasSelected ? e($initialAnalysis['carbon_impact'] ?? $initialAnalysis['carbon_saving_estimate'] ?? 'Diverting non-reusable secondary material to verified recycling avoids landfill methane emissions and conserves energy.') : 'Diverting non-reusable secondary material to verified recycling avoids landfill methane emissions and conserves energy.' ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 5. Compliance & Disposal Risks Notice -->
+                        <div class="risk-warning-card" id="guidance-risks-box">
+                            <strong style="display:block;margin-bottom:4px;color:#92400e;">Compliance &amp; Disposal Risks:</strong>
+                            <span id="guidance-risks-text">
+                                <?= $hasSelected ? e($initialAnalysis['improper_disposal_risks'] ?? $initialAnalysis['disposal_warning'] ?? 'Unauthorized dumping or illegal burning violates Environmental Quality Act regulations.') : 'Unauthorized dumping or illegal burning violates Environmental Quality Act regulations.' ?>
+                            </span>
                         </div>
                     </div>
-
-                    <!-- Always-Accessible Chat Input Bar (Submitting a question opens the chat interface immediately) -->
-                    <form class="chat-input-bar" id="chat-form" onsubmit="handleChatSubmit(event)">
-                        <input type="text" id="chat-input" placeholder="Ask about recycling methods, safe disposal, DOE rules, or nearby facilities..." autocomplete="off">
-                        <button type="submit" class="chat-send-btn" id="chat-send-btn">Send</button>
-                    </form>
                 </section>
 
-                <!-- Right Column: Interactive Google Maps GPS Locator -->
+                <!-- Right Column: Interactive Google Maps GPS Locator & Suitable Disposal Facilities -->
                 <section class="helper-card">
                     <div class="helper-card-header">
                         <h2 class="helper-card-title">Google Maps GPS Locator</h2>
@@ -528,52 +519,56 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                         </span>
                     </div>
 
-                    <!-- GPS Controls & Map Layer Toggle -->
+                    <!-- GPS Controls & Main Registered SME Address Reference Box -->
                     <div class="gps-controls">
+                        <!-- SME Company Address as Main Reference Point -->
+                        <div class="reference-address-box">
+                            <svg class="reference-address-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            <div style="flex:1;min-width:0;">
+                                <strong style="display:block;font-size:12px;color:#143825;margin-bottom:1px;">
+                                    Registered Company Address (Main GPS Reference):
+                                </strong>
+                                <span class="reference-address-text" id="company-registered-address">
+                                    <strong><?= e($companyName) ?></strong> &mdash; <?= e($businessAddress) ?>
+                                </span>
+                            </div>
+                        </div>
+
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
                             <button type="button" class="gps-btn-live" id="btn-request-gps" onclick="requestBrowserGPS()">
-                                Use My Current GPS Location
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <span>Use My Current Device GPS</span>
                             </button>
 
-                            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                                <select id="location-select" onchange="onSelectCity(this.value)" aria-label="Select Malaysian City" style="padding:6px 9px;border:1px solid var(--input-border);font-size:12px;background:#ffffff;color:#0f172a;">
-                                    <option value="shah alam">Shah Alam, Selangor</option>
-                                    <option value="petaling jaya">Petaling Jaya, Selangor</option>
-                                    <option value="klang">Klang, Selangor</option>
-                                    <option value="subang jaya">Subang Jaya, Selangor</option>
-                                    <option value="kuala lumpur">Kuala Lumpur</option>
-                                    <option value="perai">Perai / Penang</option>
-                                    <option value="sungai petani">Sungai Petani, Kedah</option>
-                                    <option value="ipoh">Ipoh, Perak</option>
-                                    <option value="johor bahru">Johor Bahru, Johor</option>
-                                    <option value="pasir gudang">Pasir Gudang, Johor</option>
-                                    <option value="kuching">Kuching, Sarawak</option>
-                                    <option value="kota kinabalu">Kota Kinabalu, Sabah</option>
-                                </select>
-                                <div style="display:inline-flex;">
-                                    <button type="button" id="btn-map-roadmap" class="map-mode-btn active" onclick="switchMapType('roadmap')">Map</button>
-                                    <button type="button" id="btn-map-satellite" class="map-mode-btn" onclick="switchMapType('satellite')" style="border-left:none;">Satellite</button>
-                                </div>
+                            <div style="display:inline-flex;">
+                                <button type="button" id="btn-map-roadmap" class="map-mode-btn active" onclick="switchMapType('roadmap')">Map</button>
+                                <button type="button" id="btn-map-satellite" class="map-mode-btn" onclick="switchMapType('satellite')" style="border-left:none;">Satellite</button>
                             </div>
                         </div>
 
                         <div id="gps-notice-banner" style="display:none;padding:8px 11px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;color:#92400e;font-size:12px;line-height:1.45;"></div>
 
                         <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#526658;flex-wrap:wrap;gap:6px;">
-                            <span>Click any map marker to inspect facility details &amp; Google Maps directions.</span>
-                            <span id="map-marker-count" style="font-weight:700;color:#143825;"><?= count($nearbyCentres) ?> verified facility(s)</span>
+                            <span>Click any marker to view facility details &amp; Google Maps directions.</span>
+                            <span id="map-marker-count" style="font-weight:700;color:#143825;"><?= count($nearbyCentres) ?> suitable facility(s)</span>
                         </div>
                     </div>
 
                     <!-- Interactive Google Maps Container -->
                     <div id="ecocycle-gps-map" aria-label="Interactive Google Maps Recycling Facilities Locator"></div>
 
-                    <!-- Verified Facility List (Clicking a card focuses its marker on the map) -->
+                    <!-- Suitable Places List -->
                     <div class="facility-list" id="facility-list-container">
                         <?php if (empty($nearbyCentres)): ?>
                             <div style="padding:16px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;color:#78350f;font-size:12.5px;line-height:1.55;">
-                                <strong style="display:block;color:#92400e;margin-bottom:4px;">No Verified Nearby Facility Found</strong>
-                                No verified recycling or disposal centre in our directory explicitly matches this material near your selected location.
+                                <strong style="display:block;color:#92400e;margin-bottom:4px;">No Verified Facilities Found Nearby</strong>
+                                No registered recovery centres in our directory explicitly match this material near your registered company location. Contact your local authority (PBT / SWCorp) or DOE Malaysia for approved handling.
                             </div>
                         <?php else: ?>
                             <?php foreach ($nearbyCentres as $idx => $centre): ?>
@@ -590,6 +585,9 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                                     <div class="facility-meta">
                                         <div><strong>Address:</strong> <?= e($centre['address']) ?></div>
                                         <div style="margin-top:2px;"><strong>Phone:</strong> <?= e($centre['phone']) ?> &middot; <strong>Hours:</strong> <?= e($centre['operating_hours']) ?></div>
+                                        <?php if (!empty($centre['accepted_materials'])): ?>
+                                            <div style="margin-top:2px;color:#475569;"><strong>Accepts:</strong> <?= e(implode(', ', $centre['accepted_materials'])) ?></div>
+                                        <?php endif; ?>
                                     </div>
                                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px;">
                                         <a href="<?= e($centre['directions_url']) ?>" target="_blank" rel="noopener noreferrer" class="btn-directions" onclick="event.stopPropagation();">
@@ -606,8 +604,10 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
     </div>
 
 <script>
-var currentLat = <?= (float) $defaultCoords['lat'] ?>;
-var currentLng = <?= (float) $defaultCoords['lng'] ?>;
+var companyName = <?= json_encode($companyName) ?>;
+var companyAddress = <?= json_encode($businessAddress) ?>;
+var currentLat = <?= (float) $businessCoords['lat'] ?>;
+var currentLng = <?= (float) $businessCoords['lng'] ?>;
 var currentItemId = <?= $selectedItem ? (int) $selectedItem->id : 'null' ?>;
 var currentCategory = <?= $selectedItem ? json_encode($selectedItem->category) : 'null' ?>;
 var currentCentres = <?= json_encode($nearbyCentres) ?>;
@@ -625,23 +625,18 @@ var lSatLayer = null;
 var lMarkers = [];
 var lUserMarker = null;
 
-function openChatInterface() {
-    var welcome = document.getElementById('helper-welcome-state');
-    var chatPanel = document.getElementById('helper-chat-panel');
-    if (welcome) welcome.style.display = 'none';
-    if (chatPanel) chatPanel.style.display = 'flex';
-}
-
 function buildFacilityPopupHtml(c) {
-    var accepted = Array.isArray(c.subtypes) && c.subtypes.length > 0 ? c.subtypes.join(', ') : (c.category || 'Verified Facility');
-    return '<div style="min-width:220px;max-width:270px;font-family:DM Sans,sans-serif;line-height:1.45;color:#0f172a;">' +
+    var accepted = Array.isArray(c.subtypes) && c.subtypes.length > 0
+        ? c.subtypes.join(', ')
+        : (Array.isArray(c.accepted_materials) ? c.accepted_materials.join(', ') : (c.category || 'Verified Facility'));
+    return '<div style="min-width:220px;max-width:280px;font-family:DM Sans,sans-serif;line-height:1.45;color:#0f172a;">' +
         '<div style="font-size:13px;font-weight:700;color:#143825;margin-bottom:3px;">' + escapeHtml(c.name) + '</div>' +
         '<div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:5px;">Verified &middot; ' + escapeHtml(c.license || 'Licensed Facility') + ' (' + c.distance_km + ' km)</div>' +
         '<div style="font-size:11.5px;color:#334155;margin-bottom:3px;"><strong>Address:</strong> ' + escapeHtml(c.address || '') + '</div>' +
         '<div style="font-size:11.5px;color:#334155;margin-bottom:3px;"><strong>Phone:</strong> ' + escapeHtml(c.phone || 'N/A') + '</div>' +
         '<div style="font-size:11.5px;color:#334155;margin-bottom:3px;"><strong>Hours:</strong> ' + escapeHtml(c.operating_hours || 'N/A') + '</div>' +
         '<div style="font-size:11px;color:#475569;margin-bottom:8px;"><strong>Accepts:</strong> ' + escapeHtml(accepted) + '</div>' +
-        '<a href="' + escapeHtml(c.directions_url) + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:6px 10px;background:#143825;color:#ffffff;text-decoration:none;font-size:11.5px;font-weight:700;">Open in Google Maps &rarr;</a>' +
+        '<a href="' + escapeHtml(c.directions_url) + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:6px 11px;background:#143825;color:#ffffff;text-decoration:none;font-size:11.5px;font-weight:700;">Get Directions on Google Maps &rarr;</a>' +
         '</div>';
 }
 
@@ -653,7 +648,7 @@ function initInteractiveMap() {
         mapEngine = 'google';
         gMap = new google.maps.Map(mapEl, {
             center: { lat: currentLat, lng: currentLng },
-            zoom: 11,
+            zoom: 12,
             mapTypeControl: false,
             streetViewControl: false
         });
@@ -664,17 +659,17 @@ function initInteractiveMap() {
 
     if (typeof window.L !== 'undefined') {
         mapEngine = 'leaflet';
-        lMap = L.map(mapEl).setView([currentLat, currentLng], 11);
+        lMap = L.map(mapEl).setView([currentLat, currentLng], 12);
 
-        // Google Maps roadmap & hybrid satellite tile layers for familiar Google Maps visual experience
+        // Google Maps roadmap & hybrid satellite tile layers
         lRoadLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20,
-            attribution: 'Map data &copy; Google'
+            attribution: 'Map data &copy; Google Maps'
         }).addTo(lMap);
 
         lSatLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20,
-            attribution: 'Map data &copy; Google'
+            attribution: 'Map data &copy; Google Maps'
         });
 
         updateMapMarkers(currentCentres);
@@ -700,7 +695,13 @@ function switchMapType(mode) {
     }
 }
 
-function createPinSvg(fillColor) {
+function createPinSvg(fillColor, isHome) {
+    if (isHome) {
+        return '<svg width="28" height="36" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg">' +
+            '<path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.3 21.7 0 14 0z" fill="' + fillColor + '" stroke="#ffffff" stroke-width="2"/>' +
+            '<circle cx="14" cy="14" r="5" fill="#ffffff"/>' +
+            '</svg>';
+    }
     return '<svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">' +
         '<path d="M13 0C5.8 0 0 5.8 0 13c0 9.4 13 21 13 21s13-11.6 13-21C26 5.8 20.2 0 13 0z" fill="' + fillColor + '" stroke="#ffffff" stroke-width="2"/>' +
         '<circle cx="13" cy="13" r="4.5" fill="#ffffff"/>' +
@@ -711,7 +712,7 @@ function updateMapMarkers(centres) {
     currentCentres = Array.isArray(centres) ? centres : [];
     var countEl = document.getElementById('map-marker-count');
     if (countEl) {
-        countEl.textContent = currentCentres.length + ' verified facility(s)';
+        countEl.textContent = currentCentres.length + ' suitable facility(s)';
     }
 
     if (mapEngine === 'google' && gMap) {
@@ -724,10 +725,10 @@ function updateMapMarkers(centres) {
         gUserMarker = new google.maps.Marker({
             position: userPos,
             map: gMap,
-            title: 'Your Location',
+            title: companyName + ' (Registered Company Address)',
             icon: {
-                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(createPinSvg('#2563eb')),
-                scaledSize: new google.maps.Size(26, 34)
+                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(createPinSvg('#2563eb', true)),
+                scaledSize: new google.maps.Size(28, 36)
             }
         });
         bounds.extend(userPos);
@@ -740,7 +741,7 @@ function updateMapMarkers(centres) {
                 map: gMap,
                 title: c.name,
                 icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(createPinSvg('#143825')),
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(createPinSvg('#143825', false)),
                     scaledSize: new google.maps.Size(26, 34)
                 }
             });
@@ -756,7 +757,7 @@ function updateMapMarkers(centres) {
             gMap.fitBounds(bounds);
         } else {
             gMap.setCenter(userPos);
-            gMap.setZoom(11);
+            gMap.setZoom(12);
         }
         return;
     }
@@ -768,21 +769,21 @@ function updateMapMarkers(centres) {
 
         var userIcon = L.divIcon({
             className: 'ecocycle-map-pin',
-            html: createPinSvg('#2563eb'),
-            iconSize: [26, 34],
-            iconAnchor: [13, 34],
-            popupAnchor: [0, -32]
+            html: createPinSvg('#2563eb', true),
+            iconSize: [28, 36],
+            iconAnchor: [14, 36],
+            popupAnchor: [0, -34]
         });
 
         lUserMarker = L.marker([currentLat, currentLng], { icon: userIcon })
             .addTo(lMap)
-            .bindPopup('<strong>Your Location</strong><br>Searching verified recycling facilities nearby.');
+            .bindPopup('<strong>' + escapeHtml(companyName) + '</strong><br><span style="font-size:11.5px;color:#475569;">' + escapeHtml(companyAddress) + '</span><br><strong style="color:#2563eb;font-size:11px;">Main GPS Reference Point</strong>');
 
         var latLngs = [[currentLat, currentLng]];
 
         var facIcon = L.divIcon({
             className: 'ecocycle-map-pin',
-            html: createPinSvg('#143825'),
+            html: createPinSvg('#143825', false),
             iconSize: [26, 34],
             iconAnchor: [13, 34],
             popupAnchor: [0, -32]
@@ -798,9 +799,9 @@ function updateMapMarkers(centres) {
         });
 
         if (latLngs.length > 1) {
-            lMap.fitBounds(latLngs, { padding: [32, 32], maxZoom: 13 });
+            lMap.fitBounds(latLngs, { padding: [36, 36], maxZoom: 13 });
         } else {
-            lMap.setView([currentLat, currentLng], 11);
+            lMap.setView([currentLat, currentLng], 12);
         }
     }
 }
@@ -820,12 +821,19 @@ function focusFacilityOnMap(index) {
     }
 }
 
+// When user selects a non-reusable item from dropdown, carry forward stored AI analysis & update nearby facilities
 function onSelectItem(itemId) {
-    if (!itemId) return;
-    currentItemId = parseInt(itemId, 10);
-    openChatInterface();
+    if (!itemId) {
+        var emptyBox = document.getElementById('helper-empty-state');
+        var strip = document.getElementById('selected-item-strip');
+        var panel = document.getElementById('guidance-display-panel');
+        if (emptyBox) emptyBox.style.display = 'block';
+        if (strip) strip.style.display = 'none';
+        if (panel) panel.style.display = 'none';
+        return;
+    }
 
-    appendAssistantHtml('<span style="color:#64748b;">Analyzing selected Non-Reusable material and matching verified nearby facilities...</span>');
+    currentItemId = parseInt(itemId, 10);
 
     fetch('/business/helper/analyze/' + currentItemId, {
         headers: { 'Accept': 'application/json' }
@@ -833,80 +841,92 @@ function onSelectItem(itemId) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (!data || !data.success) {
-            appendAssistantBubble((data && data.message) ? data.message : 'EcoCycle Helper is only available for Non-Reusable items.');
+            alert((data && data.message) ? data.message : 'Unable to load material guidance.');
             return;
         }
-        renderSelectedItemIntoChat(data.item, data.analysis, data.nearby_centres || []);
+        renderSelectedItemGuidance(data.item, data.analysis, data.nearby_centres || []);
         if (data.item && data.item.category) {
             currentCategory = data.item.category;
-            fetchNearbyCentres(currentLat, currentLng, currentCategory);
+            updateMapMarkers(data.nearby_centres || []);
         }
     })
-    .catch(function() {
-        appendAssistantBubble('Unable to load material guidance right now. Please try again.');
+    .catch(function(err) {
+        console.error('Error fetching item guidance:', err);
     });
 }
 
-function renderSelectedItemIntoChat(item, a, centres) {
+function renderSelectedItemGuidance(item, a, centres) {
+    var emptyBox = document.getElementById('helper-empty-state');
+    if (emptyBox) emptyBox.style.display = 'none';
+
     var strip = document.getElementById('selected-item-strip');
     if (strip) strip.style.display = 'flex';
+
+    var panel = document.getElementById('guidance-display-panel');
+    if (panel) panel.style.display = 'flex';
+
     var imgEl = document.getElementById('strip-item-img');
     if (imgEl) imgEl.src = item.image_path || '/images/figma/ecocycle-leaf.svg';
+
     var catEl = document.getElementById('strip-item-category');
     if (catEl) catEl.textContent = item.category || 'Non-Reusable';
+
     var qtyEl = document.getElementById('strip-item-qty');
     if (qtyEl) qtyEl.textContent = (item.quantity || 0) + ' ' + (item.unit || '');
+
+    var condEl = document.getElementById('strip-item-condition');
+    if (condEl) condEl.textContent = item.condition || '';
+
     var nameEl = document.getElementById('strip-item-name');
     if (nameEl) nameEl.textContent = item.name || 'Non-Reusable Material';
 
-    var ownerActs = (a.owner_actions && a.owner_actions.length) ? a.owner_actions : (a.recycling_steps || []);
-    var repIdeas = a.repurpose_ideas || [];
+    // 1. Handling & Strategy
+    var valBadge = document.getElementById('guidance-value-badge');
+    if (valBadge) valBadge.textContent = a.estimated_value_myr || 'Industrial Waste Recovery';
 
-    var html = '<div style="font-weight:800;font-size:14px;color:#143825;margin-bottom:4px;">Material Analysis &amp; Recommendations: ' + escapeHtml(item.name) + '</div>' +
-        '<p style="margin:0 0 8px;color:#334155;"><strong>Recommended Handling:</strong> ' + escapeHtml(a.action_recommendation || '') + ' &mdash; ' + escapeHtml(a.strategy || '') + '</p>';
-
-    if (ownerActs.length > 0) {
-        html += '<div class="chat-guidance-block"><h5>What Can the Business Owner Do?</h5><ol class="chat-guidance-list">' +
-            ownerActs.map(function(s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
-            '</ol></div>';
+    var handlingText = document.getElementById('guidance-handling-text');
+    if (handlingText) {
+        var str = (a.action_recommendation || '') + (a.strategy ? ' — ' + a.strategy : '');
+        handlingText.textContent = str;
     }
 
-    if (repIdeas.length > 0) {
-        html += '<div class="chat-guidance-block"><h5>Alternative Recovery &amp; Repurposing Options</h5><ul class="chat-guidance-list">' +
-            repIdeas.map(function(i) { return '<li>' + escapeHtml(i) + '</li>'; }).join('') +
-            '</ul></div>';
+    // 2. Action steps
+    var actionsEl = document.getElementById('guidance-owner-actions');
+    if (actionsEl) {
+        var steps = (a.owner_actions && a.owner_actions.length) ? a.owner_actions : (a.recycling_steps || []);
+        actionsEl.innerHTML = steps.map(function(s) {
+            return '<li>' + escapeHtml(s) + '</li>';
+        }).join('');
     }
 
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">' +
-        '<div style="padding:9px 11px;background:#f4fbf5;border:1px solid #c2dec0;">' +
-            '<strong style="display:block;font-size:10.5px;text-transform:uppercase;color:#1b5e20;margin-bottom:3px;">Environmental Impact (Qualitative)</strong>' +
-            '<span style="font-size:12px;color:#123321;">' + escapeHtml(a.environmental_impact || 'Proper recovery reduces landfill impact and prevents pollution.') + '</span>' +
-        '</div>' +
-        '<div style="padding:9px 11px;background:#eff6ff;border:1px solid #bfdbfe;">' +
-            '<strong style="display:block;font-size:10.5px;text-transform:uppercase;color:#1d4ed8;margin-bottom:3px;">Carbon Impact Guidance (Qualitative)</strong>' +
-            '<span style="font-size:12px;color:#1e3a8a;">' + escapeHtml(a.carbon_impact || a.carbon_saving_estimate || 'Diverting non-reusable material to verified recycling reduces emissions compared to landfilling.') + '</span>' +
-        '</div>' +
-    '</div>';
-
-    if (a.improper_disposal_risks || a.disposal_warning) {
-        html += '<div style="margin-top:10px;padding:9px 11px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;font-size:12px;color:#78350f;">' +
-            '<strong>Disposal Risks &amp; Compliance:</strong> ' + escapeHtml(a.improper_disposal_risks || a.disposal_warning) +
-        '</div>';
+    // 3. Alternative repurposing
+    var repurposeBox = document.getElementById('guidance-repurpose-box');
+    var repurposeEl = document.getElementById('guidance-repurpose-ideas');
+    if (repurposeBox && repurposeEl) {
+        var ideas = a.repurpose_ideas || [];
+        if (ideas.length > 0) {
+            repurposeBox.style.display = 'block';
+            repurposeEl.innerHTML = ideas.map(function(i) {
+                return '<li>' + escapeHtml(i) + '</li>';
+            }).join('');
+        } else {
+            repurposeBox.style.display = 'none';
+        }
     }
 
-    html += '<div class="chat-guidance-block" style="margin-top:10px;"><h5>Suitable Verified Facilities Nearby</h5>';
-    if (centres && centres.length > 0) {
-        html += '<ul class="chat-guidance-list">' +
-            centres.slice(0, 3).map(function(c) {
-                return '<li><strong>' + escapeHtml(c.name) + '</strong> (' + c.distance_km + ' km) &mdash; ' + escapeHtml(c.address) + '</li>';
-            }).join('') +
-            '</ul><div style="font-size:11.5px;color:#526658;margin-top:4px;">Click any marker on the interactive map on the right for full details and Google Maps directions.</div>';
-    } else {
-        html += '<p style="margin:0;font-size:12px;color:#92400e;">No verified nearby facility in our directory explicitly accepts this exact material category. Please contact your local council (PBT) or DOE Malaysia licensed collectors before transport.</p>';
-    }
-    html += '</div>';
+    // 4. Qualitative environmental & carbon impact
+    var envImpact = document.getElementById('guidance-env-impact');
+    if (envImpact) envImpact.textContent = a.environmental_impact || 'Proper segregation and licensed recovery reduce landfill burden and prevent pollution.';
 
-    appendAssistantHtml(html);
+    var carbonImpact = document.getElementById('guidance-carbon-impact');
+    if (carbonImpact) carbonImpact.textContent = a.carbon_impact || a.carbon_saving_estimate || 'Diverting non-reusable material to verified recycling avoids landfill emissions.';
+
+    // 5. Risks
+    var risksText = document.getElementById('guidance-risks-text');
+    if (risksText) risksText.textContent = a.improper_disposal_risks || a.disposal_warning || 'Unauthorized dumping violates Environmental Quality Act regulations.';
+
+    // Render suitable nearby facilities in right column list
+    renderNearbyCentres(centres);
 }
 
 function showGpsNotice(message) {
@@ -925,7 +945,7 @@ function requestBrowserGPS() {
     var btn = document.getElementById('btn-request-gps');
     showGpsNotice('');
     if (!navigator.geolocation) {
-        showGpsNotice('GPS geolocation is not supported by your browser. Please select your city from the dropdown to locate verified facilities.');
+        showGpsNotice('GPS geolocation is not supported by your browser. Using your registered company address as reference.');
         return;
     }
 
@@ -936,43 +956,20 @@ function requestBrowserGPS() {
             currentLat = pos.coords.latitude;
             currentLng = pos.coords.longitude;
             var pill = document.getElementById('gps-status-pill');
-            if (pill) pill.textContent = 'GPS: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4);
-            if (btn) btn.textContent = 'Live GPS Connected';
+            if (pill) pill.textContent = 'Device GPS: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4);
+            if (btn) btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Live Device GPS Active</span>';
             showGpsNotice('');
             fetchNearbyCentres(currentLat, currentLng, currentCategory);
         },
         function(err) {
             var reason = (err && err.code === 1)
-                ? 'Location permission was denied. Enable browser location access or select a Malaysian city from the dropdown.'
-                : 'Unable to retrieve your live GPS location. Showing verified facilities for your selected city.';
+                ? 'Device location access was denied. Continuing to use your registered company address as reference point.'
+                : 'Unable to retrieve live device GPS location. Using your registered company address as reference.';
             showGpsNotice(reason);
-            if (btn) btn.textContent = 'Use My Current GPS Location';
+            if (btn) btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg> <span>Use My Current Device GPS</span>';
         },
         { enableHighAccuracy: true, timeout: 8000 }
     );
-}
-
-function onSelectCity(city) {
-    var coords = {
-        'shah alam': { lat: 3.0738, lng: 101.5183 },
-        'petaling jaya': { lat: 3.1073, lng: 101.6067 },
-        'klang': { lat: 3.0449, lng: 101.4456 },
-        'subang jaya': { lat: 3.0485, lng: 101.5932 },
-        'kuala lumpur': { lat: 3.1390, lng: 101.6869 },
-        'perai': { lat: 5.3812, lng: 100.4045 },
-        'sungai petani': { lat: 5.6435, lng: 100.4900 },
-        'ipoh': { lat: 4.5975, lng: 101.0901 },
-        'johor bahru': { lat: 1.4927, lng: 103.7414 },
-        'pasir gudang': { lat: 1.4641, lng: 103.9064 },
-        'kuching': { lat: 1.5533, lng: 110.3592 },
-        'kota kinabalu': { lat: 5.9804, lng: 116.0735 }
-    };
-    var c = coords[city.toLowerCase()] || coords['shah alam'];
-    currentLat = c.lat;
-    currentLng = c.lng;
-    var pill = document.getElementById('gps-status-pill');
-    if (pill) pill.textContent = city.toUpperCase();
-    fetchNearbyCentres(currentLat, currentLng, currentCategory);
 }
 
 function fetchNearbyCentres(lat, lng, category) {
@@ -1009,8 +1006,8 @@ function renderNearbyCentres(centres, alternatives) {
             'Keep the material segregated, dry, and clearly labelled until an authorized facility confirms acceptance.'
         ];
         container.innerHTML = '<div style="padding:16px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;color:#78350f;font-size:12.5px;line-height:1.55;">' +
-            '<strong style="display:block;color:#92400e;margin-bottom:6px;">No Verified Nearby Facility Found</strong>' +
-            'No verified facility in our directory confirms acceptance for this material category near your location:' +
+            '<strong style="display:block;color:#92400e;margin-bottom:6px;">No Verified Facilities Found Nearby</strong>' +
+            'No verified facilities in our directory confirm acceptance for this material category near your registered location:' +
             '<ul style="margin:6px 0 0;padding-left:18px;">' +
             altList.map(function(a) { return '<li>' + escapeHtml(a) + '</li>'; }).join('') +
             '</ul></div>';
@@ -1018,6 +1015,9 @@ function renderNearbyCentres(centres, alternatives) {
     }
 
     container.innerHTML = centres.map(function(c, idx) {
+        var acceptedHtml = (c.accepted_materials && c.accepted_materials.length)
+            ? '<div style="margin-top:2px;color:#475569;"><strong>Accepts:</strong> ' + escapeHtml(c.accepted_materials.join(', ')) + '</div>'
+            : '';
         return '<article class="facility-card" onclick="focusFacilityOnMap(' + idx + ')">' +
             '<div class="facility-header">' +
                 '<div>' +
@@ -1029,6 +1029,7 @@ function renderNearbyCentres(centres, alternatives) {
             '<div class="facility-meta">' +
                 '<div><strong>Address:</strong> ' + escapeHtml(c.address) + '</div>' +
                 '<div style="margin-top:2px;"><strong>Phone:</strong> ' + escapeHtml(c.phone) + ' &middot; <strong>Hours:</strong> ' + escapeHtml(c.operating_hours) + '</div>' +
+                acceptedHtml +
             '</div>' +
             '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px;">' +
                 '<a href="' + escapeHtml(c.directions_url) + '" target="_blank" rel="noopener noreferrer" class="btn-directions" onclick="event.stopPropagation();">' +
@@ -1037,100 +1038,6 @@ function renderNearbyCentres(centres, alternatives) {
             '</div>' +
         '</article>';
     }).join('');
-}
-
-function handleChatSubmit(e) {
-    if (e) e.preventDefault();
-    var inp = document.getElementById('chat-input');
-    var msg = (inp ? inp.value : '').trim();
-    if (!msg) return;
-
-    openChatInterface();
-    appendUserBubble(msg);
-    if (inp) inp.value = '';
-    sendChatMessage(msg);
-}
-
-function askQuickPrompt(btn) {
-    var text = btn.textContent.trim();
-    openChatInterface();
-    appendUserBubble(text);
-    sendChatMessage(text);
-}
-
-function sendChatMessage(msg) {
-    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    var sendBtn = document.getElementById('chat-send-btn');
-    if (sendBtn) {
-        sendBtn.disabled = true;
-        sendBtn.textContent = '...';
-    }
-
-    fetch('/business/helper/chat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': csrf
-        },
-        body: JSON.stringify({
-            message: msg,
-            item_id: currentItemId
-        })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (data.success) {
-            appendAssistantBubble(data.reply);
-        }
-    })
-    .catch(function() {
-        appendAssistantBubble('There was an issue processing your question. Please try again.');
-    })
-    .finally(function() {
-        if (sendBtn) {
-            sendBtn.disabled = false;
-            sendBtn.textContent = 'Send';
-        }
-    });
-}
-
-function appendUserBubble(text) {
-    var box = document.getElementById('chat-messages');
-    if (!box) return;
-    var el = document.createElement('div');
-    el.className = 'chat-bubble user';
-    el.textContent = text;
-    box.appendChild(el);
-    box.scrollTop = box.scrollHeight;
-}
-
-function appendAssistantBubble(text) {
-    var box = document.getElementById('chat-messages');
-    if (!box) return;
-    var el = document.createElement('div');
-    el.className = 'chat-bubble assistant';
-    el.style.whiteSpace = 'pre-wrap';
-    el.innerHTML = formatMarkdown(text);
-    box.appendChild(el);
-    box.scrollTop = box.scrollHeight;
-}
-
-function appendAssistantHtml(html) {
-    var box = document.getElementById('chat-messages');
-    if (!box) return;
-    var el = document.createElement('div');
-    el.className = 'chat-bubble assistant';
-    el.innerHTML = html;
-    box.appendChild(el);
-    box.scrollTop = box.scrollHeight;
-}
-
-function formatMarkdown(str) {
-    var s = escapeHtml(str);
-    s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    s = s.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    return s;
 }
 
 function escapeHtml(text) {

@@ -65,7 +65,7 @@ $savedImages = array_values(array_filter($imageSlots));
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
-        .prep-wrap { max-width: 960px; }
+        .prep-wrap { max-width: 960px; margin: 0 auto; }
         .prep-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 0; margin-bottom: 20px; }
         .prep-card-header { padding: 14px 22px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
         .prep-card-header h3 { margin: 0; font-size: 14.5px; font-weight: 700; color: #143825; }

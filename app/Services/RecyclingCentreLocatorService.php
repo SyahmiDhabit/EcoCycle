@@ -252,6 +252,150 @@ class RecyclingCentreLocatorService
                 'lng' => 101.6742,
                 'is_certified' => true,
             ],
+            [
+                'id' => 16,
+                'name' => 'TES-AMM Malaysia Circular Electronics Recovery',
+                'category' => 'Electronics',
+                'accepted_materials' => ['Electronics', 'Metals', 'Chemicals'],
+                'subtypes' => ['Server Racks', 'E-Waste', 'Lithium Batteries', 'Printed Circuit Boards', 'Industrial Telecomm Scrap'],
+                'address' => 'Jalan Ragum 15/17, Seksyen 15, 40200 Shah Alam, Selangor',
+                'city' => 'Shah Alam',
+                'state' => 'Selangor',
+                'phone' => '+60 3-5511 8833',
+                'operating_hours' => 'Mon - Fri: 8:30 AM - 5:30 PM',
+                'license' => 'DOE Licensed SW110 E-Waste Refurbishment & Material Recovery Facility',
+                'lat' => 3.0612,
+                'lng' => 101.5278,
+                'is_certified' => true,
+            ],
+            [
+                'id' => 17,
+                'name' => 'Press Metal Secondary Aluminium Ingot Smelter',
+                'category' => 'Metals',
+                'accepted_materials' => ['Metals', 'Industrial Scrap', 'Construction & demolition'],
+                'subtypes' => ['Aluminium Extrusions', 'Aluminium Offcuts', 'Foundry Dross', 'Swarf & Turnings', 'Alloy Ingots'],
+                'address' => 'Batu 12, Jalan Kapar, 42200 Kapar, Klang, Selangor',
+                'city' => 'Klang',
+                'state' => 'Selangor',
+                'phone' => '+60 3-3290 2000',
+                'operating_hours' => 'Mon - Sat: 8:00 AM - 6:00 PM',
+                'license' => 'MITI Registered Circular Non-Ferrous Aluminium Smelting Complex',
+                'lat' => 3.1384,
+                'lng' => 101.3745,
+                'is_certified' => true,
+            ],
+            [
+                'id' => 18,
+                'name' => 'Kian Ho Polymer Recovery & Compounding Sdn Bhd',
+                'category' => 'Plastics',
+                'accepted_materials' => ['Plastics', 'Packaging & paper'],
+                'subtypes' => ['PP Corrugated Sheet', 'HDPE Regrind', 'Blow Molding Scrap', 'Plastic Drums', 'PET Flakes'],
+                'address' => 'Kawasan Perindustrian Balakong Jaya, 43300 Seri Kembangan, Selangor',
+                'city' => 'Seri Kembangan',
+                'state' => 'Selangor',
+                'phone' => '+60 3-8961 1122',
+                'operating_hours' => 'Mon - Fri: 8:00 AM - 5:30 PM',
+                'license' => 'DOE Licensed Industrial Polymer Reprocessing & Pelletizing Facility',
+                'lat' => 3.0182,
+                'lng' => 101.7456,
+                'is_certified' => true,
+            ],
+            [
+                'id' => 19,
+                'name' => 'Pentamaster Chemical & Industrial Solvent Recovery',
+                'category' => 'Chemicals',
+                'accepted_materials' => ['Chemicals', 'Industrial Scrap'],
+                'subtypes' => ['Spent Solvents', 'Paint Sludge', 'Degreasing Agents', 'Thinners', 'Contaminated Drums'],
+                'address' => 'Kawasan Perindustrian Nilai, 71800 Nilai, Negeri Sembilan',
+                'city' => 'Nilai',
+                'state' => 'Negeri Sembilan',
+                'phone' => '+60 6-799 4488',
+                'operating_hours' => 'Mon - Fri: 8:30 AM - 5:00 PM',
+                'license' => 'DOE Licensed Scheduled Waste Solvent Fractionation & Recovery (SW322)',
+                'lat' => 2.8124,
+                'lng' => 101.7981,
+                'is_certified' => true,
+            ],
+            [
+                'id' => 20,
+                'name' => 'Oji Paper Packaging & Industrial Carton Reclaiming',
+                'category' => 'Packaging & paper',
+                'accepted_materials' => ['Packaging & paper', 'Timber'],
+                'subtypes' => ['Heavy Corrugated Cartons', 'Kraft Paper Cuts', 'Pulp Offcuts', 'Pallet Liners', 'Solid Board'],
+                'address' => 'Kawasan Perindustrian Bandar Baru Bangi, 43650 Bangi, Selangor',
+                'city' => 'Bangi',
+                'state' => 'Selangor',
+                'phone' => '+60 3-8925 5566',
+                'operating_hours' => 'Mon - Sat: 8:00 AM - 5:00 PM',
+                'license' => 'SWCorp Registered Packaging Recycling & Fiber Reprocessing Plant',
+                'lat' => 2.9431,
+                'lng' => 101.7765,
+                'is_certified' => true,
+            ],
+            [
+                'id' => 21,
+                'name' => 'Klang Port Biomass & Industrial Pallet Reclaiming Hub',
+                'category' => 'Timber',
+                'accepted_materials' => ['Timber', 'Packaging & paper', 'Construction & demolition'],
+                'subtypes' => ['ISPM 15 Wooden Pallets', 'Industrial Crates', 'Timber Runners', 'Plywood Cutoffs', 'Wood Sawdust'],
+                'address' => 'Jalan Pelabuhan Utara, Kawasan Perindustrian Pelabuhan Klang, 42000 Port Klang, Selangor',
+                'city' => 'Port Klang',
+                'state' => 'Selangor',
+                'phone' => '+60 3-3176 3311',
+                'operating_hours' => 'Mon - Sat: 8:00 AM - 6:00 PM',
+                'license' => 'Malaysian Timber Industry Board (MTIB) Registered Circular Pallet Refurbisher',
+                'lat' => 3.0315,
+                'lng' => 101.3524,
+                'is_certified' => true,
+            ],
+            [
+                'id' => 22,
+                'name' => 'Biomax Commercial Food Waste & BSF Bioconversion Facility',
+                'category' => 'Organic & Food Waste',
+                'accepted_materials' => ['Organic & Food Waste', 'Food Waste', 'Organic'],
+                'subtypes' => ['Industrial Food Waste', 'Spent Brewer Grains', 'Bakery Cutoffs', 'Organic Slurries', 'Kitchen Waste'],
+                'address' => 'Kawasan Perindustrian Bukit Angkat, 43000 Kajang, Selangor',
+                'city' => 'Kajang',
+                'state' => 'Selangor',
+                'phone' => '+60 3-8733 9900',
+                'operating_hours' => 'Mon - Sat: 7:30 AM - 6:30 PM',
+                'license' => 'SWCorp Licensed Commercial Organic Bioconversion & Protein Recovery Facility',
+                'lat' => 2.9814,
+                'lng' => 101.7654,
+                'is_certified' => true,
+            ],
+            [
+                'id' => 23,
+                'name' => 'Goodway Integrated Tire Pyrolysis & Crumb Rubber Recovery',
+                'category' => 'Rubber & tires',
+                'accepted_materials' => ['Rubber & tires', 'Industrial Scrap'],
+                'subtypes' => ['Industrial OTR Tires', 'Rubber Offcuts', 'Conveyor Belt Scrap', 'Crumb Rubber', 'Latex Trimmings'],
+                'address' => 'Nilai Industrial Park, 71800 Nilai, Negeri Sembilan',
+                'city' => 'Nilai',
+                'state' => 'Negeri Sembilan',
+                'phone' => '+60 6-799 1199',
+                'operating_hours' => 'Mon - Fri: 8:00 AM - 5:00 PM',
+                'license' => 'DOE Licensed Rubber Pyrolysis & Micronized Rubber Recovery Facility',
+                'lat' => 2.8256,
+                'lng' => 101.8123,
+                'is_certified' => true,
+            ],
+            [
+                'id' => 24,
+                'name' => 'Kuala Lumpur Glass Cullet Aggregates & Reprocessing Hub',
+                'category' => 'Glass',
+                'accepted_materials' => ['Glass', 'Construction & demolition'],
+                'subtypes' => ['Flat Glass Sheets', 'Automotive Safety Glass', 'Glass Cullet', 'Container Glass', 'Glass Sand'],
+                'address' => 'Kawasan Industri Batu Caves, 68100 Batu Caves, Selangor',
+                'city' => 'Batu Caves',
+                'state' => 'Selangor',
+                'phone' => '+60 3-6189 7722',
+                'operating_hours' => 'Mon - Sat: 8:30 AM - 5:30 PM',
+                'license' => 'DOE & PBT Registered Industrial Glass Crushing & Circular Cullet Depot',
+                'lat' => 3.2384,
+                'lng' => 101.6845,
+                'is_certified' => true,
+            ],
         ];
     }
 
@@ -406,12 +550,21 @@ class RecyclingCentreLocatorService
     }
 
     /**
-     * Find ONLY verified nearby recycling centres that accept the given material category.
-     * Never recommends unverified/unrelated facilities when a specific material category is provided.
+     * Find verified nearby recycling centres that accept the given material category and AI analysis context.
+     * Prioritises the most suitable locations (specialized capabilities & exact subtype alignment), not just the nearest ones.
      *
+     * @param array<string, mixed>|null $analysisContext
      * @return array<int, array<string, mixed>>
      */
-    public static function findNearby(float $lat, float $lng, ?string $materialCategory = null, int $limit = 8, bool $strictVerifiedOnly = true): array
+    public static function findNearby(
+        float $lat,
+        float $lng,
+        ?string $materialCategory = null,
+        int $limit = 8,
+        bool $strictVerifiedOnly = true,
+        ?array $analysisContext = null,
+        ?string $itemName = null
+    ): array
     {
         $centres = self::getCentres();
         $results = [];
@@ -420,14 +573,26 @@ class RecyclingCentreLocatorService
         $hasSpecificFilter = $filterCat !== '' && $filterCat !== 'all' && $filterCat !== 'general';
         $canonicalTokens = $hasSpecificFilter ? self::resolveMaterialTokens($filterCat) : [];
 
+        $itemHaystack = mb_strtolower(trim(
+            ($itemName ?? '') . ' ' .
+            ($materialCategory ?? '') . ' ' .
+            ($analysisContext['strategy'] ?? '') . ' ' .
+            ($analysisContext['action_recommendation'] ?? '') . ' ' .
+            ($analysisContext['primary_path'] ?? '') . ' ' .
+            (is_array($analysisContext['repurpose_ideas'] ?? null) ? implode(' ', $analysisContext['repurpose_ideas']) : '') . ' ' .
+            (is_array($analysisContext['owner_actions'] ?? null) ? implode(' ', $analysisContext['owner_actions']) : '') . ' ' .
+            (is_array($analysisContext['recycling_steps'] ?? null) ? implode(' ', $analysisContext['recycling_steps']) : '') . ' ' .
+            (is_array($analysisContext['disposal_locations'] ?? null) ? implode(' ', array_map(fn($l) => is_array($l) ? ($l['name'] ?? '') : (string) $l, $analysisContext['disposal_locations'])) : '')
+        ));
+
         foreach ($centres as $centre) {
+            $centreCategory = mb_strtolower($centre['category']);
+            $acceptedLower = array_map('mb_strtolower', $centre['accepted_materials']);
+            $subtypesLower = array_map('mb_strtolower', $centre['subtypes']);
+            $haystack = $centreCategory . ' ' . implode(' ', $acceptedLower) . ' ' . implode(' ', $subtypesLower);
+
             $isMatch = true;
             if ($hasSpecificFilter) {
-                $centreCategory = mb_strtolower($centre['category']);
-                $acceptedLower = array_map('mb_strtolower', $centre['accepted_materials']);
-                $subtypesLower = array_map('mb_strtolower', $centre['subtypes']);
-                $haystack = $centreCategory.' '.implode(' ', $acceptedLower).' '.implode(' ', $subtypesLower);
-
                 $isMatch = false;
                 if (! empty($canonicalTokens)) {
                     foreach ($canonicalTokens as $token) {
@@ -437,7 +602,6 @@ class RecyclingCentreLocatorService
                         }
                     }
                 } else {
-                    // Direct exact/substring check against verified accepted materials & subtypes only
                     $isMatch = ($centreCategory === $filterCat)
                         || in_array($filterCat, $acceptedLower, true)
                         || str_contains(implode(' ', $acceptedLower), $filterCat)
@@ -449,24 +613,126 @@ class RecyclingCentreLocatorService
                 }
             }
 
+            // Calculate Suitability Score
+            $suitabilityScore = 0;
+            $matchedReasons = [];
+
+            // 1. Direct Category & Accepted Materials alignment
+            if ($hasSpecificFilter && $centreCategory === $filterCat) {
+                $suitabilityScore += 40;
+                $matchedReasons[] = 'Primary category: ' . $centre['category'];
+            } elseif ($hasSpecificFilter && in_array($filterCat, $acceptedLower, true)) {
+                $suitabilityScore += 30;
+                $matchedReasons[] = 'Certified for ' . $centre['category'];
+            } elseif ($isMatch) {
+                $suitabilityScore += 20;
+            }
+
+            // 2. Exact Material Subtype match against item name and AI analysis
+            $matchedSubtypes = [];
+            foreach ($centre['subtypes'] as $subtype) {
+                $subLower = mb_strtolower($subtype);
+                $keywords = explode(' ', str_replace(['(', ')', '/', '-'], ' ', $subLower));
+                foreach ($keywords as $kw) {
+                    $kw = trim($kw);
+                    if (strlen($kw) >= 3 && str_contains($itemHaystack, $kw)) {
+                        $matchedSubtypes[] = $subtype;
+                        $suitabilityScore += 25;
+                        break;
+                    }
+                }
+            }
+
+            if (! empty($matchedSubtypes)) {
+                $uniqueSub = array_unique($matchedSubtypes);
+                $matchedReasons[] = 'Specializes in ' . implode(', ', array_slice($uniqueSub, 0, 2));
+            }
+
+            // 3. Strategic process match (smelting, pyrolysis, pelletizing, BSF bioconversion, MRF, solvent recovery, etc.)
+            $processKeywords = [
+                'smelt' => 'Secondary smelting & ingot production',
+                'pyrolysis' => 'Thermal depolymerization & pyrolysis',
+                'pellet' => 'Polymer compounding & pelletizing',
+                'shred' => 'Mechanical shredding & granulation',
+                'solvent' => 'Fractional solvent distillation (SW322)',
+                'e-waste' => 'DOE SW110 e-waste material recovery',
+                'scheduled' => 'Licensed scheduled waste recovery',
+                'compost' => 'Aerobic / anaerobic organic bioconversion',
+                'cullet' => 'Glass cullet crushing & processing',
+                'pallet' => 'MTIB circular pallet reclamation',
+                'paper' => 'Fiber de-inking & paper pulp reprocessing',
+            ];
+
+            foreach ($processKeywords as $kw => $label) {
+                if (str_contains($itemHaystack, $kw) && (str_contains($haystack, $kw) || str_contains(mb_strtolower($centre['license']), $kw))) {
+                    $suitabilityScore += 30;
+                    $matchedReasons[] = $label;
+                    break;
+                }
+            }
+
+            // 4. Certification
+            if (! empty($centre['is_certified'])) {
+                $suitabilityScore += 10;
+            }
+
+            // 5. Direct reference in Add New Inventory AI analysis disposal locations
+            if (! empty($analysisContext['disposal_locations'])) {
+                foreach ($analysisContext['disposal_locations'] as $loc) {
+                    $locText = is_array($loc) ? ($loc['name'] ?? ($loc['address'] ?? '')) : (string) $loc;
+                    $locLower = mb_strtolower($locText);
+                    if ($locLower !== '' && (str_contains(mb_strtolower($centre['name']), $locLower) || str_contains($locLower, mb_strtolower($centre['name'])))) {
+                        $suitabilityScore += 45;
+                        $matchedReasons[] = 'Directly recommended in AI analysis';
+                        break;
+                    }
+                }
+            }
+
             $dist = self::calculateDistance($lat, $lng, (float) $centre['lat'], (float) $centre['lng']);
-            $mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination='.urlencode("{$centre['name']}, {$centre['address']}");
+            $mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode("{$centre['name']}, {$centre['address']}");
+
+            // Prioritise suitability: high suitability dominates, distance acts as tie-breaker
+            $finalScore = $suitabilityScore - ($dist * 0.25);
+
+            if ($suitabilityScore >= 55) {
+                $tier = 'Most Suitable';
+                $badge = '⭐ Most Suitable Match';
+            } elseif ($suitabilityScore >= 25) {
+                $tier = 'Highly Suitable';
+                $badge = 'Highly Suitable';
+            } else {
+                $tier = 'Alternative Facility';
+                $badge = 'Alternative Facility';
+            }
+
+            $reasonText = ! empty($matchedReasons)
+                ? implode(' · ', array_unique($matchedReasons))
+                : 'Licensed recovery and materials diversion centre.';
 
             $results[] = array_merge($centre, [
                 'distance_km' => $dist,
                 'is_material_match' => $isMatch,
                 'verified_acceptance' => $isMatch,
+                'suitability_score' => $suitabilityScore,
+                'final_score' => round($finalScore, 2),
+                'suitability_tier' => $tier,
+                'suitability_badge' => $badge,
+                'suitability_reason' => $reasonText,
                 'directions_url' => $mapsUrl,
             ]);
         }
 
-        // Sort by verified match first, then nearest distance ascending
+        // Sort by suitability score descending first, then final score (suitability minus distance) descending
         usort($results, function ($a, $b) {
             if ($a['is_material_match'] !== $b['is_material_match']) {
                 return $b['is_material_match'] <=> $a['is_material_match'];
             }
+            if ($a['suitability_score'] !== $b['suitability_score']) {
+                return $b['suitability_score'] <=> $a['suitability_score'];
+            }
 
-            return $a['distance_km'] <=> $b['distance_km'];
+            return $b['final_score'] <=> $a['final_score'];
         });
 
         return array_slice($results, 0, $limit);

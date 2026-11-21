@@ -41,7 +41,8 @@ $canPublishNow = ! $isPermanentlySoldOut
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
         .edit-page-wrap {
-            max-width: 920px;
+            max-width: 960px;
+            margin: 0 auto;
         }
         .edit-topbar-row {
             display: flex;

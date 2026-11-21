@@ -800,16 +800,6 @@ $activeNav = 'inventory';
                                         </td>
                                         <td data-label="Actions" style="text-align:right;">
                                             <div class="action-group">
-                                                <?php if (! $item->isPermanentlySoldOut()): ?>
-                                                    <div class="action-stock-pair">
-                                                        <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
-                                                            + In
-                                                        </button>
-                                                        <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
-                                                            - Out
-                                                        </button>
-                                                    </div>
-                                                <?php endif; ?>
                                                 <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
                                                     <?php if ($item->isPermanentlySoldOut()): ?>
                                                         <span class="btn-owner-only" title="Permanently Sold Out — create a new submission for new surplus stock">Sold Out</span>
@@ -919,19 +909,6 @@ $activeNav = 'inventory';
                                 </div>
 
                                 <div class="catalog-card-actions">
-                                    <?php if (! $item->isPermanentlySoldOut()): ?>
-                                        <div class="action-stock-pair">
-                                            <button type="button" class="btn-stock-in" title="Add stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_in')">
-                                                + In
-                                            </button>
-                                            <button type="button" class="btn-stock-out" title="Deduct stock" onclick="openAdjustModal(<?= $item->id ?>, '<?= e(addslashes($item->name)) ?>', '<?= e($item->unit) ?>', <?= (float)$item->quantity ?>, 'stock_out')">
-                                                - Out
-                                            </button>
-                                        </div>
-                                    <?php else: ?>
-                                        <span class="btn-owner-only">Sold Out</span>
-                                    <?php endif; ?>
-
                                     <div style="display:inline-flex;gap:5px;align-items:center;">
                                         <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
                                             <?php if ($item->isPermanentlySoldOut()): ?>
@@ -1347,44 +1324,6 @@ $activeNav = 'inventory';
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
                 <button type="submit" class="btn-save">Update Item</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Stock Adjust Modal -->
-<div class="modal-backdrop" id="adjust-modal" style="display:none;" onclick="if(event.target === this) closeAdjustModal()">
-    <div class="modal-dialog">
-        <div class="modal-header">
-            <h3 id="adjust-modal-title">Adjust Stock Level</h3>
-            <button type="button" class="modal-close-btn" onclick="closeAdjustModal()" aria-label="Close">&times;</button>
-        </div>
-        <form id="adjust-form" method="POST" action="">
-            <?= csrf_field() ?>
-            <div class="modal-body">
-                <p style="margin:0 0 12px;font-size:12px;color:#526158;">
-                    Material: <strong id="adjust-item-name" style="color:#173e2c;"></strong><br>
-                    Current Stock: <span id="adjust-current-stock" style="font-weight:600;color:#176b40;"></span>
-                </p>
-                <div class="form-group">
-                    <label for="adjust_type">Movement Type *</label>
-                    <select id="adjust_type" name="type" required>
-                        <option value="stock_in">+ Stock In (Receive / replenish)</option>
-                        <option value="stock_out">- Stock Out (Dispatch / consume / sell)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="adjust_quantity">Quantity *</label>
-                    <input id="adjust_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 10">
-                </div>
-                <div class="form-group">
-                    <label for="adjust_notes">Reason / Reference (optional)</label>
-                    <input id="adjust_notes" name="notes" type="text" placeholder="e.g. Delivery order #203, Workshop batch B">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeAdjustModal()">Cancel</button>
-                <button type="submit" class="btn-save">Confirm Movement</button>
             </div>
         </form>
     </div>
@@ -2555,24 +2494,6 @@ function renderEditSlots() {
         counter.textContent = activeCount + ' of 3 images';
         counter.style.color = activeCount >= 1 ? '#18422d' : '#64748b';
     }
-}
-
-function openAdjustModal(id, name, unit, currentQty, defaultType) {
-    document.getElementById('adjust-form').action = '/business/inventory/' + id + '/adjust';
-    document.getElementById('adjust-item-name').textContent = name;
-    document.getElementById('adjust-current-stock').textContent = currentQty + ' ' + unit;
-    document.getElementById('adjust_type').value = defaultType || 'stock_in';
-    document.getElementById('adjust-modal-title').textContent = defaultType === 'stock_out' ? 'Stock Out (-)' : 'Stock In (+)';
-    var modal = document.getElementById('adjust-modal');
-    modal.style.display = 'flex';
-    var body = modal.querySelector('.modal-body');
-    if (body) body.scrollTop = 0;
-    document.body.style.overflow = 'hidden';
-}
-
-function closeAdjustModal() {
-    document.getElementById('adjust-modal').style.display = 'none';
-    document.body.style.overflow = '';
 }
 
 var lmPhotosTransfer = new DataTransfer();

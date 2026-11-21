@@ -449,11 +449,12 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $response = $this->actingAs($business)->get(route('business.helper', ['item_id' => $nonReusableItem->id]));
 
         $response->assertOk();
-        // SME Registered Address reference
+        // SME Registered Address reference & My Address button
         $response->assertSee('Apex Manufacturing Sdn Bhd');
         $response->assertSee('Klang');
         $response->assertSee('41050');
-        $response->assertSee('Registered Company Address (Main GPS Reference)');
+        $response->assertSee('My Address');
+        $response->assertSee('Registered Company Address (Main Reference)');
 
         // Carried-forward AI analysis results from Add New Inventory (NO re-analysis)
         $response->assertSee('Certified Secondary Smelting &amp; Thermal Recovery', false);
@@ -467,10 +468,12 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $response->assertDontSee('id="chat-form"', false);
         $response->assertDontSee('id="chat-input"', false);
 
-        // Interactive GPS Map and nearby facility
+        // Interactive GPS Map and multiple suitable nearby facilities prioritised by suitability
         $response->assertSee('id="ecocycle-gps-map"', false);
         $response->assertSee('Shan Poornam Metals (Selangor Regional Depot)');
         $response->assertSee('Southern Steel Circular Recovery Hub');
+        $response->assertSee('from My Address');
+        $response->assertSee('Most Suitable Match');
 
         // 2. Direct API call to analyze endpoint returns stored AI analysis directly
         $apiResponse = $this->actingAs($business)->getJson(route('business.helper.analyze', $nonReusableItem->id));
@@ -478,5 +481,84 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $this->assertSame('Certified Secondary Smelting & Thermal Recovery', $apiResponse->json('analysis.strategy'));
         $this->assertSame('Segregate heavy steel offcuts from light scrap', $apiResponse->json('analysis.action_recommendation'));
         $this->assertNotEmpty($apiResponse->json('nearby_centres'));
+        $this->assertGreaterThanOrEqual(2, count($apiResponse->json('nearby_centres')));
+    }
+
+    public function test_ecocycle_helper_my_address_prioritises_most_suitable_locations_based_on_ai_analysis_and_item_type(): void
+    {
+        $business = User::factory()->create([
+            'business_name' => 'Mega Electronics Assembly Sdn Bhd',
+            'account_status' => 'approved',
+            'registered_address' => 'Persiaran Jubli Perak, Seksyen 22',
+            'city' => 'Shah Alam',
+            'postcode' => '40300',
+            'state' => 'Selangor',
+        ]);
+
+        $analysis = [
+            'strategy' => 'Certified Hydrometallurgical Copper & Precious Metals Extraction',
+            'action_recommendation' => 'Bundle defective PCBs and stripped copper wiring cables for licensed e-waste recovery',
+            'owner_actions' => [
+                'De-solder heavy components and pack circuit boards in anti-static ESD crates',
+                'Deliver to DOE licensed SW110 e-waste recovery facility in Shah Alam',
+            ],
+            'repurpose_ideas' => ['Hydrometallurgical gold, silver, and high-grade copper cathode extraction'],
+            'improper_disposal_risks' => 'Heavy metals leaching into stormwater drains violates DOE regulations.',
+            'estimated_value_myr' => 'RM 15.00 - RM 30.00 per kg',
+        ];
+
+        $eWasteItem = InventoryItem::create([
+            'business_id' => $business->id,
+            'name' => 'Defective Server Motherboards and Stripped Copper Cables',
+            'category' => 'Electronics',
+            'quantity' => 450,
+            'unit' => 'kg',
+            'condition' => 'Scrap / Cutoffs',
+            'reusability' => 'not_reusable',
+            'listing_type' => 'buy',
+            'price' => 18.00,
+            'ai_analysis' => $analysis,
+            'status' => 'in_stock',
+        ]);
+
+        // Request helper page with this non-reusable item
+        $response = $this->actingAs($business)->get(route('business.helper', ['item_id' => $eWasteItem->id]));
+        $response->assertOk();
+
+        // Verifies My Address reference point
+        $response->assertSee('Mega Electronics Assembly Sdn Bhd');
+        $response->assertSee('Shah Alam');
+        $response->assertSee('My Address');
+
+        // Verifies multiple suitable places are found and prioritised
+        $response->assertSee('TES-AMM Malaysia Circular Electronics Recovery');
+        $response->assertSee('Jalan Ragum 15/17, Seksyen 15, 40200 Shah Alam, Selangor');
+        $response->assertSee('Shan Poornam Metals');
+
+        // Verifies suitability tier/badge
+        $response->assertSee('Most Suitable Match');
+
+        // Call nearby-centres API directly with item_id to confirm suitability-first ranking
+        $coords = RecyclingCentreLocatorService::getBusinessCoordinates($business);
+        $apiResponse = $this->actingAs($business)->postJson(route('business.helper.nearby'), [
+            'lat' => $coords['lat'],
+            'lng' => $coords['lng'],
+            'category' => 'Electronics',
+            'item_id' => $eWasteItem->id,
+        ]);
+
+        $apiResponse->assertOk();
+        $centres = $apiResponse->json('centres');
+        $this->assertNotEmpty($centres);
+        $this->assertGreaterThanOrEqual(2, count($centres));
+
+        // Top ranked centre must be a specialised electronic recovery facility
+        $topCentre = $centres[0];
+        $this->assertSame('Most Suitable', $topCentre['suitability_tier']);
+        $this->assertNotEmpty($topCentre['address']);
+        $this->assertNotEmpty($topCentre['name']);
+        $this->assertNotNull($topCentre['lat']);
+        $this->assertNotNull($topCentre['lng']);
+        $this->assertStringContainsString('Electronics', json_encode($topCentre['accepted_materials']));
     }
 }

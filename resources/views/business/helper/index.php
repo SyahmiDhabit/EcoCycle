@@ -241,7 +241,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
         .reference-address-box {
             background: #ffffff;
             border: 1px solid #cbd5e1;
-            padding: 9px 12px;
+            padding: 10px 12px;
             display: flex;
             align-items: flex-start;
             gap: 10px;
@@ -256,20 +256,28 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             color: #1e293b;
             line-height: 1.45;
         }
-        .gps-btn-live {
-            background: var(--forest-bg);
-            color: #ffffff;
-            border: 1px solid var(--forest-bg);
-            padding: 7px 12px;
+        .btn-location-ref {
+            background: #ffffff;
+            color: #143825;
+            border: 1px solid #143825;
+            padding: 7px 13px;
             border-radius: 0;
-            font-size: 11.5px;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            transition: all 0.15s ease;
         }
-        .gps-btn-live:hover { background: #0d2b1b; }
+        .btn-location-ref:hover {
+            background: #f0f7f2;
+        }
+        .btn-location-ref.active {
+            background: #143825;
+            color: #ffffff;
+            border-color: #143825;
+        }
         .map-mode-btn {
             padding: 5px 10px;
             background: #ffffff;
@@ -309,11 +317,16 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             flex-direction: column;
             gap: 6px;
             cursor: pointer;
-            transition: border-color 0.15s ease;
+            transition: all 0.15s ease;
         }
         .facility-card:hover {
             border-color: var(--brand-green);
             background: #fafdfa;
+        }
+        .facility-card.highlighted {
+            border-color: #15803d;
+            background: #f4fbf5;
+            box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.25);
         }
         .facility-header {
             display: flex;
@@ -325,7 +338,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             font-size: 13.5px;
             font-weight: 700;
             color: #123321;
-            margin: 0 0 3px;
+            margin: 0 0 4px;
         }
         .distance-pill {
             background: #eef7ee;
@@ -336,10 +349,41 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             font-weight: 700;
             white-space: nowrap;
         }
+        .suitability-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 0;
+        }
+        .suitability-pill.most-suitable {
+            background: #143825;
+            color: #ffffff;
+        }
+        .suitability-pill.highly-suitable {
+            background: #e8f5e9;
+            color: #15803d;
+            border: 1px solid #c2dec0;
+        }
+        .suitability-pill.alternative {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
         .facility-meta {
             font-size: 12px;
             color: var(--text-secondary);
             line-height: 1.45;
+        }
+        .suitability-reason-text {
+            font-size: 11.5px;
+            color: #15803d;
+            font-weight: 600;
+            background: #f0fdf4;
+            padding: 4px 8px;
+            border-left: 2px solid #16a34a;
         }
         .btn-directions {
             margin-top: 4px;
@@ -386,7 +430,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                 </div>
             </div>
 
-            <!-- Main Helper Grid: Left = Material Analysis & Recommendations, Right = Google Maps GPS Locator & Suitable Places -->
+            <!-- Main Helper Grid: Left = Material Analysis & Guidance, Right = Google Maps GPS Locator & Suitable Places -->
             <div class="helper-grid">
                 <!-- Left Column: Non-Reusable Item Selector + Carried-Forward AI Guidance (NO CHATBOX) -->
                 <section class="helper-card">
@@ -515,7 +559,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                     <div class="helper-card-header">
                         <h2 class="helper-card-title">Google Maps GPS Locator</h2>
                         <span id="gps-status-pill" style="font-size:11px;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;padding:3px 9px;font-weight:700;">
-                            <?= e($business->city ?: 'Shah Alam') ?>, <?= e($business->state ?: 'Selangor') ?>
+                            📍 Reference: My Address (<?= e($business->city ?: 'Shah Alam') ?>)
                         </span>
                     </div>
 
@@ -529,7 +573,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                             </svg>
                             <div style="flex:1;min-width:0;">
                                 <strong style="display:block;font-size:12px;color:#143825;margin-bottom:1px;">
-                                    Registered Company Address (Main GPS Reference):
+                                    Registered Company Address (Main Reference):
                                 </strong>
                                 <span class="reference-address-text" id="company-registered-address">
                                     <strong><?= e($companyName) ?></strong> &mdash; <?= e($businessAddress) ?>
@@ -537,14 +581,24 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                             </div>
                         </div>
 
+                        <!-- Location Action Buttons: My Address (Default) & Device GPS -->
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-                            <button type="button" class="gps-btn-live" id="btn-request-gps" onclick="requestBrowserGPS()">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                                <span>Use My Current Device GPS</span>
-                            </button>
+                            <div style="display:inline-flex;gap:6px;align-items:center;">
+                                <button type="button" class="btn-location-ref active" id="btn-use-my-address" onclick="useMyAddress()" title="Use registered company address as GPS reference point">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                        <circle cx="12" cy="10" r="3"></circle>
+                                    </svg>
+                                    <span>My Address</span>
+                                </button>
+                                <button type="button" class="btn-location-ref" id="btn-request-gps" onclick="requestBrowserGPS()" title="Detect current device live location">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                    <span>Device GPS</span>
+                                </button>
+                            </div>
 
                             <div style="display:inline-flex;">
                                 <button type="button" id="btn-map-roadmap" class="map-mode-btn active" onclick="switchMapType('roadmap')">Map</button>
@@ -555,7 +609,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                         <div id="gps-notice-banner" style="display:none;padding:8px 11px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;color:#92400e;font-size:12px;line-height:1.45;"></div>
 
                         <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#526658;flex-wrap:wrap;gap:6px;">
-                            <span>Click any marker to view facility details &amp; Google Maps directions.</span>
+                            <span>Click any map marker to view place details &amp; Google Maps directions.</span>
                             <span id="map-marker-count" style="font-weight:700;color:#143825;"><?= count($nearbyCentres) ?> suitable facility(s)</span>
                         </div>
                     </div>
@@ -563,7 +617,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                     <!-- Interactive Google Maps Container -->
                     <div id="ecocycle-gps-map" aria-label="Interactive Google Maps Recycling Facilities Locator"></div>
 
-                    <!-- Suitable Places List -->
+                    <!-- Suitable Places List (Filtered by material & prioritised by suitability) -->
                     <div class="facility-list" id="facility-list-container">
                         <?php if (empty($nearbyCentres)): ?>
                             <div style="padding:16px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;color:#78350f;font-size:12.5px;line-height:1.55;">
@@ -572,24 +626,44 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                             </div>
                         <?php else: ?>
                             <?php foreach ($nearbyCentres as $idx => $centre): ?>
-                                <article class="facility-card" onclick="focusFacilityOnMap(<?= $idx ?>)">
+                                <?php
+                                $tier = $centre['suitability_tier'] ?? 'Highly Suitable';
+                                $badgeClass = match ($tier) {
+                                    'Most Suitable' => 'most-suitable',
+                                    'Highly Suitable' => 'highly-suitable',
+                                    default => 'alternative',
+                                };
+                                ?>
+                                <article class="facility-card" id="facility-card-<?= $centre['id'] ?>" onclick="focusFacilityOnMap(<?= $idx ?>)">
                                     <div class="facility-header">
                                         <div>
                                             <h3 class="facility-name"><?= e($centre['name']) ?></h3>
-                                            <span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;border:1px solid #c2dec0;padding:2px 6px;font-weight:700;">
-                                                Verified &middot; <?= e($centre['license']) ?>
-                                            </span>
+                                            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">
+                                                <span class="suitability-pill <?= $badgeClass ?>">
+                                                    <?= e($centre['suitability_badge'] ?? 'Verified Specialist') ?>
+                                                </span>
+                                                <span style="font-size:10.5px;background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:2px 6px;font-weight:700;">
+                                                    <?= e($centre['license']) ?>
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span class="distance-pill"><?= $centre['distance_km'] ?> km</span>
+                                        <span class="distance-pill"><?= $centre['distance_km'] ?> km from My Address</span>
                                     </div>
+                                    <?php if (!empty($centre['suitability_reason'])): ?>
+                                        <div class="suitability-reason-text">
+                                            <?= e($centre['suitability_reason']) ?>
+                                        </div>
+                                    <?php endif; ?>
                                     <div class="facility-meta">
                                         <div><strong>Address:</strong> <?= e($centre['address']) ?></div>
                                         <div style="margin-top:2px;"><strong>Phone:</strong> <?= e($centre['phone']) ?> &middot; <strong>Hours:</strong> <?= e($centre['operating_hours']) ?></div>
-                                        <?php if (!empty($centre['accepted_materials'])): ?>
+                                        <?php if (!empty($centre['subtypes'])): ?>
+                                            <div style="margin-top:2px;color:#475569;"><strong>Specialized Subtypes:</strong> <?= e(implode(', ', $centre['subtypes'])) ?></div>
+                                        <?php elseif (!empty($centre['accepted_materials'])): ?>
                                             <div style="margin-top:2px;color:#475569;"><strong>Accepts:</strong> <?= e(implode(', ', $centre['accepted_materials'])) ?></div>
                                         <?php endif; ?>
                                     </div>
-                                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px;">
+                                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">
                                         <a href="<?= e($centre['directions_url']) ?>" target="_blank" rel="noopener noreferrer" class="btn-directions" onclick="event.stopPropagation();">
                                             Get Directions on Google Maps &rarr;
                                         </a>
@@ -606,8 +680,10 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
 <script>
 var companyName = <?= json_encode($companyName) ?>;
 var companyAddress = <?= json_encode($businessAddress) ?>;
-var currentLat = <?= (float) $businessCoords['lat'] ?>;
-var currentLng = <?= (float) $businessCoords['lng'] ?>;
+var registeredLat = <?= (float) $businessCoords['lat'] ?>;
+var registeredLng = <?= (float) $businessCoords['lng'] ?>;
+var currentLat = registeredLat;
+var currentLng = registeredLng;
 var currentItemId = <?= $selectedItem ? (int) $selectedItem->id : 'null' ?>;
 var currentCategory = <?= $selectedItem ? json_encode($selectedItem->category) : 'null' ?>;
 var currentCentres = <?= json_encode($nearbyCentres) ?>;
@@ -629,13 +705,22 @@ function buildFacilityPopupHtml(c) {
     var accepted = Array.isArray(c.subtypes) && c.subtypes.length > 0
         ? c.subtypes.join(', ')
         : (Array.isArray(c.accepted_materials) ? c.accepted_materials.join(', ') : (c.category || 'Verified Facility'));
-    return '<div style="min-width:220px;max-width:280px;font-family:DM Sans,sans-serif;line-height:1.45;color:#0f172a;">' +
-        '<div style="font-size:13px;font-weight:700;color:#143825;margin-bottom:3px;">' + escapeHtml(c.name) + '</div>' +
-        '<div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:5px;">Verified &middot; ' + escapeHtml(c.license || 'Licensed Facility') + ' (' + c.distance_km + ' km)</div>' +
+    var badgeLabel = c.suitability_badge || 'Verified Specialist';
+    var reasonHtml = c.suitability_reason
+        ? '<div style="font-size:11px;color:#15803d;background:#f0fdf4;padding:3px 6px;margin-bottom:5px;border-left:2px solid #16a34a;">' + escapeHtml(c.suitability_reason) + '</div>'
+        : '';
+
+    return '<div style="min-width:230px;max-width:290px;font-family:DM Sans,sans-serif;line-height:1.45;color:#0f172a;">' +
+        '<div style="font-size:13.5px;font-weight:700;color:#143825;margin-bottom:2px;">' + escapeHtml(c.name) + '</div>' +
+        '<div style="display:flex;gap:5px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">' +
+            '<span style="font-size:10.5px;font-weight:700;background:#143825;color:#ffffff;padding:2px 6px;">' + escapeHtml(badgeLabel) + '</span>' +
+            '<span style="font-size:10.5px;color:#475569;font-weight:700;">' + c.distance_km + ' km from My Address</span>' +
+        '</div>' +
+        reasonHtml +
         '<div style="font-size:11.5px;color:#334155;margin-bottom:3px;"><strong>Address:</strong> ' + escapeHtml(c.address || '') + '</div>' +
         '<div style="font-size:11.5px;color:#334155;margin-bottom:3px;"><strong>Phone:</strong> ' + escapeHtml(c.phone || 'N/A') + '</div>' +
         '<div style="font-size:11.5px;color:#334155;margin-bottom:3px;"><strong>Hours:</strong> ' + escapeHtml(c.operating_hours || 'N/A') + '</div>' +
-        '<div style="font-size:11px;color:#475569;margin-bottom:8px;"><strong>Accepts:</strong> ' + escapeHtml(accepted) + '</div>' +
+        '<div style="font-size:11px;color:#475569;margin-bottom:8px;"><strong>Accepted Subtypes:</strong> ' + escapeHtml(accepted) + '</div>' +
         '<a href="' + escapeHtml(c.directions_url) + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:6px 11px;background:#143825;color:#ffffff;text-decoration:none;font-size:11.5px;font-weight:700;">Get Directions on Google Maps &rarr;</a>' +
         '</div>';
 }
@@ -708,6 +793,16 @@ function createPinSvg(fillColor, isHome) {
         '</svg>';
 }
 
+function highlightFacilityCard(centreId) {
+    var cards = document.querySelectorAll('.facility-card');
+    cards.forEach(function(card) { card.classList.remove('highlighted'); });
+    var target = document.getElementById('facility-card-' + centreId);
+    if (target) {
+        target.classList.add('highlighted');
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
 function updateMapMarkers(centres) {
     currentCentres = Array.isArray(centres) ? centres : [];
     var countEl = document.getElementById('map-marker-count');
@@ -725,7 +820,7 @@ function updateMapMarkers(centres) {
         gUserMarker = new google.maps.Marker({
             position: userPos,
             map: gMap,
-            title: companyName + ' (Registered Company Address)',
+            title: companyName + ' (My Address)',
             icon: {
                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(createPinSvg('#2563eb', true)),
                 scaledSize: new google.maps.Size(28, 36)
@@ -733,21 +828,25 @@ function updateMapMarkers(centres) {
         });
         bounds.extend(userPos);
 
-        currentCentres.forEach(function(c) {
+        currentCentres.forEach(function(c, idx) {
             if (typeof c.lat !== 'number' || typeof c.lng !== 'number') return;
             var pos = { lat: c.lat, lng: c.lng };
+            var isTopMatch = (c.suitability_tier === 'Most Suitable');
+            var pinColor = isTopMatch ? '#143825' : '#15803d';
+
             var marker = new google.maps.Marker({
                 position: pos,
                 map: gMap,
-                title: c.name,
+                title: c.name + ' (' + (c.suitability_badge || 'Suitable') + ')',
                 icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(createPinSvg('#143825', false)),
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(createPinSvg(pinColor, false)),
                     scaledSize: new google.maps.Size(26, 34)
                 }
             });
             marker.addListener('click', function() {
                 gInfoWindow.setContent(buildFacilityPopupHtml(c));
                 gInfoWindow.open(gMap, marker);
+                highlightFacilityCard(c.id);
             });
             gMarkers.push(marker);
             bounds.extend(pos);
@@ -777,23 +876,31 @@ function updateMapMarkers(centres) {
 
         lUserMarker = L.marker([currentLat, currentLng], { icon: userIcon })
             .addTo(lMap)
-            .bindPopup('<strong>' + escapeHtml(companyName) + '</strong><br><span style="font-size:11.5px;color:#475569;">' + escapeHtml(companyAddress) + '</span><br><strong style="color:#2563eb;font-size:11px;">Main GPS Reference Point</strong>');
+            .bindPopup('<strong>' + escapeHtml(companyName) + '</strong><br><span style="font-size:11.5px;color:#475569;">' + escapeHtml(companyAddress) + '</span><br><strong style="color:#2563eb;font-size:11px;">📍 My Address (Reference Point)</strong>');
 
         var latLngs = [[currentLat, currentLng]];
 
-        var facIcon = L.divIcon({
-            className: 'ecocycle-map-pin',
-            html: createPinSvg('#143825', false),
-            iconSize: [26, 34],
-            iconAnchor: [13, 34],
-            popupAnchor: [0, -32]
-        });
-
         currentCentres.forEach(function(c) {
             if (typeof c.lat !== 'number' || typeof c.lng !== 'number') return;
+            var isTopMatch = (c.suitability_tier === 'Most Suitable');
+            var pinColor = isTopMatch ? '#143825' : '#15803d';
+
+            var facIcon = L.divIcon({
+                className: 'ecocycle-map-pin',
+                html: createPinSvg(pinColor, false),
+                iconSize: [26, 34],
+                iconAnchor: [13, 34],
+                popupAnchor: [0, -32]
+            });
+
             var m = L.marker([c.lat, c.lng], { icon: facIcon })
                 .addTo(lMap)
                 .bindPopup(buildFacilityPopupHtml(c));
+
+            m.on('click', function() {
+                highlightFacilityCard(c.id);
+            });
+
             lMarkers.push(m);
             latLngs.push([c.lat, c.lng]);
         });
@@ -810,6 +917,8 @@ function focusFacilityOnMap(index) {
     var c = currentCentres[index];
     if (!c) return;
 
+    highlightFacilityCard(c.id);
+
     if (mapEngine === 'google' && gMap && gMarkers[index]) {
         gMap.panTo({ lat: c.lat, lng: c.lng });
         gMap.setZoom(14);
@@ -819,6 +928,27 @@ function focusFacilityOnMap(index) {
         lMap.setView([c.lat, c.lng], 14, { animate: true });
         lMarkers[index].openPopup();
     }
+}
+
+// When a business clicks "My Address", use the registered company address as GPS reference point
+function useMyAddress() {
+    var btnMyAddress = document.getElementById('btn-use-my-address');
+    var btnGps = document.getElementById('btn-request-gps');
+    if (btnMyAddress) btnMyAddress.classList.add('active');
+    if (btnGps) {
+        btnGps.classList.remove('active');
+        btnGps.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg> <span>Device GPS</span>';
+    }
+
+    currentLat = registeredLat;
+    currentLng = registeredLng;
+
+    var pill = document.getElementById('gps-status-pill');
+    if (pill) pill.textContent = '📍 Reference: My Address';
+
+    showGpsNotice('Showing multiple suitable locations prioritised for your non-reusable item relative to My Address (' + companyAddress + ').');
+
+    fetchNearbyCentres(currentLat, currentLng, currentCategory, currentItemId);
 }
 
 // When user selects a non-reusable item from dropdown, carry forward stored AI analysis & update nearby facilities
@@ -942,37 +1072,42 @@ function showGpsNotice(message) {
 }
 
 function requestBrowserGPS() {
-    var btn = document.getElementById('btn-request-gps');
+    var btnGps = document.getElementById('btn-request-gps');
+    var btnMyAddress = document.getElementById('btn-use-my-address');
     showGpsNotice('');
     if (!navigator.geolocation) {
-        showGpsNotice('GPS geolocation is not supported by your browser. Using your registered company address as reference.');
+        showGpsNotice('GPS geolocation is not supported by your browser. Using My Address as reference.');
         return;
     }
 
-    if (btn) btn.textContent = 'Requesting GPS Location...';
+    if (btnGps) btnGps.textContent = 'Requesting GPS...';
 
     navigator.geolocation.getCurrentPosition(
         function(pos) {
             currentLat = pos.coords.latitude;
             currentLng = pos.coords.longitude;
             var pill = document.getElementById('gps-status-pill');
-            if (pill) pill.textContent = 'Device GPS: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4);
-            if (btn) btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Live Device GPS Active</span>';
-            showGpsNotice('');
-            fetchNearbyCentres(currentLat, currentLng, currentCategory);
+            if (pill) pill.textContent = '🛰️ Device GPS: ' + currentLat.toFixed(4) + ', ' + currentLng.toFixed(4);
+            if (btnGps) {
+                btnGps.classList.add('active');
+                btnGps.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Device GPS Active</span>';
+            }
+            if (btnMyAddress) btnMyAddress.classList.remove('active');
+            showGpsNotice('Detected live device location. Showing nearby suitable facilities relative to your current location.');
+            fetchNearbyCentres(currentLat, currentLng, currentCategory, currentItemId);
         },
         function(err) {
             var reason = (err && err.code === 1)
-                ? 'Device location access was denied. Continuing to use your registered company address as reference point.'
-                : 'Unable to retrieve live device GPS location. Using your registered company address as reference.';
+                ? 'Device location access was denied. Continuing to use My Address as GPS reference point.'
+                : 'Unable to retrieve live device GPS location. Using My Address as GPS reference point.';
             showGpsNotice(reason);
-            if (btn) btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg> <span>Use My Current Device GPS</span>';
+            useMyAddress();
         },
         { enableHighAccuracy: true, timeout: 8000 }
     );
 }
 
-function fetchNearbyCentres(lat, lng, category) {
+function fetchNearbyCentres(lat, lng, category, itemId) {
     var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     fetch('/business/helper/nearby-centres', {
         method: 'POST',
@@ -981,7 +1116,7 @@ function fetchNearbyCentres(lat, lng, category) {
             'Accept': 'application/json',
             'X-CSRF-TOKEN': csrf
         },
-        body: JSON.stringify({ lat: lat, lng: lng, category: category })
+        body: JSON.stringify({ lat: lat, lng: lng, category: category, item_id: itemId })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -1015,23 +1150,41 @@ function renderNearbyCentres(centres, alternatives) {
     }
 
     container.innerHTML = centres.map(function(c, idx) {
-        var acceptedHtml = (c.accepted_materials && c.accepted_materials.length)
-            ? '<div style="margin-top:2px;color:#475569;"><strong>Accepts:</strong> ' + escapeHtml(c.accepted_materials.join(', ')) + '</div>'
+        var badgeClass = 'alternative';
+        if (c.suitability_tier === 'Most Suitable') {
+            badgeClass = 'most-suitable';
+        } else if (c.suitability_tier === 'Highly Suitable') {
+            badgeClass = 'highly-suitable';
+        }
+
+        var reasonHtml = c.suitability_reason
+            ? '<div class="suitability-reason-text">' + escapeHtml(c.suitability_reason) + '</div>'
             : '';
-        return '<article class="facility-card" onclick="focusFacilityOnMap(' + idx + ')">' +
+
+        var subtypesHtml = (c.subtypes && c.subtypes.length)
+            ? '<div style="margin-top:2px;color:#475569;"><strong>Specialized Subtypes:</strong> ' + escapeHtml(c.subtypes.join(', ')) + '</div>'
+            : ((c.accepted_materials && c.accepted_materials.length)
+                ? '<div style="margin-top:2px;color:#475569;"><strong>Accepts:</strong> ' + escapeHtml(c.accepted_materials.join(', ')) + '</div>'
+                : '');
+
+        return '<article class="facility-card" id="facility-card-' + c.id + '" onclick="focusFacilityOnMap(' + idx + ')">' +
             '<div class="facility-header">' +
                 '<div>' +
                     '<h3 class="facility-name">' + escapeHtml(c.name) + '</h3>' +
-                    '<span style="font-size:10.5px;background:#e8f4ec;color:#1e5e3a;border:1px solid #c2dec0;padding:2px 6px;font-weight:700;">Verified &middot; ' + escapeHtml(c.license) + '</span>' +
+                    '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">' +
+                        '<span class="suitability-pill ' + badgeClass + '">' + escapeHtml(c.suitability_badge || 'Verified Specialist') + '</span>' +
+                        '<span style="font-size:10.5px;background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:2px 6px;font-weight:700;">' + escapeHtml(c.license) + '</span>' +
+                    '</div>' +
                 '</div>' +
-                '<span class="distance-pill">' + c.distance_km + ' km</span>' +
+                '<span class="distance-pill">' + c.distance_km + ' km from My Address</span>' +
             '</div>' +
+            reasonHtml +
             '<div class="facility-meta">' +
                 '<div><strong>Address:</strong> ' + escapeHtml(c.address) + '</div>' +
                 '<div style="margin-top:2px;"><strong>Phone:</strong> ' + escapeHtml(c.phone) + ' &middot; <strong>Hours:</strong> ' + escapeHtml(c.operating_hours) + '</div>' +
-                acceptedHtml +
+                subtypesHtml +
             '</div>' +
-            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px;">' +
+            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">' +
                 '<a href="' + escapeHtml(c.directions_url) + '" target="_blank" rel="noopener noreferrer" class="btn-directions" onclick="event.stopPropagation();">' +
                     'Get Directions on Google Maps &rarr;' +
                 '</a>' +

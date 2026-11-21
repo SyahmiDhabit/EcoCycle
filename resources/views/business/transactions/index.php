@@ -250,6 +250,11 @@
                                                 <a href="<?= route('business.orders.checkout', $exchange) ?>" class="btn-action-sm" style="background:#143825;border:1px solid #143825;color:#ffffff;text-decoration:none;">
                                                     Pay Now
                                                 </a>
+                                                <?php if ($exchange->latestPayment?->stripe_checkout_session_id): ?>
+                                                    <a href="<?= route('business.orders.verify-payment', $exchange) ?>" class="btn-action-sm" style="background:#f0fdf4;border:1px solid #86efac;color:#15803d;text-decoration:none;" title="Verify Stripe payment status">
+                                                        Verify Payment
+                                                    </a>
+                                                <?php endif; ?>
                                             <?php endif; ?>
 
                                             <?php if ($exchange->invoice): ?>

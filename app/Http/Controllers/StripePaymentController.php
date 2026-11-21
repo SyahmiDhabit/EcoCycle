@@ -96,7 +96,8 @@ class StripePaymentController extends Controller
 
     /**
      * Return URL after Stripe Checkout completion.
-     * IMPORTANT: Never marks an order as paid based on redirect alone — relies strictly on verified Stripe webhooks.
+     * Synchronously verifies the session with Stripe API and fulfills the order immediately,
+     * ensuring immediate invoice/receipt generation and stock deduction without waiting for webhooks.
      */
     public function success(Request $request): RedirectResponse
     {
@@ -107,7 +108,7 @@ class StripePaymentController extends Controller
         $sessionId = trim((string) $request->query('session_id', ''));
         if ($sessionId === '') {
             return redirect()->route('business.invoices.index', ['tab' => 'orders'])
-                ->with('status', 'Checkout session returned. Order payment status is verified automatically via Stripe webhook.');
+                ->with('status', 'Checkout session returned. Order payment status is verified automatically via Stripe.');
         }
 
         $payment = Payment::query()
@@ -121,13 +122,56 @@ class StripePaymentController extends Controller
 
         $exchange = $payment->exchange;
 
+        // Synchronously verify and fulfill with Stripe API if not already marked paid
+        if (! $exchange || $exchange->payment_status !== 'paid' || ! $exchange->invoice) {
+            $invoice = $this->stripeService->verifyAndFulfillSession($sessionId);
+            if ($invoice) {
+                return redirect()->route('business.invoices.show', $invoice)
+                    ->with('status', "Payment verified via Stripe. Receipt {$invoice->invoice_number} is ready.");
+            }
+        }
+
+        $exchange?->refresh();
+
         if ($exchange && $exchange->payment_status === 'paid' && $exchange->invoice) {
             return redirect()->route('business.invoices.show', $exchange->invoice)
                 ->with('status', "Payment verified via Stripe. Receipt {$exchange->invoice->invoice_number} is ready.");
         }
 
         return redirect()->route('business.invoices.index', ['tab' => 'orders'])
-            ->with('status', 'Payment submitted to Stripe. Your status will automatically update to Paid and generate your PDF receipt once Stripe webhook verification completes.');
+            ->with('status', 'Payment submitted to Stripe. Your status will automatically update to Paid and generate your PDF receipt once Stripe verification completes.');
+    }
+
+    /**
+     * Manually trigger Stripe payment verification for an order.
+     */
+    public function verifyPayment(MaterialExchange $exchange): RedirectResponse
+    {
+        $this->checkApproved();
+        /** @var User $business */
+        $business = Auth::user();
+
+        abort_unless(
+            $exchange->requester_business_id === $business->id || $exchange->provider_business_id === $business->id,
+            403,
+            'Unauthorized order access.'
+        );
+
+        $exchange->loadMissing(['latestPayment', 'invoice']);
+
+        if ($exchange->payment_status === 'paid' && $exchange->invoice) {
+            return back()->with('status', "Order {$exchange->resolvedOrderReference()} is already confirmed as PAID. Receipt {$exchange->invoice->invoice_number} is available.");
+        }
+
+        $sessionId = (string) ($exchange->latestPayment?->stripe_checkout_session_id ?? '');
+        if ($sessionId !== '') {
+            $invoice = $this->stripeService->verifyAndFulfillSession($sessionId);
+            if ($invoice) {
+                return back()->with('status', "Payment verified with Stripe! Order {$exchange->resolvedOrderReference()} is confirmed as PAID.");
+            }
+        }
+
+        return back()->with('status', "Payment status checked with Stripe. Order {$exchange->resolvedOrderReference()} is currently pending.");
     }
 
     /**

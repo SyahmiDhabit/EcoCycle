@@ -221,7 +221,7 @@ class StripePaymentAndInvoiceTest extends TestCase
         $this->actingAs($buyer)
             ->post(route('business.payments.stripe.checkout', $exchange))
             ->assertRedirect(route('business.invoices.show', $receipt));
-        Http::assertSentCount(1);
+        $this->assertCount(1, Http::recorded(fn ($req) => $req->method() === 'POST' && str_contains($req->url(), 'checkout/sessions')));
 
         // 9. EcoCycle Receipt HTML and PDF contain Seller Info, Buyer Info, and Transaction Details
         $this->actingAs($buyer)
@@ -618,5 +618,219 @@ class StripePaymentAndInvoiceTest extends TestCase
             ->assertOk()
             ->assertDontSee('Industrial HDPE Pallets')
             ->assertDontSee('ECO-2026-00001');
+    }
+
+    public function test_success_redirect_with_paid_stripe_checkout_session_fulfills_order_and_generates_receipt(): void
+    {
+        $seller = $this->createApprovedBusiness('BioFertilizer Sdn Bhd');
+        $buyer = $this->createApprovedBusiness('UrbanFarms Enterprise');
+        $item = $this->createReusableItem($seller, [
+            'name' => 'Organic Compost Pellets',
+            'title' => 'Organic Compost Pellets',
+            'price' => 12.00,
+            'quantity' => 10,
+        ]);
+
+        $exchange = MaterialExchange::create([
+            'invoice_number' => 'ECO-ORD-2026-TEST01',
+            'order_reference' => 'ECO-ORD-2026-TEST01',
+            'item_id' => $item->id,
+            'item_name' => $item->name,
+            'provider_business_id' => $seller->id,
+            'seller_business_name' => $seller->business_name,
+            'requester_business_id' => $buyer->id,
+            'buyer_business_name' => $buyer->business_name,
+            'listing_type' => 'buy',
+            'quantity' => 2,
+            'unit' => 'Bag',
+            'unit_price' => 12.00,
+            'total_price' => 24.00,
+            'status' => 'pending',
+            'delivery_status' => 'payment_pending',
+            'payment_status' => 'pending',
+        ]);
+
+        $payment = Payment::create([
+            'material_exchange_id' => $exchange->id,
+            'buyer_business_id' => $buyer->id,
+            'seller_business_id' => $seller->id,
+            'stripe_checkout_session_id' => 'cs_test_synced_session_123',
+            'currency' => 'myr',
+            'amount' => 24.00,
+            'status' => 'pending',
+        ]);
+
+        // Mock Stripe API returning paid checkout session
+        Http::fake([
+            'https://api.stripe.com/v1/checkout/sessions/cs_test_synced_session_123' => Http::response([
+                'id' => 'cs_test_synced_session_123',
+                'payment_status' => 'paid',
+                'status' => 'complete',
+                'payment_intent' => 'pi_test_synced_pi_999',
+                'currency' => 'myr',
+                'amount_total' => 2400,
+                'metadata' => [
+                    'exchange_id' => (string) $exchange->id,
+                    'payment_id' => (string) $payment->id,
+                    'order_reference' => $exchange->order_reference,
+                ],
+            ], 200),
+        ]);
+
+        // Buyer returns from Stripe Checkout
+        $response = $this->actingAs($buyer)->get(
+            route('business.payments.stripe.success', ['session_id' => 'cs_test_synced_session_123'])
+        );
+
+        $exchange->refresh();
+        $payment->refresh();
+        $item->refresh();
+
+        $this->assertSame('paid', $exchange->payment_status);
+        $this->assertSame('confirmed', $exchange->status);
+        $this->assertSame('confirmed', $exchange->delivery_status);
+        $this->assertSame('paid', $payment->status);
+        $this->assertNotNull($payment->paid_at);
+        $this->assertEquals(8.00, (float) $item->quantity); // 10 - 2 = 8
+
+        $invoice = Invoice::where('material_exchange_id', $exchange->id)->firstOrFail();
+        $this->assertSame('paid', $invoice->payment_status);
+        $this->assertEquals(24.00, (float) $invoice->total_amount);
+
+        $response->assertRedirect(route('business.invoices.show', $invoice));
+    }
+
+    public function test_auto_sync_pending_stripe_payments_on_invoices_and_transactions_index(): void
+    {
+        $seller = $this->createApprovedBusiness('MegaSteel Sdn Bhd');
+        $buyer = $this->createApprovedBusiness('EcoBuilders Sdn Bhd');
+        $item = $this->createReusableItem($seller, [
+            'name' => 'Steel Rebar Offcuts',
+            'title' => 'Steel Rebar Offcuts',
+            'price' => 50.00,
+            'quantity' => 5,
+        ]);
+
+        $exchange = MaterialExchange::create([
+            'invoice_number' => 'ECO-ORD-2026-AUTOSYNC',
+            'order_reference' => 'ECO-ORD-2026-AUTOSYNC',
+            'item_id' => $item->id,
+            'item_name' => $item->name,
+            'provider_business_id' => $seller->id,
+            'seller_business_name' => $seller->business_name,
+            'requester_business_id' => $buyer->id,
+            'buyer_business_name' => $buyer->business_name,
+            'listing_type' => 'buy',
+            'quantity' => 1,
+            'unit' => 'bundle',
+            'unit_price' => 50.00,
+            'total_price' => 50.00,
+            'status' => 'pending',
+            'delivery_status' => 'payment_pending',
+            'payment_status' => 'pending',
+        ]);
+
+        Payment::create([
+            'material_exchange_id' => $exchange->id,
+            'buyer_business_id' => $buyer->id,
+            'seller_business_id' => $seller->id,
+            'stripe_checkout_session_id' => 'cs_test_autosync_456',
+            'currency' => 'myr',
+            'amount' => 50.00,
+            'status' => 'pending',
+        ]);
+
+        // Mock Stripe API returning paid
+        Http::fake([
+            'https://api.stripe.com/v1/checkout/sessions/cs_test_autosync_456' => Http::response([
+                'id' => 'cs_test_autosync_456',
+                'payment_status' => 'paid',
+                'status' => 'complete',
+                'payment_intent' => 'pi_test_autosync_pi',
+                'currency' => 'myr',
+                'amount_total' => 5000,
+                'metadata' => [
+                    'exchange_id' => (string) $exchange->id,
+                ],
+            ], 200),
+        ]);
+
+        // Buyer loads /business/invoices -> automatically triggers sync
+        $this->actingAs($buyer)
+            ->get(route('business.invoices.index'))
+            ->assertOk()
+            ->assertSee('Steel Rebar Offcuts')
+            ->assertSee('Paid')
+            ->assertSee('View Receipt')
+            ->assertSee('Download PDF');
+
+        $exchange->refresh();
+        $item->refresh();
+
+        $this->assertSame('paid', $exchange->payment_status);
+        $this->assertEquals(4.00, (float) $item->quantity);
+    }
+
+    public function test_manual_verify_payment_endpoint_updates_paid_order(): void
+    {
+        $seller = $this->createApprovedBusiness('SolarWaste Sdn Bhd');
+        $buyer = $this->createApprovedBusiness('PanelRecyclers Sdn Bhd');
+        $item = $this->createReusableItem($seller, [
+            'name' => 'Aluminum Frames',
+            'title' => 'Aluminum Frames',
+            'price' => 20.00,
+            'quantity' => 4,
+        ]);
+
+        $exchange = MaterialExchange::create([
+            'invoice_number' => 'ECO-ORD-2026-MANUAL',
+            'order_reference' => 'ECO-ORD-2026-MANUAL',
+            'item_id' => $item->id,
+            'item_name' => $item->name,
+            'provider_business_id' => $seller->id,
+            'seller_business_name' => $seller->business_name,
+            'requester_business_id' => $buyer->id,
+            'buyer_business_name' => $buyer->business_name,
+            'listing_type' => 'buy',
+            'quantity' => 2,
+            'unit' => 'pcs',
+            'unit_price' => 20.00,
+            'total_price' => 40.00,
+            'status' => 'pending',
+            'delivery_status' => 'payment_pending',
+            'payment_status' => 'pending',
+        ]);
+
+        Payment::create([
+            'material_exchange_id' => $exchange->id,
+            'buyer_business_id' => $buyer->id,
+            'seller_business_id' => $seller->id,
+            'stripe_checkout_session_id' => 'cs_test_manual_verify',
+            'currency' => 'myr',
+            'amount' => 40.00,
+            'status' => 'pending',
+        ]);
+
+        Http::fake([
+            'https://api.stripe.com/v1/checkout/sessions/cs_test_manual_verify' => Http::response([
+                'id' => 'cs_test_manual_verify',
+                'payment_status' => 'paid',
+                'status' => 'complete',
+                'payment_intent' => 'pi_test_manual_pi',
+                'currency' => 'myr',
+                'amount_total' => 4000,
+                'metadata' => [
+                    'exchange_id' => (string) $exchange->id,
+                ],
+            ], 200),
+        ]);
+
+        $this->actingAs($buyer)
+            ->get(route('business.orders.verify-payment', $exchange))
+            ->assertRedirect();
+
+        $exchange->refresh();
+        $this->assertSame('paid', $exchange->payment_status);
+        $this->assertEquals(2.00, (float) $item->fresh()->quantity);
     }
 }

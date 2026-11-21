@@ -300,6 +300,100 @@ class StripePaymentService
     }
 
     /**
+     * Directly query the Stripe API to verify the Checkout Session and fulfill the order synchronously.
+     * Guarantees immediate fulfillment upon buyer return from Stripe, even if webhooks are delayed or offline.
+     */
+    public function verifyAndFulfillSession(string $sessionId): ?Invoice
+    {
+        $sessionId = trim($sessionId);
+        if ($sessionId === '') {
+            return null;
+        }
+
+        // If the associated exchange is already marked as paid, return existing invoice immediately
+        $existingPayment = Payment::query()
+            ->with(['exchange.invoice'])
+            ->where('stripe_checkout_session_id', $sessionId)
+            ->first();
+
+        if ($existingPayment && $existingPayment->exchange && $existingPayment->exchange->payment_status === 'paid') {
+            return $existingPayment->exchange->invoice ?: $this->invoiceService->generateForOrder($existingPayment->exchange, $existingPayment);
+        }
+
+        $secret = trim((string) config('services.stripe.secret'));
+        if ($secret === '') {
+            return null;
+        }
+
+        $apiBase = rtrim((string) config('services.stripe.api_base', 'https://api.stripe.com/v1'), '/');
+
+        try {
+            $response = Http::withBasicAuth($secret, '')
+                ->timeout(15)
+                ->get("{$apiBase}/checkout/sessions/{$sessionId}");
+
+            if (! $response->successful()) {
+                Log::warning('Stripe API checkout session lookup failed', [
+                    'session_id' => $sessionId,
+                    'status' => $response->status(),
+                ]);
+
+                return null;
+            }
+
+            $sessionData = $response->json();
+            if (! is_array($sessionData) || empty($sessionData['id'])) {
+                return null;
+            }
+
+            $stripePaymentStatus = strtolower((string) ($sessionData['payment_status'] ?? ''));
+            $sessionStatus = strtolower((string) ($sessionData['status'] ?? ''));
+
+            if ($stripePaymentStatus === 'paid' || ($sessionStatus === 'complete' && $stripePaymentStatus !== 'unpaid')) {
+                $eventId = 'sync_'.$sessionId;
+                $result = $this->handleCheckoutSessionPaid($eventId, $sessionData);
+                if (! empty($result['invoice_id'])) {
+                    return Invoice::find($result['invoice_id']);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error('Exception verifying Stripe checkout session', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Check and sync any pending Stripe checkout sessions for a given business.
+     */
+    public function syncPendingStripePaymentsForBusiness(int $businessId): int
+    {
+        $pendingPayments = Payment::query()
+            ->where(function ($q) use ($businessId) {
+                $q->where('buyer_business_id', $businessId)
+                    ->orWhere('seller_business_id', $businessId);
+            })
+            ->where('status', 'pending')
+            ->whereNotNull('stripe_checkout_session_id')
+            ->where('stripe_checkout_session_id', '!=', '')
+            ->limit(10)
+            ->get();
+
+        $syncedCount = 0;
+        foreach ($pendingPayments as $pending) {
+            $invoice = $this->verifyAndFulfillSession((string) $pending->stripe_checkout_session_id);
+            if ($invoice) {
+                $syncedCount++;
+            }
+        }
+
+        return $syncedCount;
+    }
+
+    /**
      * @param  array<string, mixed>  $session
      * @return array{handled: bool, status: string, invoice_id?: int|null}
      */

@@ -9,6 +9,7 @@ use App\Models\MaterialExchange;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\InvoiceService;
+use App\Services\StripePaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class TransactionController extends Controller
 {
     public function __construct(
         private readonly InvoiceService $invoiceService,
+        private readonly StripePaymentService $stripeService,
     ) {}
     private function checkApproved(): void
     {
@@ -34,6 +36,9 @@ class TransactionController extends Controller
         if ($business->account_status !== 'approved') {
             return redirect()->route('business.dashboard');
         }
+
+        // Automatically sync any pending Stripe checkout sessions for this business
+        $this->stripeService->syncPendingStripePaymentsForBusiness($business->id);
 
         $viewType = $request->input('tab', 'all'); // all, sales, purchases
 

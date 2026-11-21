@@ -82,6 +82,7 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::post('/business/payments/stripe/checkout/{exchange}', [StripePaymentController::class, 'checkout'])->name('business.payments.stripe.checkout');
     Route::get('/business/payments/stripe/success', [StripePaymentController::class, 'success'])->name('business.payments.stripe.success');
     Route::get('/business/payments/stripe/cancel/{exchange}', [StripePaymentController::class, 'cancel'])->name('business.payments.stripe.cancel');
+    Route::get('/business/orders/{exchange}/verify-payment', [StripePaymentController::class, 'verifyPayment'])->name('business.orders.verify-payment');
 
     Route::get('/business/invoices', [InvoiceController::class, 'index'])->name('business.invoices.index');
     Route::get('/business/invoices/{invoice}', [InvoiceController::class, 'show'])->name('business.invoices.show');

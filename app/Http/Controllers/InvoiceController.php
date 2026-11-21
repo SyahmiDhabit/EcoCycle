@@ -7,6 +7,7 @@ use App\Models\MaterialExchange;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\InvoicePdfGenerator;
+use App\Services\StripePaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -15,6 +16,10 @@ use Illuminate\View\View;
 
 class InvoiceController extends Controller
 {
+    public function __construct(
+        private readonly StripePaymentService $stripeService,
+    ) {}
+
     private function checkApproved(): void
     {
         abort_unless(Auth::user()->account_status === 'approved', 403, 'Your business application must be approved first.');
@@ -28,6 +33,9 @@ class InvoiceController extends Controller
         $this->checkApproved();
         /** @var User $business */
         $business = Auth::user();
+
+        // Automatically sync any pending Stripe checkout sessions for this business
+        $this->stripeService->syncPendingStripePaymentsForBusiness($business->id);
 
         $tab = $request->input('tab', 'invoices');
         if (! in_array($tab, ['orders', 'payments', 'invoices'], true)) {

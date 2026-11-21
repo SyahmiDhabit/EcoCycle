@@ -168,6 +168,11 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
                                                 <a href="<?= route('business.orders.checkout', $order) ?>" class="btn-rect-primary">
                                                     Pay Now
                                                 </a>
+                                                <?php if ($order->latestPayment?->stripe_checkout_session_id): ?>
+                                                    <a href="<?= route('business.orders.verify-payment', $order) ?>" class="btn-rect-outline" style="background:#f0fdf4;border-color:#86efac;color:#15803d;font-weight:700;" title="Check payment status with Stripe">
+                                                        Verify Payment
+                                                    </a>
+                                                <?php endif; ?>
                                             <?php endif; ?>
 
                                             <?php if ($order->invoice): ?>

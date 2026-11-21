@@ -448,17 +448,39 @@ class InventoryGeminiWorkflowTest extends TestCase
         $this->assertFalse($scrapItem->fresh()->isPublishedToMarketplace());
     }
 
-    public function test_all_eleven_dropdown_units_and_three_conditions_are_accepted(): void
+    public function test_all_fourteen_dropdown_units_and_twenty_categories_are_accepted(): void
     {
         $business = $this->createApprovedBusiness('Dropdown Validation Bhd');
 
         $this->assertSame(['New', 'Damaged', 'Used'], Item::ALLOWED_CONDITIONS);
         $this->assertSame(
-            ['kg', 'g', 'L', 'mL', 'pcs', 'Bag', 'Box', 't', 'm', 'm²', 'm³'],
+            ['kg', 'g', 't', 'pcs', 'Unit', 'L', 'ml', 'm', 'm²', 'm³', 'Box', 'Bundle', 'Bag', 'Roll'],
             array_keys(Item::ALLOWED_UNITS)
         );
+        $this->assertSame([
+            'Food Waste',
+            'Paper & Cardboard',
+            'Plastic',
+            'Metal',
+            'Glass',
+            'Wood',
+            'Textile & Fabric',
+            'Rubber',
+            'Electronic Waste (E-Waste)',
+            'Electrical Equipment',
+            'Construction & Demolition Waste',
+            'Garden & Green Waste',
+            'Chemical Waste',
+            'Used Oil & Grease',
+            'Batteries',
+            'Packaging Materials',
+            'Ceramic & Porcelain',
+            'Leather',
+            'Mixed Waste',
+            'Other',
+        ], Item::ALLOWED_CATEGORIES);
 
-        foreach (['kg', 'm²', 'm³', 'Bag', 'Box', 't', 'L', 'mL'] as $unit) {
+        foreach (['kg', 'm²', 'm³', 'Bag', 'Box', 't', 'L', 'ml', 'Bundle', 'Roll', 'Unit'] as $unit) {
             $response = $this->actingAs($business)->post(route('business.inventory.store'), [
                 'name' => "Material {$unit}",
                 'description' => 'Standardized measurement test material.',
@@ -466,7 +488,7 @@ class InventoryGeminiWorkflowTest extends TestCase
                 'unit' => $unit,
                 'condition' => 'Damaged',
                 'reusability' => 'reusable',
-                'category' => 'Industrial Materials',
+                'category' => 'Plastic',
                 'image_1' => UploadedFile::fake()->image("img_{$unit}.jpg", 300, 300),
             ]);
             $response->assertRedirect(route('business.inventory'));
@@ -474,6 +496,7 @@ class InventoryGeminiWorkflowTest extends TestCase
             $this->assertDatabaseHas('item', [
                 'name' => "Material {$unit}",
                 'unit' => $unit,
+                'category' => 'Plastic',
                 'condition' => 'Damaged',
             ]);
         }

@@ -526,7 +526,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             <label for="mkt-cat">Category</label>
                             <select id="mkt-cat" name="category">
                                 <option value="">All Categories</option>
-                                <?php foreach ($categories as $cat) { ?>
+                                <?php
+                                    $allMktCats = collect(\App\Models\Item::ALLOWED_CATEGORIES)
+                                        ->merge($categories ?? collect())
+                                        ->unique()
+                                        ->filter()
+                                        ->values();
+                                ?>
+                                <?php foreach ($allMktCats as $cat) { ?>
                                     <option value="<?= e($cat) ?>" <?= request('category') === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
                                 <?php } ?>
                             </select>
@@ -892,14 +899,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
                     <div class="form-group">
                         <label for="create_category">Category *</label>
-                        <input type="text" id="create_category" name="category" list="mkt_categories_list" maxlength="100" required placeholder="e.g. Structural Steel, Timber &amp; Wood Products">
-                        <datalist id="mkt_categories_list">
-                            <?php if (isset($categories)): ?>
-                                <?php foreach ($categories as $cat): ?>
-                                    <option value="<?= e($cat) ?>"></option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </datalist>
+                        <select id="create_category" name="category" required style="width:100%;height:38px;padding:0 12px;border:1px solid #cbd5e1;border-radius:0;background:#ffffff;font:400 13px var(--font-main);">
+                            <option value="">Select Category...</option>
+                            <?php foreach (\App\Models\Item::ALLOWED_CATEGORIES as $catOption): ?>
+                                <option value="<?= e($catOption) ?>"><?= e($catOption) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
 
                     <!-- Reusability Classification: Strictly Reusable on Marketplace -->

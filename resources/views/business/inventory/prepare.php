@@ -254,7 +254,15 @@ $savedImages = array_values(array_filter($imageSlots));
                                 </div>
                                 <div class="prep-field">
                                     <label for="prep_category">Item Category <span style="color:#b91c1c;">*</span></label>
-                                    <input id="prep_category" name="category" type="text" list="prep_categories_list" maxlength="100" required value="<?= e($valCategory) ?>" placeholder="Enter or confirm item category" class="prep-input">
+                                    <select id="prep_category" name="category" required class="prep-input">
+                                        <option value="">Select Category...</option>
+                                        <?php foreach (\App\Models\Item::ALLOWED_CATEGORIES as $catOption): ?>
+                                            <option value="<?= e($catOption) ?>" <?= (strcasecmp((string) $valCategory, $catOption) === 0) ? 'selected' : '' ?>><?= e($catOption) ?></option>
+                                        <?php endforeach; ?>
+                                        <?php if ($valCategory && ! in_array($valCategory, \App\Models\Item::ALLOWED_CATEGORIES, true)): ?>
+                                            <option value="<?= e($valCategory) ?>" selected><?= e($valCategory) ?></option>
+                                        <?php endif; ?>
+                                    </select>
                                 </div>
                             </div>
 
@@ -272,7 +280,7 @@ $savedImages = array_values(array_filter($imageSlots));
                                     <label for="prep_unit">Unit of Measurement <span style="color:#b91c1c;">*</span></label>
                                     <select id="prep_unit" name="unit" required class="prep-input">
                                         <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel): ?>
-                                            <option value="<?= e($unitVal) ?>" <?= $valUnit === $unitVal ? 'selected' : '' ?>><?= e($unitLabel) ?></option>
+                                            <option value="<?= e($unitVal) ?>" <?= strtolower((string) $valUnit) === strtolower((string) $unitVal) ? 'selected' : '' ?>><?= e($unitLabel) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>

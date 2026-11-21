@@ -210,7 +210,7 @@ class MarketplaceController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'category' => ['required', 'string', 'max:100'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
-            'unit' => ['required', 'string', Rule::in(array_keys(Item::ALLOWED_UNITS))],
+            'unit' => ['required', 'string', Rule::in(Item::allowedUnitKeys())],
             'listing_type' => ['required', 'in:buy,free,lend'],
             'reusability' => ['required', 'in:reusable'],
             'price' => $priceRules,

@@ -52,6 +52,34 @@ class Item extends Model
     ];
 
     /**
+     * Canonical standard categories for EcoCycle Inventory & Marketplace.
+     *
+     * @var array<int, string>
+     */
+    public const ALLOWED_CATEGORIES = [
+        'Food Waste',
+        'Paper & Cardboard',
+        'Plastic',
+        'Metal',
+        'Glass',
+        'Wood',
+        'Textile & Fabric',
+        'Rubber',
+        'Electronic Waste (E-Waste)',
+        'Electrical Equipment',
+        'Construction & Demolition Waste',
+        'Garden & Green Waste',
+        'Chemical Waste',
+        'Used Oil & Grease',
+        'Batteries',
+        'Packaging Materials',
+        'Ceramic & Porcelain',
+        'Leather',
+        'Mixed Waste',
+        'Other',
+    ];
+
+    /**
      * Canonical unit values mapped to dropdown display labels.
      *
      * @var array<string, string>
@@ -59,16 +87,32 @@ class Item extends Model
     public const ALLOWED_UNITS = [
         'kg' => 'Kilogram (kg)',
         'g' => 'Gram (g)',
-        'L' => 'Litre (L)',
-        'mL' => 'Millilitre (mL)',
-        'pcs' => 'Piece (pcs)',
-        'Bag' => 'Bag',
-        'Box' => 'Box',
         't' => 'Tonne (t)',
+        'pcs' => 'Piece (pcs)',
+        'Unit' => 'Unit',
+        'L' => 'Litre (L)',
+        'ml' => 'Millilitre (ml)',
         'm' => 'Metre (m)',
         'm²' => 'Square Metre (m²)',
         'm³' => 'Cubic Metre (m³)',
+        'Box' => 'Box',
+        'Bundle' => 'Bundle',
+        'Bag' => 'Bag',
+        'Roll' => 'Roll',
     ];
+
+    /**
+     * Supported unit keys for validation, including legacy variants.
+     *
+     * @return array<int, string>
+     */
+    public static function allowedUnitKeys(): array
+    {
+        return [
+            'kg', 'g', 't', 'pcs', 'Unit', 'L', 'ml', 'm', 'm²', 'm³', 'Box', 'Bundle', 'Bag', 'Roll',
+            'unit', 'mL', 'box', 'bundle', 'bag', 'roll', 'piece', 'pieces',
+        ];
+    }
 
     protected $table = 'item';
 

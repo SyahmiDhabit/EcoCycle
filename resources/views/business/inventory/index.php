@@ -707,7 +707,14 @@ $activeNav = 'inventory';
                         
                         <select class="filter-select" name="category">
                             <option value="">All Categories</option>
-                            <?php foreach ($categories as $cat): ?>
+                            <?php
+                                $allCatOptions = collect(\App\Models\Item::ALLOWED_CATEGORIES)
+                                    ->merge($categories ?? collect())
+                                    ->unique()
+                                    ->filter()
+                                    ->values();
+                            ?>
+                            <?php foreach ($allCatOptions as $cat): ?>
                                 <option value="<?= e($cat) ?>" <?= $selectedCategory === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -1026,7 +1033,12 @@ $activeNav = 'inventory';
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="add_category_input" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Category <span style="color:#b91c1c;">*</span></label>
-                        <input id="add_category_input" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="e.g. Metals & machinery, Plastics, Wood" class="add-input-field">
+                        <select id="add_category_input" name="category" required class="add-input-field">
+                            <option value="">Select Category...</option>
+                            <?php foreach (\App\Models\Item::ALLOWED_CATEGORIES as $catOption): ?>
+                                <option value="<?= e($catOption) ?>" <?= old('category') === $catOption ? 'selected' : '' ?>><?= e($catOption) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
 
@@ -1249,7 +1261,12 @@ $activeNav = 'inventory';
                 <div class="form-row-2">
                     <div class="form-group">
                         <label for="edit_category">Material Category *</label>
-                        <input id="edit_category" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter material category">
+                        <select id="edit_category" name="category" required style="width:100%;height:38px;padding:0 12px;border:1px solid #cbd5e1;border-radius:0;background:#ffffff;font:400 13px var(--font-main);">
+                            <option value="">Select Category...</option>
+                            <?php foreach (\App\Models\Item::ALLOWED_CATEGORIES as $catOption): ?>
+                                <option value="<?= e($catOption) ?>"><?= e($catOption) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="edit_unit">Unit of Measurement *</label>
@@ -1379,7 +1396,12 @@ $activeNav = 'inventory';
                 <div class="form-row-2">
                     <div class="form-group">
                         <label for="lm_category">Category *</label>
-                        <input id="lm_category" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter material category">
+                        <select id="lm_category" name="category" required style="width:100%;height:38px;padding:0 12px;border:1px solid #cbd5e1;border-radius:0;background:#ffffff;font:400 13px var(--font-main);">
+                            <option value="">Select Category...</option>
+                            <?php foreach (\App\Models\Item::ALLOWED_CATEGORIES as $catOption): ?>
+                                <option value="<?= e($catOption) ?>"><?= e($catOption) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -1590,12 +1612,36 @@ function normalizeConditionValue(rawCond) {
     return 'Used';
 }
 
+function setSelectCategoryValue(selectEl, rawCat) {
+    if (!selectEl) return;
+    var val = (rawCat || '').trim();
+    if (!val) {
+        selectEl.value = '';
+        return;
+    }
+    for (var i = 0; i < selectEl.options.length; i++) {
+        if (selectEl.options[i].value.toLowerCase() === val.toLowerCase()) {
+            selectEl.selectedIndex = i;
+            return;
+        }
+    }
+    for (var j = 0; j < selectEl.options.length; j++) {
+        var optVal = selectEl.options[j].value.toLowerCase();
+        if (optVal && (val.toLowerCase().includes(optVal) || optVal.includes(val.toLowerCase()))) {
+            selectEl.selectedIndex = j;
+            return;
+        }
+    }
+    var opt = new Option(val, val, true, true);
+    selectEl.add(opt);
+}
+
 function setSelectUnitValue(selectEl, rawUnit) {
     if (!selectEl) return;
     var val = (rawUnit || '').trim();
     for (var i = 0; i < selectEl.options.length; i++) {
-        if (selectEl.options[i].value === val) {
-            selectEl.value = val;
+        if (selectEl.options[i].value.toLowerCase() === val.toLowerCase()) {
+            selectEl.selectedIndex = i;
             return;
         }
     }
@@ -1603,15 +1649,18 @@ function setSelectUnitValue(selectEl, rawUnit) {
     var map = {
         'kg': 'kg', 'kilogram': 'kg', 'kilograms': 'kg',
         'g': 'g', 'gram': 'g', 'grams': 'g',
-        'l': 'L', 'litre': 'L', 'litres': 'L', 'liter': 'L', 'liters': 'L',
-        'ml': 'mL', 'millilitre': 'mL', 'millilitres': 'mL',
-        'pcs': 'pcs', 'pc': 'pcs', 'piece': 'pcs', 'pieces': 'pcs', 'unit': 'pcs', 'units': 'pcs', 'pallet': 'pcs', 'pallets': 'pcs', 'roll': 'pcs', 'rolls': 'pcs', 'sheet': 'pcs', 'sheets': 'pcs', 'drum': 'pcs', 'drums': 'pcs', 'crate': 'pcs', 'crates': 'pcs', 'ream': 'pcs', 'reams': 'pcs',
-        'bag': 'Bag', 'bags': 'Bag',
-        'box': 'Box', 'boxes': 'Box',
         't': 't', 'tonne': 't', 'tonnes': 't', 'ton': 't', 'tons': 't',
+        'pcs': 'pcs', 'pc': 'pcs', 'piece': 'pcs', 'pieces': 'pcs',
+        'unit': 'Unit', 'units': 'Unit',
+        'l': 'L', 'litre': 'L', 'litres': 'L', 'liter': 'L', 'liters': 'L',
+        'ml': 'ml', 'millilitre': 'ml', 'millilitres': 'ml',
         'm': 'm', 'metre': 'm', 'metres': 'm', 'meter': 'm', 'meters': 'm',
         'm2': 'm²', 'm²': 'm²', 'sqm': 'm²', 'sq m': 'm²',
-        'm3': 'm³', 'm³': 'm³', 'cbm': 'm³'
+        'm3': 'm³', 'm³': 'm³', 'cbm': 'm³',
+        'box': 'Box', 'boxes': 'Box',
+        'bundle': 'Bundle', 'bundles': 'Bundle',
+        'bag': 'Bag', 'bags': 'Bag',
+        'roll': 'Roll', 'rolls': 'Roll'
     };
     selectEl.value = map[lower] || 'kg';
 }
@@ -2311,7 +2360,7 @@ function validateInventoryAddForm(form) {
 function openEditModal(id, name, category, unit, notes, reusability, description, existingImageSlots, price, listingType, condition) {
     document.getElementById('edit-form').action = '/business/inventory/' + id;
     document.getElementById('edit_name').value = name;
-    document.getElementById('edit_category').value = category || '';
+    setSelectCategoryValue(document.getElementById('edit_category'), category);
     setSelectUnitValue(document.getElementById('edit_unit'), unit);
     document.getElementById('edit_notes').value = notes || '';
     if (document.getElementById('edit_description')) {
@@ -2508,7 +2557,7 @@ function openListMarketModal(id, name, category, unit, quantity, reusability, de
     document.getElementById('lm_source_name').textContent = name;
     document.getElementById('lm_source_stock').textContent = quantity + ' ' + unit;
     document.getElementById('lm_title').value = name;
-    document.getElementById('lm_category').value = category;
+    setSelectCategoryValue(document.getElementById('lm_category'), category);
     setSelectUnitValue(document.getElementById('lm_unit'), unit);
     if (document.getElementById('lm_condition')) {
         document.getElementById('lm_condition').value = normalizeConditionValue(condition);

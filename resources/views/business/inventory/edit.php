@@ -417,7 +417,16 @@ $canPublishNow = ! $isPermanentlySoldOut
                                 </div>
                                 <div class="edit-field">
                                     <label for="page_category">Material Category <span style="color:#b91c1c;">*</span></label>
-                                    <input id="page_category" name="category" type="text" list="edit_categories_list" maxlength="100" required value="<?= e(old('category', $item->category)) ?>" class="edit-input">
+                                    <select id="page_category" name="category" required class="edit-input">
+                                        <option value="">Select Category...</option>
+                                        <?php $catVal = (string) old('category', $item->category); ?>
+                                        <?php foreach (\App\Models\Item::ALLOWED_CATEGORIES as $catOption): ?>
+                                            <option value="<?= e($catOption) ?>" <?= (strcasecmp($catVal, $catOption) === 0) ? 'selected' : '' ?>><?= e($catOption) ?></option>
+                                        <?php endforeach; ?>
+                                        <?php if ($catVal !== '' && ! in_array($catVal, \App\Models\Item::ALLOWED_CATEGORIES, true)): ?>
+                                            <option value="<?= e($catVal) ?>" selected><?= e($catVal) ?></option>
+                                        <?php endif; ?>
+                                    </select>
                                 </div>
                             </div>
 
@@ -438,7 +447,7 @@ $canPublishNow = ! $isPermanentlySoldOut
                                     <label for="page_unit">Unit of Measurement <span style="color:#b91c1c;">*</span></label>
                                     <select id="page_unit" name="unit" required class="edit-input">
                                         <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel): ?>
-                                            <option value="<?= e($unitVal) ?>" <?= $currentUnit === $unitVal ? 'selected' : '' ?>><?= e($unitLabel) ?></option>
+                                            <option value="<?= e($unitVal) ?>" <?= strtolower((string) $currentUnit) === strtolower((string) $unitVal) ? 'selected' : '' ?>><?= e($unitLabel) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>

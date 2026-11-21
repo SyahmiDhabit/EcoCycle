@@ -213,6 +213,24 @@ class InventoryController extends Controller
         }
         $savedImages = array_values(array_filter($savedSlots));
 
+        /** @var User $business */
+        $business = Auth::user();
+        $city = $business->city ?: 'Shah Alam';
+        $state = $business->state ?: 'Selangor';
+        $cityCoords = \App\Services\RecyclingCentreLocatorService::getCityCoordinates($city, $state);
+        $lat = (float) ($request->input('lat') ?: $cityCoords['lat']);
+        $lng = (float) ($request->input('lng') ?: $cityCoords['lng']);
+
+        $categoryForLocator = $analysis['suggested_category'] ?? $request->input('category') ?? $validated['name'];
+        $nearbyCentres = \App\Services\RecyclingCentreLocatorService::findNearby($lat, $lng, $categoryForLocator, 4, false);
+        if (empty($nearbyCentres)) {
+            $nearbyCentres = \App\Services\RecyclingCentreLocatorService::findNearby($lat, $lng, null, 3, false);
+        }
+
+        $analysis['nearby_centres'] = $nearbyCentres;
+        $analysis['disposal_locations'] = $nearbyCentres;
+        $analysis['strategy'] = $analysis['strategy'] ?? $analysis['disposal_method'] ?? 'Segregation and certified industrial recovery';
+
         $analysisToken = self::generateAnalysisToken(
             (int) Auth::id(),
             $validated['name'],
@@ -237,6 +255,8 @@ class InventoryController extends Controller
         return response()->json([
             'success' => true,
             'analysis' => $analysis,
+            'disposal_locations' => $nearbyCentres,
+            'nearby_centres' => $nearbyCentres,
             'analysis_token' => $analysisToken,
             'saved_images' => $savedImages,
             'saved_image_slots' => $savedSlots,
@@ -366,22 +386,6 @@ class InventoryController extends Controller
             'price.required' => 'Price per Unit (RM) is required when Listing Type is Sell.',
             'price.gt' => 'Sell listings must have a valid Price per Unit (RM) greater than RM 0.00.',
         ]);
-
-        // Enforce mandatory material analysis before publishing to Marketplace
-        if ($isPublishingRequest && $validated['reusability'] === 'reusable') {
-            $expectedToken = self::generateAnalysisToken(
-                (int) $business->id,
-                $validated['name'],
-                (float) $validated['quantity']
-            );
-            $providedToken = (string) ($validated['analysis_token'] ?? '');
-
-            if ($providedToken === '' || ! hash_equals($expectedToken, $providedToken)) {
-                return back()->withErrors([
-                    'analysis_token' => 'Material analysis is required before publishing to the Marketplace. Please analyze the material first.',
-                ])->withInput();
-            }
-        }
 
         // Resolve 3 independent image slots without ever duplicating pre-saved AI analysis images
         $imageSlots = [null, null, null];
@@ -573,9 +577,9 @@ class InventoryController extends Controller
         // Clear pending draft from session once confirmed and saved into `item`
         session()->forget('inventory_pending_draft');
 
-        // Main Update Inventory Details save workflow (Section 3):
-        // - Non-Reusable -> saved in Inventory Items and forwarded directly to EcoCycle Helper
-        // - Reusable -> saved in Inventory Items (NOT auto-published) and displays saved item details with Publish to Marketplace option
+        // Main Add Inventory workflow:
+        // 1. Reusable: added directly to inventory and proceeds to the listing process (edit page to configure Sell/Free/Lend, price, pickup address & publish)
+        // 2. Non-Reusable: saved in inventory and opens in EcoCycle Helper for full disposal and recycling guidance
         if ($isFromPrepare && $createdItem) {
             if ($reusability === 'not_reusable') {
                 return redirect()->route('business.helper', ['item_id' => $createdItem->id])
@@ -586,19 +590,26 @@ class InventoryController extends Controller
                 ->with('status', "Material '{$validated['name']}' has been saved to Inventory Items. Review the saved details below and click Publish to Marketplace when ready.");
         }
 
-        // Redirect to Update Inventory Details when explicitly requested
-        if ($request->input('redirect_to') === 'edit' && $createdItem) {
-            return redirect()->route('business.inventory.edit', $createdItem)
-                ->with('status', "Material '{$validated['name']}' saved to your inventory. Review and update its details below before publishing to the Marketplace.");
+        if ($reusability === 'reusable') {
+            if ($isPublishingRequest && $request->input('redirect_to') === 'marketplace') {
+                return redirect()->route('business.marketplace')->with('status', "Material '{$validated['name']}' added to inventory and published to the EcoCycle Marketplace.");
+            }
+
+            if ($request->input('redirect_to') === 'listing' || $request->input('redirect_to') === 'edit') {
+                return redirect()->route('business.inventory.edit', $createdItem)
+                    ->with('status', "Reusable material '{$validated['name']}' has been added to your inventory. Complete your listing details below to publish to the Marketplace.");
+            }
+
+            return redirect()->route('business.inventory')->with('status', "Material '{$validated['name']}' has been added to your inventory.");
         }
 
-        // Only redirect to Helper if explicitly requested
-        if ($reusability === 'not_reusable' && $request->input('redirect_to') === 'helper') {
-            return redirect()->route('business.helper', ['item_id' => $createdItem->id])->with('status', "Non-reusable material '{$validated['name']}' saved in inventory and opened in EcoCycle Helper.");
-        }
+        if ($reusability === 'not_reusable') {
+            if ($request->input('redirect_to') === 'inventory') {
+                return redirect()->route('business.inventory')->with('status', "Non-reusable material '{$validated['name']}' has been saved to your inventory.");
+            }
 
-        if ($isPublishingRequest && $reusability === 'reusable' && $request->input('redirect_to') === 'marketplace') {
-            return redirect()->route('business.marketplace')->with('status', "Material '{$validated['name']}' added to inventory and published to the EcoCycle Marketplace.");
+            return redirect()->route('business.helper', ['item_id' => $createdItem->id])
+                ->with('status', "Non-reusable material '{$validated['name']}' saved in inventory. Step-by-step disposal and recycling guidance is available below.");
         }
 
         return redirect()->route('business.inventory')->with('status', "Material '{$validated['name']}' has been added to your inventory.");

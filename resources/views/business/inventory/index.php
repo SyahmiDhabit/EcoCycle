@@ -996,216 +996,209 @@ $activeNav = 'inventory';
         </div>
         <form method="POST" action="<?= route('business.inventory.store') ?>" id="add_inventory_form" enctype="multipart/form-data" onsubmit="return validateInventoryAddForm(this)">
             <?= csrf_field() ?>
-            <!-- Hidden inputs populated dynamically after Material Analysis -->
+            <!-- Hidden inputs populated dynamically -->
             <input type="hidden" name="saved_images" id="add_saved_images" value="">
             <input type="hidden" name="saved_image_slots" id="add_saved_image_slots" value="">
             <input type="hidden" name="analysis_token" id="add_analysis_token" value="">
             <input type="hidden" name="ai_analysis_json" id="add_ai_analysis_json" value="">
-            <input type="hidden" name="reusability" id="add_reusability_hidden" value="">
+            <input type="hidden" name="reusability" id="add_reusability_hidden" value="reusable">
             <input type="hidden" name="listing_type" id="add_listing_type_hidden" value="buy">
-            <input type="hidden" name="redirect_to" id="add_redirect_to" value="inventory">
+            <input type="hidden" name="redirect_to" id="add_redirect_to" value="listing">
             <input type="hidden" name="publish_to_marketplace" id="add_publish_to_marketplace" value="0">
 
             <div class="modal-body">
                 <!-- Inline Error Banner for Image Upload or AI Analysis Failure -->
                 <div id="add_analysis_error" role="alert" style="display:none;margin-bottom:16px;padding:12px 14px;background:#fef2f2;border:1px solid #fecaca;border-left:3px solid #b91c1c;color:#991b1b;font-size:13px;line-height:1.5;">
-                    <strong style="display:block;margin-bottom:2px;">Material Analysis Failed</strong>
+                    <strong style="display:block;margin-bottom:2px;">Notice</strong>
                     <span id="add_analysis_error_text"></span>
                 </div>
 
-                <!-- ==================== STAGE 1: Material Details & Photos ==================== -->
-                <div id="add_stage_1">
-                    <!-- 1. Material Photos (3 Independent Slots: Image 1, Image 2, Image 3) -->
-                    <div class="form-group" style="margin-bottom:20px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                            <label style="margin:0;font-size:13px;font-weight:700;color:#18422d;">
-                                Material Photos <span style="color:#b91c1c;">*</span> <span style="font-weight:500;color:#64748b;">(1 to 3 images)</span>
-                            </label>
-                            <span id="add_img_counter" style="font-size:12px;font-weight:600;color:#64748b;">0 of 3 selected</span>
-                        </div>
-
-                        <div class="inv-photo-uploader-box" id="add_photo_uploader_box">
-                            <input type="file" id="add_slot_input_0" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(0, this)">
-                            <input type="file" id="add_slot_input_1" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(1, this)">
-                            <input type="file" id="add_slot_input_2" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(2, this)">
-
-                            <div class="inv-photo-hint" style="margin-bottom:12px;display:block;font-size:12px;color:#475569;">
-                                Upload 1 to 3 independent photos (JPG, PNG, or WEBP, max 5MB each). Your uploaded images are analyzed directly with the material details.
-                            </div>
-
-                            <div class="inv-slots-grid-3" id="add_slots_grid">
-                                <!-- Rendered dynamically via renderAddSlots() -->
-                            </div>
-
-                            <div id="add_img_error" style="display:none;margin-top:10px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:600;">
-                                Please upload at least 1 photo for this material (maximum 3 photos).
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 2. Material Name -->
-                    <div class="form-group" style="margin-bottom:18px;">
-                        <label for="add_name" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Name <span style="color:#b91c1c;">*</span></label>
-                        <input id="add_name" name="name" type="text" required placeholder="e.g. Pine Timber Planks, Industrial HDPE Offcuts" class="add-input-field">
-                    </div>
-
-                    <!-- 3. Description -->
-                    <div class="form-group" style="margin-bottom:18px;">
-                        <label for="add_description" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Description <span style="color:#b91c1c;">*</span></label>
-                        <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, condition, or source..." class="add-input-field" style="resize:vertical;"></textarea>
-                    </div>
-
-                    <!-- 4, 5 & 6. Quantity, Unit of Measurement Dropdown & Material Condition Dropdown -->
-                    <div class="add-grid-3">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label for="add_quantity" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Quantity <span style="color:#b91c1c;">*</span></label>
-                            <input id="add_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50" class="add-input-field">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label for="add_unit" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Unit of Measurement <span style="color:#b91c1c;">*</span></label>
-                            <select id="add_unit" name="unit" required class="add-input-field">
-                                <option value="">Select unit...</option>
-                                <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel): ?>
-                                    <option value="<?= e($unitVal) ?>"><?= e($unitLabel) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label for="add_condition" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Condition <span style="color:#b91c1c;">*</span></label>
-                            <select id="add_condition" name="condition" required class="add-input-field">
-                                <?php foreach (\App\Models\Item::ALLOWED_CONDITIONS as $condOpt): ?>
-                                    <option value="<?= e($condOpt) ?>" <?= $condOpt === 'Used' ? 'selected' : '' ?>><?= e($condOpt) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ==================== LOADING STATE: Material Analysis ==================== -->
-                <div id="add_stage_loading" style="display:none;">
-                    <div class="add-rect-box" style="padding:56px 24px;text-align:center;">
-                        <div class="rect-loading-track">
-                            <div class="rect-loading-bar"></div>
-                        </div>
-                        <h4 style="font-size:16px;font-weight:700;color:#18422d;margin:0 0 8px;">Material Analysis</h4>
-                        <p style="font-size:13px;color:#64748b;margin:0 auto;max-width:440px;line-height:1.5;">
-                            Analyzing uploaded photos and item details. Please wait a moment...
-                        </p>
-                    </div>
-                </div>
-
-                <!-- ==================== STAGE 2: Material Analysis Result ==================== -->
-                <div id="add_stage_2" style="display:none;">
-                    <!-- Material Analysis Result Container -->
-                    <div class="add-rect-box" style="margin-bottom:20px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #cbd5e1;">
-                            <h4 style="margin:0;font-size:14px;font-weight:700;color:#18422d;">Material Analysis</h4>
-                            <button type="button" id="btn_retry_analysis" class="add-btn-utility" onclick="startGeminiAnalysis()" style="display:none;">
-                                Retry Analysis
-                            </button>
-                        </div>
-
-                        <div id="ai_category_review_notice" style="display:none;margin-bottom:14px;padding:12px 14px;background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-size:12.5px;line-height:1.5;">
-                            The material category could not be confidently identified from the provided details. You may click <strong>Retry Analysis</strong> or enter the appropriate category below before saving.
-                        </div>
-
-                        <div class="add-grid-2" style="margin-bottom:12px;">
-                            <div class="add-rect-card">
-                                <label for="add_category_input" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block;">
-                                    1. Suggested Item Category <span style="color:#b91c1c;">*</span>
-                                </label>
-                                <input id="add_category_input" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="Enter or confirm material category" class="add-input-field" style="font-weight:700;color:#0f172a;padding:8px 10px;font-size:13.5px;">
-                                <div id="ai_category_hint" style="font-size:11px;color:#64748b;margin-top:5px;">
-                                    Review and confirm or adjust the suggested category before saving.
-                                </div>
-                            </div>
-                            <div class="add-rect-card">
-                                <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Classification</div>
-                                <div id="ai_result_classification" style="font-size:15px;font-weight:800;color:#18422d;padding-top:6px;">-</div>
-                            </div>
-                        </div>
-
-                        <!-- Reusable-specific Suggestions (Condition, Listing Type, Price Range, Reuse Applications, Other Recommendations) -->
-                        <div id="ai_reusable_suggestions_block" style="display:none;margin-bottom:12px;">
-                            <div class="add-grid-3" style="margin-bottom:12px;">
-                                <div class="add-rect-card">
-                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Condition</div>
-                                    <div id="ai_result_condition" style="font-size:13.5px;font-weight:700;color:#0f172a;">-</div>
-                                </div>
-                                <div class="add-rect-card">
-                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Listing Type</div>
-                                    <div id="ai_result_listing_type" style="font-size:13.5px;font-weight:700;color:#18422d;">-</div>
-                                </div>
-                                <div class="add-rect-card">
-                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Price Range (Guidance)</div>
-                                    <div id="ai_result_price_range" style="font-size:13px;font-weight:700;color:#143825;">-</div>
-                                </div>
-                            </div>
-
-                            <div class="add-grid-2" style="margin-bottom:12px;">
-                                <div class="add-rect-card">
-                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Reuse Applications</div>
-                                    <p id="ai_result_reuse_apps" style="margin:0;font-size:12.5px;color:#334155;line-height:1.5;">-</p>
-                                </div>
-                                <div class="add-rect-card">
-                                    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Other Recommendations</div>
-                                    <p id="ai_result_other_recs" style="margin:0;font-size:12.5px;color:#334155;line-height:1.5;">-</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="add-rect-card" style="margin-bottom:12px;">
-                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Reason for Classification</div>
-                            <p id="ai_result_reason" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
-                        </div>
-
-                        <div class="add-rect-card">
-                            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Suggested Next Steps</div>
-                            <p id="ai_result_recommendation" style="margin:0;font-size:13px;color:#334155;line-height:1.5;">-</p>
-                        </div>
-                    </div>
-
-                    <!-- Classification Confirmation -->
-                    <div class="form-group" style="margin-bottom:18px;">
-                        <label style="font-size:13px;font-weight:700;color:#18422d;display:block;margin-bottom:8px;">
-                            Confirm Classification <span style="color:#b91c1c;">*</span>
+                <!-- 1. Material Photos (3 Independent Slots: Image 1, Image 2, Image 3) -->
+                <div class="form-group" style="margin-bottom:20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <label style="margin:0;font-size:13px;font-weight:700;color:#18422d;">
+                            Material Photos <span style="color:#b91c1c;">*</span> <span style="font-weight:500;color:#64748b;">(1 to 3 images)</span>
                         </label>
-                        <div class="add-grid-2">
-                            <label class="reusability-toggle-card" id="card_choice_reusable" style="cursor:pointer;border:1px solid #cbd5e1;padding:16px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;" onclick="selectDecision('reusable')">
-                                <input type="radio" name="reusability_choice" value="reusable" id="radio_choice_reusable" style="margin-top:3px;">
-                                <div>
-                                    <span style="font-weight:700;color:#18422d;font-size:13px;display:block;">Reusable</span>
-                                    <span style="font-size:12px;color:#64748b;line-height:1.45;display:block;margin-top:4px;">
-                                        Save in Inventory and proceed to Update Item Details to set Sell, Free, or Lend options before publishing.
-                                    </span>
-                                </div>
-                            </label>
-                            <label class="reusability-toggle-card" id="card_choice_not_reusable" style="cursor:pointer;border:1px solid #cbd5e1;padding:16px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;" onclick="selectDecision('not_reusable')">
-                                <input type="radio" name="reusability_choice" value="not_reusable" id="radio_choice_not_reusable" style="margin-top:3px;">
-                                <div>
-                                    <span style="font-weight:700;color:#334155;font-size:13px;display:block;">Non-Reusable</span>
-                                    <span style="font-size:12px;color:#64748b;line-height:1.45;display:block;margin-top:4px;">
-                                        Save in Inventory only. Non-reusable items cannot be published to the Marketplace and open in EcoCycle Helper.
-                                    </span>
-                                </div>
-                            </label>
+                        <span id="add_img_counter" style="font-size:12px;font-weight:600;color:#64748b;">0 of 3 selected</span>
+                    </div>
+
+                    <div class="inv-photo-uploader-box" id="add_photo_uploader_box">
+                        <input type="file" id="add_slot_input_0" name="image_1" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(0, this)">
+                        <input type="file" id="add_slot_input_1" name="image_2" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(1, this)">
+                        <input type="file" id="add_slot_input_2" name="image_3" accept="image/png,image/jpeg,image/webp,image/jpg" style="display:none;" onchange="handleAddSlotFile(2, this)">
+
+                        <div class="inv-photo-hint" style="margin-bottom:12px;display:block;font-size:12px;color:#475569;">
+                            Upload 1 to 3 independent photos (JPG, PNG, or WEBP, max 5MB each). The first image will be used as the primary cover photo.
+                        </div>
+
+                        <div class="inv-slots-grid-3" id="add_slots_grid">
+                            <!-- Rendered dynamically via renderAddSlots() -->
+                        </div>
+
+                        <div id="add_img_error" style="display:none;margin-top:10px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-size:12px;font-weight:600;">
+                            Please upload at least 1 photo for this material (maximum 3 photos).
                         </div>
                     </div>
+                </div>
 
-                    <!-- Reusable Save Info Notice -->
-                    <div id="add_section_reusable" class="add-rect-box" style="display:none;background:#f0fdf4;border-color:#b9dec0;">
-                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#18422d;">Next Step: Update Inventory Details</h4>
-                        <p style="margin:0;font-size:12.5px;color:#2c523b;line-height:1.5;">
-                            The suggestions above can be edited before saving. Continue to <strong>Update Inventory Details</strong> to review, complete, and confirm the final item information.
+                <!-- 2. Material Name & Category -->
+                <div class="add-grid-2" style="margin-bottom:18px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="add_name" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Name <span style="color:#b91c1c;">*</span></label>
+                        <input id="add_name" name="name" type="text" required placeholder="e.g. Pine Timber Planks, Industrial HDPE Offcuts" class="add-input-field" onblur="checkAutoTriggerNonReusable()">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="add_category_input" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Category <span style="color:#b91c1c;">*</span></label>
+                        <input id="add_category_input" name="category" type="text" list="existing_categories_list" maxlength="100" required placeholder="e.g. Metals & machinery, Plastics, Wood" class="add-input-field">
+                    </div>
+                </div>
+
+                <!-- 3. Description -->
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label for="add_description" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Description <span style="color:#b91c1c;">*</span></label>
+                    <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, condition, or source..." class="add-input-field" style="resize:vertical;" onblur="checkAutoTriggerNonReusable()"></textarea>
+                </div>
+
+                <!-- 4. Quantity, Unit of Measurement & Material Condition -->
+                <div class="add-grid-3" style="margin-bottom:20px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="add_quantity" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Quantity <span style="color:#b91c1c;">*</span></label>
+                        <input id="add_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50" class="add-input-field">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="add_unit" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Unit of Measurement <span style="color:#b91c1c;">*</span></label>
+                        <select id="add_unit" name="unit" required class="add-input-field">
+                            <option value="">Select unit...</option>
+                            <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel): ?>
+                                <option value="<?= e($unitVal) ?>"><?= e($unitLabel) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="add_condition" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Condition <span style="color:#b91c1c;">*</span></label>
+                        <select id="add_condition" name="condition" required class="add-input-field">
+                            <?php foreach (\App\Models\Item::ALLOWED_CONDITIONS as $condOpt): ?>
+                                <option value="<?= e($condOpt) ?>" <?= $condOpt === 'Used' ? 'selected' : '' ?>><?= e($condOpt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 5. Reusability Classification: Reusable vs Not Reusable -->
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label style="font-size:13px;font-weight:700;color:#18422d;display:block;margin-bottom:8px;">
+                        Material Classification <span style="color:#b91c1c;">*</span>
+                    </label>
+                    <div class="add-grid-2">
+                        <label class="reusability-toggle-card" id="card_choice_reusable" style="cursor:pointer;border:2px solid #18422d;padding:16px;display:flex;align-items:flex-start;gap:12px;background:#f0fdf4;" onclick="selectReusability('reusable')">
+                            <input type="radio" name="reusability_choice" value="reusable" id="radio_choice_reusable" checked style="margin-top:3px;">
+                            <div>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span style="font-weight:700;color:#18422d;font-size:13.5px;">Reusable Material</span>
+                                    <span style="background:#166534;color:#ffffff;font-size:10px;font-weight:700;padding:2px 6px;text-transform:uppercase;">Direct to Listing</span>
+                                </div>
+                                <span style="font-size:12px;color:#475569;line-height:1.45;display:block;margin-top:4px;">
+                                    Item can be reused, resold, or exchanged. Adds directly to inventory and proceeds straight to the listing process. No AI analysis needed.
+                                </span>
+                            </div>
+                        </label>
+                        <label class="reusability-toggle-card" id="card_choice_not_reusable" style="cursor:pointer;border:1px solid #cbd5e1;padding:16px;display:flex;align-items:flex-start;gap:12px;background:#ffffff;" onclick="selectReusability('not_reusable')">
+                            <input type="radio" name="reusability_choice" value="not_reusable" id="radio_choice_not_reusable" style="margin-top:3px;">
+                            <div>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span style="font-weight:700;color:#0f172a;font-size:13.5px;">Not Reusable (Waste / Scrap)</span>
+                                    <span style="background:#b45309;color:#ffffff;font-size:10px;font-weight:700;padding:2px 6px;text-transform:uppercase;">Automatic AI Guidance</span>
+                                </div>
+                                <span style="font-size:12px;color:#475569;line-height:1.45;display:block;margin-top:4px;">
+                                    Cutoffs, scrap, or waste that cannot be reused. Automatically triggers AI analysis for disposal guidance and suitable locations.
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Reusable Information Banner -->
+                <div id="add_section_reusable" class="add-rect-box" style="background:#f0fdf4;border:1px solid #b9dec0;padding:14px 16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <strong style="color:#166534;font-size:13px;">Direct Inventory Addition &amp; Listing Process</strong>
+                    </div>
+                    <p style="margin:0;font-size:12px;color:#2c523b;line-height:1.5;">
+                        No AI analysis or suggestions are needed for reusable materials. Clicking below will add the item directly to your inventory and take you straight to the listing process to configure Sell, Free, or Lend options and publish to the Marketplace.
+                    </p>
+                </div>
+
+                <!-- Not Reusable Container -->
+                <div id="add_section_not_reusable" style="display:none;">
+                    <!-- Prompt when details or photos are missing -->
+                    <div id="add_non_reusable_prompt" class="add-rect-box" style="background:#fffbeb;border:1px solid #fde68a;padding:14px 16px;margin-bottom:14px;">
+                        <div style="font-weight:700;color:#92400e;font-size:13px;margin-bottom:4px;">
+                            Enter Item Details &amp; Upload Photo for Automatic AI Guidance
+                        </div>
+                        <p style="margin:0;font-size:12px;color:#78350f;line-height:1.45;">
+                            Provide the Material Name, Description, and upload at least 1 Photo above. AI analysis will automatically run to generate step-by-step disposal guidance and find suitable nearby facilities.
                         </p>
                     </div>
 
-                    <!-- Non-Reusable Restriction Notice -->
-                    <div id="add_section_not_reusable" class="add-rect-box" style="display:none;">
-                        <h4 style="margin:0 0 6px;font-size:13.5px;font-weight:700;color:#334155;">Next Step: EcoCycle Helper</h4>
-                        <p style="margin:0;font-size:12.5px;color:#475569;line-height:1.5;">
-                            Non-reusable items cannot be published to the Marketplace. Click <strong>Save &amp; Open EcoCycle Helper</strong> to save this record and view safe recycling, disposal, and verified nearby facility recommendations.
-                        </p>
+                    <!-- Loading State while AI Analysis is executing -->
+                    <div id="add_non_reusable_loading" class="add-rect-box" style="display:none;text-align:center;padding:28px 20px;background:#f8fafc;border:1px solid #cbd5e1;margin-bottom:14px;">
+                        <div class="rect-loading-track"><div class="rect-loading-bar"></div></div>
+                        <div style="font-weight:700;color:#18422d;font-size:14px;margin-top:12px;">Generating AI Disposal &amp; Recycling Guidance...</div>
+                        <div style="font-size:12px;color:#64748b;margin-top:4px;">Analyzing material properties and locating suitable Malaysian disposal facilities.</div>
+                    </div>
+
+                    <!-- Step-by-Step Guidance & Suitable Disposal Locations -->
+                    <div id="add_non_reusable_guidance" style="display:none;">
+                        <!-- 1. Step-by-step Guidance Block -->
+                        <div class="add-rect-box" style="margin-bottom:14px;background:#ffffff;border:1px solid #cbd5e1;padding:16px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
+                                <h4 style="margin:0;font-size:13.5px;font-weight:700;color:#18422d;">AI Material Handling &amp; Disposal Guidance</h4>
+                                <span style="font-size:11px;font-weight:700;color:#92400e;background:#fef3c7;border:1px solid #fde68a;padding:2px 8px;">Non-Reusable</span>
+                            </div>
+
+                            <div style="margin-bottom:12px;">
+                                <strong style="display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:3px;">Recommended Handling Strategy</strong>
+                                <p id="nr_guidance_strategy" style="margin:0;font-size:13px;color:#0f172a;font-weight:600;line-height:1.45;">-</p>
+                            </div>
+
+                            <div style="margin-bottom:12px;">
+                                <strong style="display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Step-by-Step Handling &amp; Disposal Steps</strong>
+                                <ol id="nr_guidance_steps" style="margin:0;padding-left:18px;font-size:12.5px;color:#334155;line-height:1.55;">
+                                </ol>
+                            </div>
+
+                            <div id="nr_repurpose_block" style="margin-bottom:12px;display:none;">
+                                <strong style="display:block;font-size:11px;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Alternative Repurposing / Recovery Options</strong>
+                                <ul id="nr_guidance_repurpose" style="margin:0;padding-left:18px;font-size:12.5px;color:#334155;line-height:1.5;">
+                                </ul>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                                <div style="padding:10px 12px;background:#f4fbf5;border:1px solid #c2dec0;">
+                                    <strong style="display:block;font-size:10.5px;color:#1b5e20;text-transform:uppercase;margin-bottom:3px;">Environmental Impact (Qualitative)</strong>
+                                    <span id="nr_guidance_env" style="font-size:12px;color:#123321;line-height:1.4;">-</span>
+                                </div>
+                                <div style="padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;">
+                                    <strong style="display:block;font-size:10.5px;color:#1d4ed8;text-transform:uppercase;margin-bottom:3px;">Carbon Impact Guidance (Qualitative)</strong>
+                                    <span id="nr_guidance_carbon" style="font-size:12px;color:#1e3a8a;line-height:1.4;">-</span>
+                                </div>
+                            </div>
+
+                            <div id="nr_guidance_risks_box" style="padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;font-size:12px;color:#78350f;line-height:1.45;">
+                                <strong>Compliance &amp; Disposal Risks:</strong> <span id="nr_guidance_risks">-</span>
+                            </div>
+                        </div>
+
+                        <!-- 2. Suggestions on Suitable Disposal Locations & Facilities (Where the business can send the item) -->
+                        <div class="add-rect-box" style="background:#ffffff;border:1px solid #cbd5e1;padding:16px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
+                                <h4 style="margin:0;font-size:13.5px;font-weight:700;color:#18422d;">Suitable Disposal Locations &amp; Facilities</h4>
+                                <span style="font-size:11px;font-weight:600;color:#475569;">Where the Business Can Send This Item</span>
+                            </div>
+                            <div id="nr_locations_list" style="display:flex;flex-direction:column;gap:10px;">
+                                <!-- Populated dynamically from RecyclingCentreLocatorService -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1214,20 +1207,14 @@ $activeNav = 'inventory';
             <div class="modal-footer" id="add_modal_footer">
                 <button type="button" class="add-btn-secondary" onclick="closeAddModal()">Cancel</button>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                    <button type="button" class="add-btn-primary" id="btn_trigger_ai" onclick="startGeminiAnalysis()">
-                        Analyze Item
+                    <button type="button" class="add-btn-secondary" id="btn_reanalyze_non_reusable" onclick="triggerNonReusableAnalysis(true)" style="display:none;">
+                        Re-run AI Guidance
                     </button>
-                    <button type="button" class="add-btn-secondary" id="btn_back_to_details" onclick="backToAddDetails()" style="display:none;">
-                        Back to Details
+                    <button type="submit" class="add-btn-primary" id="btn_submit_reusable">
+                        Add Item &amp; Proceed to Listing &rarr;
                     </button>
-                    <button type="submit" class="add-btn-secondary" id="btn_submit_inventory" onclick="document.getElementById('add_redirect_to').value='inventory';" style="display:none;">
-                        Save to Inventory
-                    </button>
-                    <button type="submit" class="add-btn-primary" id="btn_submit_update_details" onclick="document.getElementById('add_redirect_to').value='edit';" style="display:none;">
-                        Update Item Details &rarr;
-                    </button>
-                    <button type="submit" class="add-btn-primary" id="btn_submit_open_helper" onclick="document.getElementById('add_redirect_to').value='helper';" style="display:none;">
-                        Save &amp; Open EcoCycle Helper &rarr;
+                    <button type="submit" class="add-btn-primary" id="btn_submit_non_reusable" style="display:none;">
+                        Save to Inventory &amp; Open EcoCycle Helper &rarr;
                     </button>
                 </div>
             </div>
@@ -1810,34 +1797,23 @@ function openAddModal() {
     var tokenInput = document.getElementById('add_analysis_token');
     if (tokenInput) tokenInput.value = '';
 
+    var aiJsonInput = document.getElementById('add_ai_analysis_json');
+    if (aiJsonInput) aiJsonInput.value = '';
+
     var catInput = document.getElementById('add_category_input');
     if (catInput) catInput.value = '';
 
     var condSelect = document.getElementById('add_condition');
     if (condSelect) condSelect.value = 'Used';
 
-    var reviewNotice = document.getElementById('ai_category_review_notice');
-    if (reviewNotice) reviewNotice.style.display = 'none';
-
-    var retryBtn = document.getElementById('btn_retry_analysis');
-    if (retryBtn) retryBtn.style.display = 'none';
-
-    var reusabilityInput = document.getElementById('add_reusability_hidden');
-    if (reusabilityInput) reusabilityInput.value = '';
-
     var pubInput = document.getElementById('add_publish_to_marketplace');
     if (pubInput) pubInput.value = '0';
 
     var redInput = document.getElementById('add_redirect_to');
-    if (redInput) redInput.value = 'inventory';
+    if (redInput) redInput.value = 'listing';
 
     renderAddSlots();
-
-    document.getElementById('add_stage_1').style.display = 'block';
-    document.getElementById('add_stage_loading').style.display = 'none';
-    document.getElementById('add_stage_2').style.display = 'none';
-
-    setAddModalStageActions('stage_1');
+    selectReusability('reusable');
 
     var modal = document.getElementById('add-modal');
     modal.style.display = 'flex';
@@ -1983,71 +1959,141 @@ function renderAddSlots() {
     }
 }
 
-function startGeminiAnalysis() {
-    clearAddAnalysisError();
+function selectReusability(choice) {
+    var reusInput = document.getElementById('add_reusability_hidden');
+    if (reusInput) reusInput.value = choice;
 
-    var name = document.getElementById('add_name').value.trim();
-    var desc = document.getElementById('add_description').value.trim();
-    var qty = document.getElementById('add_quantity').value.trim();
-    var unit = document.getElementById('add_unit').value.trim();
-    var condition = document.getElementById('add_condition').value.trim();
+    var radioReusable = document.getElementById('radio_choice_reusable');
+    var radioNotReusable = document.getElementById('radio_choice_not_reusable');
+    var cardReusable = document.getElementById('card_choice_reusable');
+    var cardNotReusable = document.getElementById('card_choice_not_reusable');
+    var secReusable = document.getElementById('add_section_reusable');
+    var secNotReusable = document.getElementById('add_section_not_reusable');
+    var btnSubmitReusable = document.getElementById('btn_submit_reusable');
+    var btnSubmitNonReusable = document.getElementById('btn_submit_non_reusable');
+    var btnReanalyze = document.getElementById('btn_reanalyze_non_reusable');
+    var redirectInput = document.getElementById('add_redirect_to');
+
+    if (choice === 'reusable') {
+        if (radioReusable) radioReusable.checked = true;
+        if (radioNotReusable) radioNotReusable.checked = false;
+        if (cardReusable) {
+            cardReusable.style.border = '2px solid #18422d';
+            cardReusable.style.background = '#f0fdf4';
+        }
+        if (cardNotReusable) {
+            cardNotReusable.style.border = '1px solid #cbd5e1';
+            cardNotReusable.style.background = '#ffffff';
+        }
+        if (secReusable) secReusable.style.display = 'block';
+        if (secNotReusable) secNotReusable.style.display = 'none';
+        if (btnSubmitReusable) btnSubmitReusable.style.display = 'inline-block';
+        if (btnSubmitNonReusable) btnSubmitNonReusable.style.display = 'none';
+        if (btnReanalyze) btnReanalyze.style.display = 'none';
+        if (redirectInput) redirectInput.value = 'listing';
+    } else {
+        if (radioReusable) radioReusable.checked = false;
+        if (radioNotReusable) radioNotReusable.checked = true;
+        if (cardReusable) {
+            cardReusable.style.border = '1px solid #cbd5e1';
+            cardReusable.style.background = '#ffffff';
+        }
+        if (cardNotReusable) {
+            cardNotReusable.style.border = '2px solid #0f172a';
+            cardNotReusable.style.background = '#f8fafc';
+        }
+        if (secReusable) secReusable.style.display = 'none';
+        if (secNotReusable) secNotReusable.style.display = 'block';
+        if (btnSubmitReusable) btnSubmitReusable.style.display = 'none';
+        if (btnSubmitNonReusable) btnSubmitNonReusable.style.display = 'inline-block';
+        if (redirectInput) redirectInput.value = 'helper';
+
+        // Automatically trigger AI analysis if fields and photo are present
+        checkAutoTriggerNonReusable();
+    }
+}
+
+function selectDecision(choice) {
+    selectReusability(choice);
+}
+
+function checkAutoTriggerNonReusable() {
+    var reusInput = document.getElementById('add_reusability_hidden');
+    if (!reusInput || reusInput.value !== 'not_reusable') return;
+
+    var name = (document.getElementById('add_name') ? document.getElementById('add_name').value : '').trim();
+    var desc = (document.getElementById('add_description') ? document.getElementById('add_description').value : '').trim();
+    var photoCount = getAddPhotoCount();
+
+    var promptBox = document.getElementById('add_non_reusable_prompt');
+    var loadingBox = document.getElementById('add_non_reusable_loading');
+    var guidanceBox = document.getElementById('add_non_reusable_guidance');
+
+    if (!name || photoCount < 1) {
+        if (!addAnalysisCompleted) {
+            if (promptBox) promptBox.style.display = 'block';
+            if (loadingBox) loadingBox.style.display = 'none';
+            if (guidanceBox) guidanceBox.style.display = 'none';
+        }
+        return;
+    }
+
+    if (!addAnalysisCompleted) {
+        triggerNonReusableAnalysis(false);
+    }
+}
+
+var isAnalyzingNonReusable = false;
+
+function triggerNonReusableAnalysis(force) {
+    if (isAnalyzingNonReusable) return;
+
+    var name = (document.getElementById('add_name') ? document.getElementById('add_name').value : '').trim();
+    var desc = (document.getElementById('add_description') ? document.getElementById('add_description').value : '').trim();
+    var qty = (document.getElementById('add_quantity') ? document.getElementById('add_quantity').value : '').trim() || '1';
+    var unit = (document.getElementById('add_unit') ? document.getElementById('add_unit').value : '').trim() || 'kg';
+    var condition = (document.getElementById('add_condition') ? document.getElementById('add_condition').value : '').trim() || 'Used';
+    var category = (document.getElementById('add_category_input') ? document.getElementById('add_category_input').value : '').trim();
 
     if (!name) {
-        showAddAnalysisError('Please enter the Material Name before analyzing.');
-        document.getElementById('add_name').focus();
-        return;
-    }
-    if (!desc) {
-        showAddAnalysisError('Please enter the Material Description before analyzing.');
-        document.getElementById('add_description').focus();
-        return;
-    }
-    if (!qty || parseFloat(qty) <= 0) {
-        showAddAnalysisError('Please enter a valid Quantity greater than 0.');
-        document.getElementById('add_quantity').focus();
-        return;
-    }
-    if (!unit) {
-        showAddAnalysisError('Please select a Unit of Measurement from the dropdown.');
-        document.getElementById('add_unit').focus();
-        return;
-    }
-    if (!condition) {
-        showAddAnalysisError('Please select a Material Condition (New, Damaged, or Used).');
-        document.getElementById('add_condition').focus();
+        if (force) {
+            showAddAnalysisError('Please enter the Material Name before running AI analysis.');
+            document.getElementById('add_name').focus();
+        }
         return;
     }
     if (getAddPhotoCount() < 1) {
-        var err = document.getElementById('add_img_error');
-        if (err) err.style.display = 'block';
-        showAddAnalysisError('Please upload at least 1 material photo (minimum 1, maximum 3 images) for analysis.');
+        if (force) {
+            var err = document.getElementById('add_img_error');
+            if (err) err.style.display = 'block';
+            showAddAnalysisError('Please upload at least 1 material photo to generate disposal guidance.');
+        }
         return;
     }
 
-    // Reset previous analysis state before running a fresh multimodal request
-    addAnalysisCompleted = false;
-    var prevSavedImgs = document.getElementById('add_saved_images');
-    if (prevSavedImgs) prevSavedImgs.value = '';
-    var prevSavedSlots = document.getElementById('add_saved_image_slots');
-    if (prevSavedSlots) prevSavedSlots.value = '';
-    var prevToken = document.getElementById('add_analysis_token');
-    if (prevToken) prevToken.value = '';
+    clearAddAnalysisError();
+    isAnalyzingNonReusable = true;
 
-    // Switch to Loading View
-    document.getElementById('add_stage_1').style.display = 'none';
-    document.getElementById('add_stage_loading').style.display = 'block';
-    document.getElementById('add_stage_2').style.display = 'none';
-    setAddModalStageActions('loading');
+    var promptBox = document.getElementById('add_non_reusable_prompt');
+    var loadingBox = document.getElementById('add_non_reusable_loading');
+    var guidanceBox = document.getElementById('add_non_reusable_guidance');
+    var btnReanalyze = document.getElementById('btn_reanalyze_non_reusable');
+
+    if (promptBox) promptBox.style.display = 'none';
+    if (loadingBox) loadingBox.style.display = 'block';
+    if (guidanceBox && force) guidanceBox.style.display = 'none';
+    if (btnReanalyze) btnReanalyze.style.display = 'none';
 
     var formData = new FormData();
     formData.append('_token', '<?= csrf_token() ?>');
     formData.append('name', name);
-    formData.append('description', desc);
+    formData.append('description', desc || ('Material specifications for ' + name));
     formData.append('quantity', qty);
     formData.append('unit', unit);
     formData.append('condition', condition);
+    formData.append('category', category);
+    formData.append('reusability', 'not_reusable');
 
-    // Send actual uploaded File objects under independent slot keys (image_1, image_2, image_3)
     for (var i = 0; i < 3; i++) {
         if (addPhotoSlots[i]) {
             formData.append('image_' + (i + 1), addPhotoSlots[i]);
@@ -2064,10 +2110,10 @@ function startGeminiAnalysis() {
     })
     .then(function(res) {
         return res.json().catch(function() {
-            return { success: false, message: 'Unexpected server response during material analysis. Please try again.' };
+            return { success: false, message: 'Unexpected server response during disposal guidance generation.' };
         }).then(function(payload) {
             if (!res.ok) {
-                var msg = (payload && payload.message) ? payload.message : 'Material analysis could not be completed. Please try again.';
+                var msg = (payload && payload.message) ? payload.message : 'Disposal analysis failed. Please retry.';
                 if (payload && payload.errors) {
                     var firstKey = Object.keys(payload.errors)[0];
                     if (firstKey && Array.isArray(payload.errors[firstKey]) && payload.errors[firstKey][0]) {
@@ -2080,33 +2126,29 @@ function startGeminiAnalysis() {
         });
     })
     .then(function(data) {
+        isAnalyzingNonReusable = false;
+        if (loadingBox) loadingBox.style.display = 'none';
+
         if (!data || !data.success || !data.analysis) {
-            document.getElementById('add_stage_loading').style.display = 'none';
-            var failMsg = (data && data.message) ? data.message : 'Material analysis could not process the uploaded photos. Please retry.';
+            var failMsg = (data && data.message) ? data.message : 'Could not generate disposal guidance for this material.';
             showAddAnalysisError(failMsg);
-            document.getElementById('add_stage_1').style.display = 'block';
-            setAddModalStageActions('stage_1');
+            if (promptBox) promptBox.style.display = 'block';
             return;
         }
 
-        // Direct business owner straight to the central Update Inventory Details page to review, edit & confirm before saving
-        if (data.update_details_url) {
-            window.location.href = data.update_details_url;
-            return;
-        }
-
-        document.getElementById('add_stage_loading').style.display = 'none';
         addAnalysisCompleted = true;
 
-        // Store pre-saved slots cleanly (file inputs have no name attribute so they are never re-uploaded on form submit)
+        if (data.analysis_token) {
+            var tokenEl = document.getElementById('add_analysis_token');
+            if (tokenEl) tokenEl.value = data.analysis_token;
+        }
         if (data.saved_images && data.saved_images.length > 0) {
-            document.getElementById('add_saved_images').value = JSON.stringify(data.saved_images);
+            var simg = document.getElementById('add_saved_images');
+            if (simg) simg.value = JSON.stringify(data.saved_images);
         }
         if (data.saved_image_slots && data.saved_image_slots.length === 3) {
-            document.getElementById('add_saved_image_slots').value = JSON.stringify(data.saved_image_slots);
-        }
-        if (data.analysis_token) {
-            document.getElementById('add_analysis_token').value = data.analysis_token;
+            var sslots = document.getElementById('add_saved_image_slots');
+            if (sslots) sslots.value = JSON.stringify(data.saved_image_slots);
         }
 
         var analysis = data.analysis;
@@ -2114,170 +2156,190 @@ function startGeminiAnalysis() {
         if (aiJsonInput) {
             try { aiJsonInput.value = JSON.stringify(analysis); } catch (e) { aiJsonInput.value = ''; }
         }
-        var suggestedCat = (analysis.suggested_category || '').trim();
-        var needsReview = Boolean(analysis.needs_category_review) || analysis.category_confidence === 'low' || suggestedCat === '';
 
+        // Auto-fill category if currently empty
         var catInput = document.getElementById('add_category_input');
-        if (catInput) {
-            catInput.value = suggestedCat;
+        if (catInput && !catInput.value.trim() && analysis.suggested_category) {
+            catInput.value = analysis.suggested_category;
         }
 
-        var reviewNotice = document.getElementById('ai_category_review_notice');
-        if (reviewNotice) {
-            reviewNotice.style.display = needsReview ? 'block' : 'none';
+        // Render Strategy
+        var stratEl = document.getElementById('nr_guidance_strategy');
+        if (stratEl) {
+            stratEl.textContent = (analysis.action_recommendation ? (analysis.action_recommendation + ' — ') : '') + (analysis.strategy || analysis.disposal_method || 'Segregate and route to licensed industrial waste recovery.');
         }
 
-        var retryBtn = document.getElementById('btn_retry_analysis');
-        if (retryBtn) {
-            retryBtn.style.display = 'inline-block';
-        }
-
-        var isReusable = (analysis.suggested_reusability === 'reusable');
-        var classEl = document.getElementById('ai_result_classification');
-        if (classEl) {
-            classEl.textContent = isReusable ? 'Reusable' : 'Non-Reusable';
-            classEl.style.color = isReusable ? '#18422d' : '#334155';
-        }
-
-        // Populate all 8 Reusable AI suggestion fields
-        var reusBlock = document.getElementById('ai_reusable_suggestions_block');
-        if (reusBlock) {
-            reusBlock.style.display = isReusable ? 'block' : 'none';
-        }
-        var condOut = document.getElementById('ai_result_condition');
-        if (condOut) condOut.textContent = analysis.suggested_condition || condition || 'Used';
-
-        var ltOut = document.getElementById('ai_result_listing_type');
-        if (ltOut) ltOut.textContent = analysis.suggested_listing_type_label || 'Sell';
-
-        var ltHidden = document.getElementById('add_listing_type_hidden');
-        if (ltHidden) {
-            var suggestedLt = (analysis.suggested_listing_type || 'buy').toLowerCase();
-            ltHidden.value = (suggestedLt === 'free' || suggestedLt === 'lend') ? suggestedLt : 'buy';
-        }
-
-        var priceOut = document.getElementById('ai_result_price_range');
-        if (priceOut) priceOut.textContent = analysis.suggested_price_range || 'Owner sets final price per unit';
-
-        var appsOut = document.getElementById('ai_result_reuse_apps');
-        if (appsOut) {
-            var apps = analysis.reuse_applications || [];
-            appsOut.textContent = Array.isArray(apps) && apps.length > 0 ? apps.join(' • ') : 'Direct reuse by verified Malaysian businesses.';
-        }
-
-        var otherOut = document.getElementById('ai_result_other_recs');
-        if (otherOut) {
-            var others = analysis.other_recommendations || [];
-            otherOut.textContent = Array.isArray(others) && others.length > 0 ? others.join(' ') : 'Verify dimensions, quantity, and pickup address before publishing.';
-        }
-
-        var reasonEl = document.getElementById('ai_result_reason');
-        if (reasonEl) {
-            reasonEl.textContent = analysis.reason || 'Material evaluated based on uploaded photos, condition, and specifications.';
-        }
-
-        var recEl = document.getElementById('ai_result_recommendation');
-        if (recEl) {
-            var actions = analysis.recommended_actions || [];
-            if (Array.isArray(actions)) {
-                recEl.textContent = actions.join(' ') || (isReusable ? 'Proceed to Update Item Details to confirm price and listing type before publishing to EcoCycle Marketplace.' : 'Save to Inventory and open EcoCycle Helper for recycling or disposal guidance.');
-            } else if (typeof actions === 'string') {
-                recEl.textContent = actions;
+        // Render Step-by-Step Guidance Steps
+        var stepsEl = document.getElementById('nr_guidance_steps');
+        if (stepsEl) {
+            stepsEl.innerHTML = '';
+            var steps = analysis.owner_actions || analysis.recycling_steps || analysis.recommended_actions || [];
+            if (Array.isArray(steps) && steps.length > 0) {
+                steps.forEach(function(step) {
+                    var li = document.createElement('li');
+                    li.textContent = step;
+                    li.style.marginBottom = '4px';
+                    stepsEl.appendChild(li);
+                });
             } else {
-                recEl.textContent = isReusable ? 'Proceed to Update Item Details to confirm price and listing type before publishing to EcoCycle Marketplace.' : 'Save to Inventory and open EcoCycle Helper for recycling or disposal guidance.';
+                var defaultSteps = [
+                    'Segregate this non-reusable material at the source to prevent cross-contamination.',
+                    'Package or store securely in labeled containers/drums awaiting collection.',
+                    'Coordinate transport with a certified recycler or local council (PBT) licensed waste handler.'
+                ];
+                defaultSteps.forEach(function(step) {
+                    var li = document.createElement('li');
+                    li.textContent = step;
+                    li.style.marginBottom = '4px';
+                    stepsEl.appendChild(li);
+                });
             }
         }
 
-        document.getElementById('add_stage_2').style.display = 'block';
-        selectDecision(isReusable ? 'reusable' : 'not_reusable');
-        setAddModalStageActions('stage_2');
-
-        if (needsReview && catInput) {
-            catInput.focus();
+        // Render Repurposing Ideas
+        var repurposeBlock = document.getElementById('nr_repurpose_block');
+        var repurposeList = document.getElementById('nr_guidance_repurpose');
+        var ideas = analysis.repurpose_ideas || analysis.repurposing_ideas || [];
+        if (repurposeBlock && repurposeList) {
+            if (Array.isArray(ideas) && ideas.length > 0) {
+                repurposeList.innerHTML = '';
+                ideas.forEach(function(idea) {
+                    var li = document.createElement('li');
+                    li.textContent = idea;
+                    li.style.marginBottom = '3px';
+                    repurposeList.appendChild(li);
+                });
+                repurposeBlock.style.display = 'block';
+            } else {
+                repurposeBlock.style.display = 'none';
+            }
         }
+
+        // Render Environmental Impact
+        var envEl = document.getElementById('nr_guidance_env');
+        if (envEl) {
+            envEl.textContent = analysis.environmental_impact || 'Proper segregation and licensed recovery reduce landfill burden and prevent environmental pollution.';
+        }
+
+        // Render Carbon Impact
+        var carbonEl = document.getElementById('nr_guidance_carbon');
+        if (carbonEl) {
+            carbonEl.textContent = analysis.carbon_impact || analysis.carbon_saving_estimate || 'Diverting non-reusable material to certified recovery facilities helps lower overall lifecycle emissions.';
+        }
+
+        // Render Risks
+        var risksEl = document.getElementById('nr_guidance_risks');
+        if (risksEl) {
+            risksEl.textContent = analysis.improper_disposal_risks || analysis.disposal_warning || 'Improper disposal, mixing with general municipal waste, or open dumping violates local council and DOE environmental regulations.';
+        }
+
+        // Render Suitable Disposal Locations (Where the business can send the item)
+        var locationsContainer = document.getElementById('nr_locations_list');
+        var locations = data.disposal_locations || analysis.nearby_centres || [];
+        if (locationsContainer) {
+            locationsContainer.innerHTML = '';
+            if (Array.isArray(locations) && locations.length > 0) {
+                locations.slice(0, 3).forEach(function(loc) {
+                    var locCard = document.createElement('div');
+                    locCard.style.cssText = 'padding:11px 13px;border:1px solid #e2e8f0;background:#f8fafc;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;';
+                    
+                    var left = document.createElement('div');
+                    left.style.cssText = 'flex:1;min-width:200px;';
+                    
+                    var title = document.createElement('div');
+                    title.style.cssText = 'font-weight:700;font-size:13px;color:#18422d;margin-bottom:2px;';
+                    title.textContent = loc.name + ' (' + (loc.distance_km || loc.distance || 'Near') + ' km)';
+                    left.appendChild(title);
+
+                    var addr = document.createElement('div');
+                    addr.style.cssText = 'font-size:11.5px;color:#475569;margin-bottom:3px;line-height:1.4;';
+                    addr.textContent = loc.address || (loc.city + ', ' + loc.state);
+                    left.appendChild(addr);
+
+                    if (loc.phone || loc.operating_hours) {
+                        var meta = document.createElement('div');
+                        meta.style.cssText = 'font-size:11px;color:#64748b;';
+                        meta.textContent = [loc.phone, loc.operating_hours].filter(Boolean).join(' • ');
+                        left.appendChild(meta);
+                    }
+
+                    var right = document.createElement('div');
+                    if (loc.directions_url) {
+                        var mapLink = document.createElement('a');
+                        mapLink.href = loc.directions_url;
+                        mapLink.target = '_blank';
+                        mapLink.rel = 'noopener noreferrer';
+                        mapLink.style.cssText = 'display:inline-block;padding:5px 10px;background:#ffffff;border:1px solid #cbd5e1;color:#18422d;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap;';
+                        mapLink.textContent = 'Directions ↗';
+                        right.appendChild(mapLink);
+                    }
+
+                    locCard.appendChild(left);
+                    if (right.childNodes.length > 0) locCard.appendChild(right);
+                    locationsContainer.appendChild(locCard);
+                });
+            } else {
+                locationsContainer.innerHTML = '<div style="font-size:12px;color:#64748b;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;">No specific facility found in the immediate radius. Check EcoCycle Helper or local council (PBT) licensed scheduled waste collectors.</div>';
+            }
+        }
+
+        if (guidanceBox) guidanceBox.style.display = 'block';
+        if (btnReanalyze) btnReanalyze.style.display = 'inline-block';
     })
     .catch(function(err) {
-        document.getElementById('add_stage_loading').style.display = 'none';
-        addAnalysisCompleted = false;
-        showAddAnalysisError(err && err.message ? err.message : 'Material analysis failed. Please check your connection and try again.');
-        document.getElementById('add_stage_1').style.display = 'block';
-        setAddModalStageActions('stage_1');
+        isAnalyzingNonReusable = false;
+        if (loadingBox) loadingBox.style.display = 'none';
+        showAddAnalysisError(err && err.message ? err.message : 'Failed to generate disposal guidance. Please try again.');
+        if (promptBox) promptBox.style.display = 'block';
     });
 }
 
-function selectDecision(choice) {
-    document.getElementById('add_reusability_hidden').value = choice;
-    var radioReusable = document.getElementById('radio_choice_reusable');
-    var radioNotReusable = document.getElementById('radio_choice_not_reusable');
-    var cardReusable = document.getElementById('card_choice_reusable');
-    var cardNotReusable = document.getElementById('card_choice_not_reusable');
-    var secReusable = document.getElementById('add_section_reusable');
-    var secNotReusable = document.getElementById('add_section_not_reusable');
-
-    // Always save to Inventory ONLY (never auto-publish to Marketplace)
-    document.getElementById('add_publish_to_marketplace').value = '0';
-
-    var btnUpdateDetails = document.getElementById('btn_submit_update_details');
-    var btnOpenHelper = document.getElementById('btn_submit_open_helper');
-    var reusBlock = document.getElementById('ai_reusable_suggestions_block');
-
-    if (choice === 'reusable') {
-        if (radioReusable) radioReusable.checked = true;
-        if (radioNotReusable) radioNotReusable.checked = false;
-        if (cardReusable) {
-            cardReusable.style.border = '2px solid #18422d';
-            cardReusable.style.background = '#f0fdf4';
-        }
-        if (cardNotReusable) {
-            cardNotReusable.style.border = '1px solid #cbd5e1';
-            cardNotReusable.style.background = '#ffffff';
-        }
-        if (secReusable) secReusable.style.display = 'block';
-        if (secNotReusable) secNotReusable.style.display = 'none';
-        if (reusBlock) reusBlock.style.display = 'block';
-        if (btnUpdateDetails) btnUpdateDetails.style.display = 'inline-block';
-        if (btnOpenHelper) btnOpenHelper.style.display = 'none';
-    } else {
-        if (radioReusable) radioReusable.checked = false;
-        if (radioNotReusable) radioNotReusable.checked = true;
-        if (cardReusable) {
-            cardReusable.style.border = '1px solid #cbd5e1';
-            cardReusable.style.background = '#ffffff';
-        }
-        if (cardNotReusable) {
-            cardNotReusable.style.border = '2px solid #18422d';
-            cardNotReusable.style.background = '#f8fafc';
-        }
-        if (secReusable) secReusable.style.display = 'none';
-        if (secNotReusable) secNotReusable.style.display = 'block';
-        if (reusBlock) reusBlock.style.display = 'none';
-        if (btnUpdateDetails) btnUpdateDetails.style.display = 'none';
-        if (btnOpenHelper) btnOpenHelper.style.display = 'inline-block';
-    }
+function startGeminiAnalysis() {
+    triggerNonReusableAnalysis(true);
 }
 
 function validateInventoryAddForm(form) {
-    if (!addAnalysisCompleted) {
-        showAddAnalysisError('Please click Analyze Item and review the material analysis before saving this item to Inventory.');
+    clearAddAnalysisError();
+
+    var nameInput = document.getElementById('add_name');
+    if (!nameInput || !nameInput.value.trim()) {
+        showAddAnalysisError('Please enter the Material Name.');
+        if (nameInput) nameInput.focus();
         return false;
     }
 
     var catInput = document.getElementById('add_category_input');
     if (!catInput || !catInput.value.trim()) {
-        showAddAnalysisError('Please enter or confirm the Material Category before saving.');
+        showAddAnalysisError('Please enter or confirm the Material Category.');
         if (catInput) catInput.focus();
+        return false;
+    }
+
+    var descInput = document.getElementById('add_description');
+    if (!descInput || !descInput.value.trim()) {
+        showAddAnalysisError('Please enter a description for the material.');
+        if (descInput) descInput.focus();
+        return false;
+    }
+
+    var qtyInput = document.getElementById('add_quantity');
+    if (!qtyInput || !qtyInput.value.trim() || parseFloat(qtyInput.value) <= 0) {
+        showAddAnalysisError('Please enter a valid Quantity greater than 0.');
+        if (qtyInput) qtyInput.focus();
         return false;
     }
 
     var unitEl = document.getElementById('add_unit');
     if (!unitEl || !unitEl.value.trim()) {
         showAddAnalysisError('Please select a Unit of Measurement from the dropdown.');
+        if (unitEl) unitEl.focus();
         return false;
     }
 
     var condEl = document.getElementById('add_condition');
     if (!condEl || !condEl.value.trim()) {
         showAddAnalysisError('Please select a Material Condition (New, Damaged, or Used).');
+        if (condEl) condEl.focus();
         return false;
     }
 
@@ -2290,6 +2352,17 @@ function validateInventoryAddForm(form) {
         return false;
     }
 
+    var reusability = document.getElementById('add_reusability_hidden') ? document.getElementById('add_reusability_hidden').value : 'reusable';
+
+    // 1. Reusable items: Added directly to inventory and proceed to listing process. No AI needed!
+    if (reusability === 'reusable') {
+        document.getElementById('add_redirect_to').value = 'listing';
+        document.getElementById('add_publish_to_marketplace').value = '0';
+        return true;
+    }
+
+    // 2. Non-Reusable items: Open EcoCycle Helper after saving
+    document.getElementById('add_redirect_to').value = 'helper';
     document.getElementById('add_publish_to_marketplace').value = '0';
 
     return true;

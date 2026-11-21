@@ -479,31 +479,53 @@ class InventoryGeminiWorkflowTest extends TestCase
         }
     }
 
-    public function test_unanalysed_item_cannot_be_published_directly_via_inventory_store(): void
+    public function test_reusable_item_can_be_added_directly_to_inventory_and_proceed_to_listing_without_ai_analysis(): void
     {
-        $business = $this->createApprovedBusiness('Unanalysed Test Sdn Bhd');
+        $business = $this->createApprovedBusiness('Direct Add Test Sdn Bhd');
 
         $response = $this->actingAs($business)->post(route('business.inventory.store'), [
-            'name' => 'Unanalysed Timber Lot',
-            'description' => 'Attempting to publish without running material analysis.',
+            'name' => 'Direct Reusable Timber Lot',
+            'description' => 'Adding reusable item directly without AI analysis.',
             'quantity' => 50,
             'unit' => 'kg',
             'reusability' => 'reusable',
             'category' => 'Furniture & wood products',
-            'listing_type' => 'buy',
-            'price' => 20.00,
             'condition' => 'Used',
-            'available_quantity' => 50,
-            'pickup_location' => 'Shah Alam, Selangor',
-            'redirect_to' => 'marketplace',
-            'publish_to_marketplace' => 1,
+            'redirect_to' => 'listing',
             'images' => [UploadedFile::fake()->image('pallet1.jpg', 600, 400)],
         ]);
 
-        $response->assertSessionHasErrors('analysis_token');
-        $this->assertDatabaseMissing('item', [
-            'name' => 'Unanalysed Timber Lot',
+        $item = InventoryItem::where('name', 'Direct Reusable Timber Lot')->firstOrFail();
+        $response->assertRedirect(route('business.inventory.edit', $item));
+        $this->assertSame('reusable', $item->reusability);
+        $this->assertNull($item->ai_analysis);
+    }
+
+    public function test_non_reusable_ai_analysis_provides_step_by_step_guidance_and_suitable_disposal_locations(): void
+    {
+        $business = $this->createApprovedBusiness('Scrap Metal Processing Sdn Bhd');
+
+        $response = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
+            'name' => 'Damaged Copper Transformers Scrap',
+            'description' => 'Burnt out industrial transformer windings with contaminated insulation.',
+            'quantity' => 120,
+            'unit' => 'kg',
+            'condition' => 'Damaged',
+            'category' => 'Metals & machinery',
+            'reusability' => 'not_reusable',
+            'image_1' => UploadedFile::fake()->image('scrap_copper.jpg', 600, 400),
         ]);
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'success',
+            'analysis' => [
+                'strategy',
+                'disposal_locations',
+            ],
+            'disposal_locations',
+        ]);
+        $this->assertNotEmpty($response->json('disposal_locations'));
     }
 
     public function test_non_reusable_item_cannot_be_published_to_marketplace_even_with_manual_request(): void

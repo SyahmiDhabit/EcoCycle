@@ -204,7 +204,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                 <section class="form-card document-card">
                     <div class="card-heading">
                         <h3>Business legitimacy documents</h3>
-                        <p>PDF, JPG or PNG — Maximum 10 MB per file. Upload and click <strong>View &amp; Confirm File</strong> to verify your certificate before submitting.</p>
+                        <p>PDF, JPG or PNG — Maximum 10 MB per file. Upload and click <strong>View</strong> to review your documents before submitting.</p>
                     </div>
 
                     <div class="upload-wrapper">
@@ -219,7 +219,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                         </div>
                         <div class="file-confirm-card" id="confirm-card-ssm_certificate" style="display:none;">
                             <div class="confirm-card-main">
-                                <span class="confirm-badge">✓ Certificate Selected</span>
+                                <span class="confirm-badge">Certificate Selected</span>
                                 <div class="confirm-card-meta">
                                     <strong class="confirm-filename" id="filename-ssm_certificate"></strong>
                                     <small class="confirm-filesize" id="filesize-ssm_certificate"></small>
@@ -227,7 +227,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             </div>
                             <div class="confirm-card-actions">
                                 <button type="button" class="view-file-btn" onclick="openDocumentPreview('ssm_certificate')">
-                                    <span>👁 View &amp; Confirm File</span>
+                                    <span>View</span>
                                 </button>
                                 <button type="button" class="change-file-btn" onclick="document.getElementById('ssm_certificate').click()">
                                     <span>Change</span>
@@ -248,7 +248,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                         </div>
                         <div class="file-confirm-card" id="confirm-card-ssm_profile" style="display:none;">
                             <div class="confirm-card-main">
-                                <span class="confirm-badge">✓ Profile Selected</span>
+                                <span class="confirm-badge">Profile Selected</span>
                                 <div class="confirm-card-meta">
                                     <strong class="confirm-filename" id="filename-ssm_profile"></strong>
                                     <small class="confirm-filesize" id="filesize-ssm_profile"></small>
@@ -256,7 +256,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             </div>
                             <div class="confirm-card-actions">
                                 <button type="button" class="view-file-btn" onclick="openDocumentPreview('ssm_profile')">
-                                    <span>👁 View &amp; Confirm File</span>
+                                    <span>View</span>
                                 </button>
                                 <button type="button" class="change-file-btn" onclick="document.getElementById('ssm_profile').click()">
                                     <span>Change</span>

@@ -669,3 +669,124 @@ body.verification-page .company-profile-avatar-circle img {
         margin: 4px 0 0;
     }
 }
+
+body.verification-page .pending-header {
+    min-height: 82px;
+    padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+    background: #fafcf8;
+    border-bottom-color: #dbe9d8;
+    box-shadow: 0 4px 12px rgba(20, 83, 45, .05);
+}
+
+body.verification-page .pending-brand {
+    color: #14532d;
+    font-size: 25px;
+    font-weight: 500;
+}
+
+body.verification-page .pending-brand img {
+    width: 38px;
+    height: 38px;
+    padding: 6px;
+    border: 1.5px solid #166534;
+    background: #eff8e9;
+}
+
+body.verification-page .pending-header .outline-button {
+    min-height: 40px;
+    border-color: #70ad7e;
+    border-radius: 6px !important;
+    background: transparent;
+    color: #176b40;
+}
+
+body.verification-page .pending-header .outline-button:hover {
+    background: #e5efe1;
+    color: #14532d;
+}
+
+body.verification-page .pending-header .status-pill {
+    border-radius: 6px !important;
+}
+
+body.verification-page .pending-header a:focus-visible,
+body.verification-page .pending-header button:focus-visible {
+    outline: 3px solid #8da86f;
+    outline-offset: 3px;
+}
+
+@media (max-width: 768px) {
+    body.verification-page .pending-header {
+        min-height: 68px;
+    }
+
+}
+
+body.verification-page #application-details .action-button-primary,
+body.verification-page .edit-form .footer-buttons .action-button-primary,
+body.verification-page .pending-header .pending-logout,
+body.verification-page .pending-edit-link {
+    border-color: #176b40;
+    background: linear-gradient(135deg, #218a50, #12643a);
+    color: #fff;
+}
+
+body.verification-page #application-details .action-button-primary:hover,
+body.verification-page #application-details .action-button-primary:active,
+body.verification-page .edit-form .footer-buttons .action-button-primary:hover,
+body.verification-page .edit-form .footer-buttons .action-button-primary:active,
+body.verification-page .pending-header .pending-logout:hover,
+body.verification-page .pending-header .pending-logout:active,
+body.verification-page .pending-edit-link:hover,
+body.verification-page .pending-edit-link:active {
+    border-color: #10472c;
+    background: #10472c;
+    color: #fff;
+}
+
+body.verification-page .review-grid > .progress-card {
+    align-self: stretch;
+}
+
+body.verification-page #submitted-documents .outline-button,
+body.verification-page .edit-form .footer-buttons .outline-button {
+    border-color: #70ad7e;
+    background: #fafcf8;
+    color: #14532d;
+}
+
+body.verification-page #submitted-documents .outline-button:hover,
+body.verification-page #submitted-documents .outline-button:active,
+body.verification-page .edit-form .footer-buttons .outline-button:hover,
+body.verification-page .edit-form .footer-buttons .outline-button:active {
+    border-color: #4d9b62;
+    background: #e5efe1;
+    color: #14532d;
+}
+
+body.verification-page #submitted-documents .outline-button,
+body.verification-page .edit-form .footer-buttons .outline-button,
+body.verification-page #application-details .action-button-primary,
+body.verification-page .edit-form .footer-buttons .action-button-primary {
+    border-radius: 6px !important;
+}
+
+body.verification-page .pending-header .pending-logout {
+    padding-inline: 26px;
+}
+
+body.verification-page .pending-edit-link,
+body.verification-page .pending-delete {
+    min-height: 40px;
+    border-radius: 6px !important;
+}
+
+body.verification-page .pending-delete {
+    color: var(--red);
+    border-color: #e0b2ac;
+    background: #fff8f7;
+}
+
+body.verification-page .pending-delete:hover {
+    background: var(--red-bg);
+}

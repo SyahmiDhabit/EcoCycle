@@ -32,6 +32,7 @@ $hasFormErrors = $errors->any();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Track your EcoCycle business registration and admin approval status.">
     <title>Registration Pending Approval &mdash; EcoCycle</title>
+    <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -66,50 +67,6 @@ $hasFormErrors = $errors->any();
             display: flex;
             align-items: center;
             gap: 16px;
-        }
-        .pending-user-card {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 2px 4px;
-            border: none;
-            background: transparent;
-        }
-        .pending-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #eaf2e8;
-            border: 1px solid var(--forest);
-            display: grid;
-            place-items: center;
-            overflow: hidden;
-            flex-shrink: 0;
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--forest);
-        }
-        .pending-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .pending-user-info {
-            display: flex;
-            flex-direction: column;
-            line-height: 1.2;
-        }
-        .pending-user-info strong {
-            font-size: 12px;
-            color: var(--ink);
-            max-width: 180px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .pending-user-info small {
-            font-size: 10px;
-            color: var(--muted);
         }
         .approval-notice-card {
             padding: 24px 28px;
@@ -179,37 +136,9 @@ $hasFormErrors = $errors->any();
         </a>
 
         <div class="pending-account">
-            <div class="pending-user-card" title="Registered Business Entity">
-                <div class="pending-avatar">
-                    <?php if ($business->profile_image) { ?>
-                        <img src="<?= e($business->profile_image_url) ?>" alt="<?= e($business->business_name) ?>">
-                    <?php } else { ?>
-                        <span><?= strtoupper(substr($business->business_name ?: $business->name, 0, 2)) ?></span>
-                    <?php } ?>
-                </div>
-                <div class="pending-user-info">
-                    <strong><?= e($business->business_name ?: $business->name) ?></strong>
-                    <small><?= e($business->name) ?></small>
-                </div>
-                <span class="status-pill <?= e($statusClass) ?>" style="margin-left:4px;"><?= e($statusLabel) ?></span>
-            </div>
-
-            <a href="<?= route('business.pending') ?>" class="outline-button" title="Check if administrator has approved your application">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="23 4 23 10 17 10"></polyline>
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                </svg>
-                <span>Check approval status</span>
-            </a>
-
             <form method="POST" action="<?= route('logout') ?>" style="margin:0;">
                 <?= csrf_field() ?>
-                <button type="submit" class="outline-button" title="Sign out of EcoCycle">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
+                <button type="submit" class="outline-button pending-logout" title="Sign out of EcoCycle">
                     <span>Logout</span>
                 </button>
             </form>
@@ -263,7 +192,7 @@ $hasFormErrors = $errors->any();
                 </h2>
                 <p>
                     <?php if ($isRejected) { ?>
-                        The administrator reviewed your application and requested revisions before approving your business account. Please review the feedback notes below, update your details or re-upload your SSM documents, and click <strong>"Save &amp; Resubmit Changes"</strong>.
+                        The administrator reviewed your application and requested revisions before approving your business account. Please review the feedback notes below, update your details or re-upload your SSM documents, and click <strong>"Save"</strong>.
                     <?php } else { ?>
                         Thank you for registering <strong><?= e($business->business_name) ?></strong> on EcoCycle. Your registration details and SSM verification documents have been received safely and are currently in the administrator review queue. Once an administrator approves your account, you will automatically have access to the full business dashboard, marketplace, and inventory management tools. We will notify you at <strong><?= e($business->email) ?></strong> once a decision is made.
                     <?php } ?>
@@ -286,8 +215,8 @@ $hasFormErrors = $errors->any();
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:4px;">
                     <span style="color:var(--muted);font-size:12px;">Update your details or replace SSM files in the form below, then submit for re-review.</span>
-                    <a href="#modify-application" class="action-button-primary" style="font-size:12px;padding:6px 14px;" onclick="toggleEditForm(true)">
-                        <span>Go to Edit Form &darr;</span>
+                    <a href="#modify-application" class="action-button-primary pending-edit-link" onclick="toggleEditForm(true)">
+                        <span>Edit Form</span>
                     </a>
                 </div>
             </section>
@@ -368,7 +297,7 @@ $hasFormErrors = $errors->any();
                 <p class="document-note">Documents are encrypted and stored privately. They are accessible only by you and EcoCycle administrators.</p>
                 <div class="document-actions">
                     <a class="outline-button inline-button" href="#modify-application" onclick="toggleEditForm(true)">
-                        <span>Modify or replace documents</span>
+                        <span>Modify</span>
                     </a>
                 </div>
             </section>
@@ -397,10 +326,6 @@ $hasFormErrors = $errors->any();
                 </div>
                 <div>
                     <h3 style="margin:0 0 4px;font-size:18px;font-weight:700;color:#123321;"><?= e($business->business_name) ?></h3>
-                    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#176b40;font-weight:600;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        Registered Malaysian SME &middot; <?= e($business->industry) ?>
-                    </span>
                     <span style="display:block;font-size:11px;color:#556c5d;margin-top:2px;">SSM: <?= e($business->business_registration_number) ?></span>
                 </div>
             </div>
@@ -500,7 +425,7 @@ $hasFormErrors = $errors->any();
                     </div>
 
                     <div class="form-field">
-                        <label for="edit_name">Contact person name <span style="color:var(--red);">*</span></label>
+                        <label for="edit_name">Company Username <span style="color:var(--red);">*</span></label>
                         <input id="edit_name" name="name" type="text" value="<?= e(old('name', $business->name)) ?>" required>
                         <?php if ($errors->has('name')) { ?>
                             <small class="field-error"><?= e($errors->first('name')) ?></small>
@@ -572,7 +497,7 @@ $hasFormErrors = $errors->any();
                     <p class="muted-note">Submitting will update your registration details and alert the administrator for review.</p>
                     <div class="footer-buttons">
                         <button type="button" class="outline-button" onclick="toggleEditForm(false)">Cancel</button>
-                        <button type="submit" class="action-button-primary">Save &amp; Resubmit Changes</button>
+                        <button type="submit" class="action-button-primary">Save</button>
                     </div>
                 </div>
             </form>
@@ -588,8 +513,8 @@ $hasFormErrors = $errors->any();
                 <form method="POST" action="<?= e(route('business.application.destroy')) ?>" onsubmit="return confirm('Are you sure you want to permanently delete all your application data and uploaded documents?');">
                     <?= csrf_field() ?>
                     <?= method_field('DELETE') ?>
-                    <button type="submit" class="outline-button" style="color:var(--red);border-color:#e0b2ac;background:#fff8f7;font-weight:600;">
-                        <span>Delete all application data &amp; restart</span>
+                    <button type="submit" class="outline-button pending-delete">
+                        <span>Delete</span>
                     </button>
                 </form>
             </section>

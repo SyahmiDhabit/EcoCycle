@@ -31,14 +31,14 @@
 
 .file-confirm-card{margin-top:8px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #c8d8ae;border-radius:6px;background:#f4f8ef}
 .confirm-card-main{display:flex;align-items:center;gap:10px;min-width:0}
-.confirm-badge{display:inline-block;padding:2px 6px;border-radius:4px;background:#285c44;color:#fff;font-size:8px;font-weight:700;white-space:nowrap}
+.confirm-badge{display:inline-block;padding:2px 6px;border-radius:4px;background:#285c44;color:#fff;font-size:9px;font-weight:700;white-space:nowrap}
 .confirm-card-meta{min-width:0;display:flex;flex-direction:column}
-.confirm-filename{display:block;color:#173e2c;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
-.confirm-filesize{color:#526158;font-size:8px}
+.confirm-filename{display:block;color:#173e2c;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.confirm-filesize{color:#526158;font-size:9px}
 .confirm-card-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.view-file-btn{min-height:28px;padding:0 10px;border:1px solid #285c44;border-radius:5px;background:#285c44;color:#fff;font:600 9px Inter,Arial,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .15s}
+.view-file-btn{min-height:28px;padding:0 10px;border:1px solid #285c44;border-radius:5px;background:#285c44;color:#fff;font:600 10px Inter,Arial,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .15s}
 .view-file-btn:hover{background:#1c4935}
-.change-file-btn{min-height:28px;padding:0 8px;border:1px solid #dde4d9;border-radius:5px;background:#fff;color:#22352c;font:600 9px Inter,Arial,sans-serif;cursor:pointer}
+.change-file-btn{min-height:28px;padding:0 8px;border:1px solid #dde4d9;border-radius:5px;background:#fff;color:#22352c;font:600 10px Inter,Arial,sans-serif;cursor:pointer}
 .change-file-btn:hover{background:#f6f7f3}
 
 .preview-modal-backdrop{position:fixed;inset:0;z-index:9999;background:rgba(18,32,25,.75);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}

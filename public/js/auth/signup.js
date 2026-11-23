@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (confirmCard && filenameEl && filesizeEl) {
                     filenameEl.textContent = file.name;
-                    filesizeEl.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB · ${file.type || 'Document'}`;
+                    filesizeEl.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
                     confirmCard.style.display = 'flex';
                 }
             } else {

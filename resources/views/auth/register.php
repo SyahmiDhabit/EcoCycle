@@ -36,33 +36,28 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Register your business with EcoCycle for verification.">
     <title>Register your business - EcoCycle</title>
+    <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/auth/register.css">
 
+    <link rel="stylesheet" href="/css/auth/page-header.css">
 </head>
 <body class="signup-page">
-    <header class="signup-header">
-        <a class="signup-brand" href="/" aria-label="EcoCycle home"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a>
-        <a class="header-signin" href="/login">Already registered? <span>Sign in <span aria-hidden="true">&#8594;</span></span></a>
-
-    </header>
+    <?php $backHref = "/"; include resource_path("views/components/auth-page-header.php"); ?>
     <main class="signup-layout">
-        <aside class="signup-guidance">
-            <span class="business-badge">BUSINESS OWNER</span>
-            <h1>Start your circular business journey.</h1>
-            <p class="guidance-intro">Create one business account to manage operations, list surplus and obtain materials.</p>
-            <div class="signup-hero-photo"><img src="/images/figma/signup/verification-hero.jpg" alt="Materials being prepared for reuse at a business warehouse"><div class="photo-caption"><img src="/images/figma/signup/recycle.svg" alt=""><span>A resource, not a leftover.<small>Better operations. More possibilities.</small></span></div></div>
-            <ol class="review-steps">
-                <li><span class="step-icon complete">&#10003;</span><span><strong>Business information</strong><small>Tell us about your registered company.</small></span></li>
-                <li><span class="step-icon complete">&#10003;</span><span><strong>Legitimacy documents</strong><small>Upload clear, current SSM documents.</small></span></li>
-                <li><span class="step-icon pending">&#9711;</span><span><strong>Administrator review</strong><small>We will email you with the decision.</small></span></li>
+        <aside class="signup-guidance signup-checklist" aria-labelledby="signup-checklist-heading">
+            <h1 id="signup-checklist-heading">Before you register</h1>
+            <ol class="signup-checklist-steps">
+                <li><strong>Gather your business details</strong><span>Have your SSM registration number, contact details, and company logo or photo ready.</span></li>
+                <li><strong>Prepare your SSM documents</strong><span>Upload your registration certificate and current SSM business profile.</span></li>
+                <li><strong>Watch for an email</strong><span>We’ll email you after an administrator reviews your application.</span></li>
             </ol>
-            <div class="verification-note"><span class="note-check">&#10003;</span><span><strong>Verification comes first</strong><small>You can access the marketplace and transactions only after approval. There are no separate buyer or seller accounts.</small></span></div>
+            <p class="signup-checklist-note">You can access the marketplace and transactions once your business is approved.</p>
         </aside>
         <section class="signup-form-panel" aria-labelledby="signup-heading">
-            <header class="form-heading"><h2 id="signup-heading">Register your business</h2><p>All fields marked * are required. Your documents are private.</p></header>
+            <header class="form-heading"><h2 id="signup-heading">Register your business</h2><p>All fields marked <span class="required-marker">*</span> are required. Your documents are private.</p></header>
             <?php if (session('status')): ?><div class="success-notice" role="status" aria-live="polite"><?= e(session('status')) ?></div><?php endif; ?>
             <?php if ($errors->has('name') || $errors->has('email')): ?>
                 <div class="cant-use-alert-banner" role="alert">
@@ -95,8 +90,8 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             </svg>
                         </div>
                         <div class="profile-upload-meta">
-                            <label for="profile_image">Company profile image or logo *</label>
-                            <small>Upload your business logo or profile photo (PNG, JPG, or WEBP up to 5 MB) *. Required for your verified SME directory profile.</small>
+                            <label for="profile_image">Company profile image or logo <span class="required-marker">*</span></label>
+                            <small>Upload your business logo or profile photo (PNG, JPG, or WEBP up to 5 MB). Required for your verified SME directory profile.</small>
                             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;">
                                 <input type="file" id="profile_image" name="profile_image" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required class="accessible-file-input" onchange="previewBusinessAvatar(this)" aria-invalid="<?= $fieldErrors['profile_image'] ? 'true' : 'false' ?>">
                                 <button type="button" class="btn-select-avatar" onclick="document.getElementById('profile_image').click()">
@@ -114,17 +109,17 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
 
                     <div class="field-grid">
                         <div class="form-field">
-                            <label for="business_name">Registered business name *</label>
+                            <label for="business_name">Registered business name <span class="required-marker">*</span></label>
                             <input id="business_name" name="business_name" value="<?= e(old('business_name')) ?>" placeholder="e.g. KayuKita Manufacturing Sdn. Bhd." autocomplete="organization" maxlength="255" required aria-invalid="<?= $fieldErrors['business_name'] ? 'true' : 'false' ?>">
                             <?php if ($fieldErrors['business_name']): ?><small class="field-error"><?= e($fieldErrors['business_name']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field">
-                            <label for="business_registration_number">SSM registration number *</label>
+                            <label for="business_registration_number">SSM registration number <span class="required-marker">*</span></label>
                             <input id="business_registration_number" name="business_registration_number" value="<?= e(old('business_registration_number')) ?>" placeholder="e.g. 202101023456 (1425678-X)" maxlength="60" required aria-invalid="<?= $fieldErrors['business_registration_number'] ? 'true' : 'false' ?>">
                             <?php if ($fieldErrors['business_registration_number']): ?><small class="field-error"><?= e($fieldErrors['business_registration_number']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field">
-                            <label for="industry">Industry *</label>
+                            <label for="industry">Industry <span class="required-marker">*</span></label>
                             <select id="industry" name="industry" required aria-invalid="<?= $fieldErrors['industry'] ? 'true' : 'false' ?>">
                                 <option value="">e.g. Select your industry</option>
                                 <?php foreach ($industries as $industry): ?>
@@ -134,27 +129,27 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             <?php if ($fieldErrors['industry']): ?><small class="field-error"><?= e($fieldErrors['industry']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field">
-                            <label for="business_phone">Business phone *</label>
+                            <label for="business_phone">Business phone <span class="required-marker">*</span></label>
                             <input id="business_phone" name="business_phone" type="tel" value="<?= e(old('business_phone')) ?>" placeholder="e.g. +60 12-345 6789" autocomplete="tel" maxlength="30" required aria-invalid="<?= $fieldErrors['business_phone'] ? 'true' : 'false' ?>">
                             <?php if ($fieldErrors['business_phone']): ?><small class="field-error"><?= e($fieldErrors['business_phone']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field full-field">
-                            <label for="registered_address">Registered address *</label>
+                            <label for="registered_address">Registered address <span class="required-marker">*</span></label>
                             <input id="registered_address" name="registered_address" value="<?= e(old('registered_address')) ?>" placeholder="e.g. No. 18, Jalan Industri U6/8, Seksyen U6" autocomplete="street-address" maxlength="255" required aria-invalid="<?= $fieldErrors['registered_address'] ? 'true' : 'false' ?>">
                             <?php if ($fieldErrors['registered_address']): ?><small class="field-error"><?= e($fieldErrors['registered_address']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field">
-                            <label for="city">City *</label>
+                            <label for="city">City <span class="required-marker">*</span></label>
                             <input id="city" name="city" value="<?= e(old('city')) ?>" placeholder="e.g. Shah Alam" autocomplete="address-level2" maxlength="100" required aria-invalid="<?= $fieldErrors['city'] ? 'true' : 'false' ?>">
                             <?php if ($fieldErrors['city']): ?><small class="field-error"><?= e($fieldErrors['city']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field">
-                            <label for="postcode">Postcode *</label>
+                            <label for="postcode">Postcode <span class="required-marker">*</span></label>
                             <input id="postcode" name="postcode" value="<?= e(old('postcode')) ?>" placeholder="e.g. 40150" autocomplete="postal-code" inputmode="numeric" maxlength="12" required aria-invalid="<?= $fieldErrors['postcode'] ? 'true' : 'false' ?>">
                             <?php if ($fieldErrors['postcode']): ?><small class="field-error"><?= e($fieldErrors['postcode']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field">
-                            <label for="state">State *</label>
+                            <label for="state">State <span class="required-marker">*</span></label>
                             <select id="state" name="state" required aria-invalid="<?= $fieldErrors['state'] ? 'true' : 'false' ?>">
                                 <option value="">e.g. Select registered state</option>
                                 <?php foreach ($states as $state): ?>
@@ -164,7 +159,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             <?php if ($fieldErrors['state']): ?><small class="field-error"><?= e($fieldErrors['state']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field">
-                            <label for="name">Company username *</label>
+                            <label for="name">Company username <span class="required-marker">*</span></label>
                             <input id="name" name="name" value="<?= e(old('name')) ?>" placeholder="e.g. kayukita_admin" autocomplete="username" maxlength="255" required aria-invalid="<?= $fieldErrors['name'] ? 'true' : 'false' ?>">
                             <small class="field-hint">Your company login username</small>
                             <div class="field-alert-slot" id="name-availability-alert">
@@ -176,7 +171,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             </div>
                         </div>
                         <div class="form-field">
-                            <label for="email">Business email *</label>
+                            <label for="email">Business email <span class="required-marker">*</span></label>
                             <input id="email" name="email" type="email" value="<?= e(old('email')) ?>" placeholder="e.g. owner@kayukita.com.my" autocomplete="email" maxlength="255" required aria-invalid="<?= $fieldErrors['email'] ? 'true' : 'false' ?>">
                             <div class="field-alert-slot" id="email-availability-alert">
                                 <?php if ($fieldErrors['email']): ?>
@@ -187,7 +182,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             </div>
                         </div>
                         <div class="form-field">
-                            <label for="password">Password *</label>
+                            <label for="password">Password <span class="required-marker">*</span></label>
                             <div class="password-wrap">
                                 <input id="password" name="password" type="password" minlength="8" placeholder="e.g. Min. 8 characters with a number" autocomplete="new-password" required aria-invalid="<?= $fieldErrors['password'] ? 'true' : 'false' ?>">
                                 <button type="button" data-password-toggle="password" aria-label="Show password">Show</button>
@@ -196,7 +191,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                             <?php if ($fieldErrors['password']): ?><small class="field-error"><?= e($fieldErrors['password']) ?></small><?php endif; ?>
                         </div>
                         <div class="form-field">
-                            <label for="password_confirmation">Confirm password *</label>
+                            <label for="password_confirmation">Confirm password <span class="required-marker">*</span></label>
                             <div class="password-wrap">
                                 <input id="password_confirmation" name="password_confirmation" type="password" minlength="8" placeholder="e.g. Re-enter password to match" autocomplete="new-password" required aria-invalid="<?= $fieldErrors['password_confirmation'] ? 'true' : 'false' ?>">
                                 <button type="button" data-password-toggle="password_confirmation" aria-label="Show password confirmation">Show</button>
@@ -216,7 +211,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                         <div class="upload-field" <?= $fieldErrors['ssm_certificate'] ? 'data-invalid="true"' : '' ?>>
                             <img src="/images/figma/signup/verification-file.svg" alt="">
                             <div>
-                                <label for="ssm_certificate">SSM registration certificate *</label>
+                                <label for="ssm_certificate">SSM registration certificate <span class="required-marker">*</span></label>
                                 <small class="selected-file" data-file-name="ssm_certificate">Choose a PDF, JPG, PNG, or WEBP file (up to 10 MB).</small>
                                 <?php if ($fieldErrors['ssm_certificate']): ?><small class="field-error" id="ssm_certificate-error"><?= e($fieldErrors['ssm_certificate']) ?></small><?php endif; ?>
                             </div>
@@ -245,7 +240,7 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                         <div class="upload-field upload-dashed" <?= $fieldErrors['ssm_profile'] ? 'data-invalid="true"' : '' ?>>
                             <img src="/images/figma/signup/verification-upload.svg" alt="">
                             <div>
-                                <label for="ssm_profile">Current SSM company / business profile *</label>
+                                <label for="ssm_profile">Current SSM company / business profile <span class="required-marker">*</span></label>
                                 <small class="selected-file" data-file-name="ssm_profile">Choose a PDF, JPG, PNG, or WEBP file (up to 10 MB).</small>
                                 <?php if ($fieldErrors['ssm_profile']): ?><small class="field-error" id="ssm_profile-error"><?= e($fieldErrors['ssm_profile']) ?></small><?php endif; ?>
                             </div>
@@ -270,7 +265,10 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
                         </div>
                     </div>
                 </section>
-                <div class="form-actions"><button type="submit" class="submit-button" data-submit-button><span aria-hidden="true">&#8594;</span><span data-submit-label>Submit for verification</span></button></div>
+                <div class="form-actions registration-actions">
+                    <button type="submit" class="submit-button" data-submit-button><span data-submit-label>Submit</span></button>
+                    <a class="registration-signin" href="/login">Sign In</a>
+                </div>
             </form>
         </section>
     </main>

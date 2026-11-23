@@ -9,19 +9,17 @@ $emailError = $errors->first('email');
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Reset your EcoCycle password.">
     <title>Forgot password - EcoCycle</title>
+    <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/auth/login.css">
+    <link rel="stylesheet" href="/css/auth/page-header.css">
 </head>
 <body class="signin-page signin-login">
+    <?php $backHref = "/login"; include resource_path("views/components/auth-page-header.php"); ?>
     <main class="signin-shell">
         <section class="signin-content" aria-labelledby="signin-heading">
-            <a class="signin-brand" href="/" aria-label="EcoCycle home">
-                <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
-                <span>EcoCycle</span>
-            </a>
-
             <header class="signin-welcome">
                 <p class="signin-eyebrow">ACCOUNT RECOVERY</p>
                 <h1 id="signin-heading">Forgot password?</h1>
@@ -50,12 +48,11 @@ $emailError = $errors->first('email');
                 </div>
 
                 <button class="signin-submit" type="submit">
-                    <img src="/images/figma/signup/arrow-right.svg" alt="">
                     <span>Send reset link</span>
                 </button>
             </form>
 
-            <p class="signin-register-link"><a href="<?= e(route('login')) ?>"><span aria-hidden="true">&#8592;</span> Back to sign in</a></p>
+            <p class="signin-register-link"><a href="<?= e(route('login')) ?>">Back to sign in</a></p>
             <p class="signin-access-note">Remember your password? Sign in with your business email or company username.</p>
         </section>
     </main>

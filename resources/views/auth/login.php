@@ -14,21 +14,18 @@ $passwordError = $errors->first('password');
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Sign in to your EcoCycle business workspace.">
     <title>Sign in - EcoCycle</title>
+    <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/auth/login.css">
 
+    <link rel="stylesheet" href="/css/auth/page-header.css">
 </head>
 <body class="signin-page signin-login">
+    <?php $backHref = "/"; include resource_path("views/components/auth-page-header.php"); ?>
     <main class="signin-shell">
-        <a class="signin-back" href="/"><span aria-hidden="true">&#8592;</span> Back to home</a>
         <section class="signin-content" aria-labelledby="signin-heading">
-            <a class="signin-brand" href="/" aria-label="EcoCycle home">
-                <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
-                <span>EcoCycle</span>
-            </a>
-
                 <header class="signin-welcome">
                     <p class="signin-eyebrow">BUSINESS</p>
                     <h1 id="signin-heading">Welcome back.</h1>
@@ -65,7 +62,10 @@ $passwordError = $errors->first('password');
 
                     <div class="signin-field">
                         <label for="password">Password</label>
-                        <input id="password" name="password" type="password" placeholder="e.g. Enter your password" autocomplete="current-password" required aria-invalid="<?= $passwordError ? 'true' : 'false' ?>" <?= $passwordError ? 'aria-describedby="password-error"' : '' ?>>
+                        <div class="signin-password-wrap">
+                            <input id="password" name="password" type="password" placeholder="e.g. Enter your password" autocomplete="current-password" required aria-invalid="<?= $passwordError ? 'true' : 'false' ?>" <?= $passwordError ? 'aria-describedby="password-error"' : '' ?>>
+                            <button class="signin-password-toggle" type="button" aria-controls="password" aria-label="Show password" hidden>Show</button>
+                        </div>
                         <?php if ($passwordError) { ?><small class="signin-field-error" id="password-error"><?= e($passwordError) ?></small><?php } ?>
                     </div>
 
@@ -82,5 +82,20 @@ $passwordError = $errors->first('password');
         </section>
     </main>
 <script src="/js/language-switcher.js" defer></script>
+<script>
+    (() => {
+        const password = document.getElementById('password');
+        const toggle = document.querySelector('.signin-password-toggle');
+
+        toggle.addEventListener('click', () => {
+            const show = password.type === 'password';
+            password.type = show ? 'text' : 'password';
+            toggle.textContent = show ? 'Hide' : 'Show';
+            toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        });
+
+        toggle.hidden = false;
+    })();
+</script>
 </body>
 </html>

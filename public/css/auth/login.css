@@ -105,8 +105,17 @@ body.signin-login{background:radial-gradient(ellipse at 50% 0,#edf3e9 0,#f6f7f3 
     text-decoration: none;
 }
 
-.signin-login .signin-back:hover {
-    background: #e5efe1;
+.signin-login .signin-back:hover,
+.signin-login .signin-back:focus-visible {
+    border-color: #14532d;
+    background: #14532d;
+    color: #fff;
+}
+
+.signin-login .signin-back:active {
+    border-color: #10472c;
+    background: #10472c;
+    color: #fff;
 }
 
 .signin-login .signin-back:focus-visible {
@@ -161,3 +170,35 @@ body.signin-login{background:radial-gradient(ellipse at 50% 0,#edf3e9 0,#f6f7f3 
     .signin-login .signin-access-note{margin-top:9px}
 }
 @media(prefers-reduced-motion:reduce){.signin-login .signin-brand-mark img{animation:none}}
+
+.signin-login .signin-password-wrap {
+    position: relative;
+}
+
+.signin-login .signin-password-wrap input {
+    padding-inline-end: 60px;
+}
+
+.signin-login .signin-password-toggle {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 6px;
+    transform: translateY(-50%);
+    min-width: 44px;
+    min-height: 32px;
+    padding-inline: 6px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--signin-forest);
+    font: 700 12px var(--signin-font);
+    cursor: pointer;
+}
+
+.signin-login .signin-password-toggle:hover {
+    background: #e5efe1;
+}
+
+.signin-login .signin-password-toggle:focus-visible {
+    outline: 2px solid #8da86f;
+}

@@ -1,0 +1,86 @@
+.auth-page-header {
+    --auth-header-height: 82px;
+    box-sizing: border-box;
+    min-height: var(--auth-header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+    border-bottom: 1px solid #dbe9d8;
+    background: #fafcf8;
+    color: #14532d;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.auth-page-brand,
+.auth-page-back {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+}
+
+.auth-page-brand {
+    gap: 10px;
+    font: 500 25px 'Manrope', sans-serif;
+    letter-spacing: -.04em;
+}
+
+.auth-page-brand span {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1.5px solid #166534;
+    border-radius: 50%;
+    background: #eff8e9;
+}
+
+.auth-page-brand img {
+    width: 23px;
+    height: 23px;
+}
+
+.auth-page-back {
+    justify-content: center;
+    min-height: 40px;
+    padding-inline: 17px;
+    border: 1px solid #70ad7e;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.auth-page-back:hover,
+.auth-page-back:active,
+.auth-page-back:focus-visible {
+    background: #14532d;
+    color: #fff;
+}
+
+.auth-page-header a:focus-visible {
+    outline: 3px solid #8da86f;
+    outline-offset: 3px;
+}
+
+.auth-page-header + .signin-shell {
+    min-height: calc(100vh - 82px);
+    min-height: calc(100svh - 82px);
+}
+
+@media (max-width: 760px) {
+    .auth-page-header {
+        --auth-header-height: 68px;
+    }
+
+    .auth-page-header + .signin-shell {
+        min-height: calc(100vh - 68px);
+        min-height: calc(100svh - 68px);
+    }
+}
+
+body.signup-page:has(> .auth-page-header),
+.auth-page-header + .signin-shell {
+    background: radial-gradient(ellipse at 82% 12%, #d5e8cd, transparent 46%), #e5efe1;
+}

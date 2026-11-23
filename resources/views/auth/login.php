@@ -22,6 +22,7 @@ $passwordError = $errors->first('password');
 </head>
 <body class="signin-page signin-login">
     <main class="signin-shell">
+        <a class="signin-back" href="/"><span aria-hidden="true">&#8592;</span> Back to home</a>
         <section class="signin-content" aria-labelledby="signin-heading">
             <a class="signin-brand" href="/" aria-label="EcoCycle home">
                 <span class="signin-brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
@@ -57,7 +58,7 @@ $passwordError = $errors->first('password');
                 <form class="signin-form" method="POST" action="/login">
                     <?= csrf_field() ?>
                     <div class="signin-field">
-                        <label for="identifier">Business email or company username</label>
+                        <label for="identifier">Email or Username</label>
                         <input id="identifier" name="identifier" type="text" value="<?= e(old('identifier')) ?>" placeholder="e.g. owner@business.com or company username" autocomplete="username" maxlength="255" required aria-invalid="<?= $emailError ? 'true' : 'false' ?>" <?= $emailError ? 'aria-describedby="identifier-error"' : '' ?>>
                         <?php if ($emailError) { ?><small class="signin-field-error" id="identifier-error"><?= e($emailError) ?></small><?php } ?>
                     </div>
@@ -69,21 +70,15 @@ $passwordError = $errors->first('password');
                     </div>
 
                     <div class="signin-options">
-                        <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#526b5a;cursor:pointer;user-select:none;">
-                            <input type="checkbox" name="remember" value="1" style="accent-color:#176b40;">
-                            <span>Remember me</span>
-                        </label>
                         <a href="<?= e(route('password.request')) ?>">Forgot password?</a>
                     </div>
 
                     <button class="signin-submit" type="submit">
-                        <img src="/images/figma/signup/arrow-right.svg" alt="">
-                        <span>Sign in to workspace</span>
+                        Sign In
                     </button>
                 </form>
 
                 <p class="signin-register-link">New to EcoCycle? <a href="/register">Register your business <span aria-hidden="true">&#8594;</span></a></p>
-                <p class="signin-access-note">Sign in with your business email, or use your administrator username. Business access is available after approval.</p>
         </section>
     </main>
 <script src="/js/language-switcher.js" defer></script>

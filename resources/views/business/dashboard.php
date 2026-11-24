@@ -24,6 +24,7 @@ $activeNav = 'overview';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Overview &middot; Business Directory &mdash; EcoCycle</title>
+    <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -39,12 +40,12 @@ $activeNav = 'overview';
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
         <!-- MAIN DASHBOARD CONTENT -->
-        <main class="dashboard-main">
+        <main class="dashboard-main business-directory">
             <!-- Page Title -->
             <div class="directory-header">
                 <div>
                     <h1>Business directory</h1>
-                    <p>Discover approved Malaysian SMEs from the database, explore their materials and exchange with confidence.</p>
+                    <p>Find verified Malaysian SMEs and explore the materials they have available.</p>
                 </div>
             </div>
 
@@ -91,7 +92,6 @@ $activeNav = 'overview';
                                 <span id="location-tag-text">All locations</span>
                                 <span aria-hidden="true">&times;</span>
                             </span>
-                            <span class="tag-helper-text">Displaying verified businesses directly from the database.</span>
                         </div>
                         <div class="filter-actions">
                             <button type="button" class="btn-reset" onclick="resetFilters()">Reset filters</button>
@@ -115,12 +115,13 @@ $activeNav = 'overview';
                         <p id="featured-count-text"><?= count($businesses) ?> <?= count($businesses) === 1 ? 'business' : 'businesses' ?> on record</p>
                     </div>
                     <?php if (! empty($businesses)) { ?>
-                        <div class="sort-select-wrap">
+                        <div class="sort-select-wrap directory-list-actions">
                             <select id="featured-sort" onchange="sortCards(this.value)" aria-label="Sort businesses">
-                                <option value="featured">Sort: Default &darr;</option>
+                                <option value="featured">Sort: Newest registered</option>
                                 <option value="name">Sort: Company Name (A-Z)</option>
                                 <option value="listings">Sort: Most listings</option>
                             </select>
+                            <a class="btn-reset directory-view-all" href="#company-directory" onclick="resetFilters()">View all businesses</a>
                         </div>
                     <?php } ?>
                 </div>
@@ -134,9 +135,9 @@ $activeNav = 'overview';
                         </p>
                     </div>
                 <?php } else { ?>
-                    <div class="featured-grid" id="featured-grid">
-                        <?php foreach ($businesses as $biz) { ?>
-                            <article class="business-card"
+                    <div class="featured-grid" id="featured-grid" role="region" aria-labelledby="featured-heading" tabindex="0">
+                        <?php foreach ($businesses as $position => $biz) { ?>
+                            <article class="business-card" data-directory-position="<?= (int) $position ?>"
                                      data-name="<?= e(strtolower($biz['business_name'])) ?>"
                                      data-industry="<?= e(strtolower($biz['industry'])) ?>"
                                      data-location="<?= e(strtolower($biz['location'])) ?>"
@@ -154,10 +155,7 @@ $activeNav = 'overview';
                                 <div class="card-body">
                                     <div class="card-badges">
                                         <span class="verified-pill">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
-                                            <span>Verified SME</span>
+                                            <span>Verified EcoCycle SME</span>
                                         </span>
                                         <span class="category-tag"><?= e($biz['industry']) ?></span>
                                     </div>
@@ -170,7 +168,7 @@ $activeNav = 'overview';
                                         <button type="button"
                                                 class="btn-view-profile"
                                                 onclick='openProfileModal(<?= json_encode($biz, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
-                                            View profile &rarr;
+                                            View profile
                                         </button>
                                     </div>
                                 </div>
@@ -182,10 +180,9 @@ $activeNav = 'overview';
 
             <!-- SECTION 2: Businesses Directory Table (Pure Database) -->
             <?php if (! empty($businesses)) { ?>
-                <section class="table-section-card" aria-labelledby="table-heading">
+                <section class="table-section-card" id="company-directory" aria-labelledby="table-heading">
                     <div class="table-header-title">
                         <h2 id="table-heading">Company directory</h2>
-                        <p>All verified businesses and materials currently active in the database.</p>
                     </div>
 
                     <div style="overflow-x:auto;">
@@ -208,9 +205,6 @@ $activeNav = 'overview';
                                         <td class="company-cell">
                                             <strong><?= e($biz['business_name']) ?></strong>
                                             <small>
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                                </svg>
                                                 Verified business
                                             </small>
                                         </td>
@@ -223,7 +217,7 @@ $activeNav = 'overview';
                                             <button type="button"
                                                     class="btn-view-profile"
                                                     onclick='openProfileModal(<?= json_encode($biz, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
-                                                View profile &rarr;
+                                                View profile
                                             </button>
                                         </td>
                                     </tr>
@@ -256,14 +250,11 @@ $activeNav = 'overview';
                     <div>
                         <h3 id="modal-biz-name" style="margin:0;">Company Name</h3>
                         <span class="verified-pill" style="margin-top:4px;">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
                             <span>Verified EcoCycle SME</span>
                         </span>
                     </div>
                 </div>
-                <button type="button" class="modal-close-btn" onclick="closeProfileModal()">&times;</button>
+                <button type="button" class="modal-close-btn" aria-label="Close profile" onclick="closeProfileModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <p id="modal-biz-desc" style="color:#33503f;margin:0;"></p>
@@ -295,14 +286,14 @@ $activeNav = 'overview';
                     </div>
                 </div>
 
-                <div style="background:#edf6ec;border:1px solid #cce5c8;border-radius:0;padding:12px 14px;">
+                <div class="profile-modal-materials">
                     <strong style="display:block;font-size:12px;color:#185e35;margin-bottom:4px;">Surplus &amp; Exchange Materials</strong>
                     <span id="modal-biz-materials" style="font-size:12px;color:#284f37;">-</span>
                 </div>
 
                 <div style="margin-top:4px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                        <strong style="font-size:12px;color:#123321;">Active Surplus Listings (<span id="modal-listings-count-badge">0</span>)</strong>
+                        <strong style="font-size:12px;color:#123321;">List Item<span id="modal-listings-count-badge" hidden>0</span></strong>
                     </div>
                     <div id="modal-listings-container" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;">
                     </div>
@@ -310,11 +301,11 @@ $activeNav = 'overview';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-reset" onclick="closeProfileModal()">Close</button>
-                <a id="modal-contact-link" href="#" class="btn-reset" style="border:1px solid #cadbc9;border-radius:0;text-decoration:none;padding:8px 14px;">
+                <a id="modal-contact-link" href="#" class="btn-reset">
                     <span>Contact Email</span>
                 </a>
-                <a id="modal-full-page-link" href="#" class="btn-search" style="text-decoration:none;">
-                    <span>View Full Profile &rarr;</span>
+                <a id="modal-full-page-link" href="#" class="btn-search">
+                    <span>View Full Profile</span>
                 </a>
             </div>
         </div>
@@ -486,7 +477,7 @@ $activeNav = 'overview';
             } else if (type === 'listings') {
                 return parseInt(b.dataset.listings || 0, 10) - parseInt(a.dataset.listings || 0, 10);
             }
-            return 0;
+            return Number(a.dataset.directoryPosition) - Number(b.dataset.directoryPosition);
         });
 
         cards.forEach(function(c) { grid.appendChild(c); });

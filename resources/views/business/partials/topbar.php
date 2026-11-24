@@ -1,8 +1,6 @@
 <?php
 /** @var \App\Models\User|null $business */
 $business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
-$companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
-$avatarInitials = strtoupper(substr($companyName, 0, 2));
 
 $realNotifications = $business?->notifications()->take(8)->get() ?? collect();
 $unreadNotificationsCount = $realNotifications->where('is_read', false)->count();
@@ -99,36 +97,13 @@ $activeNav = $activeNav ?? 'overview';
         </div>
 
         <!-- User Profile Pill (Opens Business Profile & Password Settings) -->
-        <a href="<?= route('business.profile') ?>" class="topbar-profile" title="Manage Business Profile & Password Settings">
-            <span class="topbar-avatar" style="overflow:hidden;padding:0;">
-                <?php if ($business?->profile_image): ?>
-                    <img src="<?= e($business->profile_image_url ?: $business->profile_image) ?>" alt="<?= e($companyName) ?>" style="width:100%;height:100%;object-fit:cover;display:block;">
-                <?php else: ?>
-                    <?= e($avatarInitials) ?>
-                <?php endif; ?>
-            </span>
-            <span class="topbar-profile-info">
-                <span class="topbar-name"><?= e($companyName) ?></span>
-                <span class="topbar-role"><?= e(match ($business?->account_status) {
-                    'approved' => 'Verified SME',
-                    'rejected' => 'Changes Required',
-                    default => 'Verification Pending',
-                }) ?></span>
-            </span>
+        <a href="<?= route('business.profile') ?>" class="topbar-profile topbar-icon-btn" title="Manage Business Profile &amp; Password Settings" aria-label="Business profile">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"></path>
+            </svg>
         </a>
 
-        <!-- Logout Button -->
-        <form class="topbar-logout-form" method="POST" action="/logout">
-            <?= csrf_field() ?>
-            <button type="submit" class="topbar-logout-btn" title="Sign out of your workspace">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span>Logout</span>
-            </button>
-        </form>
     </div>
 </header>
 

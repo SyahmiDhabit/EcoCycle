@@ -20,6 +20,7 @@ $activeNav = 'overview';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($companyName) ?> &mdash; Business Profile &middot; EcoCycle</title>
+    <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -124,6 +125,72 @@ $activeNav = 'overview';
                 grid-template-columns: 1fr;
             }
         }
+
+        .company-profile-hero .info-cards-grid {
+            flex: 0 0 100%;
+            min-width: 0;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-bottom: 0;
+            padding-top: 18px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .company-profile-hero .info-spec-card {
+            min-width: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+        }
+
+        .company-address {
+            grid-column: 1 / -1;
+        }
+
+        body.business-dashboard-page :is(.company-back, .company-contact, .company-contact-secondary, .company-marketplace-button) {
+            min-height: 40px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px !important;
+            text-decoration: none;
+        }
+
+        .company-back {
+            min-width: 120px;
+        }
+
+        .company-marketplace-button {
+            width: 100%;
+        }
+
+        :is(.company-back, .company-contact-secondary, .company-marketplace-button) {
+            border-color: #9abb9f;
+            color: #14532d;
+        }
+
+        :is(.company-back, .company-contact-secondary, .company-marketplace-button):hover {
+            background: #e5efe1;
+        }
+
+        .company-contact {
+            background: #176b40;
+            border-color: #176b40;
+        }
+
+        .company-contact:hover {
+            background: #10472c;
+        }
+
+        @media (max-width: 900px) {
+            .company-profile-hero .info-cards-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 600px) {
+            .company-profile-hero .info-cards-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -143,8 +210,8 @@ $activeNav = 'overview';
                     <p>View verified Malaysian SME details, credentials, and available marketplace materials.</p>
                 </div>
                 <div>
-                    <a href="/business" class="btn-back-directory">
-                        <span>&larr; Back to Directory</span>
+                    <a href="/business" class="btn-back-directory company-back">
+                        <span>Back</span>
                     </a>
                 </div>
             </div>
@@ -163,10 +230,7 @@ $activeNav = 'overview';
                         <h1><?= e($companyName) ?></h1>
                         <div class="company-meta-row">
                             <span class="verified-pill">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                                <span>Verified Malaysian SME</span>
+                                <span>Verified EcoCycle SME</span>
                             </span>
                             <span>@<?= e($company->name) ?></span>
                             <span>&middot;</span>
@@ -178,39 +242,36 @@ $activeNav = 'overview';
                 </div>
 
                 <div>
-                    <a href="mailto:<?= e($company->email) ?>?subject=<?= e(urlencode('EcoCycle Circular Material Inquiry')) ?>" class="btn-search" style="text-decoration:none;">
+                    <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=<?= e(rawurlencode($company->email)) ?>&amp;su=EcoCycle%20Circular%20Material%20Inquiry" class="btn-search company-contact" target="_blank" rel="noopener noreferrer">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                         <span>Contact Company</span>
                     </a>
                 </div>
+                <div class="info-cards-grid" aria-label="Company details">
+                    <div class="info-spec-card">
+                        <small>SSM Registration Number</small>
+                        <span><?= e($company->business_registration_number ?: 'Verified on SSM') ?></span>
+                    </div>
+                    <div class="info-spec-card">
+                        <small>Business Phone</small>
+                        <span><?= e($company->business_phone ?: 'Not provided') ?></span>
+                    </div>
+                    <div class="info-spec-card">
+                        <small>Official Email</small>
+                        <span><?= e($company->email) ?></span>
+                    </div>
+                    <div class="info-spec-card">
+                        <small>Operating Location</small>
+                        <span><?= e($companyLocation) ?></span>
+                    </div>
+                    <?php if (! empty($company->registered_address)) { ?>
+                        <div class="info-spec-card company-address">
+                            <small>Registered Facility Address</small>
+                            <span><?= e($company->registered_address) ?>, <?= e($company->city) ?>, <?= e($company->state) ?></span>
+                        </div>
+                    <?php } ?>
+                </div>
             </section>
-
-            <!-- Company Specifications Grid -->
-            <section class="info-cards-grid">
-                <div class="info-spec-card">
-                    <small>SSM Registration Number</small>
-                    <span><?= e($company->business_registration_number ?: 'Verified on SSM') ?></span>
-                </div>
-                <div class="info-spec-card">
-                    <small>Business Phone</small>
-                    <span><?= e($company->business_phone ?: 'Not provided') ?></span>
-                </div>
-                <div class="info-spec-card">
-                    <small>Official Email</small>
-                    <span><?= e($company->email) ?></span>
-                </div>
-                <div class="info-spec-card">
-                    <small>Operating Location</small>
-                    <span><?= e($companyLocation) ?></span>
-                </div>
-            </section>
-
-            <?php if (! empty($company->registered_address)) { ?>
-                <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:16px 20px;margin-bottom:28px;">
-                    <small style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.05em;margin-bottom:4px;">Registered Facility Address</small>
-                    <span style="font-size:13px;color:#143324;"><?= e($company->registered_address) ?>, <?= e($company->city) ?>, <?= e($company->state) ?></span>
-                </div>
-            <?php } ?>
 
             <!-- ACTIVE SURPLUS LISTINGS -->
             <section aria-labelledby="listings-heading">
@@ -228,7 +289,7 @@ $activeNav = 'overview';
                         <p style="margin:0 0 16px;font-size:12px;color:var(--text-muted);max-width:440px;margin-inline:auto;">
                             <?= e($companyName) ?> has not published surplus materials to the marketplace yet. You can still reach out via email to discuss material needs.
                         </p>
-                        <a href="mailto:<?= e($company->email) ?>" class="btn-reset" style="border:1px solid #cadbc9;border-radius:0;padding:8px 14px;text-decoration:none;">
+                        <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=<?= e(rawurlencode($company->email)) ?>&amp;su=EcoCycle%20Circular%20Material%20Inquiry" class="btn-reset company-contact-secondary" target="_blank" rel="noopener noreferrer">
                             Contact Company Directly &rarr;
                         </a>
                     </div>
@@ -266,8 +327,8 @@ $activeNav = 'overview';
                                     <?php } ?>
 
                                     <div class="card-footer" style="padding-top:10px;">
-                                        <a href="/business/marketplace?q=<?= urlencode($item->title) ?>" class="btn-view-profile" style="width:100%;justify-content:center;text-decoration:none;">
-                                            Order on Marketplace &rarr;
+                                        <a href="/business/marketplace?q=<?= urlencode($item->title) ?>" class="btn-view-profile company-marketplace-button">
+                                            Order on Marketplace
                                         </a>
                                     </div>
                                 </div>

@@ -669,6 +669,146 @@ $activeNav = 'inventory';
                 grid-template-columns: 1fr !important;
             }
         }
+
+        #add-modal #add_section_reusable {
+            display: none !important;
+        }
+
+        #add_modal_footer {
+            flex-wrap: wrap;
+            gap: 10px;
+            background: #fafbf6;
+        }
+
+        body.business-dashboard-page #add_modal_footer button {
+            min-height: 40px;
+            border-radius: 6px !important;
+        }
+
+        #add-modal #add_modal_footer .add-btn-primary {
+            min-width: 108px;
+            border-color: #176b40;
+            background: #176b40;
+        }
+
+        #add-modal #add_modal_footer .add-btn-primary:hover {
+            border-color: #10472c;
+            background: #10472c;
+        }
+
+        #add-modal #add_modal_footer .add-btn-secondary {
+            border-color: #9abb9f;
+            color: #14532d;
+        }
+
+        #add-modal #add_modal_footer .add-btn-secondary:hover {
+            background: #e5efe1;
+        }
+
+        #add_modal_footer button:focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
+
+        #add-modal #add_photo_uploader_box {
+            border: 0 !important;
+            background: transparent !important;
+            padding: 0;
+        }
+
+        #add_slots_grid :is(.inv-slot-wrapper, .inv-slot-header, .inv-slot-actions, .btn-slot-remove) {
+            border-color: var(--input-border);
+        }
+
+        #add_slots_grid .inv-slot-header,
+        #add_slots_grid .inv-slot-action-btn:hover {
+            background: #eef5eb;
+        }
+
+        #add_slots_grid .inv-slot-preview-area {
+            height: 125px;
+            background: #fafbf6;
+            color: #526658;
+        }
+
+        #add_slots_grid .inv-slot-preview-area.empty-slot:hover {
+            background: #eef5eb;
+            color: #18422d;
+        }
+
+        #add_slots_grid .inv-slot-action-btn:focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: -2px;
+        }
+
+        #add_non_reusable_guidance > .add-rect-box {
+            border-color: #c5d4c3 !important;
+        }
+
+        #add_non_reusable_guidance h4 {
+            color: #14532d !important;
+            font: 700 16px/1.4 var(--font-display) !important;
+        }
+
+        #nr_guidance_steps,
+        #nr_guidance_repurpose,
+        .nr-preparation,
+        .nr-location-note {
+            color: #315440 !important;
+            font-size: 13px !important;
+            line-height: 1.55;
+        }
+
+        .nr-preparation {
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            border: 1px solid #d5e3d1;
+            background: #f2f7ef;
+        }
+
+        .nr-preparation h5 {
+            margin: 0 0 6px;
+            color: #14532d;
+            font-size: 13px;
+        }
+
+        .nr-preparation :is(ol, ul) {
+            margin: 0;
+            padding-inline-start: 20px;
+        }
+
+        .nr-preparation ol {
+            margin-bottom: 12px;
+        }
+
+        .nr-preparation li + li {
+            margin-top: 4px;
+        }
+
+        .nr-location-note {
+            margin: 0 0 12px;
+        }
+
+        #nr_locations_list > div {
+            border-color: #d5e3d1 !important;
+            background: #fafbf6 !important;
+        }
+
+        #nr_locations_list > div > div:first-child {
+            min-width: 0 !important;
+            overflow-wrap: anywhere;
+        }
+
+        body.business-dashboard-page #nr_locations_list a {
+            border-color: #9abb9f !important;
+            border-radius: 6px !important;
+            color: #14532d !important;
+            font-size: 12px !important;
+        }
+
+        #nr_locations_list a:hover {
+            background: #e5efe1 !important;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -680,7 +820,7 @@ $activeNav = 'inventory';
         <!-- Reusable Left Navigation Sidebar -->
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main inventory-workspace">
             <?php if (session('status')): ?>
                 <div class="dashboard-alert success" role="status" style="margin-bottom:16px;padding:12px 16px;border-radius:0;background:#eaf3e8;border:1px solid #c7dbc5;border-left:3px solid #176b40;color:#176b40;font-size:13px;font-weight:600;">
                     <?= e(session('status')) ?>
@@ -761,12 +901,12 @@ $activeNav = 'inventory';
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th style="width:28%;">Material / Item</th>
-                                    <th style="width:16%;">Category</th>
+                                    <th style="width:24%;">Material / Item</th>
+                                    <th style="width:14%;">Category</th>
                                     <th style="width:12%;">Reusability</th>
                                     <th style="width:11%;">Stock Level</th>
                                     <th style="width:9%;">Status</th>
-                                    <th style="width:24%;text-align:right;">Actions</th>
+                                    <th style="width:30%;text-align:right;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -955,10 +1095,10 @@ $activeNav = 'inventory';
                         <?= $items->links()?->toHtml() ?>
                     </div>
                 <?php else: ?>
-                    <div class="empty-state-card" style="padding:48px 24px;text-align:center;">
-                        <span class="signin-brand-mark" style="margin:0 auto 12px;"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
-                        <h3 style="margin:0 0 6px;font-size:16px;color:#123321;">No materials found in inventory</h3>
-                        <p style="margin:0;color:var(--text-muted);font-size:13px;">Add your secondary materials, production cutoffs, or durable assets with photos to manage stock and share with partners.</p>
+                    <div class="empty-state-card inventory-empty">
+                        <span class="signin-brand-mark inventory-empty-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+                        <h3>No materials found in inventory</h3>
+                        <p>Add your secondary materials, production cutoffs, or durable assets with photos to manage stock and share with partners.</p>
                     </div>
                 <?php endif; ?>
             </section>
@@ -1085,7 +1225,6 @@ $activeNav = 'inventory';
                             <div>
                                 <div style="display:flex;align-items:center;gap:6px;">
                                     <span style="font-weight:700;color:#18422d;font-size:13.5px;">Reusable Material</span>
-                                    <span style="background:#166534;color:#ffffff;font-size:10px;font-weight:700;padding:2px 6px;text-transform:uppercase;">Direct to Listing</span>
                                 </div>
                                 <span style="font-size:12px;color:#475569;line-height:1.45;display:block;margin-top:4px;">
                                     Item can be reused, resold, or exchanged. Adds directly to inventory and proceeds straight to the listing process. No AI analysis needed.
@@ -1097,7 +1236,6 @@ $activeNav = 'inventory';
                             <div>
                                 <div style="display:flex;align-items:center;gap:6px;">
                                     <span style="font-weight:700;color:#0f172a;font-size:13.5px;">Not Reusable (Waste / Scrap)</span>
-                                    <span style="background:#b45309;color:#ffffff;font-size:10px;font-weight:700;padding:2px 6px;text-transform:uppercase;">Automatic AI Guidance</span>
                                 </div>
                                 <span style="font-size:12px;color:#475569;line-height:1.45;display:block;margin-top:4px;">
                                     Cutoffs, scrap, or waste that cannot be reused. Automatically triggers AI analysis for disposal guidance and suitable locations.
@@ -1163,6 +1301,22 @@ $activeNav = 'inventory';
                                 </ul>
                             </div>
 
+                            <div class="nr-preparation">
+                                <h5>Before arranging collection</h5>
+                                <ol>
+                                    <li><strong>Identify the material.</strong> Note its source, condition, and any contamination.</li>
+                                    <li><strong>Record the amount.</strong> Estimate the weight or volume before requesting a quote.</li>
+                                    <li><strong>Keep it separate.</strong> Follow the material-specific guidance above and avoid mixing it with other waste.</li>
+                                    <li><strong>Call the facility.</strong> Confirm it accepts the material and ask about packaging, fees, and collection or drop-off times.</li>
+                                    <li><strong>Log the handover.</strong> Record where the material went and keep any receipt or collection reference.</li>
+                                </ol>
+                                <h5>Other options to check</h5>
+                                <ul>
+                                    <li>Ask your supplier about take-back for packaging or offcuts they accept.</li>
+                                    <li>Ask a specialist recycler whether it can recover any clean, separated portion. If it cannot, ask for an appropriate disposal referral.</li>
+                                </ul>
+                            </div>
+
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
                                 <div style="padding:10px 12px;background:#f4fbf5;border:1px solid #c2dec0;">
                                     <strong style="display:block;font-size:10.5px;color:#1b5e20;text-transform:uppercase;margin-bottom:3px;">Environmental Impact (Qualitative)</strong>
@@ -1183,8 +1337,8 @@ $activeNav = 'inventory';
                         <div class="add-rect-box" style="background:#ffffff;border:1px solid #cbd5e1;padding:16px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
                                 <h4 style="margin:0;font-size:13.5px;font-weight:700;color:#18422d;">Suitable Disposal Locations &amp; Facilities</h4>
-                                <span style="font-size:11px;font-weight:600;color:#475569;">Where the Business Can Send This Item</span>
                             </div>
+                            <p class="nr-location-note">Confirm that a facility accepts your material before travelling or booking collection.</p>
                             <div id="nr_locations_list" style="display:flex;flex-direction:column;gap:10px;">
                                 <!-- Populated dynamically from RecyclingCentreLocatorService -->
                             </div>
@@ -1201,10 +1355,10 @@ $activeNav = 'inventory';
                         Re-run AI Guidance
                     </button>
                     <button type="submit" class="add-btn-primary" id="btn_submit_reusable">
-                        Add Item &amp; Proceed to Listing &rarr;
+                        Add Item
                     </button>
                     <button type="submit" class="add-btn-primary" id="btn_submit_non_reusable" style="display:none;">
-                        Save to Inventory &amp; Open EcoCycle Helper &rarr;
+                        Save to Inventory &amp; Open EcoCycle Helper
                     </button>
                 </div>
             </div>

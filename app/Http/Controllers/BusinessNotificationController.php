@@ -9,6 +9,21 @@ use Illuminate\Support\Facades\Auth;
 
 class BusinessNotificationController extends Controller
 {
+
+    public function markAsRead(Request $request, int $notification): JsonResponse
+    {
+        /** @var User $business */
+        $business = $request->user();
+        $entry = $business->notifications()->findOrFail($notification);
+
+        $business->notifications()->whereKey($entry->getKey())->where('is_read', false)->update([
+            'is_read' => true,
+            'read_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function markAllAsRead(Request $request): JsonResponse
     {
         /** @var User $business */

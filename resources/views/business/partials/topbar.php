@@ -60,7 +60,7 @@ $activeNav = $activeNav ?? 'overview';
                         </div>
                     <?php else: ?>
                         <?php foreach ($realNotifications as $notif): ?>
-                            <a href="<?= e($notif->link ?: '/business') ?>" class="notification-item <?= !$notif->is_read ? 'unread' : '' ?>" style="text-decoration:none;color:inherit;">
+                            <a href="<?= e($notif->link ?: '/business') ?>" class="notification-item <?= !$notif->is_read ? 'unread' : '' ?>" data-read-url="<?= e(route('business.notifications.read', $notif->id)) ?>" onclick="openBusinessNotification(event, this)" style="text-decoration:none;color:inherit;">
                                 <div class="notif-icon-circle <?= e($notif->icon_type) ?>">
                                     <?php if ($notif->icon_type === 'green'): ?>
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -89,10 +89,6 @@ $activeNav = $activeNav ?? 'overview';
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
-
-                <div class="dropdown-footer">
-                    <a href="/business" style="font-size:11px;color:#176b40;font-weight:600;text-decoration:none;">View All Activity &rarr;</a>
-                </div>
             </div>
         </div>
 
@@ -117,6 +113,63 @@ function toggleNotificationMenu(e) {
     if (!menu) return;
     var isHidden = menu.style.display === 'none' || menu.style.display === '';
     menu.style.display = isHidden ? 'block' : 'none';
+}
+
+async function openBusinessNotification(event, item) {
+    if (!item.classList.contains('unread') || event.metaKey || event.ctrlKey
+        || event.shiftKey || event.altKey || event.button !== 0) {
+        return;
+    }
+
+    event.preventDefault();
+    if (item.dataset.markingRead) {
+        return;
+    }
+    item.dataset.markingRead = 'true';
+
+    try {
+        const response = await fetch(item.dataset.readUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '<?= csrf_token() ?>',
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok || response.redirected) {
+            throw new Error('Unable to mark notification as read.');
+        }
+
+        item.classList.remove('unread');
+        const remaining = document.querySelectorAll('#notif-list-body .notification-item.unread').length;
+        updateNotificationCount(remaining);
+    } catch (error) {
+        console.error(error);
+    } finally {
+        delete item.dataset.markingRead;
+    }
+
+    if (item.href !== window.location.href) {
+        window.location.assign(item.href);
+    }
+}
+
+function updateNotificationCount(count) {
+    var dot = document.getElementById('header-notif-dot');
+    if (dot) dot.style.display = count ? '' : 'none';
+
+    var badge = document.getElementById('notif-count-badge');
+    if (badge) {
+        badge.textContent = count + ' new';
+        if (!count) {
+            badge.style.background = '#eaf0ea';
+            badge.style.color = '#617769';
+            badge.style.borderColor = '#d0ded0';
+        }
+    }
+
+    var markBtn = document.getElementById('notif-mark-all-btn');
+    if (markBtn) markBtn.style.display = count ? '' : 'none';
 }
 
 function markAllNotificationsAsRead(e) {

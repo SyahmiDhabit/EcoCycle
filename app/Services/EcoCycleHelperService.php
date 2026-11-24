@@ -297,8 +297,12 @@ Evaluate this material thoroughly using BOTH the visual evidence from the attach
    - "suggested_price_range": Estimated MYR price or price range per {$unit} considering category, condition, quantity, unit, and Malaysian market value (e.g., "RM 8.00 - RM 12.00 per {$unit}", or "RM 0.00 (Free / Lend recommended)" if free/lend).
    - "reuse_applications": 2-3 practical reuse applications.
 
-4. For Non-Reusable materials (and general circular guidance), provide qualitative environmental and carbon impact explanations.
-   IMPORTANT: Do NOT invent exact numerical carbon savings, emission numbers, or unverified statistics. Explain potential environmental and carbon impacts qualitatively.
+4. For Non-Reusable materials, tailor the guidance to the material, its condition, and the quantity reported:
+   - "disposal_method": Recommend a preferred handling or recovery route and explain why it fits.
+   - "owner_actions": Give 5 to 7 ordered, actionable steps. Cover checking for contamination, separating incompatible materials, safe temporary storage, confirming a facility's acceptance and pickup requirements, and recording the handover. Adapt each step to the item and say what the business should verify when information is missing.
+   - "repurposing_ideas": Describe up to 3 distinct, viable recovery alternatives. For each, explain when it is suitable, what would rule it out, and what the business should ask the operator before choosing it. If recovery is unsuitable, explain why and suggest an appropriate professional disposal route.
+   - "environmental_impact" and "carbon_impact": Explain expected impacts qualitatively using the material and the recommended route. Do not invent numerical savings, emissions, or statistics.
+   - "improper_disposal_risks": Describe material-specific risks and any checks the business should make with a qualified operator. If the waste may be hazardous or its composition is uncertain, prioritize professional assessment and avoid suggesting on-site treatment.
 
 Return ONLY a valid JSON object matching this schema (no markdown backticks):
 {

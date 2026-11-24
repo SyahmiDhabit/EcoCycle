@@ -55,14 +55,14 @@ $canPublishNow = ! $isPermanentlySoldOut
         }
         .edit-card {
             background: #ffffff;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #c5d4c3;
             border-radius: 0;
             margin-bottom: 20px;
         }
         .edit-card-header {
             padding: 14px 22px;
-            background: #f8fafc;
-            border-bottom: 1px solid #cbd5e1;
+            background: #fafbf6;
+            border-bottom: 1px solid #c5d4c3;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -100,7 +100,7 @@ $canPublishNow = ! $isPermanentlySoldOut
         .edit-input {
             width: 100%;
             padding: 10px 12px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #c5d4c3;
             border-radius: 0;
             background: #ffffff;
             color: #0f172a;
@@ -115,7 +115,7 @@ $canPublishNow = ! $isPermanentlySoldOut
             display: block;
             margin-top: 5px;
             font-size: 11.5px;
-            color: #64748b;
+            color: #526658;
             line-height: 1.45;
         }
         .edit-choice-card {
@@ -123,14 +123,14 @@ $canPublishNow = ! $isPermanentlySoldOut
             align-items: flex-start;
             gap: 10px;
             padding: 14px 16px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #c5d4c3;
             border-radius: 0;
             background: #ffffff;
             cursor: pointer;
         }
         .edit-choice-card.selected {
             border: 2px solid #18422d;
-            background: #f0fdf4;
+            background: #eaf5e7;
         }
         .edit-btn-primary {
             padding: 10px 22px;
@@ -157,7 +157,7 @@ $canPublishNow = ! $isPermanentlySoldOut
         .edit-btn-secondary {
             padding: 10px 18px;
             background: #ffffff;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #c5d4c3;
             color: #334155;
             font-size: 13px;
             font-weight: 600;
@@ -169,13 +169,13 @@ $canPublishNow = ! $isPermanentlySoldOut
             justify-content: center;
         }
         .edit-btn-secondary:hover {
-            background: #f1f5f9;
+            background: #eef5eb;
         }
         .edit-btn-utility {
             margin-top: 8px;
             padding: 6px 12px;
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
+            background: #fafbf6;
+            border: 1px solid #c5d4c3;
             color: #334155;
             font-size: 11.5px;
             font-weight: 600;
@@ -193,7 +193,7 @@ $canPublishNow = ! $isPermanentlySoldOut
         .inv-slot-wrapper {
             display: flex;
             flex-direction: column;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #c5d4c3;
             background: #ffffff;
             border-radius: 0;
         }
@@ -202,8 +202,8 @@ $canPublishNow = ! $isPermanentlySoldOut
             justify-content: space-between;
             align-items: center;
             padding: 6px 10px;
-            background: #f1f5f9;
-            border-bottom: 1px solid #cbd5e1;
+            background: #eef5eb;
+            border-bottom: 1px solid #c5d4c3;
             font-size: 11px;
             font-weight: 700;
             color: #334155;
@@ -211,14 +211,14 @@ $canPublishNow = ! $isPermanentlySoldOut
         }
         .inv-slot-preview-area {
             height: 125px;
-            background: #f8fafc;
+            background: #fafbf6;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             cursor: pointer;
-            color: #64748b;
+            color: #526658;
             font-size: 12px;
             font-weight: 600;
             gap: 6px;
@@ -232,7 +232,7 @@ $canPublishNow = ! $isPermanentlySoldOut
         .inv-slot-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            border-top: 1px solid #cbd5e1;
+            border-top: 1px solid #c5d4c3;
         }
         .inv-slot-action-btn {
             padding: 6px 8px;
@@ -244,8 +244,8 @@ $canPublishNow = ! $isPermanentlySoldOut
             cursor: pointer;
             border-radius: 0;
         }
-        .inv-slot-action-btn:hover { background: #f1f5f9; }
-        .inv-slot-action-btn.btn-slot-remove { border-left: 1px solid #cbd5e1; color: #b91c1c; }
+        .inv-slot-action-btn:hover { background: #eef5eb; }
+        .inv-slot-action-btn.btn-slot-remove { border-left: 1px solid #c5d4c3; color: #b91c1c; }
         .inv-slot-action-btn.btn-slot-upload-full { grid-column: 1 / -1; color: #18422d; font-weight: 700; }
         .publish-summary-grid {
             display: grid;
@@ -255,14 +255,14 @@ $canPublishNow = ! $isPermanentlySoldOut
         }
         .publish-summary-cell {
             padding: 12px 14px;
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
+            background: #fafbf6;
+            border: 1px solid #c5d4c3;
         }
         .publish-summary-cell small {
             display: block;
             font-size: 11px;
             font-weight: 700;
-            color: #64748b;
+            color: #526658;
             text-transform: uppercase;
             margin-bottom: 4px;
         }
@@ -278,6 +278,58 @@ $canPublishNow = ! $isPermanentlySoldOut
                 grid-template-columns: 1fr;
             }
         }
+
+        .edit-topbar-row h1 {
+            margin: 8px 0 4px;
+            color: #14532d;
+            font: 700 clamp(25px, 3vw, 36px)/1.2 var(--font-display);
+            letter-spacing: -.03em;
+        }
+
+        .edit-back-link {
+            margin-bottom: 8px;
+        }
+
+        .edit-card-header h3 {
+            font: 700 15px/1.4 var(--font-display);
+        }
+
+        .edit-field label {
+            font-size: 13px;
+        }
+
+        body.business-dashboard-page .edit-page-wrap :is(.edit-input, .edit-btn-primary, .edit-btn-secondary, .edit-btn-utility) {
+            border-radius: 6px !important;
+        }
+
+        .edit-page-wrap :is(.edit-btn-primary, .edit-btn-secondary) {
+            min-height: 40px;
+            font-family: var(--font-main);
+        }
+
+        .edit-page-wrap .edit-btn-primary:not(:disabled) {
+            border-color: #176b40;
+            background: #176b40;
+        }
+
+        .edit-page-wrap .edit-btn-primary:not(:disabled):hover {
+            border-color: #10472c;
+            background: #10472c;
+        }
+
+        .edit-page-wrap :is(.edit-btn-secondary, .edit-btn-utility) {
+            border-color: #9abb9f;
+            color: #14532d;
+        }
+
+        .edit-page-wrap :is(.edit-btn-secondary, .edit-btn-utility):hover {
+            background: #e5efe1;
+        }
+
+        .edit-page-wrap :is(a, button, .edit-input):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -290,10 +342,10 @@ $canPublishNow = ! $isPermanentlySoldOut
             <div class="edit-page-wrap">
                 <div class="edit-topbar-row">
                     <div>
-                        <a href="<?= route('business.inventory') ?>" class="edit-btn-secondary" style="padding:7px 14px;font-size:12px;margin-bottom:10px;">
-                            &larr; Back to Inventory
+                        <a href="<?= route('business.inventory') ?>" class="edit-btn-secondary edit-back-link">
+                            Back to Inventory
                         </a>
-                        <h1 style="margin:6px 0 4px;font-size:22px;color:#123321;">Update Inventory Details</h1>
+                        <h1>Update Inventory Details</h1>
                         <p style="margin:0;font-size:13px;color:#526658;">
                             Review the material analysis summary, confirm item details, set listing type and price per unit, then save to your inventory.
                         </p>

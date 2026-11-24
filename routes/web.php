@@ -110,6 +110,7 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::get('/business/helper/analyze/{item}', [EcoCycleHelperController::class, 'analyzeItem'])->name('business.helper.analyze');
     Route::post('/business/helper/nearby-centres', [EcoCycleHelperController::class, 'nearbyCentres'])->name('business.helper.nearby');
 
+    Route::post('/business/notifications/{notification}/read', [BusinessNotificationController::class, 'markAsRead'])->whereNumber('notification')->name('business.notifications.read');
     Route::post('/business/notifications/mark-read', [BusinessNotificationController::class, 'markAllAsRead'])->name('business.notifications.mark-read');
 });
 Route::redirect('/admin', '/admin/dashboard')->name('admin.entry');

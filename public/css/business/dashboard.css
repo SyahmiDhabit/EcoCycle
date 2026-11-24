@@ -2130,10 +2130,8 @@ body.business-dashboard-page :is(.sidebar-close-btn, .sidebar-logout-btn) {
 }
 
 .business-directory .directory-header {
-    padding: clamp(20px, 3vw, 36px);
-    border: 1px solid #bdd4b8;
-    border-radius: 16px !important;
-    background: #dcebd7;
+    padding: 0;
+    border: 0;
 }
 
 .business-directory .directory-header h1 {
@@ -2305,4 +2303,254 @@ body.business-dashboard-page :is(.sidebar-close-btn, .sidebar-logout-btn) {
 
 #profile-modal #modal-contact-link {
     display: none;
+}
+
+.inventory-workspace {
+    padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+}
+
+.inventory-workspace .page-header {
+    padding: 0;
+    border: 0;
+}
+
+.inventory-workspace .page-header h1 {
+    color: #14532d;
+    font-size: clamp(26px, 3vw, 40px);
+}
+
+.inventory-workspace .inventory-toolbar {
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e7eee6;
+}
+
+.inventory-workspace .filter-form {
+    flex: 1 1 100%;
+}
+
+.inventory-workspace .filter-input {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.inventory-workspace .filter-select {
+    max-width: 100%;
+}
+
+.inventory-workspace :is(.filter-input, .filter-select, .btn-filter, .btn-add-primary, .view-switcher-wrap, .view-toggle-btn) {
+    border-radius: 6px !important;
+}
+
+.inventory-workspace :is(.filter-input, .filter-select, .btn-filter, .btn-add-primary) {
+    min-height: 40px;
+}
+
+.inventory-workspace .btn-filter {
+    border-color: #9abb9f;
+    color: #14532d;
+}
+
+.inventory-workspace .btn-add-primary {
+    border-color: #176b40;
+    background: #176b40;
+}
+
+.inventory-workspace .btn-add-primary:hover {
+    background: #10472c;
+}
+
+.inventory-workspace .view-switcher-wrap {
+    background: #e5efe1;
+}
+
+.inventory-workspace .inventory-toolbar :is(input, select, a, button):focus-visible {
+    outline: 2px solid #176b40;
+    outline-offset: 2px;
+}
+
+.inventory-workspace .inventory-empty {
+    padding: clamp(26px, 5vw, 52px) 20px;
+    text-align: center;
+}
+
+.inventory-workspace .inventory-empty-mark {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin: 0 auto 14px;
+    border: 1px solid #c8dec4;
+    background: #e5efe1;
+}
+
+.inventory-workspace .inventory-empty-mark img {
+    width: 23px;
+    height: 23px;
+}
+
+.inventory-workspace .inventory-empty h3 {
+    margin: 0 0 6px;
+    color: #14532d;
+    font: 700 18px var(--font-display);
+}
+
+.inventory-workspace .inventory-empty p {
+    max-width: 60ch;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+    .inventory-workspace .filter-input {
+        flex-basis: 100%;
+    }
+
+    .inventory-workspace .filter-select {
+        flex: 1 1 120px;
+        min-width: 0;
+    }
+}
+
+.inventory-workspace #inventory-table-container {
+    scrollbar-color: #82a98b #edf4e9;
+}
+
+.inventory-workspace #inventory-table-container .table {
+    width: 100%;
+    min-width: 660px;
+}
+
+.inventory-workspace #inventory-table-container th {
+    padding: 12px;
+    background: #e5efe1;
+    color: #315440;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.inventory-workspace #inventory-table-container td {
+    padding: 12px;
+    vertical-align: middle;
+    color: var(--text-secondary);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.inventory-workspace #inventory-table-container tbody tr:nth-child(even) {
+    background: #f7faf5;
+}
+
+.inventory-workspace #inventory-table-container tbody tr:hover {
+    background: #edf5e9;
+}
+
+.inventory-workspace #inventory-table-container [data-label="Item"] img,
+.inventory-workspace #inventory-table-container [data-label="Item"] a > div:first-child,
+.inventory-workspace #inventory-table-container :is(.badge-reusable, .badge-not-reusable, .status) {
+    border-radius: 6px !important;
+}
+
+.inventory-workspace #inventory-table-container .action-group {
+    flex-wrap: wrap;
+}
+
+.inventory-workspace #inventory-table-container .action-group :is(a, button, .btn-owner-only) {
+    min-height: 30px;
+    border-radius: 6px !important;
+}
+
+.inventory-workspace #inventory-table-container .btn-market-live {
+    border-color: #176b40;
+    background: #176b40;
+}
+
+.inventory-workspace #inventory-table-container .btn-market-live:hover {
+    border-color: #10472c;
+    background: #10472c;
+}
+
+.inventory-workspace #inventory-table-container :is(a, button):focus-visible {
+    outline: 2px solid #176b40;
+    outline-offset: 2px;
+}
+
+.inventory-workspace .inventory-catalog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr));
+}
+
+.inventory-workspace .catalog-card {
+    border-radius: 0 !important;
+    box-shadow: 0 5px 12px rgba(20, 83, 45, .06);
+}
+
+.inventory-workspace .catalog-card-header {
+    height: auto;
+    aspect-ratio: 2 / 1;
+    background: #e5efe1;
+}
+
+.inventory-workspace .catalog-card-img {
+    display: block;
+    object-position: center;
+}
+
+.inventory-workspace .catalog-card-badges-top {
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.inventory-workspace .catalog-card-badges-top > span {
+    border-radius: 6px !important;
+    box-shadow: 0 2px 6px rgba(13, 40, 26, .18);
+}
+
+.inventory-workspace .catalog-card-body {
+    gap: 12px;
+    padding: 16px 18px;
+}
+
+.inventory-workspace .catalog-card-title {
+    color: #14532d;
+    font: 700 17px/1.3 var(--font-display);
+    overflow-wrap: anywhere;
+}
+
+.inventory-workspace .catalog-meta-row {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+
+.inventory-workspace :is(.catalog-cat-pill, .catalog-condition-pill) {
+    border-radius: 6px !important;
+}
+
+.inventory-workspace .catalog-stock-row {
+    border-color: #d5e3d1;
+    border-radius: 8px !important;
+    background: #f2f7ef;
+}
+
+.inventory-workspace .catalog-stock-number {
+    color: #14532d;
+    font-size: 18px;
+}
+
+.inventory-workspace :is(.catalog-stock-bar-wrap, .catalog-stock-bar) {
+    border-radius: 999px !important;
+}
+
+.inventory-workspace .catalog-price-tag {
+    color: #14532d;
+    font-size: 14px;
+}
+
+.inventory-workspace .catalog-card-actions :is(a, button, .btn-owner-only) {
+    min-height: 30px;
+    border-radius: 6px !important;
+}
+
+.inventory-workspace .catalog-card :is(a, button):focus-visible {
+    outline: 2px solid #176b40;
+    outline-offset: -2px;
 }

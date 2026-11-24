@@ -2147,8 +2147,11 @@ body.business-dashboard-page :is(.sidebar-close-btn, .sidebar-logout-btn) {
 
 .business-directory :is(.filter-card, .business-card, .table-section-card) {
     border-color: #d5e3d1;
-    border-radius: 14px !important;
     box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+}
+
+.business-directory .filter-card {
+    border-radius: 14px !important;
 }
 
 .business-directory .featured-grid {

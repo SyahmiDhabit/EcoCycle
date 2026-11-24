@@ -792,6 +792,32 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertSame(5, $review->rating);
         $this->assertSame($seller->id, $review->seller_business_id);
         $this->assertSame($buyer->id, $review->reviewer_business_id);
+
+        $otherListing = $item->replicate();
+        $otherListing->business_id = $buyer->id;
+        $otherListing->save();
+
+        MarketplaceReview::create([
+            'item_id' => $otherListing->id,
+            'seller_business_id' => $buyer->id,
+            'reviewer_business_id' => $seller->id,
+            'rating' => 4,
+            'comment' => 'Review for another seller.',
+            'exchange_type' => 'buy',
+        ]);
+
+        $this->getJson(route('business.marketplace.seller-reviews', $item))
+            ->assertOk()
+            ->assertJsonCount(1, 'reviews')
+            ->assertJsonPath('reviews.0.reviewer', 'Buyer Packaging Ltd')
+            ->assertJsonPath('reviews.0.rating', 5)
+            ->assertJsonPath('reviews.0.comment', 'Excellent quality kraft sheets and prompt dispatch!')
+            ->assertJsonPath('next', null);
+
+        $item->update(['quantity' => 0]);
+
+        $this->getJson(route('business.marketplace.seller-reviews', $item))
+            ->assertNotFound();
     }
 
     public function test_marketplace_exchange_guardrails_and_visibility(): void

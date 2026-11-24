@@ -426,7 +426,10 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
         .helper-workspace .helper-card-header {
             background: #f1f6ef;
         }
-        .helper-workspace :is(.item-select-bar select, .btn-location-ref, .btn-directions, .facility-card, .guidance-section, .impact-card, .risk-warning-card, .reference-address-box, .selected-item-thumb) {
+        .helper-workspace :is(.btn-location-ref, .btn-directions) {
+            border-radius: 6px !important;
+        }
+        .helper-workspace :is(.item-select-bar select, .facility-card, .guidance-section, .impact-card, .risk-warning-card, .reference-address-box, .selected-item-thumb) {
             border-radius: 6px;
         }
         .helper-workspace :is(select, button, a):focus-visible {

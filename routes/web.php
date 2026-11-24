@@ -46,6 +46,7 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::get('/business', BusinessDashboardController::class)->name('business.dashboard');
     Route::get('/business/directory/{company}', [BusinessDashboardController::class, 'show'])->name('business.directory.show');
     Route::get('/business/marketplace', [MarketplaceController::class, 'index'])->name('business.marketplace');
+    Route::get('/business/marketplace/{listing}/seller-reviews', [MarketplaceController::class, 'sellerReviews'])->name('business.marketplace.seller-reviews');
     Route::post('/business/marketplace', [MarketplaceController::class, 'store'])->name('business.marketplace.store');
     Route::post('/business/marketplace/{listing}/exchange', [TransactionController::class, 'store'])->name('business.marketplace.exchange');
     Route::delete('/business/marketplace/{listing}', [MarketplaceController::class, 'destroy'])->name('business.marketplace.destroy');

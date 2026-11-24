@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\MarketplaceListing;
 use App\Models\MarketplaceReview;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -190,6 +191,29 @@ class MarketplaceController extends Controller
             'reusableCount' => $reusableCount,
             'nonReusableCount' => $nonReusableCount,
             'myListingsCount' => $myListingsCount,
+        ]);
+    }
+
+    public function sellerReviews(MarketplaceListing $listing): JsonResponse
+    {
+        abort_unless($listing->status === 'active' && $listing->quantity > 0, 404);
+
+        $reviews = MarketplaceReview::query()
+            ->with('reviewer:id,business_name')
+            ->where('seller_business_id', $listing->business_id)
+            ->latest()
+            ->orderByDesc('id')
+            ->simplePaginate(10)
+            ->through(static fn (MarketplaceReview $review): array => [
+                'reviewer' => $review->reviewer?->business_name ?: 'EcoCycle business',
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'date' => $review->created_at?->format('j M Y'),
+            ]);
+
+        return response()->json([
+            'reviews' => $reviews->items(),
+            'next' => $reviews->nextPageUrl(),
         ]);
     }
 

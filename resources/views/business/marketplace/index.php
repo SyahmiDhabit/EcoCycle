@@ -250,6 +250,21 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             padding: 2px 6px;
         }
 
+        .listing-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .listing-heading .listing-title {
+            min-width: 0;
+        }
+        .listing-heading .seller-rating-button {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
         .listing-title {
             font-family: var(--font-display);
             font-size: 16px;
@@ -261,7 +276,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            min-height: 42px;
+        }
+
+        .listing-details {
+            margin: 0 0 10px;
+            padding-left: 18px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.5;
         }
 
         .listing-company-row {
@@ -434,6 +456,93 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 grid-template-columns: repeat(3, 1fr);
             }
         }
+        .marketplace-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .marketplace-workspace .page-header {
+            padding: 0;
+            border: 0;
+        }
+        .marketplace-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .marketplace-workspace .marketplace-tabs {
+            gap: 6px;
+            padding: 6px;
+            width: fit-content;
+            max-width: 100%;
+            background: #e4eee3;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+        }
+        .marketplace-workspace .mkt-tab-btn {
+            min-height: 40px;
+            border-radius: 6px;
+        }
+        .marketplace-workspace :is(.mkt-tab-btn.active, .filter-card .btn-search) {
+            background: #176b40;
+            border-color: #176b40;
+        }
+        .marketplace-workspace :is(.filter-field input, .filter-field select, .filter-card .btn-search, .filter-card .btn-back-directory, .listing-card-footer a, .listing-card-footer button) {
+            border-radius: 6px;
+        }
+        .marketplace-workspace .filter-card {
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .marketplace-workspace .section-header-title h2 {
+            color: #14532d;
+            font-size: clamp(19px, 2vw, 24px);
+        }
+        .marketplace-workspace .marketplace-grid {
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr));
+        }
+        .marketplace-workspace .listing-card {
+            min-width: 0;
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .marketplace-workspace :is(a, button, input, select):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
+        .seller-rating-button {
+            color: #815014;
+            background: #fff8ea;
+            border: 1px solid #e9d8b5;
+            border-radius: 5px;
+            padding: 4px 7px;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .seller-rating-button:hover { background: #f8edda; }
+        .seller-reviews-dialog {
+            width: min(580px, calc(100% - 32px));
+            max-height: 85dvh;
+            padding: 0;
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+            background: #fff;
+            box-shadow: 0 12px 35px #14382533;
+        }
+        .seller-reviews-dialog::backdrop { background: #102c20aa; }
+        .seller-reviews-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px;
+            background: #f1f6ef;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .seller-reviews-header :is(h2, p) { margin: 0; }
+        .seller-reviews-header p { margin-top: 4px; font-size: 13px; }
+        .seller-reviews-content { padding: 4px 20px 20px; }
+        #seller-review-list { list-style: none; margin: 0; padding: 0; }
+        #seller-review-list li { padding: 14px 0; border-bottom: 1px solid var(--card-border); overflow-wrap: anywhere; }
+        #seller-review-list small { display: block; margin-top: 4px; color: var(--text-secondary); }
+        #seller-review-list p { margin: 8px 0 0; white-space: pre-wrap; }
+        #seller-review-more { margin-top: 14px; }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -444,23 +553,14 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         <!-- Reusable Left Navigation Sidebar -->
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main marketplace-workspace">
             <!-- Page Title Header -->
             <div class="page-header">
                 <div>
                     <h1><?= $currentTab === 'non_reusable' ? 'Non-reusable items category' : ($myListingsOnly ? 'My marketplace listings' : 'Reusable materials marketplace') ?></h1>
                     <p><?= $currentTab === 'non_reusable' 
                         ? 'Industrial scrap, single-use residues, and manufacturing cutoffs separated from the normal reusable marketplace. Forward items directly to <strong>EcoCycle Helper</strong> for circular upcycling advice or find matching certified recyclers.' 
-                        : 'Purchase, claim, or borrow reusable materials directly from verified Malaysian SMEs. Marketplace listings support <strong>Sell</strong>, <strong>Free</strong>, and <strong>Lend</strong>.' ?></p>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                    <a href="/business/helper" class="btn-reset" style="display:inline-flex;align-items:center;gap:8px;">
-                        <span>EcoCycle Helper</span>
-                    </a>
-                    <button type="button" class="btn-search" onclick="openCreateListingModal()">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>+ Create New Listing</span>
-                    </button>
+                        : 'Purchase or claim reusable materials directly from verified Malaysian SMEs.' ?></p>
                 </div>
             </div>
 
@@ -543,10 +643,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         <div class="filter-field">
                             <label for="mkt-type">Listing Type</label>
                             <select id="mkt-type" name="listing_type">
-                                <option value="">All Types (Sell / Free / Lend)</option>
+                                <option value="">All Types</option>
                                 <option value="buy" <?= request('listing_type') === 'buy' ? 'selected' : '' ?>>Sell</option>
                                 <option value="free" <?= request('listing_type') === 'free' ? 'selected' : '' ?>>Free</option>
-                                <option value="lend" <?= request('listing_type') === 'lend' ? 'selected' : '' ?>>Lend</option>
                             </select>
                         </div>
 
@@ -678,44 +777,37 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                     </div>
                                 <?php } ?>
 
-                                <!-- Reusability Top-Right Badge -->
-                                <div class="reusability-corner-badge">
-                                    <?php if ($isReusable) { ?>
-                                        <span class="badge-reusable" style="background:#ffffff;font-size:11px;">Reusable</span>
-                                    <?php } else { ?>
+                                <?php if (! $isReusable) { ?>
+                                    <div class="reusability-corner-badge">
                                         <span class="badge-not-reusable" style="background:#ffffff;font-size:11px;">Non-Reusable</span>
-                                    <?php } ?>
-                                </div>
+                                    </div>
+                                <?php } ?>
                             </div>
 
                             <!-- Card Body -->
                             <div class="listing-body">
-                                <div class="card-badges-row">
-                                    <!-- Offer type badge -->
-                                    <?php if ($listingType === 'free') { ?>
-                                        <span class="offer-type-badge free">Free</span>
-                                    <?php } elseif ($listingType === 'lend') { ?>
-                                        <span class="offer-type-badge borrow">Lend</span>
-                                    <?php } else { ?>
-                                        <span class="offer-type-badge buy">Sell</span>
-                                    <?php } ?>
-
-                                    <span class="category-tag"><?= e($item->category) ?></span>
-                                    <span class="condition-pill"><?= e($item->condition ?? 'Used') ?></span>
+                                <div class="listing-heading">
+                                    <h3 class="listing-title" title="<?= e($item->title) ?>"><?= e($item->title) ?></h3>
+                                    <?php if ($sellerRating): ?>
+                                        <button type="button" class="seller-rating-button" aria-haspopup="dialog"
+                                            data-seller-reviews-url="<?= e(route('business.marketplace.seller-reviews', $item)) ?>"
+                                            data-seller-name="<?= e($item->business?->business_name ?: 'EcoCycle business') ?>"
+                                            aria-label="View seller reviews, rated <?= number_format((float) $sellerRating['avg'], 1) ?> out of 5">
+                                            &#9733; <?= number_format((float) $sellerRating['avg'], 1) ?> (<?= (int) $sellerRating['count'] ?>)
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
-
-                                <h3 class="listing-title" title="<?= e($item->title) ?>"><?= e($item->title) ?></h3>
+                                <ul class="listing-details">
+                                    <li><?= match ($listingType) { 'free' => 'Free', 'lend' => 'Lend', default => 'Sell' } ?></li>
+                                    <li><?= e($item->category) ?></li>
+                                    <li><?= e($item->condition ?? 'Used') ?></li>
+                                </ul>
 
                                 <div class="listing-company-row" style="justify-content:space-between;flex-wrap:wrap;">
                                     <span style="display:inline-flex;align-items:center;gap:5px;">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                                         <span><?= e($item->location_city) ?>, <?= e($item->location_state) ?> &middot; <strong><?= e($item->business?->business_name ?: ($item->business?->name ?? 'Partner')) ?></strong></span>
                                     </span>
-                                    <?php if ($sellerRating): ?>
-                                        <span style="font-size:11.5px;font-weight:700;color:#b45309;white-space:nowrap;" title="Verified seller rating">
-                                            &#9733; <?= number_format((float) $sellerRating['avg'], 1) ?> (<?= (int) $sellerRating['count'] ?>)
-                                        </span>
-                                    <?php endif; ?>
                                 </div>
 
                                 <!-- Pricing Box -->
@@ -732,7 +824,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                             <span class="price-unit">/ <?= e($item->unit) ?></span>
                                         <?php } ?>
                                     </div>
-                                    <span class="qty-badge"><?= (float) $item->quantity ?> <?= e($item->unit) ?></span>
+                                    <span class="qty-badge"><?= (float) $item->quantity ?><?= (float) $item->original_quantity > 0 ? ' / '.(float) $item->original_quantity : '' ?> <?= e($item->unit) ?> left</span>
                                 </div>
 
                                 <?php if (! empty($item->description)) { ?>
@@ -1698,5 +1790,90 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.body.style.overflow = '';
     }
     </script>
+    <dialog id="seller-reviews-dialog" class="seller-reviews-dialog" aria-labelledby="seller-reviews-title">
+        <form method="dialog" class="seller-reviews-header">
+            <div>
+                <h2 id="seller-reviews-title">Seller reviews</h2>
+                <p id="seller-reviews-summary"></p>
+            </div>
+            <button class="btn-reset" type="submit" autofocus>Close</button>
+        </form>
+        <div class="seller-reviews-content">
+            <ul id="seller-review-list"></ul>
+            <p id="seller-review-status" role="status" hidden></p>
+            <button type="button" class="btn-reset" id="seller-review-more" hidden>Load more reviews</button>
+        </div>
+    </dialog>
+
+    <script>
+    (() => {
+        const dialog = document.getElementById('seller-reviews-dialog');
+        const list = document.getElementById('seller-review-list');
+        const status = document.getElementById('seller-review-status');
+        const more = document.getElementById('seller-review-more');
+        let nextUrl;
+        let pending;
+
+        async function loadReviews() {
+            const request = new AbortController();
+            pending = request;
+            more.hidden = true;
+            status.hidden = false;
+            status.textContent = 'Loading reviews…';
+
+            try {
+                const response = await fetch(nextUrl, {
+                    headers: { Accept: 'application/json' },
+                    signal: request.signal
+                });
+                if (!response.ok) {
+                    throw new Error('Review request failed');
+                }
+                const data = await response.json();
+                if (request.signal.aborted) return;
+
+                for (const review of data.reviews) {
+                    const row = document.createElement('li');
+                    const reviewer = document.createElement('strong');
+                    const rating = document.createElement('small');
+                    reviewer.textContent = review.reviewer;
+                    rating.textContent = [review.rating + ' / 5', review.date].filter(Boolean).join(' · ');
+                    row.append(reviewer, rating);
+                    if (review.comment) {
+                        const comment = document.createElement('p');
+                        comment.textContent = review.comment;
+                        row.append(comment);
+                    }
+                    list.append(row);
+                }
+                nextUrl = data.next;
+                more.textContent = 'Load more reviews';
+                more.hidden = !nextUrl;
+                status.hidden = list.children.length > 0;
+                status.textContent = status.hidden ? '' : 'No reviews yet.';
+            } catch {
+                if (request.signal.aborted) return;
+                status.textContent = 'Could not load reviews.';
+                more.textContent = 'Try again';
+                more.hidden = false;
+            }
+        }
+
+        more.addEventListener('click', loadReviews);
+        dialog.addEventListener('close', () => pending?.abort());
+        for (const button of document.querySelectorAll('[data-seller-reviews-url]')) {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                pending?.abort();
+                list.replaceChildren();
+                document.getElementById('seller-reviews-summary').textContent = button.dataset.sellerName + ' · ' + button.textContent.trim();
+                nextUrl = button.dataset.sellerReviewsUrl;
+                dialog.showModal();
+                loadReviews();
+            });
+        }
+    })();
+    </script>
+
 </body>
 </html>

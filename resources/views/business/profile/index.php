@@ -19,7 +19,7 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
     <style>
         .profile-page-grid {
             display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
             gap: 24px;
             align-items: start;
         }
@@ -32,7 +32,7 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
             background: #ffffff;
             border: 1px solid var(--card-border);
             border-radius: 0;
-            padding: 26px 28px;
+            padding: clamp(16px, 2.4vw, 28px);
             margin-bottom: 24px;
         }
         .profile-card-header {
@@ -266,6 +266,38 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
             padding: 18px 20px;
             margin-top: 24px;
         }
+        .profile-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .profile-workspace .page-header {
+            padding: 0;
+            border: 0;
+        }
+        .profile-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .profile-panel-card {
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .profile-card-header {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .profile-workspace :is(.btn-upload-logo-pill, .btn-save-profile, .btn-update-pwd, .btn-toggle-pwd) {
+            border-radius: 6px !important;
+        }
+        .profile-workspace :is(.btn-save-profile, .btn-update-pwd) {
+            background: #176b40;
+            border-color: #176b40;
+        }
+        .profile-workspace :is(.btn-save-profile, .btn-update-pwd):hover {
+            background: #105331;
+        }
+        .profile-workspace :is(button, input, select, label):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -277,22 +309,16 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
         <!-- Reusable Left Navigation Sidebar (Profile link cleanly removed from sidebar menu) -->
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
-        <main class="dashboard-main">
+        <main class="dashboard-main profile-workspace">
             <!-- Page Title Header -->
-            <div class="page-header" style="margin-bottom:24px;">
+            <div class="page-header">
                 <div>
-                    <h1 style="font-size:24px;color:#123321;margin:0 0 6px;font-family:var(--font-display);font-weight:800;">
+                    <h1>
                         Business Profile &amp; Security
                     </h1>
                     <p style="margin:0;color:#556c5e;font-size:13.5px;">
                         Manage corporate branding, verified SSM registration, facility address, and secure account credentials.
                     </p>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="background:#eaf5ea;color:#185a36;border:1px solid #b7deb4;padding:6px 14px;border-radius:0;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        Verified Malaysian SME
-                    </span>
                 </div>
             </div>
 
@@ -523,7 +549,7 @@ $activeNav = 'profile'; // Note: removed from sidebar as requested, but kept for
                             </div>
                         </div>
                         <p style="margin:0 0 12px;font-size:12px;color:#355340;line-height:1.55;">
-                            Your entity is officially verified. This grants full access to list secondary raw materials, execute transactions with e-Invoices, and communicate nationwide across the circular economy network.
+                            Your business is verified to trade on EcoCycle in Malaysia.
                         </p>
                         <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #c8ddc4;padding-top:10px;">
                             <span style="font-size:12px;font-weight:700;color:#185a36;">Status: Active / Approved</span>

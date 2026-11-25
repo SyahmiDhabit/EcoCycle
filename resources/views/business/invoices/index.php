@@ -50,8 +50,8 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
             display: inline-flex;
             align-items: center;
             padding: 6px 12px;
-            background: #143825;
-            border: 1px solid #143825;
+            background: #176b40;
+            border: 1px solid #176b40;
             color: #ffffff;
             text-decoration: none;
             font-size: 11.5px;
@@ -81,6 +81,41 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
             background: #f1f5f9;
             border-color: #94a3b8;
         }
+        .receipts-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .receipts-workspace .page-header {
+            padding: 0;
+            border: 0;
+        }
+        .receipts-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .history-table-wrap {
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .history-table-wrap .directory-table th {
+            background: #eef5eb;
+            color: #14532d;
+        }
+        .receipts-workspace :is(.btn-rect-primary, .btn-rect-outline) {
+            min-height: 32px;
+            justify-content: center;
+            border-radius: 6px !important;
+        }
+        .receipts-workspace .btn-rect-outline {
+            border-color: #a3bfa6;
+            color: #143825;
+        }
+        .receipts-workspace .btn-rect-outline:hover {
+            background: #eef5eb;
+            border-color: #176b40;
+        }
+        .receipts-workspace :is(a, .history-table-wrap):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: -2px;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -92,10 +127,10 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
             include resource_path('views/business/partials/sidebar.php');
         ?>
 
-        <main class="dashboard-main-content">
-            <header class="section-header">
+        <main class="dashboard-main-content receipts-workspace">
+            <header class="page-header">
                 <div class="section-header-title">
-                    <h2>Transaction History &amp; Receipts</h2>
+                    <h1>Transaction History &amp; Receipts</h1>
                     <p>View your Marketplace Sell and Free transactions, complete pending payments, and download PDF receipts.</p>
                 </div>
             </header>
@@ -112,7 +147,7 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
                 </div>
             <?php endif; ?>
 
-            <div class="history-table-wrap">
+            <div class="history-table-wrap" role="region" aria-label="Transaction history and receipts" tabindex="0">
                 <?php if ($orders->isNotEmpty()): ?>
                     <table class="directory-table" style="margin-bottom:0;">
                         <thead>

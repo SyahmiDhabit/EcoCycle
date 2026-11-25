@@ -82,6 +82,7 @@ $paymentRef = trim((string) ($invoice->payment_reference ?: ($invoice->payment?-
         .receipt-logo-box {
             width: 40px;
             height: 40px;
+            flex-shrink: 0;
             background: #ffffff;
             border-radius: 0;
             display: inline-flex;
@@ -163,6 +164,34 @@ $paymentRef = trim((string) ($invoice->payment_reference ?: ($invoice->payment?-
             cursor: pointer;
             border-radius: 0;
         }
+        .receipt-toolbar-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .receipt-toolbar :is(.btn-rcp-primary, .btn-rcp-secondary) {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            font-family: inherit;
+            border-radius: 6px !important;
+        }
+        .receipt-toolbar .btn-rcp-primary {
+            background: #176b40;
+            border-color: #176b40;
+        }
+        .receipt-toolbar .btn-rcp-primary:hover { background: #105331; }
+        .receipt-toolbar .btn-rcp-secondary {
+            border-color: #a3bfa6;
+            color: #143825;
+        }
+        .receipt-toolbar .btn-rcp-secondary:hover { background: #eef5eb; }
+        .receipt-toolbar :is(a, button):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
         @media print {
             .dashboard-topbar,
             .dashboard-sidebar,
@@ -200,20 +229,20 @@ $paymentRef = trim((string) ($invoice->payment_reference ?: ($invoice->payment?-
             <?php endif; ?>
 
             <div class="receipt-toolbar">
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <div class="receipt-toolbar-actions">
                     <a href="<?= route('business.invoices.index') ?>" class="btn-rcp-secondary">
-                        &larr; Back to Receipts
+                        Back to Receipts
                     </a>
                     <?php if ($invoice->exchange): ?>
-                        <a href="<?= route('business.orders.show', $invoice->exchange) ?>" class="btn-rcp-secondary">
+                        <a href="<?= route('business.orders.show', $invoice->exchange) ?>" class="btn-rcp-primary">
                             Track Order
                         </a>
                     <?php endif; ?>
                 </div>
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <button type="button" onclick="window.print()" class="btn-rcp-secondary">
+                <div class="receipt-toolbar-actions">
+                    <a href="<?= route('business.invoices.pdf', ['invoice' => $invoice, 'inline' => 1]) ?>" class="btn-rcp-secondary" target="_blank" rel="noopener" aria-label="Print Receipt (opens PDF in a new tab)">
                         Print Receipt
-                    </button>
+                    </a>
                     <a href="<?= route('business.invoices.pdf', $invoice) ?>" class="btn-rcp-primary">
                         Download PDF
                     </a>

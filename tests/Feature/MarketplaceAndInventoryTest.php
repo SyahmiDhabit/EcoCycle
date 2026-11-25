@@ -794,17 +794,28 @@ class MarketplaceAndInventoryTest extends TestCase
         $this->assertSame($buyer->id, $review->reviewer_business_id);
 
         $otherListing = $item->replicate();
-        $otherListing->business_id = $buyer->id;
         $otherListing->save();
 
         MarketplaceReview::create([
             'item_id' => $otherListing->id,
-            'seller_business_id' => $buyer->id,
-            'reviewer_business_id' => $seller->id,
+            'seller_business_id' => $seller->id,
+            'reviewer_business_id' => $buyer->id,
             'rating' => 4,
-            'comment' => 'Review for another seller.',
+            'comment' => 'Review for another item.',
             'exchange_type' => 'buy',
         ]);
+
+        $nonBuyer = $this->createApprovedBusiness('Unverified Reviewer');
+        MarketplaceReview::create([
+            'item_id' => $item->id,
+            'seller_business_id' => $seller->id,
+            'reviewer_business_id' => $nonBuyer->id,
+            'rating' => 1,
+            'comment' => 'Review without a purchase.',
+            'exchange_type' => 'buy',
+        ]);
+
+        $this->get(route('business.marketplace'))->assertSee('View item reviews, rated 5.0 out of 5');
 
         $this->getJson(route('business.marketplace.seller-reviews', $item))
             ->assertOk()

@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 #[Fillable([
     'item_id',
@@ -48,6 +50,28 @@ class MarketplaceReview extends Model
         return [
             'rating' => 'integer',
         ];
+    }
+
+    /**
+     * @param  Builder<MarketplaceReview>  $query
+     */
+    public function scopeFromItemBuyers(Builder $query): void
+    {
+        $query->whereExists(function (QueryBuilder $purchase): void {
+            $purchase->selectRaw('1')
+                ->from('material_exchange')
+                ->whereColumn('material_exchange.item_id', 'marketplace_review.item_id')
+                ->whereColumn('material_exchange.provider_business_id', 'marketplace_review.seller_business_id')
+                ->whereColumn('material_exchange.requester_business_id', 'marketplace_review.reviewer_business_id')
+                ->where(function (QueryBuilder $order): void {
+                    $order->whereNull('marketplace_review.material_exchange_id')
+                        ->orWhereColumn('material_exchange.id', 'marketplace_review.material_exchange_id');
+                })
+                ->where(function (QueryBuilder $order): void {
+                    $order->where('material_exchange.payment_status', 'paid')
+                        ->orWhereIn('material_exchange.delivery_status', ['delivered', 'completed', 'returned']);
+                });
+        });
     }
 
     public function item(): BelongsTo

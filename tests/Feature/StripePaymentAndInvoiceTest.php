@@ -245,6 +245,11 @@ class StripePaymentAndInvoiceTest extends TestCase
         $pdfResp->assertOk();
         $pdfResp->assertHeader('Content-Type', 'application/pdf');
         $pdfBody = $pdfResp->getContent();
+        $printResponse = $this->get(route('business.invoices.pdf', ['invoice' => $receipt, 'inline' => 1]))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Content-Disposition', 'inline; filename="'.$receipt->invoice_number.'.pdf"');
+        $this->assertSame($pdfBody, $printResponse->getContent());
         $this->assertStringStartsWith('%PDF-1.4', $pdfBody);
         $this->assertStringContainsString('%%EOF', $pdfBody);
         $this->assertStringContainsString('EcoCycle Receipt', $pdfBody);
@@ -609,6 +614,7 @@ class StripePaymentAndInvoiceTest extends TestCase
         // Intruder blocked from receipt HTML, PDF download, and checkout
         $this->actingAs($intruder)->get(route('business.invoices.show', $receipt))->assertForbidden();
         $this->actingAs($intruder)->get(route('business.invoices.pdf', $receipt))->assertForbidden();
+        $this->get(route('business.invoices.pdf', ['invoice' => $receipt, 'inline' => 1]))->assertForbidden();
         $this->actingAs($intruder)->get(route('business.orders.checkout', $exchange))->assertForbidden();
         $this->actingAs($intruder)->post(route('business.payments.stripe.checkout', $exchange))->assertForbidden();
 

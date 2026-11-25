@@ -460,32 +460,51 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
         }
         .marketplace-workspace .page-header {
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
             padding: 0;
             border: 0;
+        }
+        .marketplace-workspace .page-header > div {
+            flex: 1 1 480px;
+            min-width: 0;
         }
         .marketplace-workspace .page-header h1 {
             color: #14532d;
             font-size: clamp(26px, 3vw, 40px);
         }
         .marketplace-workspace .marketplace-tabs {
+            margin-bottom: 0;
             gap: 6px;
             padding: 6px;
             width: fit-content;
             max-width: 100%;
             background: #e4eee3;
             border: 1px solid var(--card-border);
-            border-radius: 8px;
         }
         .marketplace-workspace .mkt-tab-btn {
             min-height: 40px;
-            border-radius: 6px;
         }
         .marketplace-workspace :is(.mkt-tab-btn.active, .filter-card .btn-search) {
             background: #176b40;
             border-color: #176b40;
         }
-        .marketplace-workspace :is(.filter-field input, .filter-field select, .filter-card .btn-search, .filter-card .btn-back-directory, .listing-card-footer a, .listing-card-footer button) {
-            border-radius: 6px;
+        .marketplace-page :is(.marketplace-workspace, .modal-overlay, .seller-reviews-dialog)
+        :is(button, .mkt-tab-btn, .btn-search, .btn-back-directory, .btn-view-quick, .btn-claim-action, .btn-choose-photos) {
+            border-radius: 6px !important;
+        }
+        .marketplace-filter-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        @media (max-width: 1100px) {
+            .marketplace-workspace .marketplace-filter-actions {
+                grid-column: 1 / -1;
+                justify-content: flex-end;
+            }
         }
         .marketplace-workspace .filter-card {
             box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
@@ -545,7 +564,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         #seller-review-more { margin-top: 14px; }
     </style>
 </head>
-<body class="business-dashboard-page">
+<body class="business-dashboard-page marketplace-page">
     <!-- Reusable Top Navigation Bar -->
     <?php include resource_path('views/business/partials/topbar.php'); ?>
 
@@ -562,6 +581,20 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         ? 'Industrial scrap, single-use residues, and manufacturing cutoffs separated from the normal reusable marketplace. Forward items directly to <strong>EcoCycle Helper</strong> for circular upcycling advice or find matching certified recyclers.' 
                         : 'Purchase or claim reusable materials directly from verified Malaysian SMEs.' ?></p>
                 </div>
+                <nav class="marketplace-tabs" aria-label="Marketplace views">
+                    <a href="/business/marketplace?tab=reusable" class="mkt-tab-btn <?= $currentTab === 'reusable' ? 'active' : '' ?>">
+                        <span>Reusable Items</span>
+                        <span class="mkt-tab-badge"><?= $reusableCount ?></span>
+                    </a>
+                    <a href="/business/marketplace?tab=non_reusable" class="mkt-tab-btn <?= $currentTab === 'non_reusable' ? 'active' : '' ?>">
+                        <span>Non-Reusable Items</span>
+                        <span class="mkt-tab-badge"><?= $nonReusableCount ?></span>
+                    </a>
+                    <a href="/business/marketplace?my_listings=1" class="mkt-tab-btn <?= $currentTab === 'my_listings' ? 'active' : '' ?>">
+                        <span>My Listings</span>
+                        <span class="mkt-tab-badge"><?= $myListingsCount ?></span>
+                    </a>
+                </nav>
             </div>
 
             <!-- Flash Status Messages -->
@@ -578,22 +611,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                     <span><?= e(session('error')) ?></span>
                 </div>
             <?php } ?>
-
-            <!-- View Tabs: Reusable vs Non-Reusable vs My Listings -->
-            <div class="marketplace-tabs">
-                <a href="/business/marketplace?tab=reusable" class="mkt-tab-btn <?= $currentTab === 'reusable' ? 'active' : '' ?>">
-                    <span>Reusable Items</span>
-                    <span class="mkt-tab-badge"><?= $reusableCount ?></span>
-                </a>
-                <a href="/business/marketplace?tab=non_reusable" class="mkt-tab-btn <?= $currentTab === 'non_reusable' ? 'active' : '' ?>">
-                    <span>Non-Reusable Items (Scrap &amp; Recovery)</span>
-                    <span class="mkt-tab-badge"><?= $nonReusableCount ?></span>
-                </a>
-                <a href="/business/marketplace?my_listings=1" class="mkt-tab-btn <?= $currentTab === 'my_listings' ? 'active' : '' ?>">
-                    <span>My Listings</span>
-                    <span class="mkt-tab-badge"><?= $myListingsCount ?></span>
-                </a>
-            </div>
 
             <?php if ($currentTab === 'non_reusable') { ?>
                 <!-- Non-Reusable Dedicated Banner with Direct Helper Link -->
@@ -670,19 +687,16 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             </select>
                         </div>
 
-                        <div class="filter-field" style="justify-content: flex-end;">
-                            <label>&nbsp;</label>
-                            <div style="display:flex;gap:6px;">
-                                <button type="submit" class="btn-search" style="height:40px;padding:0 14px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                                    <span>Filter</span>
-                                </button>
-                                <?php if (request()->hasAny(['q', 'category', 'location', 'listing_type', 'reusability'])) { ?>
-                                    <a href="<?= $myListingsOnly ? '/business/marketplace?my_listings=1' : '/business/marketplace' ?>" class="btn-back-directory" style="height:40px;padding:0 12px;display:grid;place-items:center;" title="Reset filters">
-                                        Reset
-                                    </a>
-                                <?php } ?>
-                            </div>
+                        <div class="marketplace-filter-actions">
+                            <button type="submit" class="btn-search" style="height:40px;padding:0 14px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                <span>Filter</span>
+                            </button>
+                            <?php if (request()->hasAny(['q', 'category', 'location', 'listing_type', 'reusability'])) { ?>
+                                <a href="<?= $myListingsOnly ? '/business/marketplace?my_listings=1' : '/business/marketplace' ?>" class="btn-back-directory" style="height:40px;padding:0 12px;display:grid;place-items:center;" title="Reset filters">
+                                    Reset
+                                </a>
+                            <?php } ?>
                         </div>
                     </div>
                 </form>
@@ -723,7 +737,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         $images = $item->getAllImages();
                         $imgCount = count($images);
                         $cardId = 'listing-card-'.$item->id;
-                        $sellerRating = $sellerRatings[(int) $item->business_id] ?? null;
+                        $listingRating = $listingRatings[(int) $item->id] ?? null;
                         $pickupAddr = trim((string) ($item->pickup_address ?: implode(', ', array_filter([$item->business?->registered_address, $item->location_city, $item->location_state]))));
                         ?>
                         <article class="listing-card" id="<?= $cardId ?>"
@@ -788,12 +802,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             <div class="listing-body">
                                 <div class="listing-heading">
                                     <h3 class="listing-title" title="<?= e($item->title) ?>"><?= e($item->title) ?></h3>
-                                    <?php if ($sellerRating): ?>
+                                    <?php if ($listingRating): ?>
                                         <button type="button" class="seller-rating-button" aria-haspopup="dialog"
                                             data-seller-reviews-url="<?= e(route('business.marketplace.seller-reviews', $item)) ?>"
-                                            data-seller-name="<?= e($item->business?->business_name ?: 'EcoCycle business') ?>"
-                                            aria-label="View seller reviews, rated <?= number_format((float) $sellerRating['avg'], 1) ?> out of 5">
-                                            &#9733; <?= number_format((float) $sellerRating['avg'], 1) ?> (<?= (int) $sellerRating['count'] ?>)
+                                            data-item-name="<?= e($item->title) ?>"
+                                            aria-label="View item reviews, rated <?= number_format((float) $listingRating['avg'], 1) ?> out of 5">
+                                            &#9733; <?= number_format((float) $listingRating['avg'], 1) ?> (<?= (int) $listingRating['count'] ?>)
                                         </button>
                                     <?php endif; ?>
                                 </div>
@@ -1793,7 +1807,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
     <dialog id="seller-reviews-dialog" class="seller-reviews-dialog" aria-labelledby="seller-reviews-title">
         <form method="dialog" class="seller-reviews-header">
             <div>
-                <h2 id="seller-reviews-title">Seller reviews</h2>
+                <h2 id="seller-reviews-title">Item reviews</h2>
                 <p id="seller-reviews-summary"></p>
             </div>
             <button class="btn-reset" type="submit" autofocus>Close</button>
@@ -1866,7 +1880,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 event.stopPropagation();
                 pending?.abort();
                 list.replaceChildren();
-                document.getElementById('seller-reviews-summary').textContent = button.dataset.sellerName + ' · ' + button.textContent.trim();
+                document.getElementById('seller-reviews-summary').textContent = button.dataset.itemName + ' · ' + button.textContent.trim();
                 nextUrl = button.dataset.sellerReviewsUrl;
                 dialog.showModal();
                 loadReviews();

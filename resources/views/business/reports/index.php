@@ -19,7 +19,7 @@
         }
         .report-metric-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
             gap: 16px;
             margin-top: 16px;
         }
@@ -66,10 +66,53 @@
             background: #176b40;
             border-radius: 0;
         }
+        .reports-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .reports-workspace .page-header {
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 0;
+            border: 0;
+        }
+        .reports-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .reports-workspace .btn-print-report {
+            background: #176b40;
+            border-color: #176b40;
+            min-height: 40px;
+            border-radius: 6px !important;
+        }
+        .reports-workspace .btn-print-report:focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
+        .report-section-card h2 {
+            font: 700 18px var(--font-display);
+            color: #14532d;
+            margin: 0 0 12px;
+        }
+        .report-metric-box p { margin: 4px 0 0; color: var(--text-secondary); }
+        .report-chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 265px), 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .report-chart-grid > section { margin: 0; }
+        .report-bars { list-style: none; margin: 0; padding: 0; }
+        .cat-bar-header { gap: 12px; }
+        .cat-bar-header span:last-child { white-space: nowrap; }
+        .report-table-scroll { overflow-x: auto; }
         @media print {
-            .topbar, .dashboard-sidebar, .btn-print-report {
+            .topbar, .dashboard-sidebar, .sidebar-backdrop, .btn-print-report {
                 display: none !important;
             }
+            .report-chart-grid { display: block; }
+            .report-chart-grid > section { margin-bottom: 12px; break-inside: avoid; }
+            .cat-bar-fill { print-color-adjust: exact; }
             .dashboard-layout {
                 display: block !important;
             }
@@ -88,122 +131,75 @@
             include resource_path('views/business/partials/sidebar.php'); 
         ?>
 
-        <main class="dashboard-main-content">
-            <header class="section-header" style="margin-bottom:20px;">
-                <div class="section-header-title">
-                    <h2>Financial, ESG &amp; Wastage Audit Report</h2>
-                    <p>Verified analytics on trading revenue, material procurement savings, and circular scrap diversion metrics.</p>
-                </div>
+        <main class="dashboard-main-content reports-workspace">
+            <header class="page-header">
                 <div>
-                    <button type="button" class="btn-print-report" onclick="window.print()" style="background:#143825;color:#fff;border:1px solid #143825;padding:10px 18px;border-radius:0;font:600 13px var(--font-main);cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-                        <span>Print / Export PDF</span>
-                    </button>
+                    <h1>Business Reports</h1>
+                    <p>All-time Marketplace payments and waste records for your business.</p>
                 </div>
+                <button type="button" class="btn-search btn-print-report" onclick="window.print()">Print / Save as PDF</button>
             </header>
 
-            <!-- 1. Financial Analytics -->
-            <div class="report-section-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--card-border);padding-bottom:12px;">
-                    <div>
-                        <h3 style="margin:0 0 4px;color:#123020;font-size:17px;">1. Financial Performance &amp; Savings Summary</h3>
-                        <p style="margin:0;font-size:12.5px;color:#556c5e;">Revenue generated from surplus materials sold vs expenditure on secondary materials.</p>
-                    </div>
-                    <span style="background:#f0fdf4;color:#15803d;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:0;border:1px solid #bbf7d0;">
-                        Fiscal Year 2026
-                    </span>
-                </div>
-
+            <section class="report-section-card" aria-labelledby="financial-heading">
+                <h2 id="financial-heading">Marketplace payments</h2>
                 <div class="report-metric-row">
-                    <div class="report-metric-box" style="border-left:4px solid #16a34a;">
-                        <small>Total Keuntungan / Sales Revenue</small>
-                        <span style="color:#15803d;">RM <?= number_format((float) $totalSalesRevenue, 2) ?></span>
-                        <div style="font-size:11px;color:#617769;margin-top:4px;"><?= $totalSalesOrders ?> orders fulfilled</div>
+                    <div class="report-metric-box">
+                        <small>Total Sales</small>
+                        <span>RM <?= number_format($totalSalesRevenue, 2) ?></span>
+                        <p><?= $totalSalesOrders ?> paid <?= $totalSalesOrders === 1 ? 'sale' : 'sales' ?></p>
                     </div>
-                    <div class="report-metric-box" style="border-left:4px solid #dc2626;">
-                        <small>Duit Keluar / Purchases Spent</small>
-                        <span style="color:#b91c1c;">RM <?= number_format((float) $totalPurchasesSpent, 2) ?></span>
-                        <div style="font-size:11px;color:#617769;margin-top:4px;"><?= $totalPurchasesOrders ?> secondary orders bought</div>
+                    <div class="report-metric-box">
+                        <small>Total Purchases</small>
+                        <span>RM <?= number_format($totalPurchasesSpent, 2) ?></span>
+                        <p><?= $totalPurchasesOrders ?> paid <?= $totalPurchasesOrders === 1 ? 'purchase' : 'purchases' ?></p>
                     </div>
-                    <div class="report-metric-box" style="border-left:4px solid #2563eb;">
-                        <small>Net Profit / Material Savings</small>
-                        <span style="color:<?= $netProfitOrSavings >= 0 ? '#15803d' : '#b91c1c' ?>;">
-                            RM <?= number_format((float) $netProfitOrSavings, 2) ?>
-                        </span>
-                        <div style="font-size:11px;color:#617769;margin-top:4px;">Direct bottom-line circular savings</div>
+                    <div class="report-metric-box">
+                        <small>Sales less purchases</small>
+                        <span>RM <?= number_format($totalSalesRevenue - $totalPurchasesSpent, 2) ?></span>
                     </div>
                 </div>
+            </section>
+
+            <div class="report-chart-grid">
+                <?php foreach ([
+                    ['payments-chart', 'Paid sales vs purchases', ['Sales' => $totalSalesRevenue, 'Purchases' => $totalPurchasesSpent], true],
+                    ['waste-category-chart', 'Waste records by category', $wasteCategories, false],
+                    ['waste-status-chart', 'Waste records by status', $wasteStatuses, false],
+                ] as [$chartId, $chartTitle, $series, $isMoney]): ?>
+                    <section class="report-section-card" aria-labelledby="<?= $chartId ?>">
+                        <h2 id="<?= $chartId ?>"><?= e($chartTitle) ?></h2>
+                        <?php if (max($series ?: [0]) > 0): ?>
+                            <?php $maximum = max($series); ?>
+                            <ul class="report-bars">
+                                <?php foreach ($series as $label => $amount): ?>
+                                    <li class="cat-bar-item">
+                                        <div class="cat-bar-header">
+                                            <span><?= e($label) ?></span>
+                                            <span><?= $isMoney ? 'RM '.number_format($amount, 2) : number_format($amount) ?></span>
+                                        </div>
+                                        <div class="cat-bar-track" aria-hidden="true">
+                                            <div class="cat-bar-fill" style="width:<?= round($amount / $maximum * 100, 2) ?>%;"></div>
+                                        </div>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p><?= $isMoney ? 'No paid transactions yet.' : 'No waste records yet.' ?></p>
+                        <?php endif; ?>
+                    </section>
+                <?php endforeach; ?>
             </div>
 
-            <!-- 2. Wastage & Circular Environmental Impact -->
             <div class="report-section-card">
-                <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--card-border);padding-bottom:12px;">
-                    <div>
-                        <h3 style="margin:0 0 4px;color:#123020;font-size:17px;">2. Circular Materials &amp; Landfill Diversion Metrics</h3>
-                        <p style="margin:0;font-size:12.5px;color:#556c5e;">Classification of reusable materials vs non-reusable industrial scrap recovered.</p>
-                    </div>
-                    <span style="background:#eff6ff;color:#1d4ed8;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:0;border:1px solid #bfdbfe;">
-                        Circularity Rate: <?= $circularityRate ?>%
-                    </span>
-                </div>
-
-                <div class="report-metric-row">
-                    <div class="report-metric-box" style="border-left:4px solid #16a34a;">
-                        <small>Total Materials Diverted</small>
-                        <span style="color:#15803d;"><?= number_format((float) $totalDivertedFromLandfillKg, 1) ?> <small style="font-size:13px;">kg</small></span>
-                        <div style="font-size:11px;color:#617769;margin-top:4px;">Diverted from Malaysian municipal landfills</div>
-                    </div>
-                    <div class="report-metric-box" style="border-left:4px solid #2563eb;">
-                        <small>Reusable Inventory Circulated</small>
-                        <span style="color:#1d4ed8;"><?= number_format((float) $reusableStockTotal, 1) ?> <small style="font-size:13px;">units/kg</small></span>
-                        <div style="font-size:11px;color:#617769;margin-top:4px;">Kept in high-value circular reuse</div>
-                    </div>
-                    <div class="report-metric-box" style="border-left:4px solid #eab308;">
-                        <small>Not-Reusable Scrap Recycled</small>
-                        <span style="color:#a16207;"><?= number_format((float) $scrapDivertedKg, 1) ?> <small style="font-size:13px;">kg</small></span>
-                        <div style="font-size:11px;color:#617769;margin-top:4px;">Transferred to licensed recyclers</div>
-                    </div>
-                    <div class="report-metric-box" style="border-left:4px solid #059669;">
-                        <small>CO₂ Emissions Avoided</small>
-                        <span style="color:#059669;"><?= number_format((float) $estimatedCo2AvoidedKg, 1) ?> <small style="font-size:13px;">kg CO₂e</small></span>
-                        <div style="font-size:11px;color:#617769;margin-top:4px;">Estimated avoided virgin material production</div>
-                    </div>
-                </div>
-
-                <!-- Scrap Category Distribution -->
-                <div style="margin-top:24px;">
-                    <h4 style="margin:0 0 12px;font-size:14px;color:#18422d;">Non-Reusable Scrap Generation by Category</h4>
-                    <?php if (!empty($categoryBreakdown)): ?>
-                        <?php 
-                            $maxKg = max($categoryBreakdown) ?: 1;
-                            foreach ($categoryBreakdown as $cName => $cKg): 
-                                $pct = round(($cKg / $maxKg) * 100);
-                        ?>
-                            <div class="cat-bar-item">
-                                <div class="cat-bar-header">
-                                    <span><?= e($cName) ?></span>
-                                    <span><?= number_format((float) $cKg, 1) ?> kg</span>
-                                </div>
-                                <div class="cat-bar-track">
-                                    <div class="cat-bar-fill" style="width:<?= $pct ?>%;"></div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p style="font-size:12.5px;color:#617769;margin:0;">No scrap records recorded yet.</p>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- 3. Recent Audit Logs -->
-            <div class="report-section-card">
-                <h3 style="margin:0 0 14px;color:#123020;font-size:18px;">3. Recent Verified Activity Logs</h3>
+                <h2>Recent activity</h2>
                 
-                <h4 style="margin:0 0 8px;font-size:13px;color:#18422d;">Recent Commercial Invoices &amp; Settlements</h4>
+                <h4 style="margin:0 0 8px;font-size:13px;color:#18422d;">Marketplace transactions</h4>
                 <?php if ($recentTransactions->isNotEmpty()): ?>
-                    <table class="inventory-table" style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12.5px;">
+                    <div class="report-table-scroll">
+<table class="inventory-table" style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12.5px;">
                         <thead>
                             <tr style="background:#f4f8f3;border-bottom:1px solid #d8e5d6;text-align:left;">
-                                <th style="padding:10px 14px;">Invoice #</th>
+                                <th style="padding:10px 14px;">Order reference</th>
                                 <th style="padding:10px 14px;">Material</th>
                                 <th style="padding:10px 14px;">Counterparty</th>
                                 <th style="padding:10px 14px;">Amount</th>
@@ -213,22 +209,24 @@
                         <tbody>
                             <?php foreach ($recentTransactions as $tx): ?>
                                 <tr style="border-bottom:1px solid #eef4ed;">
-                                    <td style="padding:10px 14px;font-family:monospace;"><?= e($tx->invoice_number ?: ('INV-' . $tx->id)) ?></td>
+                                    <td style="padding:10px 14px;font-family:monospace;"><?= e($tx->resolvedOrderReference()) ?></td>
                                     <td style="padding:10px 14px;"><?= e($tx->listing?->title ?: 'Material') ?></td>
-                                    <td style="padding:10px 14px;"><?= e($tx->requester?->business_name ?: ($tx->requester?->name ?? 'Partner')) ?></td>
+                                    <td style="padding:10px 14px;"><?= e(($tx->provider_business_id === $business->id ? $tx->requester : $tx->provider)?->business_name ?: 'Partner') ?></td>
                                     <td style="padding:10px 14px;font-weight:700;">RM <?= number_format((float)$tx->total_price, 2) ?></td>
-                                    <td style="padding:10px 14px;"><?= ucfirst($tx->payment_status ?: 'pending') ?></td>
+                                    <td style="padding:10px 14px;"><?= e($tx->paymentStatusLabel()) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 <?php else: ?>
                     <p style="font-size:12.5px;color:#617769;margin-bottom:20px;">No transaction logs yet.</p>
                 <?php endif; ?>
 
-                <h4 style="margin:0 0 8px;font-size:13px;color:#18422d;">Recent Scrap Destination Dispatches</h4>
+                <h4 style="margin:0 0 8px;font-size:13px;color:#18422d;">Waste records</h4>
                 <?php if ($recentWasteLogs->isNotEmpty()): ?>
-                    <table class="inventory-table" style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                    <div class="report-table-scroll">
+<table class="inventory-table" style="width:100%;border-collapse:collapse;font-size:12.5px;">
                         <thead>
                             <tr style="background:#f4f8f3;border-bottom:1px solid #d8e5d6;text-align:left;">
                                 <th style="padding:10px 14px;">Material</th>
@@ -245,11 +243,12 @@
                                     <td style="padding:10px 14px;color:#556c5e;"><?= e($wl->waste_type) ?></td>
                                     <td style="padding:10px 14px;font-weight:700;"><?= (float)$wl->quantity ?> <?= e($wl->unit) ?></td>
                                     <td style="padding:10px 14px;"><?= e($wl->facility_name ?: 'Internal') ?></td>
-                                    <td style="padding:10px 14px;"><?= ucfirst(str_replace('_', ' ', $wl->status)) ?></td>
+                                    <td style="padding:10px 14px;"><?= e(ucfirst(str_replace('_', ' ', (string) $wl->status))) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 <?php else: ?>
                     <p style="font-size:12.5px;color:#617769;margin:0;">No scrap logs yet.</p>
                 <?php endif; ?>

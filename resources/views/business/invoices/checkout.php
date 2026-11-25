@@ -36,7 +36,7 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
         .pay-card {
-            max-width: 640px;
+            max-width: 720px;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 0;
@@ -50,7 +50,7 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
             align-items: center;
         }
         .pay-card-body {
-            padding: 24px;
+            padding: clamp(14px, 3vw, 24px);
         }
         .pay-table {
             width: 100%;
@@ -126,6 +126,59 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
         .btn-pay-secondary:hover {
             background: #f1f5f9;
         }
+        .checkout-workspace {
+            padding-inline: clamp(20px, 4vw, 48px);
+        }
+        .checkout-workspace :is(.page-header, .pay-notice, .pay-card) {
+            max-width: 720px;
+            margin-inline: auto;
+        }
+        .checkout-workspace .page-header {
+            padding: 0;
+            border: 0;
+        }
+        .checkout-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .pay-card {
+            border-color: var(--card-border);
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .pay-card-header {
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            padding-inline: clamp(14px, 3vw, 24px);
+        }
+        .pay-table th {
+            background: #eef5eb;
+            color: #14532d;
+        }
+        .pay-table :is(th, td) {
+            padding-inline: clamp(8px, 2vw, 16px);
+            overflow-wrap: anywhere;
+        }
+        .checkout-workspace :is(.btn-pay-primary, .btn-pay-secondary) {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            border-radius: 6px !important;
+        }
+        .checkout-workspace .btn-pay-primary {
+            background: #176b40;
+            border-color: #176b40;
+        }
+        .checkout-workspace .btn-pay-primary:hover { background: #105331; }
+        .checkout-workspace .btn-pay-secondary {
+            border-color: #a3bfa6;
+            color: #143825;
+        }
+        .checkout-workspace .btn-pay-secondary:hover { background: #eef5eb; }
+        .checkout-workspace :is(a, button):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -137,27 +190,27 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
             include resource_path('views/business/partials/sidebar.php');
         ?>
 
-        <main class="dashboard-main-content">
-            <header class="section-header">
+        <main class="dashboard-main-content checkout-workspace">
+            <header class="page-header">
                 <div class="section-header-title">
-                    <h2>Payment Information</h2>
+                    <h1>Payment Information</h1>
                     <p>Review your order summary and complete payment.</p>
                 </div>
             </header>
 
             <?php if (session('status')): ?>
-                <div style="max-width:640px;background:#eef6ed;border:1px solid #b9dec0;border-left:3px solid #176b40;color:#143825;padding:12px 16px;font-size:13px;margin-bottom:18px;font-weight:600;">
+                <div class="pay-notice" style="background:#eef6ed;border:1px solid #b9dec0;border-left:3px solid #176b40;color:#143825;padding:12px 16px;font-size:13px;margin-bottom:18px;font-weight:600;">
                     <?= e(session('status')) ?>
                 </div>
             <?php endif; ?>
 
             <?php if ($errors->any()): ?>
-                <div style="max-width:640px;background:#fff5f4;border:1px solid #fed7d2;border-left:3px solid #b91c1c;color:#b91c1c;padding:12px 16px;font-size:13px;margin-bottom:18px;font-weight:600;">
+                <div class="pay-notice" style="background:#fff5f4;border:1px solid #fed7d2;border-left:3px solid #b91c1c;color:#b91c1c;padding:12px 16px;font-size:13px;margin-bottom:18px;font-weight:600;">
                     <?= e($errors->first()) ?>
                 </div>
             <?php endif; ?>
 
-            <div class="pay-card" style="max-width:720px;">
+            <div class="pay-card">
                 <div class="pay-card-header">
                     <strong style="font-size:15px;">Order Checkout Summary</strong>
                     <span style="font-size:12px;color:#cde0d3;"><?= e($exchange->resolvedOrderReference()) ?></span>

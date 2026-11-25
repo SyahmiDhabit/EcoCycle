@@ -31,10 +31,10 @@ $itemPhoto = $exchange->item?->getPrimaryImage();
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
-        .od-wrap { max-width: 960px; }
-        .od-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; align-items: start; }
-        .od-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 0; margin-bottom: 18px; }
-        .od-card-head { padding: 13px 18px; background: #f8fafc; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .od-wrap { max-width: 1180px; margin-inline: auto; }
+        .od-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 20px; align-items: start; }
+        .od-card { background: #ffffff; border: 1px solid var(--card-border); box-shadow: 0 5px 12px rgba(20, 83, 45, .05); border-radius: 0; margin-bottom: 18px; }
+        .od-card-head { padding: 13px 18px; background: #eef5eb; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .od-card-head h3 { margin: 0; font-size: 14px; font-weight: 700; color: #143825; }
         .od-card-body { padding: 18px; }
         .od-table { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; }
@@ -43,11 +43,45 @@ $itemPhoto = $exchange->item?->getPrimaryImage();
         .od-timeline { list-style: none; margin: 0; padding: 0; }
         .od-timeline-item { position: relative; padding: 0 0 16px 20px; border-left: 2px solid #cbd5e1; }
         .od-timeline-item:last-child { border-left-color: transparent; padding-bottom: 0; }
-        .od-timeline-dot { position: absolute; left: -6px; top: 3px; width: 10px; height: 10px; background: #143825; border: 2px solid #ffffff; outline: 1px solid #143825; }
+        .od-timeline-dot { position: absolute; left: -6px; top: 3px; width: 10px; height: 10px; background: var(--timeline-color, #143825); border: 2px solid #ffffff; outline: 1px solid var(--timeline-color, #143825); }
+        .od-timeline-dot[data-status="payment_pending"] { --timeline-color: #b45309; }
+        .od-timeline-dot[data-status="confirmed"] { --timeline-color: #1d4ed8; }
+        .od-timeline-dot[data-status="preparing"] { --timeline-color: #7e22ce; }
+        .od-timeline-dot[data-status="ready_for_collection"],
+        .od-timeline-dot[data-status="in_transit"] { --timeline-color: #0e7490; }
+        .od-timeline-dot[data-status="delivered"],
+        .od-timeline-dot[data-status="completed"] { --timeline-color: #15803d; }
+        .od-timeline-dot[data-status="returned"] { --timeline-color: #475569; }
+        .od-timeline-dot[data-status="cancelled"] { --timeline-color: #b91c1c; }
         .od-btn-primary { padding: 9px 18px; background: #143825; border: 1px solid #143825; color: #ffffff; font-size: 12.5px; font-weight: 700; border-radius: 0; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
         .od-btn-secondary { padding: 8px 14px; background: #ffffff; border: 1px solid #cbd5e1; color: #334155; font-size: 12.5px; font-weight: 600; border-radius: 0; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
         .od-input { width: 100%; padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 0; font-size: 13px; box-sizing: border-box; background: #ffffff; color: #0f172a; }
         @media (max-width: 860px) { .od-grid { grid-template-columns: 1fr; } }
+        .order-workspace {
+            padding-inline: clamp(20px, 4vw, 48px);
+        }
+        .od-title {
+            margin: 4px 0 6px;
+            color: #14532d;
+            font-family: var(--font-display);
+            font-size: clamp(24px, 3vw, 38px);
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+        .order-workspace :is(.od-btn-primary, .od-btn-secondary) {
+            min-height: 40px;
+            justify-content: center;
+            border-radius: 6px !important;
+        }
+        .od-btn-primary { background: #176b40; border-color: #176b40; }
+        .od-btn-primary:hover { filter: brightness(.92); }
+        .od-btn-secondary { color: #143825; border-color: #a3bfa6; }
+        .od-btn-secondary:hover { background: #eef5eb; }
+        .order-workspace :is(a, button):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
+        .od-table td, .od-timeline-item { overflow-wrap: anywhere; }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -56,14 +90,14 @@ $itemPhoto = $exchange->item?->getPrimaryImage();
     <div class="dashboard-layout">
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
-        <main class="dashboard-main-content">
+        <main class="dashboard-main-content order-workspace">
             <div class="od-wrap">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
                     <div>
                         <a href="<?= route('business.orders.index', ['tab' => $isSeller ? 'sales' : 'purchases']) ?>" class="od-btn-secondary" style="margin-bottom:10px;">
-                            &larr; Back to My Orders
+                            Back to My Orders
                         </a>
-                        <h2 style="margin:4px 0 2px;font-size:21px;color:#143825;">Order <?= e($exchange->resolvedOrderReference()) ?></h2>
+                        <h1 class="od-title">Order <?= e($exchange->resolvedOrderReference()) ?></h1>
                         <p style="margin:0;font-size:13px;color:#475569;">
                             Role: <strong><?= $isSeller ? 'Seller (Fulfillment)' : 'Buyer' ?></strong> &middot; Current Delivery Status: <strong><?= e($exchange->deliveryStatusLabel()) ?></strong>
                         </p>
@@ -279,7 +313,7 @@ $itemPhoto = $exchange->item?->getPrimaryImage();
                                     <ul class="od-timeline">
                                         <?php foreach ($exchange->statusHistory as $event): ?>
                                             <li class="od-timeline-item">
-                                                <span class="od-timeline-dot"></span>
+                                                <span class="od-timeline-dot" data-status="<?= e(strtolower(trim((string) $event->status))) ?>" aria-hidden="true"></span>
                                                 <div style="font-size:13px;font-weight:700;color:#143825;">
                                                     <?= e(\App\Models\MaterialExchange::formatDeliveryStatus($event->status)) ?>
                                                 </div>

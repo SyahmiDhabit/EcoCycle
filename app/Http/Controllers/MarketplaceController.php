@@ -107,18 +107,19 @@ class MarketplaceController extends Controller
 
         $listings = $query->latest()->get();
 
-        // Aggregate verified seller ratings for displayed Marketplace cards
-        $sellerIds = $listings->pluck('business_id')->unique()->filter()->values();
-        $sellerRatings = [];
-        if ($sellerIds->isNotEmpty()) {
+        // Aggregate buyer ratings for each displayed listing
+        $listingIds = $listings->modelKeys();
+        $listingRatings = [];
+        if ($listingIds !== []) {
             $ratingRows = MarketplaceReview::query()
-                ->select('seller_business_id', DB::raw('AVG(rating) as avg_rating'), DB::raw('COUNT(*) as review_count'))
-                ->whereIn('seller_business_id', $sellerIds)
-                ->groupBy('seller_business_id')
+                ->fromItemBuyers()
+                ->select('item_id', DB::raw('AVG(rating) as avg_rating'), DB::raw('COUNT(*) as review_count'))
+                ->whereIn('item_id', $listingIds)
+                ->groupBy('item_id')
                 ->get();
 
             foreach ($ratingRows as $row) {
-                $sellerRatings[(int) $row->seller_business_id] = [
+                $listingRatings[(int) $row->item_id] = [
                     'avg' => round((float) $row->avg_rating, 1),
                     'count' => (int) $row->review_count,
                 ];
@@ -177,7 +178,7 @@ class MarketplaceController extends Controller
         return view('business.marketplace.index', [
             'business' => $business,
             'listings' => $listings,
-            'sellerRatings' => $sellerRatings,
+            'listingRatings' => $listingRatings,
             'categories' => $categories,
             'locations' => $locations,
             'myInventoryItems' => $myInventoryItems,
@@ -200,6 +201,8 @@ class MarketplaceController extends Controller
 
         $reviews = MarketplaceReview::query()
             ->with('reviewer:id,business_name')
+            ->fromItemBuyers()
+            ->where('item_id', $listing->id)
             ->where('seller_business_id', $listing->business_id)
             ->latest()
             ->orderByDesc('id')

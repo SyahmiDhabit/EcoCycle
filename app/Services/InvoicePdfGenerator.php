@@ -74,7 +74,7 @@ class InvoicePdfGenerator
         $logoX = self::MARGIN + 16.0;
         $logoY = $headerBottomY + 16.0;
         $ops[] = $this->rect($logoX, $logoY, 36.0, 36.0, [1.0, 1.0, 1.0], [0.80, 0.88, 0.82], 0.8);
-        $ops[] = $this->drawEcoCycleLeaf($logoX + 8.0, $logoY + 7.0);
+        $ops[] = $this->drawEcoCycleLeaf($logoX + 5.4, $logoY + 30.6, 25.2);
 
         $ops[] = $this->text(self::MARGIN + 64.0, $headerBottomY + 38.0, 'EcoCycle Receipt', 'F2', 17.0, [1.0, 1.0, 1.0]);
         $ops[] = $this->text(self::MARGIN + 64.0, $headerBottomY + 21.0, 'EcoCycle Malaysia Marketplace Transaction Receipt', 'F1', 9.0, [0.82, 0.90, 0.84]);
@@ -180,31 +180,33 @@ class InvoicePdfGenerator
     }
 
     /**
-     * Draw a simple vector leaf emblem representing EcoCycle inside the header logo mark.
+     * Draw the outline from public/images/figma/ecocycle-leaf.svg in PDF coordinates.
      */
-    private function drawEcoCycleLeaf(float $ox, float $oy): string
+    private function drawEcoCycleLeaf(float $left, float $top, float $size): string
     {
-        return sprintf(
-            '0.094 0.345 0.200 rg 0.078 0.220 0.145 RG 1.1 w %.2f %.2f m %.2f %.2f %.2f %.2f %.2f %.2f c %.2f %.2f %.2f %.2f %.2f %.2f c B 1 1 1 RG 1.0 w %.2f %.2f m %.2f %.2f l S',
-            $ox + 2.0,
-            $oy + 3.0,
-            $ox + 2.0,
-            $oy + 16.0,
-            $ox + 10.0,
-            $oy + 22.0,
-            $ox + 19.0,
-            $oy + 21.0,
-            $ox + 19.0,
-            $oy + 10.0,
-            $ox + 12.0,
-            $oy + 3.0,
-            $ox + 2.0,
-            $oy + 3.0,
-            $ox + 3.5,
-            $oy + 4.5,
-            $ox + 14.5,
-            $oy + 16.5
-        );
+        $scale = $size / 23.0;
+        $transform = sprintf('q %.6F 0 0 %.6F %.2F %.2F cm', $scale, -$scale, $left, $top);
+
+        return $transform."\n".<<<'PDF'
+0.086275 0.396078 0.203922 RG
+1.7 w 1 J
+1.9159 20.125 m
+1.9159 18.0813 2.81175 16.3475 4.44166 15.2954 c
+4.44166 15.2954 m
+5.10475 14.8673 5.88933 14.5521 6.78451 14.3748 c
+9.1038 13.9147 11.4998 12.458 12.4582 11.4996 c
+4.44166 15.2954 m
+4.81168 16.0881 5.33636 16.8077 5.99312 17.4084 c
+7.23494 18.5442 8.85826 19.1717 10.5411 19.1666 c
+15.5439 19.1666 20.125 14.8539 20.125 9.58289 c
+20.125 5.9219 19.1666 3.83265 18.2082 1.9159 c
+16.2915 4.29267 14.8539 4.79102 9.39106 5.84523 c
+7.73222 6.12862 6.24047 7.02511 5.21168 8.35688 c
+4.18289 9.68865 3.69221 11.3584 3.83696 13.0351 c
+3.90515 13.825 4.11204 14.5892 4.44166 15.2954 c
+h
+S Q
+PDF;
     }
 
     /**

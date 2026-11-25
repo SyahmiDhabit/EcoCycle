@@ -213,14 +213,65 @@ class BusinessFullSuiteTest extends TestCase
         ]);
     }
 
-    public function test_reports_page_displays_financial_and_circular_metrics(): void
+    public function test_reports_page_charts_paid_transactions_and_counts_waste_records(): void
     {
-        $biz = $this->createApprovedBusiness('Green Paper Works');
+        $business = $this->createApprovedBusiness('Green Paper Works');
+        $partner = $this->createApprovedBusiness('Recovery Partner');
+        $listing = MarketplaceListing::create([
+            'business_id' => $business->id,
+            'title' => 'Oak Offcuts',
+            'category' => 'Wood',
+            'quantity' => 10,
+            'unit' => 'kg',
+            'price' => 25,
+            'status' => 'active',
+        ]);
 
-        $response = $this->actingAs($biz)->get('/business/reports');
-        $response->assertStatus(200);
-        $response->assertSee('Financial, ESG');
-        $response->assertSee('Circularity Rate');
+        foreach (['paid' => 125, 'pending' => 500] as $status => $price) {
+            MaterialExchange::create([
+                'item_id' => $listing->id,
+                'provider_business_id' => $business->id,
+                'requester_business_id' => $partner->id,
+                'quantity' => 5,
+                'unit' => 'kg',
+                'total_price' => $price,
+                'status' => 'accepted',
+                'payment_status' => $status,
+            ]);
+        }
+
+        foreach (['kg' => 'in_storage', 'litre' => 'recycled'] as $unit => $status) {
+            WasteRecord::create([
+                'business_id' => $business->id,
+                'material_name' => 'Production waste',
+                'waste_type' => 'Mixed waste',
+                'disposal_method' => 'Material recovery',
+                'quantity' => 100,
+                'unit' => $unit,
+                'status' => $status,
+                'recorded_at' => now()->toDateString(),
+            ]);
+        }
+        WasteRecord::create([
+            'business_id' => $partner->id,
+            'material_name' => 'Other business record',
+            'waste_type' => 'Mixed waste',
+            'disposal_method' => 'Material recovery',
+            'quantity' => 100,
+            'unit' => 'kg',
+            'status' => 'recycled',
+            'recorded_at' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($business)->get('/business/reports')
+            ->assertOk()
+            ->assertViewHas('totalSalesRevenue', 125.0)
+            ->assertViewHas('totalSalesOrders', 1)
+            ->assertViewHas('totalPurchasesSpent', 0.0)
+            ->assertViewHas('wasteCategories', ['Mixed waste' => 2])
+            ->assertViewHas('wasteStatuses', fn (array $statuses): bool => $statuses['In storage'] === 1 && $statuses['Recycled'] === 1)
+            ->assertSee('Waste records by status')
+            ->assertDontSee('Other business record');
     }
 
     public function test_profile_update_and_password_change(): void

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InventoryItem;
 use App\Models\MaterialExchange;
 use App\Models\User;
 use App\Models\WasteRecord;
@@ -26,51 +25,17 @@ class ReportController extends Controller
             return redirect()->route('business.dashboard');
         }
 
-        // 1. Financial Analytics
-        $salesExchanges = MaterialExchange::where('provider_business_id', $business->id)->get();
-        $totalSalesRevenue = (float) $salesExchanges->where('payment_status', 'paid')->sum('total_price');
-        $totalSalesOrders = $salesExchanges->count();
+        $salesExchanges = MaterialExchange::where('provider_business_id', $business->id)
+            ->where('payment_status', 'paid')->get(['total_price']);
+        $purchaseExchanges = MaterialExchange::where('requester_business_id', $business->id)
+            ->where('payment_status', 'paid')->get(['total_price']);
 
-        $purchaseExchanges = MaterialExchange::where('requester_business_id', $business->id)->get();
-        $totalPurchasesSpent = (float) $purchaseExchanges->where('payment_status', 'paid')->sum('total_price');
-        $totalPurchasesOrders = $purchaseExchanges->count();
-
-        $netProfitOrSavings = $totalSalesRevenue - $totalPurchasesSpent;
-
-        // 2. Circular Materials & Wastage Analytics
-        $allWasteRecords = WasteRecord::where('business_id', $business->id)->get();
-        $notReusableScrapTotalKg = (float) $allWasteRecords->sum('quantity');
-
-        $scrapDivertedKg = (float) $allWasteRecords->filter(function ($r) {
-            return $r->is_diverted || in_array($r->status, ['sent_to_facility', 'recycled', 'composted']);
-        })->sum('quantity');
-
-        $scrapInStorageKg = (float) $allWasteRecords->where('status', 'in_storage')->sum('quantity');
-
-        $reusableItems = InventoryItem::where('business_id', $business->id)
-            ->where('reusability', 'reusable')
-            ->get();
-        $reusableStockTotal = (float) $reusableItems->sum('quantity');
-
-        // Total Landfill Diversion (kg) = Reusable circulated + Not-reusable sent to recovery facilities
-        $totalDivertedFromLandfillKg = $reusableStockTotal + $scrapDivertedKg;
-
-        // Environmental Metrics: 1 kg diverted material = approx. 1.82 kg CO2 avoided
-        $estimatedCo2AvoidedKg = round($totalDivertedFromLandfillKg * 1.82, 1);
-
-        // Circularity Index % = Diverted / (Diverted + Landfilled/Pending)
-        $circularityRate = ($notReusableScrapTotalKg + $reusableStockTotal) > 0 ?
-            round(($totalDivertedFromLandfillKg / ($notReusableScrapTotalKg + $reusableStockTotal)) * 100, 1) : 100.0;
-
-        // Category breakdown for reporting
-        $categoryBreakdown = [];
-        foreach ($allWasteRecords as $w) {
-            $cat = $w->waste_type ?: 'General Scrap';
-            if (! isset($categoryBreakdown[$cat])) {
-                $categoryBreakdown[$cat] = 0;
-            }
-            $categoryBreakdown[$cat] += (float) $w->quantity;
-        }
+        $wasteRecords = WasteRecord::where('business_id', $business->id)->get(['waste_type', 'status']);
+        $wasteCategories = $wasteRecords->countBy(fn (WasteRecord $record): string => trim((string) $record->waste_type) ?: 'Uncategorised')
+            ->sortDesc()->all();
+        $wasteStatuses = $wasteRecords->countBy(fn (WasteRecord $record): string => $record->status
+            ? ucfirst(str_replace('_', ' ', $record->status))
+            : 'Unspecified')->sortDesc()->all();
 
         // Recent transaction and waste activity logs for printable audit report
         $recentTransactions = MaterialExchange::where(function ($q) use ($business) {
@@ -82,19 +47,12 @@ class ReportController extends Controller
 
         return view('business.reports.index', [
             'business' => $business,
-            'totalSalesRevenue' => $totalSalesRevenue,
-            'totalSalesOrders' => $totalSalesOrders,
-            'totalPurchasesSpent' => $totalPurchasesSpent,
-            'totalPurchasesOrders' => $totalPurchasesOrders,
-            'netProfitOrSavings' => $netProfitOrSavings,
-            'notReusableScrapTotalKg' => $notReusableScrapTotalKg,
-            'scrapDivertedKg' => $scrapDivertedKg,
-            'scrapInStorageKg' => $scrapInStorageKg,
-            'reusableStockTotal' => $reusableStockTotal,
-            'totalDivertedFromLandfillKg' => $totalDivertedFromLandfillKg,
-            'estimatedCo2AvoidedKg' => $estimatedCo2AvoidedKg,
-            'circularityRate' => $circularityRate,
-            'categoryBreakdown' => $categoryBreakdown,
+            'totalSalesRevenue' => (float) $salesExchanges->sum('total_price'),
+            'totalSalesOrders' => $salesExchanges->count(),
+            'totalPurchasesSpent' => (float) $purchaseExchanges->sum('total_price'),
+            'totalPurchasesOrders' => $purchaseExchanges->count(),
+            'wasteCategories' => $wasteCategories,
+            'wasteStatuses' => $wasteStatuses,
             'recentTransactions' => $recentTransactions,
             'recentWasteLogs' => $recentWasteLogs,
         ]);

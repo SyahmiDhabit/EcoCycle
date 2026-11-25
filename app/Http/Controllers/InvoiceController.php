@@ -122,7 +122,7 @@ class InvoiceController extends Controller
     /**
      * Download the invoice as a cleanly formatted PDF (strictly buyer or seller only).
      */
-    public function downloadPdf(Invoice $invoice, InvoicePdfGenerator $pdfGenerator): Response
+    public function downloadPdf(Request $request, Invoice $invoice, InvoicePdfGenerator $pdfGenerator): Response
     {
         $this->checkApproved();
         /** @var User $business */
@@ -133,9 +133,11 @@ class InvoiceController extends Controller
         $pdfBytes = $pdfGenerator->generate($invoice);
         $safeFilename = preg_replace('/[^A-Za-z0-9\-_]/', '', (string) $invoice->invoice_number) ?: 'ecocycle-invoice';
 
+        $disposition = $request->boolean('inline') ? 'inline' : 'attachment';
+
         return response($pdfBytes, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$safeFilename.'.pdf"',
+            'Content-Disposition' => $disposition.'; filename="'.$safeFilename.'.pdf"',
             'Content-Length' => (string) strlen($pdfBytes),
             'Cache-Control' => 'private, no-store, max-age=0',
         ]);

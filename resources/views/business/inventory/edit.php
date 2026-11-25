@@ -550,8 +550,8 @@ $canPublishNow = ! $isPermanentlySoldOut
                             <!-- Reusable Marketplace Preparation Panel -->
                             <div id="reusable_marketplace_panel" style="<?= $currentReusability === 'reusable' ? '' : 'display:none;' ?>padding:18px;background:#f8faf8;border:1px solid #cbd5e1;margin-top:12px;">
                                 <div class="edit-field">
-                                    <label>Listing Type (Sell, Free, or Lend)</label>
-                                    <div class="edit-grid-3">
+                                    <label>Listing Type (Sell or Free)</label>
+                                    <div class="edit-grid-2">
                                         <label class="edit-choice-card <?= $currentListingType === 'buy' ? 'selected' : '' ?>" id="card_type_buy">
                                             <input type="radio" name="listing_type" value="buy" <?= $currentListingType === 'buy' ? 'checked' : '' ?> onchange="updateEditListingTypeUI()">
                                             <div>
@@ -566,13 +566,6 @@ $canPublishNow = ! $isPermanentlySoldOut
                                                 <span style="font-size:11.5px;color:#64748b;">Offered at RM 0.00. No Stripe payment required.</span>
                                             </div>
                                         </label>
-                                        <label class="edit-choice-card <?= $currentListingType === 'lend' ? 'selected' : '' ?>" id="card_type_lend">
-                                            <input type="radio" name="listing_type" value="lend" <?= $currentListingType === 'lend' ? 'checked' : '' ?> onchange="updateEditListingTypeUI()">
-                                            <div>
-                                                <strong style="display:block;font-size:13px;color:#143825;">Lend</strong>
-                                                <span style="font-size:11.5px;color:#64748b;">Temporary borrow (RM 0.00). Stock returns when returned.</span>
-                                            </div>
-                                        </label>
                                     </div>
                                 </div>
 
@@ -584,8 +577,8 @@ $canPublishNow = ! $isPermanentlySoldOut
                                     </span>
                                 </div>
 
-                                <div id="page_free_price_notice" style="<?= in_array($currentListingType, ['free', 'lend'], true) ? '' : 'display:none;' ?>margin-bottom:16px;padding:10px 14px;background:#eef6ed;border:1px solid #b9dec0;color:#143825;font-size:12.5px;font-weight:600;">
-                                    Price is automatically set to RM 0.00 for Free and Lend listings. No Stripe payment is required.
+                                <div id="page_free_price_notice" style="<?= $currentListingType === 'free' ? '' : 'display:none;' ?>margin-bottom:16px;padding:10px 14px;background:#eef6ed;border:1px solid #b9dec0;color:#143825;font-size:12.5px;font-weight:600;">
+                                    Price is automatically set to RM 0.00 for Free listings. No Stripe payment is required.
                                 </div>
 
                                 <div class="edit-field" style="margin-bottom:0;">
@@ -847,24 +840,22 @@ $canPublishNow = ! $isPermanentlySoldOut
 
     function updateEditListingTypeUI() {
         var checked = document.querySelector('input[name="listing_type"]:checked');
-        var val = checked ? checked.value : 'buy';
+        var val = checked ? checked.value : '';
         var priceGroup = document.getElementById('page_price_field_group');
         var freeNotice = document.getElementById('page_free_price_notice');
         var priceInput = document.getElementById('page_price');
         var cardBuy = document.getElementById('card_type_buy');
         var cardFree = document.getElementById('card_type_free');
-        var cardLend = document.getElementById('card_type_lend');
 
         if (cardBuy) cardBuy.classList.toggle('selected', val === 'buy');
         if (cardFree) cardFree.classList.toggle('selected', val === 'free');
-        if (cardLend) cardLend.classList.toggle('selected', val === 'lend');
 
-        if (val === 'free' || val === 'lend') {
+        if (val === 'free') {
             if (priceGroup) priceGroup.style.display = 'none';
             if (freeNotice) freeNotice.style.display = 'block';
             if (priceInput) priceInput.value = '';
         } else {
-            if (priceGroup) priceGroup.style.display = 'block';
+            if (priceGroup) priceGroup.style.display = val === 'buy' ? 'block' : 'none';
             if (freeNotice) freeNotice.style.display = 'none';
         }
     }

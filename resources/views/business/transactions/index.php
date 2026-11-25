@@ -12,7 +12,7 @@
     <style>
         .trx-kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
             gap: 16px;
             margin-bottom: 24px;
         }
@@ -98,6 +98,62 @@
             align-items: center;
             gap: 4px;
         }
+        .transactions-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .transactions-workspace .page-header {
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            padding: 0;
+            border: 0;
+        }
+        .transactions-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .trx-row-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: max-content;
+        }
+        .transactions-workspace :is(.trx-tab-btn, .btn-action-sm, .btn-search) {
+            justify-content: center;
+            border-radius: 6px !important;
+            white-space: nowrap;
+        }
+        .transactions-workspace .trx-tab-btn {
+            min-height: 40px;
+            border-color: #a3bfa6;
+        }
+        .transactions-workspace .trx-tab-btn.active {
+            background: #176b40;
+            border-color: #176b40;
+        }
+        .transactions-workspace .trx-tabs {
+            width: fit-content;
+            max-width: 100%;
+            padding: 6px;
+            background: #e4eee3;
+            border: 1px solid var(--card-border);
+        }
+        .trx-table-panel {
+            overflow-x: auto;
+            background: #fff;
+            border: 1px solid var(--card-border);
+        }
+        .transactions-workspace :is(.trx-kpi-card, .trx-table-panel) {
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .transactions-workspace .directory-table th {
+            background: #eef5eb;
+            color: #14532d;
+        }
+        .transactions-workspace :is(a, .trx-table-panel):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -113,23 +169,15 @@
             include resource_path('views/business/partials/sidebar.php');
         ?>
 
-        <main class="dashboard-main-content">
-            <header class="section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <main class="dashboard-main-content transactions-workspace">
+            <header class="page-header">
                 <div class="section-header-title">
-                    <h2><?= match ($currentTab) {
+                    <h1><?= match ($currentTab) {
                         'purchases' => 'My Purchases &amp; Claims',
                         'sales' => 'My Sales History',
                         default => 'Transactions &amp; Payment History',
-                    } ?></h2>
+                    } ?></h1>
                     <p>Preserved purchase and sales history for Sell, Free, and Lend transactions, including Stripe payment status and PDF receipts.</p>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="<?= route('business.orders.index') ?>" class="trx-tab-btn">
-                        My Orders &amp; Delivery
-                    </a>
-                    <a href="<?= route('business.invoices.index') ?>" class="trx-tab-btn active">
-                        Receipts
-                    </a>
                 </div>
             </header>
 
@@ -142,12 +190,12 @@
             <!-- KPI Metric Cards -->
             <div class="trx-kpi-grid">
                 <div class="trx-kpi-card" style="border-left:3px solid #176b40;">
-                    <span class="trx-kpi-title" style="color:#15803d;">Total Revenue (Hasil Jualan)</span>
+                    <span class="trx-kpi-title" style="color:#15803d;">Total Sales</span>
                     <span class="trx-kpi-value" style="color:#15803d;">RM <?= number_format((float) $totalRevenueRm, 2) ?></span>
-                    <span class="trx-kpi-sub">Total received from material sales &amp; deposits</span>
+                    <span class="trx-kpi-sub">Total received from material sales</span>
                 </div>
                 <div class="trx-kpi-card" style="border-left:3px solid #dc2626;">
-                    <span class="trx-kpi-title" style="color:#b91c1c;">Total Purchases (Duit Keluar)</span>
+                    <span class="trx-kpi-title" style="color:#b91c1c;">Total Purchases</span>
                     <span class="trx-kpi-value" style="color:#b91c1c;">RM <?= number_format((float) $totalPurchasesRm, 2) ?></span>
                     <span class="trx-kpi-sub">Total spent acquiring secondary surplus materials</span>
                 </div>
@@ -177,7 +225,7 @@
             </div>
 
             <!-- Transactions Table -->
-            <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;overflow-x:auto;">
+            <div class="trx-table-panel" role="region" aria-label="Transaction history" tabindex="0">
                 <?php if ($exchanges->isNotEmpty()): ?>
                     <table class="directory-table" style="margin-bottom:0;">
                         <thead>
@@ -243,7 +291,7 @@
                                         <?= $exchange->created_at ? $exchange->created_at->format('d M Y, h:i A') : 'N/A' ?>
                                     </td>
                                     <td style="text-align:right;">
-                                        <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap;">
+                                        <div class="trx-row-actions">
                                             <a href="<?= route('business.orders.show', $exchange) ?>" class="btn-action-sm" style="background:#ffffff;border:1px solid #143825;color:#143825;text-decoration:none;">
                                                 Track Order
                                             </a>

@@ -20,7 +20,7 @@ $activeNav = 'orders';
     <style>
         .ord-kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
             gap: 14px;
             margin-bottom: 22px;
         }
@@ -95,6 +95,63 @@ $activeNav = 'orders';
             gap: 4px;
             white-space: nowrap;
         }
+        .orders-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .orders-workspace .page-header {
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            padding: 0;
+            border: 0;
+        }
+        .orders-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .ord-toolbar {
+            border: 0;
+            padding: 0;
+        }
+        .ord-tabs {
+            gap: 6px;
+            padding: 6px;
+            background: #e4eee3;
+            border: 1px solid var(--card-border);
+        }
+        .orders-workspace .ord-tab {
+            display: inline-flex;
+            align-items: center;
+            min-height: 40px;
+            border-color: #a3bfa6;
+        }
+        .orders-workspace .ord-tab.active {
+            background: #176b40;
+            border-color: #176b40;
+        }
+        .orders-workspace :is(.ord-tab, .ord-btn-sm) {
+            justify-content: center;
+            border-radius: 6px !important;
+        }
+        .ord-results {
+            background: #fff;
+            border: 1px solid var(--card-border);
+            overflow-x: auto;
+        }
+        .ord-kpi-card {
+            border-color: var(--card-border);
+        }
+        .orders-workspace :is(.ord-kpi-card, .ord-results) {
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .ord-results .directory-table th {
+            background: #eef5eb;
+            color: #14532d;
+        }
+        .orders-workspace :is(a, select, .ord-results):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: -2px;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -103,10 +160,10 @@ $activeNav = 'orders';
     <div class="dashboard-layout">
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
-        <main class="dashboard-main-content">
-            <header class="section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <main class="dashboard-main-content orders-workspace">
+            <header class="page-header">
                 <div class="section-header-title">
-                    <h2>My Orders &amp; Delivery Tracking</h2>
+                    <h1>My Orders &amp; Delivery Tracking</h1>
                     <p>Track preparation, collection, transit, delivery, and returns across all Sell, Free, and Lend orders.</p>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -161,7 +218,7 @@ $activeNav = 'orders';
 
                 <form method="GET" action="<?= route('business.orders.index') ?>" style="display:flex;gap:8px;align-items:center;margin:0;">
                     <input type="hidden" name="tab" value="<?= e($currentTab) ?>">
-                    <select name="delivery_status" onchange="this.form.submit()" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:0;font-size:12.5px;background:#ffffff;color:#0f172a;">
+                    <select aria-label="Delivery status" name="delivery_status" onchange="this.form.submit()" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:0;font-size:12.5px;background:#ffffff;color:#0f172a;">
                         <option value="">All Delivery Statuses</option>
                         <?php foreach (\App\Models\MaterialExchange::DELIVERY_STATUS_LABELS as $statusKey => $statusText): ?>
                             <option value="<?= e($statusKey) ?>" <?= $selectedDeliveryStatus === $statusKey ? 'selected' : '' ?>><?= e($statusText) ?></option>
@@ -170,7 +227,7 @@ $activeNav = 'orders';
                 </form>
             </div>
 
-            <div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:0;overflow-x:auto;">
+            <div class="ord-results" role="region" aria-label="Orders" tabindex="0">
                 <?php if ($orders->isNotEmpty()): ?>
                     <table class="directory-table" style="margin-bottom:0;">
                         <thead>
@@ -228,7 +285,7 @@ $activeNav = 'orders';
                                     </td>
                                     <td style="text-align:right;">
                                         <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:nowrap;">
-                                            <a href="<?= route('business.orders.show', $order) ?>" class="ord-btn-sm" style="background:#143825;border:1px solid #143825;color:#ffffff;">
+                                            <a href="<?= route('business.orders.show', $order) ?>" class="ord-btn-sm" style="background:#176b40;border:1px solid #176b40;color:#ffffff;">
                                                 <?= $isSeller ? 'Manage Order' : 'Track Order' ?>
                                             </a>
                                             <?php if (! $isSeller && $order->isReviewable() && ! $order->review): ?>

@@ -20,17 +20,75 @@ $activeNav = 'reviews';
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
-        .rev-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .rev-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 14px; margin-bottom: 22px; }
         .rev-kpi-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 0; padding: 16px 18px; }
         .rev-kpi-label { display: block; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
         .rev-kpi-val { font-size: 24px; font-weight: 800; color: #143825; font-family: var(--font-display); }
-        .rev-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #cbd5e1; }
+        .rev-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; padding: 6px; width: fit-content; max-width: 100%; background: #e4eee3; border: 1px solid var(--card-border); }
         .rev-tab { padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 0; background: #ffffff; color: #334155; font-size: 12.5px; font-weight: 700; text-decoration: none; }
-        .rev-tab.active { background: #143825; border-color: #143825; color: #ffffff; }
+        .rev-tab.active { background: #176b40; border-color: #176b40; color: #ffffff; }
         .rev-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 0; padding: 18px 20px; margin-bottom: 14px; }
         .rev-input { width: 100%; padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 0; font-size: 13px; box-sizing: border-box; background: #ffffff; color: #0f172a; }
-        .rev-btn { padding: 9px 18px; background: #143825; border: 1px solid #143825; color: #ffffff; font-size: 12.5px; font-weight: 700; border-radius: 0; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+        .rev-btn { padding: 9px 18px; background: #176b40; border: 1px solid #176b40; color: #ffffff; font-size: 12.5px; font-weight: 700; border-radius: 0; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
         .rev-stars { color: #d97706; font-weight: 800; letter-spacing: 1px; font-size: 14px; }
+        .reviews-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .reviews-workspace .page-header {
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            padding: 0;
+            border: 0;
+        }
+        .reviews-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .reviews-workspace :is(.rev-kpi-card, .rev-card) {
+            border-color: var(--card-border);
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .reviews-workspace :is(.rev-tab, .rev-btn) {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            border-radius: 6px !important;
+        }
+        .reviews-workspace .rev-tab:not(.active) {
+            border-color: #a3bfa6;
+            color: #143825;
+        }
+        .reviews-workspace .rev-tab:not(.active):hover { background: #eef5eb; }
+        .reviews-workspace :is(.rev-tab.active, .rev-btn):hover { background: #105331; }
+        .reviews-workspace :is(a, button, select, textarea):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
+        .rev-buyer-heading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .reviews-workspace .rev-buyer-avatar {
+            display: grid;
+            place-items: center;
+            flex: 0 0 42px;
+            height: 42px;
+            overflow: hidden;
+            border-radius: 50% !important;
+            border: 1px solid var(--card-border);
+            background: #e4eee3;
+            color: #14532d;
+            font-weight: 700;
+        }
+        .rev-buyer-avatar img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -39,10 +97,10 @@ $activeNav = 'reviews';
     <div class="dashboard-layout">
         <?php include resource_path('views/business/partials/sidebar.php'); ?>
 
-        <main class="dashboard-main-content">
-            <header class="section-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <main class="dashboard-main-content reviews-workspace">
+            <header class="page-header">
                 <div class="section-header-title">
-                    <h2>My Reviews</h2>
+                    <h1>My Reviews</h1>
                     <p>Verified buyer reviews submitted after delivery or collection, and seller ratings received by your business.</p>
                 </div>
                 <a href="<?= route('business.orders.index') ?>" class="rev-tab">View My Orders</a>
@@ -178,16 +236,26 @@ $activeNav = 'reviews';
                     <?php foreach ($receivedReviews as $rev):
                         $itemTitle = $rev->exchange?->item_name ?: ($rev->listing?->name ?: 'Material');
                         $buyerName = $rev->exchange?->buyer_business_name ?: ($rev->reviewer?->business_name ?: 'Buyer Business');
+                        $buyerImage = $rev->reviewer?->profile_image_url;
                         $sellerName = $business->business_name ?: $business->name;
                         $purchaseDate = $rev->exchange?->created_at?->format('d M Y') ?: 'N/A';
                         $stars = str_repeat('★', (int) $rev->rating).str_repeat('☆', max(0, 5 - (int) $rev->rating));
                     ?>
                         <div class="rev-card">
                             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
-                                <div>
-                                    <strong style="font-size:15px;color:#143825;"><?= e($itemTitle) ?></strong>
-                                    <div style="font-size:12px;color:#475569;margin-top:2px;">
-                                        Buyer: <strong><?= e($buyerName) ?></strong> &middot; Seller: <?= e($sellerName) ?> &middot; Purchase Date: <?= e($purchaseDate) ?>
+                                <div class="rev-buyer-heading">
+                                    <span class="rev-buyer-avatar" aria-hidden="true">
+                                        <?php if ($buyerImage): ?>
+                                            <img src="<?= e($buyerImage) ?>" alt="" loading="lazy">
+                                        <?php else: ?>
+                                            <?= e(mb_strtoupper(mb_substr($buyerName, 0, 1))) ?>
+                                        <?php endif; ?>
+                                    </span>
+                                    <div>
+                                        <strong style="font-size:15px;color:#143825;"><?= e($itemTitle) ?></strong>
+                                        <div style="font-size:12px;color:#475569;margin-top:2px;">
+                                            Buyer: <strong><?= e($buyerName) ?></strong> &middot; Seller: <?= e($sellerName) ?> &middot; Purchase Date: <?= e($purchaseDate) ?>
+                                        </div>
                                     </div>
                                 </div>
                                 <div style="text-align:right;">

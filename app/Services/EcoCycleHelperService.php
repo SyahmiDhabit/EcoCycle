@@ -133,6 +133,8 @@ class EcoCycleHelperService
             if ($geminiResult !== null) {
                 return $geminiResult;
             }
+
+            return $this->classifyWithExpertEngine($name, $description, $quantity, $unit, $condition, 0);
         }
 
         return $this->classifyWithExpertEngine($name, $description, $quantity, $unit, $condition, count($imageParts));
@@ -242,6 +244,15 @@ class EcoCycleHelperService
                 Log::warning('Gemini photo model unavailable, trying the backup model.', ['model' => $model]);
                 $model = $fallbackModel;
                 $response = $request->timeout($remainingSeconds)->post("{$baseUrl}/{$model}:generateContent", $payload);
+            }
+
+            $remainingSeconds = 90 - (hrtime(true) - $startedAt) / 1_000_000_000;
+            if ($response->status() === 503 && $remainingSeconds >= 3) {
+                \Illuminate\Support\Sleep::for(2)->seconds();
+                $remainingSeconds = 90 - (hrtime(true) - $startedAt) / 1_000_000_000;
+                if ($remainingSeconds >= 1) {
+                    $response = $request->timeout($remainingSeconds)->post("{$baseUrl}/{$model}:generateContent", $payload);
+                }
             }
         } catch (\Illuminate\Http\Client\ConnectionException) {
             Log::warning('Gemini photo analysis could not complete the connection.', ['model' => $model]);

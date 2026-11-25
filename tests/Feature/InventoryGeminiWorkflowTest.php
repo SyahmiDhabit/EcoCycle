@@ -257,7 +257,7 @@ class InventoryGeminiWorkflowTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonPath('success', false);
         $response->assertJsonPath('message', $expectedMessage);
-        Http::assertSentCount($status === 503 ? 2 : 1);
+        Http::assertSentCount($status === 503 ? 3 : 1);
         $this->assertEmpty(Storage::disk('public')->allFiles('inventory-images'));
     }
 
@@ -556,8 +556,8 @@ class InventoryGeminiWorkflowTest extends TestCase
             'allow_unavailable_fallback' => true,
         ]);
 
-        $response->assertOk()->assertJsonPath('analysis.ai_source', 'EcoCycle Expert Engine');
-        Http::assertSentCount(2);
+        $response->assertOk()->assertJsonPath('analysis.ai_source', 'EcoCycle Expert Engine')->assertJsonPath('analysis.images_analyzed', 0);
+        Http::assertSentCount(3);
 
         $saveResponse = $this->post(route('business.inventory.store'), [
             'name' => 'Damaged Copper Transformers Scrap',
@@ -578,7 +578,7 @@ class InventoryGeminiWorkflowTest extends TestCase
         $this->get(route('business.helper', ['item_id' => $item->id]))
             ->assertOk()
             ->assertSee('EcoCycle guidance based on the saved material details.');
-        Http::assertSentCount(2);
+        Http::assertSentCount(3);
         $response->assertJsonStructure([
             'success',
             'analysis' => [

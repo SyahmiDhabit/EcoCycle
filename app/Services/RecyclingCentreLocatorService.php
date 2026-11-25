@@ -563,7 +563,10 @@ class RecyclingCentreLocatorService
         int $limit = 8,
         bool $strictVerifiedOnly = true,
         ?array $analysisContext = null,
-        ?string $itemName = null
+        ?string $itemName = null,
+        ?float $maxDistanceKm = null,
+        ?string $state = null,
+        bool $closestFirst = false
     ): array
     {
         $centres = self::getCentres();
@@ -585,7 +588,12 @@ class RecyclingCentreLocatorService
             (is_array($analysisContext['disposal_locations'] ?? null) ? implode(' ', array_map(fn($l) => is_array($l) ? ($l['name'] ?? '') : (string) $l, $analysisContext['disposal_locations'])) : '')
         ));
 
+        $state = mb_strtolower(trim($state ?? ''));
         foreach ($centres as $centre) {
+            if ($state !== '' && mb_strtolower($centre['state']) !== $state) {
+                continue;
+            }
+
             $centreCategory = mb_strtolower($centre['category']);
             $acceptedLower = array_map('mb_strtolower', $centre['accepted_materials']);
             $subtypesLower = array_map('mb_strtolower', $centre['subtypes']);
@@ -690,6 +698,10 @@ class RecyclingCentreLocatorService
             }
 
             $dist = self::calculateDistance($lat, $lng, (float) $centre['lat'], (float) $centre['lng']);
+            if ($maxDistanceKm !== null && $dist > $maxDistanceKm) {
+                continue;
+            }
+
             $mapsUrl = 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode("{$centre['name']}, {$centre['address']}");
 
             // Prioritise suitability: high suitability dominates, distance acts as tie-breaker
@@ -724,10 +736,14 @@ class RecyclingCentreLocatorService
         }
 
         // Sort by suitability score descending first, then final score (suitability minus distance) descending
-        usort($results, function ($a, $b) {
+        usort($results, function ($a, $b) use ($closestFirst): int {
             if ($a['is_material_match'] !== $b['is_material_match']) {
                 return $b['is_material_match'] <=> $a['is_material_match'];
             }
+            if ($closestFirst) {
+                return $a['distance_km'] <=> $b['distance_km'];
+            }
+
             if ($a['suitability_score'] !== $b['suitability_score']) {
                 return $b['suitability_score'] <=> $a['suitability_score'];
             }

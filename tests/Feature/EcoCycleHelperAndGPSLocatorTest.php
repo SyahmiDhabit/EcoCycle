@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\RecyclingCentreLocatorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -64,6 +65,9 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
 
     public function test_ecocycle_helper_analyzes_item_when_item_id_provided(): void
     {
+        config()->set('services.gemini.api_key', 'test-key');
+        Http::fake(['https://generativelanguage.googleapis.com/*' => Http::response([], 503)]);
+
         $business = $this->createApprovedBusiness();
 
         $item = InventoryItem::create([
@@ -85,6 +89,8 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $response->assertOk();
         $response->assertSee('Industrial Copper Scrap Wiring');
         $response->assertSee('Metals &amp; machinery', false);
+        $response->assertSee('EcoCycle guidance based on the saved material details.');
+        Http::assertSentCount(1);
     }
 
     public function test_ecocycle_helper_chat_endpoint_provides_ai_circular_responses(): void
@@ -538,11 +544,23 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         // Verifies suitability tier/badge
         $response->assertSee('Most Suitable Match');
 
-        // Call nearby-centres API directly with item_id to confirm suitability-first ranking
-        $coords = RecyclingCentreLocatorService::getBusinessCoordinates($business);
+        $response->assertDontSee('Find Related Places');
+        $response->assertDontSee('id="btn-use-my-address"', false);
+
+        $suggestions = $this->getJson(route('business.helper.analyze', $eWasteItem->id))
+            ->assertOk()->json('nearby_centres');
+        $this->assertTrue($suggestions[0]['verified_acceptance']);
+        $matches = array_filter($suggestions, static fn (array $centre): bool => $centre['verified_acceptance']);
+        $distances = array_column($matches, 'distance_km');
+        $sortedDistances = $distances;
+        sort($sortedDistances);
+        $this->assertSame($sortedDistances, $distances);
+
+        // My Address uses the registered area even if different coordinates are submitted.
         $apiResponse = $this->actingAs($business)->postJson(route('business.helper.nearby'), [
-            'lat' => $coords['lat'],
-            'lng' => $coords['lng'],
+            'lat' => 0,
+            'lng' => 0,
+            'use_registered_address' => true,
             'category' => 'Electronics',
             'item_id' => $eWasteItem->id,
         ]);
@@ -550,7 +568,8 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $apiResponse->assertOk();
         $centres = $apiResponse->json('centres');
         $this->assertNotEmpty($centres);
-        $this->assertGreaterThanOrEqual(2, count($centres));
+        $this->assertLessThanOrEqual(50.0, max(array_column($centres, 'distance_km')));
+        $this->assertSame(['Selangor'], array_values(array_unique(array_column($centres, 'state'))));
 
         // Top ranked centre must be a specialised electronic recovery facility
         $topCentre = $centres[0];
@@ -560,5 +579,18 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $this->assertNotNull($topCentre['lat']);
         $this->assertNotNull($topCentre['lng']);
         $this->assertStringContainsString('Electronics', json_encode($topCentre['accepted_materials']));
+
+        $related = $this->postJson(route('business.helper.nearby'), [
+            'lat' => 0,
+            'lng' => 0,
+            'use_registered_address' => true,
+            'include_related' => true,
+            'category' => 'Unmatched material',
+        ])->assertOk()->json('centres');
+
+        $this->assertNotEmpty($related);
+        $this->assertLessThanOrEqual(100.0, max(array_column($related, 'distance_km')));
+        $this->assertSame(['Selangor'], array_values(array_unique(array_column($related, 'state'))));
+        $this->assertNotContains(true, array_column($related, 'verified_acceptance'));
     }
 }

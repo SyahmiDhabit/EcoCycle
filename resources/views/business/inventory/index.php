@@ -262,6 +262,55 @@ $activeNav = 'inventory';
             cursor: pointer;
             border-bottom: 1px solid var(--card-border);
         }
+        .catalog-photo-link {
+            display: block;
+            height: 100%;
+            text-decoration: none;
+        }
+        .catalog-photo-arrow {
+            position: absolute;
+            z-index: 2;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            background: #fffffff2;
+            color: #123321;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .catalog-photo-arrow.prev { left: 8px; }
+        .catalog-photo-arrow.next { right: 8px; }
+        .catalog-photo-indicators {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            padding: 3px 6px;
+            background: #0f172a99;
+            pointer-events: none;
+        }
+        .catalog-photo-indicators span {
+            width: 6px;
+            height: 4px;
+            background: #ffffff80;
+        }
+        .catalog-photo-indicators .active {
+            width: 14px;
+            background: #fff;
+        }
+        .catalog-photo-count {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
         .catalog-card-img {
             width: 100%;
             height: 100%;
@@ -984,30 +1033,43 @@ $activeNav = 'inventory';
                     <div id="inventory-catalog-container" class="inventory-catalog-grid" style="display: <?= $viewMode === 'catalog' ? 'grid' : 'none' ?>;">
                         <?php foreach ($items as $item): ?>
                             <div class="catalog-card">
-                                <a href="<?= route('business.inventory.edit', $item) ?>" class="catalog-card-header" style="display:block;text-decoration:none;" title="Open Edit Inventory Details">
-                                    <?php if ($item->image_path): ?>
-                                        <img src="<?= e($item->image_path) ?>" alt="<?= e($item->name) ?>" class="catalog-card-img" loading="lazy">
-                                    <?php else: ?>
-                                        <div style="width:100%;height:100%;display:grid;place-items:center;background:#edf5eb;color:#235839;font-size:13px;font-weight:700;letter-spacing:0.05em;">
-                                            NO PHOTO
-                                        </div>
-                                    <?php endif; ?>
-                                    <div class="catalog-card-badges-top">
-                                        <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
-                                            <span class="badge-reusable" style="font-size:11px;padding:3px 8px;">Reusable</span>
+                                <?php $catalogPhotos = $item->getAllImages(); ?>
+                                <div class="catalog-card-header" data-photos="<?= e(json_encode($catalogPhotos, JSON_INVALID_UTF8_SUBSTITUTE)) ?>" data-photo-index="0">
+                                    <a href="<?= route('business.inventory.edit', $item) ?>" class="catalog-photo-link" title="Open Edit Inventory Details">
+                                        <?php if ($catalogPhotos !== []): ?>
+                                            <img src="<?= e($catalogPhotos[0]) ?>" alt="<?= e($item->name) ?>" class="catalog-card-img" loading="lazy">
                                         <?php else: ?>
-                                            <span class="badge-not-reusable" style="font-size:11px;padding:3px 8px;">Non-Reusable</span>
+                                            <div style="width:100%;height:100%;display:grid;place-items:center;background:#edf5eb;color:#235839;font-size:13px;font-weight:700;letter-spacing:0.05em;">
+                                                NO PHOTO
+                                            </div>
                                         <?php endif; ?>
+                                        <div class="catalog-card-badges-top">
+                                            <?php if (($item->reusability ?? 'reusable') === 'reusable'): ?>
+                                                <span class="badge-reusable" style="font-size:11px;padding:3px 8px;">Reusable</span>
+                                            <?php else: ?>
+                                                <span class="badge-not-reusable" style="font-size:11px;padding:3px 8px;">Non-Reusable</span>
+                                            <?php endif; ?>
 
-                                        <?php if ($item->isPermanentlySoldOut()): ?>
-                                            <span class="status status-out-of-stock" style="font-size:11px;background:#fee2e2;color:#991b1b;border-color:#fca5a5;">Sold Out</span>
-                                        <?php elseif ($item->status === 'out_of_stock' || (float)$item->quantity <= 0): ?>
-                                            <span class="status status-out-of-stock" style="font-size:11px;">Out of stock</span>
-                                        <?php else: ?>
-                                            <span class="status status-in-stock" style="font-size:11px;">In stock</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </a>
+                                            <?php if ($item->isPermanentlySoldOut()): ?>
+                                                <span class="status status-out-of-stock" style="font-size:11px;background:#fee2e2;color:#991b1b;border-color:#fca5a5;">Sold Out</span>
+                                            <?php elseif ($item->status === 'out_of_stock' || (float)$item->quantity <= 0): ?>
+                                                <span class="status status-out-of-stock" style="font-size:11px;">Out of stock</span>
+                                            <?php else: ?>
+                                                <span class="status status-in-stock" style="font-size:11px;">In stock</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </a>
+                                    <?php if (count($catalogPhotos) > 1): ?>
+                                        <button type="button" class="catalog-photo-arrow prev" aria-label="Previous photo" onclick="slideCatalogPhoto(this, -1)">&lsaquo;</button>
+                                        <button type="button" class="catalog-photo-arrow next" aria-label="Next photo" onclick="slideCatalogPhoto(this, 1)">&rsaquo;</button>
+                                        <div class="catalog-photo-indicators" aria-hidden="true">
+                                            <?php foreach ($catalogPhotos as $photoIndex => $photo): ?>
+                                                <span class="<?= $photoIndex === 0 ? 'active' : '' ?>"></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <span class="catalog-photo-count" aria-live="polite">Photo 1 of <?= count($catalogPhotos) ?></span>
+                                    <?php endif; ?>
+                                </div>
 
                                 <div class="catalog-card-body">
                                     <div class="catalog-card-title-row">
@@ -1716,6 +1778,18 @@ $activeNav = 'inventory';
 </div>
 
 <script>
+function slideCatalogPhoto(button, direction) {
+    var gallery = button.closest('.catalog-card-header');
+    var photos = JSON.parse(gallery.dataset.photos);
+    var index = (Number(gallery.dataset.photoIndex) + direction + photos.length) % photos.length;
+    gallery.dataset.photoIndex = index;
+    gallery.querySelector('.catalog-card-img').src = photos[index];
+    gallery.querySelectorAll('.catalog-photo-indicators span').forEach(function(dot, dotIndex) {
+        dot.classList.toggle('active', dotIndex === index);
+    });
+    gallery.querySelector('.catalog-photo-count').textContent = 'Photo ' + (index + 1) + ' of ' + photos.length;
+}
+
 // Independent 3-slot image state for Add Modal (Image 1, Image 2, Image 3)
 var addPhotoSlots = [null, null, null];
 var addPhotoPreviews = [null, null, null];
@@ -2243,6 +2317,8 @@ function triggerNonReusableAnalysis(force) {
         }
     }
 
+    formData.append('allow_unavailable_fallback', '1');
+
     fetch('<?= route('business.inventory.ai-analyze') ?>', {
         method: 'POST',
         headers: {
@@ -2295,6 +2371,9 @@ function triggerNonReusableAnalysis(force) {
         }
 
         var analysis = data.analysis;
+        if (analysis.ai_source === 'EcoCycle Expert Engine') {
+            showAddAnalysisError('EcoCycle guidance is based on the material details you entered. Gemini photo analysis is unavailable. You can still save this item.');
+        }
         var aiJsonInput = document.getElementById('add_ai_analysis_json');
         if (aiJsonInput) {
             try { aiJsonInput.value = JSON.stringify(analysis); } catch (e) { aiJsonInput.value = ''; }
@@ -2908,7 +2987,7 @@ function openAiAdvisorModal(id, name, category, quantity, unit, notes) {
 
     var cat = (category || '').toLowerCase();
     var n = (name || '').toLowerCase();
-    
+
     var strategy = '';
     var compliance = '';
     var destinations = [];

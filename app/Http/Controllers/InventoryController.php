@@ -195,7 +195,8 @@ class InventoryController extends Controller
                 (float) $validated['quantity'],
                 $validated['unit'],
                 $actualFiles,
-                $validated['condition']
+                $validated['condition'],
+                $request->boolean('allow_unavailable_fallback')
             );
         } catch (\RuntimeException $e) {
             return response()->json([

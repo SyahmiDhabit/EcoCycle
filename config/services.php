@@ -45,6 +45,8 @@ return [
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-3.1-flash-lite'),
+        'photo_model' => env('GEMINI_PHOTO_MODEL', 'gemini-3.5-flash-lite'),
+        'photo_fallback_model' => env('GEMINI_PHOTO_FALLBACK_MODEL', 'gemini-3.1-flash-lite'),
     ],
 
     'google_maps' => [

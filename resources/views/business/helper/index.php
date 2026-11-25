@@ -100,6 +100,18 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             font-weight: 600;
             cursor: pointer;
         }
+        .helper-workspace .item-select-bar button[type="submit"] {
+            cursor: pointer;
+        }
+        .helper-workspace .item-select-bar button[type="submit"]:hover {
+            background: #14533a;
+            border-color: #14533a;
+        }
+        .helper-workspace .item-select-bar button[type="submit"]:active {
+            background: #0d3525;
+            border-color: #0d3525;
+            transform: translateY(1px);
+        }
         .helper-welcome-box {
             padding: 36px 24px;
             text-align: center;
@@ -488,6 +500,13 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             line-height: 1.55;
             color: var(--text-secondary);
         }
+        @media (min-width: 1081px) {
+            .helper-workspace .facility-list {
+                flex: 1 0 480px;
+                max-height: none;
+                contain: size;
+            }
+        }
         .helper-workspace .facility-list {
             gap: 12px;
             background: #f1f6ef;
@@ -605,9 +624,9 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                     </div>
 
                     <!-- Strictly Non-Reusable Inventory Selector -->
-                    <div class="item-select-bar">
+                    <form class="item-select-bar" onsubmit="onSelectItem(this.elements.item_id.value); return false;">
                         <label for="item-selector" style="font-size:12px;font-weight:700;color:var(--text-primary);white-space:nowrap;">Non-Reusable Item:</label>
-                        <select id="item-selector" onchange="onSelectItem(this.value)">
+                        <select id="item-selector" name="item_id" required <?= $items->isEmpty() ? 'disabled' : '' ?>>
                             <?php if ($items->isEmpty()): ?>
                                 <option value="">No Non-Reusable items in your inventory yet</option>
                             <?php else: ?>
@@ -619,7 +638,10 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </select>
-                    </div>
+                        <?php if ($items->isNotEmpty()): ?>
+                            <button type="submit" class="btn-directions">Save</button>
+                        <?php endif; ?>
+                    </form>
 
                     <!-- Empty / No Selection State -->
                     <div id="helper-empty-state" class="helper-welcome-box" style="<?= $hasSelected ? 'display:none;' : '' ?>">
@@ -660,6 +682,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
 
                     <!-- Carried-Forward Analysis & Guidance Details (Direct display, NO CHATBOT) -->
                     <div id="guidance-display-panel" class="guidance-body" style="<?= $hasSelected ? '' : 'display:none;' ?>">
+                        <p id="helper-guidance-source" <?= ($initialAnalysis['ai_source'] ?? null) === 'EcoCycle Expert Engine' ? '' : 'hidden' ?>>EcoCycle guidance based on the saved material details.</p>
                         <!-- 1. Strategy & Recommended Handling -->
                         <div class="guidance-section" style="border-left:4px solid #143825;">
                             <div class="guidance-section-header">
@@ -753,27 +776,17 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
 
                         <!-- Address and map controls -->
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-                            <div style="display:inline-flex;gap:6px;align-items:center;">
-                                <button type="button" class="btn-location-ref active" id="btn-use-my-address" onclick="useMyAddress()" title="Use registered company address as GPS reference point">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                        <circle cx="12" cy="10" r="3"></circle>
-                                    </svg>
-                                    <span>My Address</span>
-                                </button>
-                            </div>
-
                             <div class="map-mode-group" role="group" aria-label="Map view">
                                 <button type="button" id="btn-map-roadmap" class="map-mode-btn active" onclick="switchMapType('roadmap')">Map</button>
                                 <button type="button" id="btn-map-satellite" class="map-mode-btn" onclick="switchMapType('satellite')">Satellite</button>
                             </div>
                         </div>
 
-                        <div id="gps-notice-banner" class="locator-notice" role="status" style="display:none;"></div>
+                        <p class="locator-notice">Facility suggestions use your registered business area. The nearest material matches appear first.</p>
 
                         <div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#526658;flex-wrap:wrap;gap:6px;">
                             <span>Click any map marker to view place details &amp; Google Maps directions.</span>
-                            <span id="map-marker-count" style="font-weight:700;color:#143825;"><?= count($nearbyCentres) ?> suitable facility(s)</span>
+                            <span id="map-marker-count" style="font-weight:700;color:#143825;"><?= count($nearbyCentres) ?> place(s) found</span>
                         </div>
                     </div>
 
@@ -790,7 +803,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                         <?php else: ?>
                             <?php foreach ($nearbyCentres as $idx => $centre): ?>
                                 <?php
-                                $tier = $centre['suitability_tier'] ?? 'Highly Suitable';
+                                $tier = $centre['verified_acceptance'] ? $centre['suitability_tier'] : 'Alternative Facility';
                                 $badgeClass = match ($tier) {
                                     'Most Suitable' => 'most-suitable',
                                     'Highly Suitable' => 'highly-suitable',
@@ -803,7 +816,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                                             <h3 class="facility-name"><?= e($centre['name']) ?></h3>
                                             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">
                                                 <span class="suitability-pill <?= $badgeClass ?>">
-                                                    <?= e(trim(str_replace('⭐', '', $centre['suitability_badge'] ?? 'Verified Specialist'))) ?>
+                                                    <?= e($centre['verified_acceptance'] ? trim(str_replace('⭐', '', $centre['suitability_badge'])) : 'Contact to confirm') ?>
                                                 </span>
                                                 <span style="font-size:10.5px;background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:2px 6px;font-weight:700;">
                                                     <?= e($centre['license']) ?>
@@ -848,7 +861,6 @@ var registeredLng = <?= (float) $businessCoords['lng'] ?>;
 var currentLat = registeredLat;
 var currentLng = registeredLng;
 var currentItemId = <?= $selectedItem ? (int) $selectedItem->id : 'null' ?>;
-var currentCategory = <?= $selectedItem ? json_encode($selectedItem->category) : 'null' ?>;
 var currentCentres = <?= json_encode($nearbyCentres) ?>;
 var googleMapsApiKey = <?= json_encode($googleMapsApiKey) ?>;
 
@@ -868,7 +880,7 @@ function buildFacilityPopupHtml(c) {
     var accepted = Array.isArray(c.subtypes) && c.subtypes.length > 0
         ? c.subtypes.join(', ')
         : (Array.isArray(c.accepted_materials) ? c.accepted_materials.join(', ') : (c.category || 'Verified Facility'));
-    var badgeLabel = (c.suitability_badge || 'Verified Specialist').replace('⭐', '').trim();
+    var badgeLabel = c.verified_acceptance ? (c.suitability_badge || 'Verified Specialist').replace('⭐', '').trim() : 'Contact to confirm';
     var reasonHtml = c.suitability_reason
         ? '<div style="font-size:11px;color:#15803d;background:#f0fdf4;padding:3px 6px;margin-bottom:5px;border-left:2px solid #16a34a;">' + escapeHtml(c.suitability_reason) + '</div>'
         : '';
@@ -971,7 +983,7 @@ function updateMapMarkers(centres) {
     currentCentres = Array.isArray(centres) ? centres : [];
     var countEl = document.getElementById('map-marker-count');
     if (countEl) {
-        countEl.textContent = currentCentres.length + ' suitable facility(s)';
+        countEl.textContent = currentCentres.length + ' place(s) found';
     }
 
     if (mapEngine === 'google' && gMap) {
@@ -1001,7 +1013,7 @@ function updateMapMarkers(centres) {
             var marker = new google.maps.Marker({
                 position: pos,
                 map: gMap,
-                title: c.name + ' (' + (c.suitability_badge || 'Suitable').replace('⭐', '').trim() + ')',
+                title: c.name + ' (' + (c.verified_acceptance ? (c.suitability_badge || 'Suitable').replace('⭐', '').trim() : 'Contact to confirm') + ')',
                 icon: {
                     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(createPinSvg(pinColor, false)),
                     scaledSize: new google.maps.Size(26, 34)
@@ -1094,18 +1106,7 @@ function focusFacilityOnMap(index) {
     }
 }
 
-// When a business clicks "My Address", use the registered company address as GPS reference point
-function useMyAddress() {
-    currentLat = registeredLat;
-    currentLng = registeredLng;
-
-
-    showGpsNotice('Facility distances are measured from your registered company address.');
-
-    fetchNearbyCentres(currentLat, currentLng, currentCategory, currentItemId);
-}
-
-// When user selects a non-reusable item from dropdown, carry forward stored AI analysis & update nearby facilities
+// Apply the selected item and refresh its stored guidance and nearby facilities.
 function onSelectItem(itemId) {
     if (!itemId) {
         var emptyBox = document.getElementById('helper-empty-state');
@@ -1138,7 +1139,6 @@ function onSelectItem(itemId) {
 
         renderSelectedItemGuidance(data.item, data.analysis, data.nearby_centres || []);
         if (data.item && data.item.category) {
-            currentCategory = data.item.category;
             updateMapMarkers(data.nearby_centres || []);
         }
     })
@@ -1168,6 +1168,7 @@ function renderSelectedItemGuidance(item, a, centres) {
 
     var panel = document.getElementById('guidance-display-panel');
     if (panel) panel.style.display = 'flex';
+    document.getElementById('helper-guidance-source').hidden = a.ai_source !== 'EcoCycle Expert Engine';
 
     helperPhotos = item.images || [];
     helperPhotoIndex = 0;
@@ -1234,41 +1235,6 @@ function renderSelectedItemGuidance(item, a, centres) {
     renderNearbyCentres(centres);
 }
 
-function showGpsNotice(message) {
-    var banner = document.getElementById('gps-notice-banner');
-    if (!banner) return;
-    if (!message) {
-        banner.style.display = 'none';
-        banner.textContent = '';
-        return;
-    }
-    banner.textContent = message;
-    banner.style.display = 'block';
-}
-
-function fetchNearbyCentres(lat, lng, category, itemId) {
-    var csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    fetch('/business/helper/nearby-centres', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': csrf
-        },
-        body: JSON.stringify({ lat: lat, lng: lng, category: category, item_id: itemId })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (data.success) {
-            renderNearbyCentres(data.centres || [], data.alternative_recommendations || []);
-            updateMapMarkers(data.centres || []);
-        }
-    })
-    .catch(function(e) {
-        console.error('Failed to fetch nearby centres:', e);
-    });
-}
-
 function renderNearbyCentres(centres, alternatives) {
     var container = document.getElementById('facility-list-container');
     if (!container) return;
@@ -1290,9 +1256,9 @@ function renderNearbyCentres(centres, alternatives) {
 
     container.innerHTML = centres.map(function(c, idx) {
         var badgeClass = 'alternative';
-        if (c.suitability_tier === 'Most Suitable') {
+        if (c.verified_acceptance && c.suitability_tier === 'Most Suitable') {
             badgeClass = 'most-suitable';
-        } else if (c.suitability_tier === 'Highly Suitable') {
+        } else if (c.verified_acceptance && c.suitability_tier === 'Highly Suitable') {
             badgeClass = 'highly-suitable';
         }
 
@@ -1311,7 +1277,7 @@ function renderNearbyCentres(centres, alternatives) {
                 '<div>' +
                     '<h3 class="facility-name">' + escapeHtml(c.name) + '</h3>' +
                     '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">' +
-                        '<span class="suitability-pill ' + badgeClass + '">' + escapeHtml((c.suitability_badge || 'Verified Specialist').replace('⭐', '').trim()) + '</span>' +
+                        '<span class="suitability-pill ' + badgeClass + '">' + escapeHtml(c.verified_acceptance ? (c.suitability_badge || 'Verified Specialist').replace('⭐', '').trim() : 'Contact to confirm') + '</span>' +
                         '<span style="font-size:10.5px;background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:2px 6px;font-weight:700;">' + escapeHtml(c.license) + '</span>' +
                     '</div>' +
                 '</div>' +

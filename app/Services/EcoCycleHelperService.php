@@ -115,7 +115,8 @@ class EcoCycleHelperService
         float $quantity,
         string $unit,
         array $images = [],
-        string $condition = 'Used'
+        string $condition = 'Used',
+        bool $allowUnavailableFallback = false
     ): array {
         $imageParts = $this->extractInlineImageParts($images);
 
@@ -125,11 +126,13 @@ class EcoCycleHelperService
 
         if (! empty(config('services.gemini.api_key'))) {
             $geminiResult = $this->classifyWithGemini($name, $description, $quantity, $unit, $condition, $imageParts);
-            if ($geminiResult === null) {
-                throw new \RuntimeException('Material analysis failed while processing your images. Please try again.');
+            if ($geminiResult === null && ! $allowUnavailableFallback) {
+                throw new \RuntimeException('Photo analysis could not be completed. Please try again in a moment with the same photos.');
             }
 
-            return $geminiResult;
+            if ($geminiResult !== null) {
+                return $geminiResult;
+            }
         }
 
         return $this->classifyWithExpertEngine($name, $description, $quantity, $unit, $condition, count($imageParts));
@@ -209,51 +212,71 @@ class EcoCycleHelperService
             return null;
         }
 
-        $configuredModel = config('services.gemini.model', 'gemini-2.5-flash');
-        $modelsToTry = array_values(array_unique(array_filter([
-            $configuredModel,
-            'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-3.1-flash-lite',
-            'gemini-flash-lite-latest',
-        ])));
+        $model = config('services.gemini.photo_model', 'gemini-3.5-flash-lite');
+        set_time_limit(120);
+        $startedAt = hrtime(true);
 
-        foreach ($modelsToTry as $model) {
-            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
-
-            try {
-                $response = Http::timeout(30)->post($endpoint, [
-                    'contents' => [
-                        [
-                            'role' => 'user',
-                            'parts' => $parts,
-                        ],
+        try {
+            $request = Http::connectTimeout(10)->timeout(90)->withHeaders([
+                'x-goog-api-key' => $apiKey,
+            ]);
+            $payload = [
+                'contents' => [
+                    [
+                        'role' => 'user',
+                        'parts' => $parts,
                     ],
-                    'generationConfig' => [
-                        'temperature' => $temperature,
-                        'maxOutputTokens' => 2048,
-                        'responseMimeType' => 'application/json',
-                    ],
-                ]);
+                ],
+                'generationConfig' => [
+                    'temperature' => $temperature,
+                    'maxOutputTokens' => 2048,
+                    'responseMimeType' => 'application/json',
+                ],
+            ];
+            $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+            $response = $request->post("{$baseUrl}/{$model}:generateContent", $payload);
 
-                if ($response->successful()) {
-                    $data = $response->json();
-                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                    if (! empty($text)) {
-                        return $text;
-                    }
-                }
-
-                Log::warning("Gemini multimodal model {$model} returned non-200 status", [
-                    'status' => $response->status(),
-                    'body' => substr($response->body(), 0, 300),
-                ]);
-            } catch (\Throwable $e) {
-                Log::warning("Gemini multimodal model {$model} failed: " . $e->getMessage());
+            $fallbackModel = config('services.gemini.photo_fallback_model');
+            $remainingSeconds = 90 - (hrtime(true) - $startedAt) / 1_000_000_000;
+            if ($response->status() === 503 && $fallbackModel && $fallbackModel !== $model && $remainingSeconds >= 1) {
+                Log::warning('Gemini photo model unavailable, trying the backup model.', ['model' => $model]);
+                $model = $fallbackModel;
+                $response = $request->timeout($remainingSeconds)->post("{$baseUrl}/{$model}:generateContent", $payload);
             }
+        } catch (\Illuminate\Http\Client\ConnectionException) {
+            Log::warning('Gemini photo analysis could not complete the connection.', ['model' => $model]);
+
+            return null;
         }
 
-        return null;
+        if ($response->status() === 429) {
+            foreach ((array) $response->json('error.details', []) as $detail) {
+                if (! is_array($detail) || ($detail['@type'] ?? null) !== 'type.googleapis.com/google.rpc.QuotaFailure') {
+                    continue;
+                }
+
+                foreach ((array) ($detail['violations'] ?? []) as $violation) {
+                    if (is_array($violation) && preg_match('/per[\s_-]*day|daily/i', (string) ($violation['quotaId'] ?? '').' '.(string) ($violation['quotaMetric'] ?? ''))) {
+                        throw new \RuntimeException('Gemini has reached its daily photo analysis limit. Please try again tomorrow.');
+                    }
+                }
+            }
+
+            throw new \RuntimeException('Gemini has reached a usage limit. Please wait before trying photo analysis again.');
+        }
+
+        if (! $response->successful()) {
+            Log::warning('Gemini photo analysis returned an error.', [
+                'model' => $model,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        }
+
+        $text = $response->json('candidates.0.content.parts.0.text');
+
+        return is_string($text) && trim($text) !== '' ? $text : null;
     }
 
     /**
@@ -584,52 +607,39 @@ PROMPT;
             return null;
         }
 
-        $configuredModel = config('services.gemini.model', 'gemini-2.5-flash');
-        $modelsToTry = array_values(array_unique(array_filter([
-            $configuredModel,
-            'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-3.1-flash-lite',
-            'gemini-flash-lite-latest',
-        ])));
+        $model = config('services.gemini.model', 'gemini-3.1-flash-lite');
+        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
-        foreach ($modelsToTry as $model) {
-            $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+        set_time_limit(120);
 
-            try {
-                $response = Http::timeout(10)->post($endpoint, [
-                    'contents' => [
-                        [
-                            'role' => 'user',
-                            'parts' => [
-                                ['text' => $prompt],
-                            ],
-                        ],
-                    ],
-                    'generationConfig' => [
-                        'temperature' => $temperature,
-                        'maxOutputTokens' => 1500,
-                    ],
-                ]);
+        try {
+            $response = Http::connectTimeout(10)->timeout(90)->withHeaders([
+                'x-goog-api-key' => $apiKey,
+            ])->post($endpoint, [
+                'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                'generationConfig' => [
+                    'temperature' => $temperature,
+                    'maxOutputTokens' => 1500,
+                ],
+            ]);
+        } catch (\Illuminate\Http\Client\ConnectionException) {
+            Log::warning('Gemini text guidance could not complete the connection.', ['model' => $model]);
 
-                if ($response->successful()) {
-                    $data = $response->json();
-                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                    if (! empty($text)) {
-                        return $text;
-                    }
-                }
-
-                Log::warning("Gemini text model {$model} returned non-200 status", [
-                    'status' => $response->status(),
-                    'body' => substr($response->body(), 0, 300),
-                ]);
-            } catch (\Throwable $e) {
-                Log::warning("Gemini text model {$model} failed: " . $e->getMessage());
-            }
+            return null;
         }
 
-        return null;
+        if (! $response->successful()) {
+            Log::warning('Gemini text guidance returned an error.', [
+                'model' => $model,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        }
+
+        $text = $response->json('candidates.0.content.parts.0.text');
+
+        return is_string($text) && trim($text) !== '' ? $text : null;
     }
 
     /**

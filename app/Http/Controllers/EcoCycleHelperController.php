@@ -63,29 +63,7 @@ class EcoCycleHelperController extends Controller
 
         $businessCoords = RecyclingCentreLocatorService::getBusinessCoordinates($business);
 
-        // Nearby verified centres for selected non-reusable item's category near registered company address
-        // Prioritises the most suitable locations based on item material and AI analysis results
-        $materialCat = $selectedItem?->category;
-        $nearbyCentres = RecyclingCentreLocatorService::findNearby(
-            $businessCoords['lat'],
-            $businessCoords['lng'],
-            $materialCat,
-            10,
-            true,
-            $initialAnalysis,
-            $selectedItem?->name ?: $selectedItem?->title
-        );
-        if (empty($nearbyCentres)) {
-            $nearbyCentres = RecyclingCentreLocatorService::findNearby(
-                $businessCoords['lat'],
-                $businessCoords['lng'],
-                null,
-                8,
-                false,
-                $initialAnalysis,
-                $selectedItem?->name ?: $selectedItem?->title
-            );
-        }
+        $nearbyCentres = $this->closestFacilities($businessCoords, $selectedItem, $initialAnalysis);
 
         return view('business.helper.index', [
             'business' => $business,
@@ -115,6 +93,7 @@ class EcoCycleHelperController extends Controller
         $contextItem = null;
         if (! empty($validated['item_id'])) {
             $item = Item::where('id', (int) $validated['item_id'])
+                ->where('business_id', $request->user()->id)
                 ->where('reusability', 'not_reusable')
                 ->first();
             if ($item) {
@@ -160,26 +139,7 @@ class EcoCycleHelperController extends Controller
         /** @var User $business */
         $business = Auth::user();
         $coords = RecyclingCentreLocatorService::getBusinessCoordinates($business);
-        $nearby = RecyclingCentreLocatorService::findNearby(
-            $coords['lat'],
-            $coords['lng'],
-            $item->category,
-            10,
-            true,
-            $analysis,
-            $item->name ?: $item->title
-        );
-        if (empty($nearby)) {
-            $nearby = RecyclingCentreLocatorService::findNearby(
-                $coords['lat'],
-                $coords['lng'],
-                null,
-                8,
-                false,
-                $analysis,
-                $item->name ?: $item->title
-            );
-        }
+        $nearby = $this->closestFacilities($coords, $item, $analysis);
 
         return response()->json([
             'success' => true,
@@ -201,6 +161,25 @@ class EcoCycleHelperController extends Controller
         ]);
     }
 
+    private function closestFacilities(array $coordinates, ?Item $item, ?array $analysis): array
+    {
+        if ($item === null) {
+            return [];
+        }
+
+        return RecyclingCentreLocatorService::findNearby(
+            $coordinates['lat'],
+            $coordinates['lng'],
+            $item->category,
+            10,
+            false,
+            $analysis,
+            $item->name ?: $item->title,
+            maxDistanceKm: 100.0,
+            closestFirst: true
+        );
+    }
+
     public function nearbyCentres(Request $request): JsonResponse
     {
         $this->checkApproved();
@@ -210,7 +189,15 @@ class EcoCycleHelperController extends Controller
             'lng' => ['required', 'numeric', 'between:-180,180'],
             'category' => ['nullable', 'string', 'max:100'],
             'item_id' => ['nullable', 'integer'],
+            'use_registered_address' => ['sometimes', 'boolean'],
+            'include_related' => ['sometimes', 'boolean'],
         ]);
+
+        $useRegisteredAddress = $request->boolean('use_registered_address');
+        $includeRelated = $useRegisteredAddress && $request->boolean('include_related');
+        $coordinates = $useRegisteredAddress
+            ? RecyclingCentreLocatorService::getBusinessCoordinates($request->user())
+            : ['lat' => (float) $validated['lat'], 'lng' => (float) $validated['lng']];
 
         $category = $validated['category'] ?? null;
         $analysisContext = null;
@@ -218,6 +205,7 @@ class EcoCycleHelperController extends Controller
 
         if (! empty($validated['item_id'])) {
             $item = Item::where('id', (int) $validated['item_id'])
+                ->where('business_id', $request->user()->id)
                 ->where('reusability', 'not_reusable')
                 ->first();
             if ($item) {
@@ -230,13 +218,15 @@ class EcoCycleHelperController extends Controller
         }
 
         $centres = RecyclingCentreLocatorService::findNearby(
-            (float) $validated['lat'],
-            (float) $validated['lng'],
+            $coordinates['lat'],
+            $coordinates['lng'],
             $category,
             12,
-            true,
+            ! $includeRelated,
             $analysisContext,
-            $itemName
+            $itemName,
+            $useRegisteredAddress ? ($includeRelated ? 100.0 : 50.0) : null,
+            $useRegisteredAddress ? $request->user()->state : null
         );
 
         $alternativeRecommendations = empty($centres) ? [

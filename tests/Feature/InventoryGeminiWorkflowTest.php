@@ -51,7 +51,7 @@ class InventoryGeminiWorkflowTest extends TestCase
     private function fakeGeminiSuccess(array $overrides = []): void
     {
         config()->set('services.gemini.api_key', 'test-gemini-key');
-        config()->set('services.gemini.model', 'gemini-2.5-flash');
+        config()->set('services.gemini.photo_model', 'gemini-2.5-flash');
 
         $payload = array_merge([
             'suggested_category' => 'Solid Oak Timber Planks',
@@ -136,6 +136,10 @@ class InventoryGeminiWorkflowTest extends TestCase
 
     public function test_ai_analyze_sends_actual_uploaded_images_and_condition_to_gemini(): void
     {
+        config()->set('services.gemini.photo_fallback_model', 'gemini-3.5-flash-lite');
+        Http::fake([
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent' => Http::response([], 503),
+        ]);
         $this->fakeGeminiSuccess();
         $business = $this->createApprovedBusiness();
 
@@ -183,6 +187,7 @@ class InventoryGeminiWorkflowTest extends TestCase
 
         $data = $response->json();
         $this->assertTrue($data['success']);
+        Http::assertSentCount(2);
         $this->assertSame(3, $data['analysis']['images_analyzed']);
         $this->assertCount(3, $data['saved_images']);
         $this->assertSame('m²', $data['item_data']['unit']);
@@ -219,15 +224,23 @@ class InventoryGeminiWorkflowTest extends TestCase
         });
     }
 
-    public function test_ai_analyze_returns_clear_error_when_gemini_fails_and_does_not_fake_success(): void
+    #[\PHPUnit\Framework\Attributes\TestWith([503, null, 'Photo analysis could not be completed. Please try again in a moment with the same photos.'])]
+    #[\PHPUnit\Framework\Attributes\TestWith([429, 'GenerateRequestsPerDayPerProjectPerModel', 'Gemini has reached its daily photo analysis limit. Please try again tomorrow.'])]
+    #[\PHPUnit\Framework\Attributes\TestWith([429, 'GenerateRequestsPerMinutePerProjectPerModel', 'Gemini has reached a usage limit. Please wait before trying photo analysis again.'])]
+    public function test_ai_analyze_returns_clear_error_when_gemini_fails_and_does_not_fake_success(int $status, ?string $quotaId, string $expectedMessage): void
     {
         config()->set('services.gemini.api_key', 'test-gemini-key');
-        config()->set('services.gemini.model', 'gemini-2.5-flash');
+        config()->set('services.gemini.photo_model', 'gemini-2.5-flash');
 
         Http::fake([
             'https://generativelanguage.googleapis.com/*' => Http::response([
-                'error' => ['message' => 'Service unavailable'],
-            ], 503),
+                'error' => [
+                    'details' => $quotaId === null ? [] : [[
+                        '@type' => 'type.googleapis.com/google.rpc.QuotaFailure',
+                        'violations' => [['quotaId' => $quotaId]],
+                    ]],
+                ],
+            ], $status),
         ]);
 
         $business = $this->createApprovedBusiness();
@@ -243,7 +256,8 @@ class InventoryGeminiWorkflowTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonPath('success', false);
-        $this->assertNotEmpty($response->json('message'));
+        $response->assertJsonPath('message', $expectedMessage);
+        Http::assertSentCount($status === 503 ? 2 : 1);
         $this->assertEmpty(Storage::disk('public')->allFiles('inventory-images'));
     }
 
@@ -526,6 +540,8 @@ class InventoryGeminiWorkflowTest extends TestCase
 
     public function test_non_reusable_ai_analysis_provides_step_by_step_guidance_and_suitable_disposal_locations(): void
     {
+        config()->set('services.gemini.api_key', 'test-gemini-key');
+        Http::fake(['https://generativelanguage.googleapis.com/*' => Http::response([], 503)]);
         $business = $this->createApprovedBusiness('Scrap Metal Processing Sdn Bhd');
 
         $response = $this->actingAs($business)->postJson(route('business.inventory.ai-analyze'), [
@@ -537,9 +553,32 @@ class InventoryGeminiWorkflowTest extends TestCase
             'category' => 'Metals & machinery',
             'reusability' => 'not_reusable',
             'image_1' => UploadedFile::fake()->image('scrap_copper.jpg', 600, 400),
+            'allow_unavailable_fallback' => true,
         ]);
 
-        $response->assertOk();
+        $response->assertOk()->assertJsonPath('analysis.ai_source', 'EcoCycle Expert Engine');
+        Http::assertSentCount(2);
+
+        $saveResponse = $this->post(route('business.inventory.store'), [
+            'name' => 'Damaged Copper Transformers Scrap',
+            'description' => 'Damaged copper transformer windings.',
+            'quantity' => 120,
+            'unit' => 'kg',
+            'condition' => 'Damaged',
+            'category' => 'Metal',
+            'reusability' => 'not_reusable',
+            'redirect_to' => 'helper',
+            'analysis_token' => $response->json('analysis_token'),
+            'saved_image_slots' => json_encode($response->json('saved_image_slots')),
+            'ai_analysis_json' => json_encode($response->json('analysis')),
+        ]);
+
+        $item = InventoryItem::where('name', 'Damaged Copper Transformers Scrap')->firstOrFail();
+        $saveResponse->assertRedirect(route('business.helper', ['item_id' => $item->id]));
+        $this->get(route('business.helper', ['item_id' => $item->id]))
+            ->assertOk()
+            ->assertSee('EcoCycle guidance based on the saved material details.');
+        Http::assertSentCount(2);
         $response->assertJsonStructure([
             'success',
             'analysis' => [

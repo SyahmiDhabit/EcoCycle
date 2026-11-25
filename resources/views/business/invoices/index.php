@@ -116,6 +116,14 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
             outline: 2px solid #176b40;
             outline-offset: -2px;
         }
+        .receipt-history-section + .receipt-history-section {
+            margin-top: 26px;
+        }
+        .receipt-history-section h2 {
+            margin: 0 0 10px;
+            color: #14532d;
+            font: 700 19px var(--font-display);
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -147,95 +155,103 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
                 </div>
             <?php endif; ?>
 
-            <div class="history-table-wrap" role="region" aria-label="Transaction history and receipts" tabindex="0">
-                <?php if ($orders->isNotEmpty()): ?>
-                    <table class="directory-table" style="margin-bottom:0;">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Type</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th style="text-align:right;">Receipt / Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($orders as $order):
-                                $isBuyer = ($order->requester_business_id === $business->id);
-                                $isFree = ($order->resolvedListingType() === 'free') || (float) $order->total_price <= 0;
-                                $typeLabel = $isFree ? 'Free' : 'Sell';
-                                $qtyFormatted = rtrim(rtrim(number_format((float) $order->quantity, 2, '.', ''), '0'), '.');
-                                $itemTitle = $order->invoice?->item_name ?: ($order->item?->name ?: ($order->item?->title ?: 'Material #' . $order->item_id));
+            <?php foreach ([
+                ['purchase-receipts', 'Purchases & Free Claims', $purchaseOrders, 'No purchases or claims yet', 'Your payments and receipts as a buyer will appear here.'],
+                ['sales-receipts', 'Sales', $salesOrders, 'No sales yet', 'Your Marketplace orders and receipts as a seller will appear here.'],
+            ] as [$headingId, $heading, $orders, $emptyTitle, $emptyMessage]): ?>
+                <section class="receipt-history-section" aria-labelledby="<?= $headingId ?>">
+                    <h2 id="<?= $headingId ?>"><?= e($heading) ?></h2>
+                    <div class="history-table-wrap" role="region" aria-labelledby="<?= $headingId ?>" tabindex="0">
+                        <?php if ($orders->isNotEmpty()): ?>
+                            <table class="directory-table" style="margin-bottom:0;">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Type</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th style="text-align:right;">Receipt / Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($orders as $order):
+                                        $isBuyer = ($order->requester_business_id === $business->id);
+                                        $isFree = ($order->resolvedListingType() === 'free') || (float) $order->total_price <= 0;
+                                        $typeLabel = $isFree ? 'Free' : 'Sell';
+                                        $qtyFormatted = rtrim(rtrim(number_format((float) $order->quantity, 2, '.', ''), '0'), '.');
+                                        $itemTitle = $order->invoice?->item_name ?: ($order->item?->name ?: ($order->item?->title ?: 'Material #' . $order->item_id));
 
-                                $rawStatus = $order->normalizedPaymentStatus();
-                                $statusLabel = $order->paymentStatusLabel();
-                                $statusClass = match ($rawStatus) {
-                                    'free' => 'status-free',
-                                    'paid' => 'status-paid',
-                                    'failed' => 'status-failed',
-                                    'cancelled' => 'status-cancelled',
-                                    'refunded' => 'status-refunded',
-                                    default => 'status-pending',
-                                };
-                                $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $order->total_price, 2);
-                                $dateDisplay = $order->created_at ? $order->created_at->format('d M Y') : '';
-                            ?>
-                                <tr>
-                                    <td>
-                                        <strong style="color:#143825;font-size:13.5px;"><?= e($itemTitle) ?></strong>
-                                        <span style="display:block;font-size:11.5px;color:var(--text-muted);"><?= e($qtyFormatted) ?> <?= e($order->unit) ?></span>
-                                    </td>
-                                    <td>
-                                        <span class="type-tag"><?= e($typeLabel) ?></span>
-                                    </td>
-                                    <td style="font-weight:700;color:#113624;white-space:nowrap;">
-                                        <?= e($totalDisplay) ?>
-                                    </td>
-                                    <td>
-                                        <span class="status-tag <?= $statusClass ?>"><?= e($statusLabel) ?></span>
-                                    </td>
-                                    <td style="font-size:12.5px;color:#334155;white-space:nowrap;">
-                                        <?= e($dateDisplay) ?>
-                                    </td>
-                                    <td style="text-align:right;">
-                                        <div style="display:inline-flex;gap:6px;align-items:center;">
-                                            <?php if ($isBuyer && ! $isFree && $order->requiresStripePayment() && ! in_array($rawStatus, ['paid', 'refunded'], true)): ?>
-                                                <a href="<?= route('business.orders.checkout', $order) ?>" class="btn-rect-primary">
-                                                    Pay Now
-                                                </a>
-                                                <?php if ($order->latestPayment?->stripe_checkout_session_id): ?>
-                                                    <a href="<?= route('business.orders.verify-payment', $order) ?>" class="btn-rect-outline" style="background:#f0fdf4;border-color:#86efac;color:#15803d;font-weight:700;" title="Check payment status with Stripe">
-                                                        Verify Payment
-                                                    </a>
-                                                <?php endif; ?>
-                                            <?php endif; ?>
+                                        $rawStatus = $order->normalizedPaymentStatus();
+                                        $statusLabel = $order->paymentStatusLabel();
+                                        $statusClass = match ($rawStatus) {
+                                            'free' => 'status-free',
+                                            'paid' => 'status-paid',
+                                            'failed' => 'status-failed',
+                                            'cancelled' => 'status-cancelled',
+                                            'refunded' => 'status-refunded',
+                                            default => 'status-pending',
+                                        };
+                                        $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $order->total_price, 2);
+                                        $dateDisplay = $order->created_at ? $order->created_at->format('d M Y') : '';
+                                    ?>
+                                        <tr>
+                                            <td>
+                                                <strong style="color:#143825;font-size:13.5px;"><?= e($itemTitle) ?></strong>
+                                                <span style="display:block;font-size:11.5px;color:var(--text-muted);"><?= e($qtyFormatted) ?> <?= e($order->unit) ?></span>
+                                            </td>
+                                            <td>
+                                                <span class="type-tag"><?= e($typeLabel) ?></span>
+                                            </td>
+                                            <td style="font-weight:700;color:#113624;white-space:nowrap;">
+                                                <?= e($totalDisplay) ?>
+                                            </td>
+                                            <td>
+                                                <span class="status-tag <?= $statusClass ?>"><?= e($statusLabel) ?></span>
+                                            </td>
+                                            <td style="font-size:12.5px;color:#334155;white-space:nowrap;">
+                                                <?= e($dateDisplay) ?>
+                                            </td>
+                                            <td style="text-align:right;">
+                                                <div style="display:inline-flex;gap:6px;align-items:center;">
+                                                    <?php if ($isBuyer && ! $isFree && $order->requiresStripePayment() && ! in_array($rawStatus, ['paid', 'refunded'], true)): ?>
+                                                        <a href="<?= route('business.orders.checkout', $order) ?>" class="btn-rect-primary">
+                                                            Pay Now
+                                                        </a>
+                                                        <?php if ($order->latestPayment?->stripe_checkout_session_id): ?>
+                                                            <a href="<?= route('business.orders.verify-payment', $order) ?>" class="btn-rect-outline" style="background:#f0fdf4;border-color:#86efac;color:#15803d;font-weight:700;" title="Check payment status with Stripe">
+                                                                Verify Payment
+                                                            </a>
+                                                        <?php endif; ?>
+                                                    <?php endif; ?>
 
-                                            <?php if ($order->invoice): ?>
-                                                <a href="<?= route('business.invoices.show', $order->invoice) ?>" class="btn-rect-outline">
-                                                    View Receipt
-                                                </a>
-                                                <a href="<?= route('business.invoices.pdf', $order->invoice) ?>" class="btn-rect-primary">
-                                                    Download PDF
-                                                </a>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    <div style="padding:16px 20px;">
-                        <?= $orders->links()?->toHtml() ?>
+                                                    <?php if ($order->invoice): ?>
+                                                        <a href="<?= route('business.invoices.show', $order->invoice) ?>" class="btn-rect-outline">
+                                                            View Receipt
+                                                        </a>
+                                                        <a href="<?= route('business.invoices.pdf', $order->invoice) ?>" class="btn-rect-primary">
+                                                            Download PDF
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <div style="padding:16px 20px;">
+                                <?= $orders->links()?->toHtml() ?>
+                            </div>
+                        <?php else: ?>
+                            <div style="padding:48px 24px;text-align:center;">
+                                <h4 style="margin:0 0 6px;color:#143825;font-size:16px;"><?= e($emptyTitle) ?></h4>
+                                <p style="margin:0 0 18px;color:var(--text-secondary);font-size:13px;"><?= e($emptyMessage) ?></p>
+                                <a href="<?= route('business.marketplace') ?>" class="btn-rect-primary">Browse Marketplace</a>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                <?php else: ?>
-                    <div style="padding:48px 24px;text-align:center;">
-                        <h4 style="margin:0 0 6px;color:#143825;font-size:16px;">No Transactions Yet</h4>
-                        <p style="margin:0 0 18px;color:var(--text-secondary);font-size:13px;">Your Sell purchases, Free claims, and downloadable PDF receipts will appear here.</p>
-                        <a href="<?= route('business.marketplace') ?>" class="btn-rect-primary">Browse Marketplace</a>
-                    </div>
-                <?php endif; ?>
-            </div>
+                </section>
+            <?php endforeach; ?>
         </main>
     </div>
 </body>

@@ -215,6 +215,7 @@ class BusinessFullSuiteTest extends TestCase
 
     public function test_reports_page_charts_paid_transactions_and_counts_waste_records(): void
     {
+        $this->travelTo(now()->setDate(2026, 11, 25)->startOfDay());
         $business = $this->createApprovedBusiness('Green Paper Works');
         $partner = $this->createApprovedBusiness('Recovery Partner');
         $listing = MarketplaceListing::create([
@@ -235,7 +236,8 @@ class BusinessFullSuiteTest extends TestCase
                 'quantity' => 5,
                 'unit' => 'kg',
                 'total_price' => $price,
-                'status' => 'accepted',
+                'status' => $status === 'paid' ? 'completed' : 'accepted',
+                'completed_at' => $status === 'paid' ? now() : null,
                 'payment_status' => $status,
             ]);
         }
@@ -271,7 +273,77 @@ class BusinessFullSuiteTest extends TestCase
             ->assertViewHas('wasteCategories', ['Mixed waste' => 2])
             ->assertViewHas('wasteStatuses', fn (array $statuses): bool => $statuses['In storage'] === 1 && $statuses['Recycled'] === 1)
             ->assertSee('Waste records by status')
-            ->assertDontSee('Other business record');
+            ->assertDontSee('Other business record')
+            ->assertViewHas('totalTransactions', 2)
+            ->assertDontSee('Active Listings')
+            ->assertViewHas('listingCategories', ['Wood' => 1])
+            ->assertViewHas('monthly', ['Nov 2026' => [1, 0]])
+            ->assertViewHas('transactionTypes', ['Purchase' => 1])
+            ->assertDontSee('Total Waste Recovered')
+            ->assertDontSee('Not yet analysed')
+            ->assertSee('Your role')
+            ->assertSee('>Seller</td>', false)
+            ->assertSee('Monthly listing performance');
+
+        $this->get('/business/reports?period=custom&from=2026-10-01&to=2026-10-31')
+            ->assertOk()
+            ->assertViewHas('totalItems', 0)
+            ->assertViewHas('totalTransactions', 0)
+            ->assertViewHas('totalSalesRevenue', 0.0)
+            ->assertViewHas('wasteCategories', [])
+            ->assertSee('No records for this period.');
+
+        $this->get('/business/reports?period=custom&from=2026-11-26&to=2026-11-25')
+            ->assertOk()
+            ->assertSee('Showing this month.')
+            ->assertViewHas('period', 'month');
+    }
+
+    public function test_transaction_views_scope_rows_and_summary_to_the_selected_role(): void
+    {
+        $business = $this->createApprovedBusiness('Trading Business');
+        $partner = $this->createApprovedBusiness('Trading Partner');
+
+        foreach ([
+            [$business, $partner, 'Sold Offcuts', 125, 'completed', 'paid'],
+            [$partner, $business, 'Purchased Paper', 40, 'accepted', 'pending'],
+        ] as [$seller, $buyer, $title, $total, $status, $paymentStatus]) {
+            $listing = MarketplaceListing::create([
+                'business_id' => $seller->id,
+                'title' => $title,
+                'category' => 'Materials',
+                'quantity' => 5,
+                'unit' => 'kg',
+                'price' => $total,
+                'status' => 'active',
+            ]);
+
+            MaterialExchange::create([
+                'item_id' => $listing->id,
+                'item_name' => $title,
+                'provider_business_id' => $seller->id,
+                'requester_business_id' => $buyer->id,
+                'quantity' => 1,
+                'unit' => 'kg',
+                'total_price' => $total,
+                'status' => $status,
+                'payment_status' => $paymentStatus,
+            ]);
+        }
+
+        $this->actingAs($business)->get(route('business.transactions', ['tab' => 'sales']))
+            ->assertOk()->assertSee('Sold Offcuts')->assertDontSee('Purchased Paper')
+            ->assertSee('Total Sales')->assertDontSee('Total Purchases')
+            ->assertViewHas('pendingPaymentsCount', 0)->assertViewHas('completedExchangesCount', 1);
+
+        $this->get(route('business.transactions', ['tab' => 'purchases']))
+            ->assertOk()->assertSee('Purchased Paper')->assertDontSee('Sold Offcuts')
+            ->assertSee('Total Purchases')->assertDontSee('Total Sales')
+            ->assertViewHas('pendingPaymentsCount', 1)->assertViewHas('completedExchangesCount', 0);
+
+        $this->get(route('business.transactions'))
+            ->assertOk()->assertSee('Sold Offcuts')->assertSee('Purchased Paper')
+            ->assertViewHas('pendingPaymentsCount', 1)->assertViewHas('completedExchangesCount', 1);
     }
 
     public function test_profile_update_and_password_change(): void

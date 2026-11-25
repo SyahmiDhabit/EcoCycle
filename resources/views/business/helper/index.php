@@ -46,9 +46,9 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
     <style>
         .helper-grid {
             display: grid;
-            grid-template-columns: 1.05fr 0.95fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 20px;
-            align-items: start;
+            align-items: stretch;
         }
         @media (max-width: 1080px) {
             .helper-grid {
@@ -148,6 +148,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
 
         /* Guidance Content Sections (Clean structured display - No Chatbox) */
         .guidance-body {
+            flex: 1;
             padding: 18px;
             display: flex;
             flex-direction: column;

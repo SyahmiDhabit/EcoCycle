@@ -40,9 +40,12 @@ class TransactionController extends Controller
         // Automatically sync any pending Stripe checkout sessions for this business
         $this->stripeService->syncPendingStripePaymentsForBusiness($business->id);
 
-        $viewType = $request->input('tab', 'all'); // all, sales, purchases
+        $viewType = $request->input('tab', 'all');
+        if (! in_array($viewType, ['all', 'sales', 'purchases'], true)) {
+            $viewType = 'all';
+        }
 
-        $query = MaterialExchange::with(['listing', 'provider', 'requester', 'invoice', 'latestPayment', 'review'])->latest();
+        $query = MaterialExchange::query();
 
         if ($viewType === 'sales') {
             $query->where('provider_business_id', $business->id);
@@ -55,31 +58,28 @@ class TransactionController extends Controller
             });
         }
 
+        $summaryExchanges = (clone $query)->get(['provider_business_id', 'requester_business_id', 'payment_status', 'total_price', 'status']);
+
         if ($status = $request->input('payment_status')) {
             $query->where('payment_status', $status);
         }
 
-        $exchanges = $query->paginate(15)->withQueryString();
+        $exchanges = $query->with(['listing', 'provider', 'requester', 'invoice', 'latestPayment', 'review'])
+            ->latest()->paginate(15)->withQueryString();
 
-        // Calculate KPI Metrics
-        $allBusinessExchanges = MaterialExchange::where(function ($q) use ($business) {
-            $q->where('provider_business_id', $business->id)
-                ->orWhere('requester_business_id', $business->id);
-        })->get();
-
-        $totalRevenueRm = $allBusinessExchanges->where('provider_business_id', $business->id)
+        $totalRevenueRm = $summaryExchanges->where('provider_business_id', $business->id)
             ->where('payment_status', 'paid')
             ->sum('total_price');
 
-        $totalPurchasesRm = $allBusinessExchanges->where('requester_business_id', $business->id)
+        $totalPurchasesRm = $summaryExchanges->where('requester_business_id', $business->id)
             ->where('payment_status', 'paid')
             ->sum('total_price');
 
-        $pendingPaymentsCount = $allBusinessExchanges->where('payment_status', '!=', 'paid')
+        $pendingPaymentsCount = $summaryExchanges->where('payment_status', '!=', 'paid')
             ->where('total_price', '>', 0)
             ->count();
 
-        $completedExchangesCount = $allBusinessExchanges->where('status', 'completed')->count();
+        $completedExchangesCount = $summaryExchanges->where('status', 'completed')->count();
 
         return view('business.transactions.index', [
             'business' => $business,

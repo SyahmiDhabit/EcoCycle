@@ -12,7 +12,7 @@
     <style>
         .listing-manage-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
             gap: 18px;
             margin-bottom: 24px;
         }
@@ -63,6 +63,60 @@
             padding: 2px 8px;
             display: inline-block;
         }
+        .listings-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .listings-workspace .page-header {
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            padding: 0;
+            border: 0;
+        }
+        .listings-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .listing-toolbar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 20px;
+            padding: 6px;
+            background: #e4eee3;
+            border: 1px solid var(--card-border);
+        }
+        .listing-toolbar > a:last-child { padding: 0 8px; }
+        .listing-tab {
+            display: inline-flex;
+            align-items: center;
+            min-height: 40px;
+            padding: 8px 14px;
+            border: 1px solid #a3bfa6;
+            background: #fff;
+            color: #143825;
+            font-size: 12.5px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .listing-tab:hover { background: #eef5eb; }
+        .listings-workspace :is(.listing-tab.active, .btn-search) {
+            background: #176b40;
+            border-color: #176b40;
+            color: #fff;
+        }
+        .listings-workspace :is(.listing-tab.active, .btn-search):hover { background: #105331; }
+        .listings-workspace :is(.listing-tab, .btn-search, .my-listing-card button) {
+            border-radius: 6px !important;
+        }
+        .listings-workspace :is(.my-listing-card, .review-card) {
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .listings-workspace :is(a, button):focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -74,15 +128,15 @@
             include resource_path('views/business/partials/sidebar.php'); 
         ?>
 
-        <main class="dashboard-main-content">
-            <header class="section-header">
+        <main class="dashboard-main-content listings-workspace">
+            <header class="page-header">
                 <div class="section-header-title">
-                    <h2>My Published Listings &amp; Feedback</h2>
+                    <h1>My Published Listings &amp; Feedback</h1>
                     <p>Track the status of your reusable materials, view Sell and Free listings, and review feedback from partner businesses.</p>
                 </div>
                 <div>
                     <a href="/business/marketplace" class="btn-search" style="text-decoration:none;">
-                        <span>+ Create New Listing</span>
+                        <span>Create New Listing</span>
                     </a>
                 </div>
             </header>
@@ -94,7 +148,7 @@
             <?php endif; ?>
 
             <!-- KPI Metric Cards -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:16px;margin-bottom:24px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 210px), 1fr));gap:16px;margin-bottom:24px;">
                 <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:16px 18px;border-left:3px solid #176b40;">
                     <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Active Listings</span>
                     <div style="font-size:26px;font-weight:800;color:#15803d;font-family:var(--font-display);margin:4px 0;"><?= $totalActive ?></div>
@@ -111,7 +165,7 @@
                     <small style="color:var(--text-muted);">Available at RM 0.00</small>
                 </div>
                 <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:16px 18px;border-left:3px solid #b45309;">
-                    <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Partner Rating</span>
+                    <span style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Rating</span>
                     <div style="font-size:26px;font-weight:800;color:#b45309;font-family:var(--font-display);margin:4px 0;">
                         <?= $avgRating ?> / 5 <small style="font-size:13px;font-weight:600;">(<?= $totalReviewCount ?> reviews)</small>
                     </div>
@@ -120,17 +174,17 @@
             </div>
 
             <!-- Tab Navigation -->
-            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--card-border);padding-bottom:10px;">
-                <a href="/business/my-listings?status=all" class="sidebar-link <?= $currentTab === 'all' ? 'active' : '' ?>" style="display:inline-flex;padding:8px 14px;border:1px solid var(--card-border);border-radius:0;text-decoration:none;font-size:12.5px;font-weight:700;">
+            <div class="listing-toolbar">
+                <a href="/business/my-listings?status=all" class="listing-tab <?= $currentTab === 'all' ? 'active' : '' ?>">
                     All Listings (<?= $listings->total() ?>)
                 </a>
-                <a href="/business/my-listings?status=active" class="sidebar-link <?= $currentTab === 'active' ? 'active' : '' ?>" style="display:inline-flex;padding:8px 14px;border:1px solid var(--card-border);border-radius:0;text-decoration:none;font-size:12.5px;font-weight:700;">
+                <a href="/business/my-listings?status=active" class="listing-tab <?= $currentTab === 'active' ? 'active' : '' ?>">
                     Active (<?= $totalActive ?>)
                 </a>
-                <a href="/business/my-listings?status=sold" class="sidebar-link <?= $currentTab === 'sold' ? 'active' : '' ?>" style="display:inline-flex;padding:8px 14px;border:1px solid var(--card-border);border-radius:0;text-decoration:none;font-size:12.5px;font-weight:700;">
+                <a href="/business/my-listings?status=sold" class="listing-tab <?= $currentTab === 'sold' ? 'active' : '' ?>">
                     Sold / Claimed (<?= $totalSold ?>)
                 </a>
-                <a href="/business/my-listings?status=free" class="sidebar-link <?= $currentTab === 'free' ? 'active' : '' ?>" style="display:inline-flex;padding:8px 14px;border:1px solid var(--card-border);border-radius:0;text-decoration:none;font-size:12.5px;font-weight:700;">
+                <a href="/business/my-listings?status=free" class="listing-tab <?= $currentTab === 'free' ? 'active' : '' ?>">
                     Free (<?= (int) ($totalFree ?? 0) ?>)
                 </a>
                 <a href="#reviews-section" style="margin-left:auto;color:#176b40;font-size:12.5px;font-weight:700;text-decoration:underline;">

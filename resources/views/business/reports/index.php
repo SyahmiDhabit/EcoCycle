@@ -106,8 +106,45 @@
         .cat-bar-header { gap: 12px; }
         .cat-bar-header span:last-child { white-space: nowrap; }
         .report-table-scroll { overflow-x: auto; }
+        .report-filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 12px;
+        }
+        .report-filters label { display: grid; gap: 5px; font-weight: 600; }
+        .report-filters label[hidden] { display: none; }
+        .report-filters :is(select, input) {
+            min-height: 40px;
+            padding: 6px 10px;
+            border: 1px solid var(--input-border);
+            background: #fff;
+            color: var(--text-primary);
+            font: inherit;
+        }
+        .reports-workspace .report-action {
+            background: #176b40;
+            border-color: #176b40;
+            min-height: 40px;
+            border-radius: 6px !important;
+        }
+        .report-filters p { flex-basis: 100%; margin: 0; }
+        .report-filter-error { color: #991b1b; }
+        .analytics-chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .report-chart-wide { grid-column: 1 / -1; }
+        .report-chart-description, .report-chart-empty { color: var(--text-secondary); }
+        .report-canvas { display: none; height: 270px; position: relative; }
+        .report-canvas.is-rendered { display: block; }
+        .report-chart-data { margin-top: 12px; }
+        .report-chart-data summary { cursor: pointer; color: #14532d; }
+        .report-chart-data dl { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; }
+        .report-chart-data dd { margin: 0; text-align: right; }
+        @media (max-width: 720px) {
+            .analytics-chart-grid { grid-template-columns: minmax(0, 1fr); }
+            .report-section-card { padding: 16px; }
+        }
         @media print {
-            .topbar, .dashboard-sidebar, .sidebar-backdrop, .btn-print-report {
+            .topbar, .dashboard-sidebar, .sidebar-backdrop, .btn-print-report, .report-filters label, .report-action {
                 display: none !important;
             }
             .report-chart-grid { display: block; }
@@ -134,31 +171,79 @@
         <main class="dashboard-main-content reports-workspace">
             <header class="page-header">
                 <div>
-                    <h1>Business Reports</h1>
-                    <p>All-time Marketplace payments and waste records for your business.</p>
+                    <h1>Business Analytics</h1>
+                    <p>Inventory, Marketplace performance, and waste recovery for your business.</p>
                 </div>
                 <button type="button" class="btn-search btn-print-report" onclick="window.print()">Print / Save as PDF</button>
             </header>
 
-            <section class="report-section-card" aria-labelledby="financial-heading">
-                <h2 id="financial-heading">Marketplace payments</h2>
+            <form class="report-section-card report-filters" method="get">
+                <label>Period
+                    <select id="report-period" name="period" aria-describedby="report-period-description">
+                        <?php foreach (['week' => 'This Week', 'month' => 'This Month', 'quarter' => 'Last 3 Months', 'year' => 'This Year', 'custom' => 'Custom Date Range'] as $key => $label): ?>
+                            <option value="<?= $key ?>" <?= $period === $key ? 'selected' : '' ?>><?= e($label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label data-custom-date>From <input type="date" name="from" value="<?= $start->format('Y-m-d') ?>"></label>
+                <label data-custom-date>To <input type="date" name="to" value="<?= $end->format('Y-m-d') ?>"></label>
+                <button type="submit" class="btn-search report-action">Apply filters</button>
+                <p id="report-period-description"><?= $start->format('j M Y') ?> &ndash; <?= $end->format('j M Y') ?></p>
+                <?php if ($filterErrors->any()): ?>
+                    <p class="report-filter-error" role="alert"><?= e($filterErrors->first()) ?> Showing this month.</p>
+                <?php endif; ?>
+            </form>
+
+            <section class="report-section-card" aria-labelledby="summary-heading">
+                <h2 id="summary-heading">Dashboard summary</h2>
                 <div class="report-metric-row">
-                    <div class="report-metric-box">
-                        <small>Total Sales</small>
-                        <span>RM <?= number_format($totalSalesRevenue, 2) ?></span>
-                        <p><?= $totalSalesOrders ?> paid <?= $totalSalesOrders === 1 ? 'sale' : 'sales' ?></p>
-                    </div>
-                    <div class="report-metric-box">
-                        <small>Total Purchases</small>
-                        <span>RM <?= number_format($totalPurchasesSpent, 2) ?></span>
-                        <p><?= $totalPurchasesOrders ?> paid <?= $totalPurchasesOrders === 1 ? 'purchase' : 'purchases' ?></p>
-                    </div>
-                    <div class="report-metric-box">
-                        <small>Sales less purchases</small>
-                        <span>RM <?= number_format($totalSalesRevenue - $totalPurchasesSpent, 2) ?></span>
-                    </div>
+                    <?php foreach ([
+                        ['Total Items', number_format($totalItems), 'Inventory items added in this period'],
+                        ['Total Transactions', number_format($totalTransactions), 'Orders placed in this period as buyer or seller'],
+                        ['Total Revenue', 'RM '.number_format($totalSalesRevenue, 2), 'Paid sales in this period'],
+                        ['Reusable Materials', number_format($reusableMaterials), 'Reusable items added in this period'],
+                    ] as [$label, $value, $note]): ?>
+                        <div class="report-metric-box">
+                            <small><?= e($label) ?></small>
+                            <span><?= e($value) ?></span>
+                            <p><?= e($note) ?></p>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             </section>
+
+            <?php
+                $analyticsCharts = [
+                    ['listing-categories', 'Item listings by category', 'Marketplace listings from items added in this period.', 'pie', $listingCategories, 'Listings'],
+                    ['listing-trend', 'Monthly listing performance', 'Listed items are grouped by item creation date. Sold listings are grouped by their latest recorded order completion.', 'line', $monthly, 'Listings'],
+                    ['material-reusability', 'Material reusability', 'Reusable and non-reusable inventory items added in this period.', 'doughnut', $reusability, 'Items'],
+                    ['transaction-types', 'Transaction performance', 'Orders completed in this period as buyer or seller.', 'bar', $transactionTypes, 'Completed orders'],
+                ];
+            ?>
+            <div class="report-chart-grid analytics-chart-grid">
+                <?php foreach ($analyticsCharts as [$chartId, $chartTitle, $description, $type, $series, $metric]): ?>
+                    <section class="report-section-card <?= $type === 'line' ? 'report-chart-wide' : '' ?>" aria-labelledby="<?= $chartId ?>">
+                        <h2 id="<?= $chartId ?>"><?= e($chartTitle) ?></h2>
+                        <p class="report-chart-description"><?= e($description) ?></p>
+                        <?php if (array_sum($type === 'line' ? array_map('array_sum', $series) : $series) > 0): ?>
+                            <div class="report-canvas">
+                                <canvas aria-hidden="true" data-chart-type="<?= $type ?>" data-series="<?= e(json_encode($series, JSON_INVALID_UTF8_SUBSTITUTE)) ?>" data-metric="<?= e($metric) ?>"></canvas>
+                            </div>
+                            <details class="report-chart-data" open>
+                                <summary>Chart data</summary>
+                                <dl>
+                                    <?php foreach ($series as $label => $value): ?>
+                                        <dt><?= e($label) ?></dt>
+                                        <dd><?= is_array($value) ? number_format($value[0]).' listed · '.number_format($value[1]).' completed' : number_format($value) ?></dd>
+                                    <?php endforeach; ?>
+                                </dl>
+                            </details>
+                        <?php else: ?>
+                            <p class="report-chart-empty">No records for this period.</p>
+                        <?php endif; ?>
+                    </section>
+                <?php endforeach; ?>
+            </div>
 
             <div class="report-chart-grid">
                 <?php foreach ([
@@ -196,11 +281,12 @@
                 <h4 style="margin:0 0 8px;font-size:13px;color:#18422d;">Marketplace transactions</h4>
                 <?php if ($recentTransactions->isNotEmpty()): ?>
                     <div class="report-table-scroll">
-<table class="inventory-table" style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12.5px;">
+                        <table class="inventory-table" style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12.5px;">
                         <thead>
                             <tr style="background:#f4f8f3;border-bottom:1px solid #d8e5d6;text-align:left;">
                                 <th style="padding:10px 14px;">Order reference</th>
                                 <th style="padding:10px 14px;">Material</th>
+                                <th style="padding:10px 14px;">Your role</th>
                                 <th style="padding:10px 14px;">Counterparty</th>
                                 <th style="padding:10px 14px;">Amount</th>
                                 <th style="padding:10px 14px;">Status</th>
@@ -208,10 +294,12 @@
                         </thead>
                         <tbody>
                             <?php foreach ($recentTransactions as $tx): ?>
+                                <?php $isSeller = $tx->provider_business_id === $business->id; ?>
                                 <tr style="border-bottom:1px solid #eef4ed;">
                                     <td style="padding:10px 14px;font-family:monospace;"><?= e($tx->resolvedOrderReference()) ?></td>
                                     <td style="padding:10px 14px;"><?= e($tx->listing?->title ?: 'Material') ?></td>
-                                    <td style="padding:10px 14px;"><?= e(($tx->provider_business_id === $business->id ? $tx->requester : $tx->provider)?->business_name ?: 'Partner') ?></td>
+                                    <td style="padding:10px 14px;"><?= $isSeller ? 'Seller' : 'Buyer' ?></td>
+                                    <td style="padding:10px 14px;"><?= e(($isSeller ? $tx->requester : $tx->provider)?->business_name ?: 'Partner') ?></td>
                                     <td style="padding:10px 14px;font-weight:700;">RM <?= number_format((float)$tx->total_price, 2) ?></td>
                                     <td style="padding:10px 14px;"><?= e($tx->paymentStatusLabel()) ?></td>
                                 </tr>
@@ -226,7 +314,7 @@
                 <h4 style="margin:0 0 8px;font-size:13px;color:#18422d;">Waste records</h4>
                 <?php if ($recentWasteLogs->isNotEmpty()): ?>
                     <div class="report-table-scroll">
-<table class="inventory-table" style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                        <table class="inventory-table" style="width:100%;border-collapse:collapse;font-size:12.5px;">
                         <thead>
                             <tr style="background:#f4f8f3;border-bottom:1px solid #d8e5d6;text-align:left;">
                                 <th style="padding:10px 14px;">Material</th>
@@ -255,5 +343,57 @@
             </div>
         </main>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.js"></script>
+    <script>
+    const periodSelect = document.getElementById('report-period');
+    function updateCustomDates() {
+        const custom = periodSelect.value === 'custom';
+        for (const label of document.querySelectorAll('[data-custom-date]')) {
+            label.hidden = !custom;
+            label.querySelector('input').disabled = !custom;
+        }
+    }
+    periodSelect.addEventListener('change', updateCustomDates);
+    updateCustomDates();
+
+    if (window.Chart) {
+        const palette = ['#176b40', '#356e98', '#a55c22', '#674fa0', '#348681', '#9a4b63', '#62734e', '#806846'];
+        for (const canvas of document.querySelectorAll('canvas[data-series]')) {
+            const type = canvas.dataset.chartType;
+            const series = JSON.parse(canvas.dataset.series);
+            const labels = Object.keys(series);
+            const values = Object.values(series);
+            const circular = type === 'pie' || type === 'doughnut';
+            const datasets = type === 'line'
+                ? ['Listed items', 'Completed listings'].map((label, index) => ({
+                    label,
+                    data: values.map(value => value[index]),
+                    borderColor: palette[index],
+                    backgroundColor: palette[index],
+                    pointRadius: 3
+                }))
+                : [{
+                    label: canvas.dataset.metric,
+                    data: values,
+                    backgroundColor: circular ? labels.map((_, index) => palette[index % palette.length]) : palette[0]
+                }];
+            const chart = new Chart(canvas, {
+                type,
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: circular || type === 'line', position: 'bottom' } },
+                    scales: circular ? {} : { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+            canvas.parentElement.classList.add('is-rendered');
+            canvas.parentElement.nextElementSibling.open = false;
+            window.addEventListener('beforeprint', () => chart.resize());
+            window.addEventListener('afterprint', () => chart.resize());
+        }
+    }
+    </script>
 </body>
 </html>

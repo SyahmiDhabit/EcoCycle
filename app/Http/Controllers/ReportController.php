@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Item;
 use App\Models\MaterialExchange;
 use App\Models\User;
 use App\Models\WasteRecord;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class ReportController extends Controller
 {
-    private function checkApproved(): void
-    {
-        abort_unless(Auth::user()->account_status === 'approved', 403, 'Your business application must be approved first.');
-    }
-
     public function index(Request $request): View|RedirectResponse
     {
         /** @var User $business */
@@ -25,36 +23,94 @@ class ReportController extends Controller
             return redirect()->route('business.dashboard');
         }
 
-        $salesExchanges = MaterialExchange::where('provider_business_id', $business->id)
-            ->where('payment_status', 'paid')->get(['total_price']);
-        $purchaseExchanges = MaterialExchange::where('requester_business_id', $business->id)
-            ->where('payment_status', 'paid')->get(['total_price']);
+        $filters = Validator::make($request->query(), [
+            'period' => ['nullable', 'in:week,month,quarter,year,custom'],
+            'from' => ['exclude_unless:period,custom', 'required', 'date_format:Y-m-d'],
+            'to' => ['exclude_unless:period,custom', 'required', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
+        $period = $filters->fails() ? 'month' : ($filters->validated()['period'] ?? 'month');
+        $today = CarbonImmutable::today();
+        [$start, $end] = match ($period) {
+            'week' => [$today->startOfWeek(), $today],
+            'quarter' => [$today->startOfMonth()->subMonths(2), $today],
+            'year' => [$today->startOfYear(), $today],
+            'custom' => [CarbonImmutable::parse($filters->validated()['from']), CarbonImmutable::parse($filters->validated()['to'])],
+            default => [$today->startOfMonth(), $today],
+        };
+        $until = $end->addDay();
+        $inPeriod = static fn ($date): bool => $date !== null && $date >= $start && $date < $until;
 
-        $wasteRecords = WasteRecord::where('business_id', $business->id)->get(['waste_type', 'status']);
-        $wasteCategories = $wasteRecords->countBy(fn (WasteRecord $record): string => trim((string) $record->waste_type) ?: 'Uncategorised')
-            ->sortDesc()->all();
-        $wasteStatuses = $wasteRecords->countBy(fn (WasteRecord $record): string => $record->status
-            ? ucfirst(str_replace('_', ' ', $record->status))
-            : 'Unspecified')->sortDesc()->all();
+        $items = Item::where('business_id', $business->id)
+            ->get(['id', 'category', 'reusability', 'quantity', 'status', 'created_at']);
+        $cohort = $items->filter(fn (Item $item): bool => $inPeriod($item->created_at));
+        $listedItems = $items->filter(fn (Item $item): bool => in_array($item->status, ['active', 'inactive', 'sold', 'completed'], true));
+        $listedCohort = $listedItems->filter(fn (Item $item): bool => $inPeriod($item->created_at));
 
-        // Recent transaction and waste activity logs for printable audit report
-        $recentTransactions = MaterialExchange::where(function ($q) use ($business) {
-            $q->where('provider_business_id', $business->id)
-                ->orWhere('requester_business_id', $business->id);
-        })->with(['listing', 'provider', 'requester'])->latest()->take(8)->get();
+        $exchanges = MaterialExchange::where(function ($query) use ($business): void {
+            $query->where('provider_business_id', $business->id)->orWhere('requester_business_id', $business->id);
+        })->latest()->orderByDesc('id')->get();
 
-        $recentWasteLogs = WasteRecord::where('business_id', $business->id)->latest('recorded_at')->take(8)->get();
+        $periodOrders = $exchanges->filter(fn (MaterialExchange $order): bool => $inPeriod($order->created_at));
+        $paidOrders = $exchanges->filter(fn (MaterialExchange $order): bool => $order->payment_status === 'paid'
+            && $inPeriod($order->paid_at ?? $order->created_at));
+        $paidSales = $paidOrders->where('provider_business_id', $business->id);
+        $paidPurchases = $paidOrders->where('requester_business_id', $business->id);
+        $reusability = [
+            'Reusable' => $cohort->where('reusability', 'reusable')->count(),
+            'Non-reusable' => $cohort->where('reusability', 'not_reusable')->count(),
+        ];
+        $listingCategories = $listedCohort->countBy(fn (Item $item): string => trim((string) $item->category) ?: 'Uncategorised')->sortDesc()->all();
+
+        $completed = $exchanges->filter(fn (MaterialExchange $order): bool => $order->completed_at !== null
+            && (in_array($order->delivery_status, ['completed', 'returned'], true) || $order->status === 'completed'));
+        $transactionTypes = $completed->filter(fn (MaterialExchange $order): bool => $inPeriod($order->completed_at))
+            ->filter(fn (MaterialExchange $order): bool => in_array($order->listing_type, ['buy', 'free', 'lend'], true))
+            ->countBy(fn (MaterialExchange $order): string => match ($order->listing_type) {
+                'buy' => 'Purchase',
+                'free' => 'Free claim',
+                'lend' => 'Borrowing',
+            })->all();
+
+        $listedByMonth = $listedCohort->countBy(fn (Item $item): string => $item->created_at->format('Y-m'));
+        $soldIds = $listedItems->whereIn('status', ['sold', 'completed'])->pluck('id')->flip();
+        $completedByMonth = $completed->where('provider_business_id', $business->id)
+            ->filter(fn (MaterialExchange $order): bool => $soldIds->has($order->item_id))
+            ->sortByDesc('completed_at')->unique('item_id')
+            ->filter(fn (MaterialExchange $order): bool => $inPeriod($order->completed_at))
+            ->countBy(fn (MaterialExchange $order): string => $order->completed_at->format('Y-m'));
+        $monthly = [];
+        for ($month = $start->startOfMonth(); $month < $until; $month = $month->addMonth()) {
+            $key = $month->format('Y-m');
+            $monthly[$month->format('M Y')] = [$listedByMonth->get($key, 0), $completedByMonth->get($key, 0)];
+        }
+
+        $wasteRecords = WasteRecord::where('business_id', $business->id)
+            ->where('recorded_at', '>=', $start)->where('recorded_at', '<', $until)
+            ->latest('recorded_at')->orderByDesc('id')->get();
 
         return view('business.reports.index', [
             'business' => $business,
-            'totalSalesRevenue' => (float) $salesExchanges->sum('total_price'),
-            'totalSalesOrders' => $salesExchanges->count(),
-            'totalPurchasesSpent' => (float) $purchaseExchanges->sum('total_price'),
-            'totalPurchasesOrders' => $purchaseExchanges->count(),
-            'wasteCategories' => $wasteCategories,
-            'wasteStatuses' => $wasteStatuses,
-            'recentTransactions' => $recentTransactions,
-            'recentWasteLogs' => $recentWasteLogs,
+            'period' => $period,
+            'start' => $start,
+            'end' => $end,
+            'filterErrors' => $filters->errors(),
+            'totalItems' => $cohort->count(),
+            'totalTransactions' => $periodOrders->count(),
+            'totalSalesRevenue' => (float) $paidSales->sum('total_price'),
+            'totalSalesOrders' => $paidSales->count(),
+            'totalPurchasesSpent' => (float) $paidPurchases->sum('total_price'),
+            'totalPurchasesOrders' => $paidPurchases->count(),
+            'reusableMaterials' => $reusability['Reusable'],
+            'listingCategories' => $listingCategories,
+            'monthly' => $monthly,
+            'reusability' => $reusability,
+            'transactionTypes' => $transactionTypes,
+            'wasteCategories' => $wasteRecords->countBy(fn (WasteRecord $record): string => trim((string) $record->waste_type) ?: 'Uncategorised')->sortDesc()->all(),
+            'wasteStatuses' => $wasteRecords->countBy(fn (WasteRecord $record): string => $record->status
+                ? ucfirst(str_replace('_', ' ', $record->status))
+                : 'Unspecified')->sortDesc()->all(),
+            'recentTransactions' => $periodOrders->take(8)->load(['listing', 'provider', 'requester']),
+            'recentWasteLogs' => $wasteRecords->take(8),
         ]);
     }
 }

@@ -43,13 +43,12 @@ class InvoiceController extends Controller
         }
 
         $orders = MaterialExchange::with(['item', 'provider', 'requester', 'invoice', 'latestPayment'])
-            ->where(function ($q) use ($business): void {
-                $q->where('provider_business_id', $business->id)
-                    ->orWhere('requester_business_id', $business->id);
-            })
             ->latest()
-            ->paginate(15, ['*'], 'orders_page')
-            ->withQueryString();
+            ->orderByDesc('id');
+        $purchaseOrders = (clone $orders)->where('requester_business_id', $business->id)
+            ->paginate(15, ['*'], 'purchases_page')->withQueryString();
+        $salesOrders = (clone $orders)->where('provider_business_id', $business->id)
+            ->paginate(15, ['*'], 'sales_page')->withQueryString();
 
         $payments = Payment::with(['exchange.item', 'buyer', 'seller', 'invoice'])
             ->where(function ($q) use ($business): void {
@@ -90,7 +89,8 @@ class InvoiceController extends Controller
         return view('business.invoices.index', [
             'business' => $business,
             'activeTab' => $tab,
-            'orders' => $orders,
+            'purchaseOrders' => $purchaseOrders,
+            'salesOrders' => $salesOrders,
             'payments' => $payments,
             'invoices' => $invoices,
             'totalInvoicesCount' => $totalInvoicesCount,

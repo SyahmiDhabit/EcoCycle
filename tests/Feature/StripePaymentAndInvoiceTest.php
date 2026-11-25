@@ -264,6 +264,15 @@ class StripePaymentAndInvoiceTest extends TestCase
         $this->actingAs($seller)->get(route('business.invoices.show', $receipt))->assertOk();
         $this->actingAs($seller)->get(route('business.invoices.pdf', $receipt))->assertOk();
 
+        $this->actingAs($buyer)->get(route('business.invoices.index'))
+            ->assertOk()
+            ->assertViewHas('purchaseOrders', fn ($orders): bool => $orders->total() === 1)
+            ->assertViewHas('salesOrders', fn ($orders): bool => $orders->total() === 0);
+        $this->actingAs($seller)->get(route('business.invoices.index'))
+            ->assertOk()
+            ->assertViewHas('purchaseOrders', fn ($orders): bool => $orders->total() === 0)
+            ->assertViewHas('salesOrders', fn ($orders): bool => $orders->total() === 1);
+
         // 10. Historical receipt remains UNCHANGED even after seller edits and restocks inventory
         $item->update([
             'name' => 'Renamed Polymer Crates V2',

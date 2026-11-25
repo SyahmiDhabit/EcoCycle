@@ -177,7 +177,11 @@
                         'sales' => 'My Sales History',
                         default => 'Transactions &amp; Payment History',
                     } ?></h1>
-                    <p>Preserved purchase and sales history for Sell, Free, and Lend transactions, including Stripe payment status and PDF receipts.</p>
+                    <p><?= match ($currentTab) {
+                        'sales' => 'View payments, delivery status, and receipts for orders sold by your business.',
+                        'purchases' => 'View payments, delivery status, and receipts for materials purchased or claimed by your business.',
+                        default => 'View payment status, delivery progress, and receipts across your sales and purchases.',
+                    } ?></p>
                 </div>
             </header>
 
@@ -189,16 +193,20 @@
 
             <!-- KPI Metric Cards -->
             <div class="trx-kpi-grid">
-                <div class="trx-kpi-card" style="border-left:3px solid #176b40;">
-                    <span class="trx-kpi-title" style="color:#15803d;">Total Sales</span>
-                    <span class="trx-kpi-value" style="color:#15803d;">RM <?= number_format((float) $totalRevenueRm, 2) ?></span>
-                    <span class="trx-kpi-sub">Total received from material sales</span>
-                </div>
-                <div class="trx-kpi-card" style="border-left:3px solid #dc2626;">
-                    <span class="trx-kpi-title" style="color:#b91c1c;">Total Purchases</span>
-                    <span class="trx-kpi-value" style="color:#b91c1c;">RM <?= number_format((float) $totalPurchasesRm, 2) ?></span>
-                    <span class="trx-kpi-sub">Total spent acquiring secondary surplus materials</span>
-                </div>
+                <?php if ($currentTab !== 'purchases'): ?>
+<div class="trx-kpi-card" style="border-left:3px solid #176b40;">
+                        <span class="trx-kpi-title" style="color:#15803d;">Total Sales</span>
+                        <span class="trx-kpi-value" style="color:#15803d;">RM <?= number_format((float) $totalRevenueRm, 2) ?></span>
+                        <span class="trx-kpi-sub">Total received from material sales</span>
+                    </div>
+                <?php endif; ?>
+                <?php if ($currentTab !== 'sales'): ?>
+<div class="trx-kpi-card" style="border-left:3px solid #dc2626;">
+                        <span class="trx-kpi-title" style="color:#b91c1c;">Total Purchases</span>
+                        <span class="trx-kpi-value" style="color:#b91c1c;">RM <?= number_format((float) $totalPurchasesRm, 2) ?></span>
+                        <span class="trx-kpi-sub">Total spent acquiring secondary surplus materials</span>
+                    </div>
+                <?php endif; ?>
                 <div class="trx-kpi-card" style="border-left:3px solid #a16207;">
                     <span class="trx-kpi-title" style="color:#a16207;">Pending Payment Action</span>
                     <span class="trx-kpi-value" style="color:#a16207;"><?= $pendingPaymentsCount ?></span>
@@ -211,18 +219,19 @@
                 </div>
             </div>
 
-            <!-- Tabs -->
-            <div class="trx-tabs">
-                <a href="/business/transactions?tab=all" class="trx-tab-btn <?= $currentTab === 'all' ? 'active' : '' ?>">
-                    All Transactions
-                </a>
-                <a href="/business/transactions?tab=sales" class="trx-tab-btn <?= $currentTab === 'sales' ? 'active' : '' ?>">
-                    Sales
-                </a>
-                <a href="/business/transactions?tab=purchases" class="trx-tab-btn <?= $currentTab === 'purchases' ? 'active' : '' ?>">
-                    Purchases &amp; Free Claims
-                </a>
-            </div>
+            <?php if ($currentTab === 'all'): ?>
+                <div class="trx-tabs">
+                    <a href="/business/transactions?tab=all" class="trx-tab-btn <?= $currentTab === 'all' ? 'active' : '' ?>">
+                        All Transactions
+                    </a>
+                    <a href="/business/transactions?tab=sales" class="trx-tab-btn <?= $currentTab === 'sales' ? 'active' : '' ?>">
+                        Sales
+                    </a>
+                    <a href="/business/transactions?tab=purchases" class="trx-tab-btn <?= $currentTab === 'purchases' ? 'active' : '' ?>">
+                        Purchases &amp; Free Claims
+                    </a>
+                </div>
+            <?php endif; ?>
 
             <!-- Transactions Table -->
             <div class="trx-table-panel" role="region" aria-label="Transaction history" tabindex="0">

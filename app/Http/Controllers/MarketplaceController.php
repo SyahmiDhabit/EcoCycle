@@ -39,35 +39,17 @@ class MarketplaceController extends Controller
         $category = trim((string) $request->query('category', ''));
         $location = trim((string) $request->query('location', ''));
         $listingType = trim((string) $request->query('listing_type', ''));
-        $reusability = trim((string) $request->query('reusability', ''));
+        $stockStatus = $request->query('stock_status');
         $myListingsOnly = $request->boolean('my_listings');
 
-        // Determine current tab / category
-        $tab = $request->query('tab');
-        if ($myListingsOnly) {
-            $tab = 'my_listings';
-        } elseif ($tab === 'non_reusable' || $reusability === 'not_reusable') {
-            $tab = 'non_reusable';
-        } else {
-            $tab = 'reusable';
-        }
+        $tab = $myListingsOnly ? 'my_listings' : 'reusable';
 
         $query = MarketplaceListing::query()
             ->with('business')
-            ->where('status', 'active')
-            ->where('quantity', '>', 0);
+            ->visibleInMarketplace();
 
-        if ($tab === 'my_listings') {
+        if ($myListingsOnly) {
             $query->where('business_id', $business->id);
-            if ($reusability !== '') {
-                $query->where('reusability', $reusability);
-            }
-        } elseif ($tab === 'non_reusable') {
-            // Dedicated Non-Reusable Category (Scrap, Cutoffs, Circular Recovery - excluded from normal reusable market)
-            $query->where('reusability', 'not_reusable');
-        } else {
-            // Normal Reusable Marketplace
-            $query->where('reusability', 'reusable');
         }
 
         if ($search !== '') {
@@ -101,8 +83,10 @@ class MarketplaceController extends Controller
             }
         }
 
-        if ($reusability !== '' && $tab === 'my_listings') {
-            $query->where('reusability', $reusability);
+        if ($stockStatus === 'in_stock') {
+            $query->where('quantity', '>', 0);
+        } elseif ($stockStatus === 'out_of_stock') {
+            $query->where('quantity', '<=', 0);
         }
 
         $listings = $query->latest()->get();
@@ -128,32 +112,16 @@ class MarketplaceController extends Controller
 
         // Counts for tabs (published marketplace listings only)
         $reusableCount = MarketplaceListing::query()
-            ->where('status', 'active')
-            ->where('quantity', '>', 0)
-            ->where('reusability', 'reusable')
-            ->count();
-
-        $nonReusableCount = MarketplaceListing::query()
-            ->where('status', 'active')
-            ->where('quantity', '>', 0)
-            ->where('reusability', 'not_reusable')
+            ->visibleInMarketplace()
             ->count();
 
         $myListingsCount = $business->marketplaceListings()
-            ->where('status', 'active')
-            ->where('quantity', '>', 0)
+            ->visibleInMarketplace()
             ->count();
 
         // Get distinct categories and locations for the current category context
         $catLocationScope = MarketplaceListing::query()
-            ->where('status', 'active')
-            ->where('quantity', '>', 0);
-
-        if ($tab === 'non_reusable') {
-            $catLocationScope->where('reusability', 'not_reusable');
-        } elseif ($tab === 'reusable') {
-            $catLocationScope->where('reusability', 'reusable');
-        }
+            ->visibleInMarketplace();
 
         $categories = (clone $catLocationScope)
             ->distinct()
@@ -185,19 +153,18 @@ class MarketplaceController extends Controller
             'search' => $search,
             'selectedCategory' => $category,
             'selectedLocation' => $location,
+            'selectedStockStatus' => $stockStatus,
             'selectedListingType' => $listingType,
-            'selectedReusability' => $reusability,
             'myListingsOnly' => $myListingsOnly,
             'currentTab' => $tab,
             'reusableCount' => $reusableCount,
-            'nonReusableCount' => $nonReusableCount,
             'myListingsCount' => $myListingsCount,
         ]);
     }
 
     public function sellerReviews(MarketplaceListing $listing): JsonResponse
     {
-        abort_unless($listing->status === 'active' && $listing->quantity > 0, 404);
+        abort_unless(MarketplaceListing::visibleInMarketplace()->whereKey($listing->id)->exists(), 404);
 
         $reviews = MarketplaceReview::query()
             ->with('reviewer:id,business_name')

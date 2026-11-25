@@ -222,12 +222,12 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $reusableTabResponse->assertSee('Heavy Duty Euro Pallets');
         $reusableTabResponse->assertDontSee('Mixed Industrial Plastic Shreds');
 
-        // Check non-reusable tab
+        // Old Marketplace links still open the reusable view.
         $nonReusableTabResponse = $this->actingAs($buyer)->get(route('business.marketplace', ['tab' => 'non_reusable']));
         $nonReusableTabResponse->assertOk();
-        $nonReusableTabResponse->assertSee('Mixed Industrial Plastic Shreds');
-        $nonReusableTabResponse->assertDontSee('Heavy Duty Euro Pallets');
-        $nonReusableTabResponse->assertSee('Ask Helper');
+        $nonReusableTabResponse->assertSee('Heavy Duty Euro Pallets');
+        $nonReusableTabResponse->assertDontSee('Mixed Industrial Plastic Shreds');
+        $nonReusableTabResponse->assertDontSee('Non-Reusable Items');
     }
 
     public function test_inventory_supports_table_and_catalog_grid_views(): void
@@ -454,7 +454,7 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $response->assertSee('Klang');
         $response->assertSee('41050');
         $response->assertSee('My Address');
-        $response->assertSee('Registered Company Address (Main Reference)');
+        $response->assertSee('Registered Company Address');
 
         // Carried-forward AI analysis results from Add New Inventory (NO re-analysis)
         $response->assertSee('Certified Secondary Smelting &amp; Thermal Recovery', false);

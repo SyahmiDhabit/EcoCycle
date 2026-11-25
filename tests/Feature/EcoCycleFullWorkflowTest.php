@@ -287,7 +287,7 @@ class EcoCycleFullWorkflowTest extends TestCase
             ],
         ])->assertOk()->assertJsonPath('status', 'paid');
 
-        // Item is now 0 kg and PERMANENTLY SOLD OUT -> removed from Marketplace!
+        // Item is now 0 kg and remains visible as permanently sold out.
         $item5kg->refresh();
         $this->assertEquals(0.00, (float) $item5kg->quantity);
         $this->assertSame('sold', $item5kg->getRawOriginal('status'));
@@ -295,7 +295,8 @@ class EcoCycleFullWorkflowTest extends TestCase
 
         $this->actingAs($buyerB)->get(route('business.marketplace'))
             ->assertOk()
-            ->assertDontSee('Clean Aluminium Extrusion Bars');
+            ->assertSee('Clean Aluminium Extrusion Bars')
+            ->assertSee('disabled>Out of Stock</button>', false);
 
         // Permanent Sold Out Rule: Seller A CANNOT restock, edit quantity > 0, or republish old submission
         $this->actingAs($sellerA)->post(route('business.inventory.adjust', $item5kg), [
@@ -313,6 +314,26 @@ class EcoCycleFullWorkflowTest extends TestCase
             'listing_type' => 'buy',
             'price' => 10.00,
         ])->assertSessionHasErrors('quantity');
+
+        $this->actingAs($sellerA)->get(route('business.inventory.edit', $item5kg))
+            ->assertOk()
+            ->assertSee('Back to Inventory')
+            ->assertSee('Add New Item Submission')
+            ->assertDontSee('Save Item')
+            ->assertDontSee('>Cancel</a>', false);
+
+        $this->actingAs($sellerA)->put(route('business.inventory.update', $item5kg), [
+            'name' => 'Changed sold-out name',
+            'category' => 'Metals',
+            'quantity' => 0,
+            'unit' => 'kg',
+            'condition' => 'New',
+            'reusability' => 'reusable',
+            'listing_type' => 'buy',
+            'price' => 10.00,
+        ])->assertSessionHasErrors('quantity');
+
+        $this->assertSame('Clean Aluminium Extrusion Bars', $item5kg->fresh()->name);
 
         $this->actingAs($sellerA)->post(route('business.inventory.publish', $item5kg))
             ->assertSessionHasErrors('quantity');

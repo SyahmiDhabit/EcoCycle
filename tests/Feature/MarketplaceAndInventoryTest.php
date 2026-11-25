@@ -344,11 +344,11 @@ class MarketplaceAndInventoryTest extends TestCase
             ->assertSee('Item Reusable Sell')
             ->assertDontSee('Item Not Reusable Free');
 
-        // Owner viewing their own listings can view their internal listings
+        // My Listings only shows reusable published items, even with an old filter.
         $this->actingAs($business)
             ->get(route('business.marketplace', ['my_listings' => '1', 'reusability' => 'not_reusable']))
             ->assertOk()
-            ->assertSee('Item Not Reusable Free');
+            ->assertDontSee('Item Not Reusable Free');
     }
 
     public function test_cannot_list_not_reusable_inventory_item_on_marketplace(): void
@@ -825,7 +825,29 @@ class MarketplaceAndInventoryTest extends TestCase
             ->assertJsonPath('reviews.0.comment', 'Excellent quality kraft sheets and prompt dispatch!')
             ->assertJsonPath('next', null);
 
-        $item->update(['quantity' => 0]);
+        $item->update(['quantity' => 0, 'status' => 'sold']);
+
+        $this->get(route('business.marketplace', ['stock_status' => 'in_stock']))
+            ->assertOk()
+            ->assertSee('id="listing-card-'.$otherListing->id.'"', false)
+            ->assertDontSee('id="listing-card-'.$item->id.'"', false);
+
+        $this->get(route('business.marketplace', ['stock_status' => 'out_of_stock']))
+            ->assertOk()
+            ->assertSee('id="listing-card-'.$item->id.'"', false)
+            ->assertDontSee('id="listing-card-'.$otherListing->id.'"', false);
+
+        $this->get(route('business.marketplace'))
+            ->assertOk()
+            ->assertSee('disabled>Out of Stock</button>', false)
+            ->assertSee('View item reviews, rated 5.0 out of 5');
+
+        $this->getJson(route('business.marketplace.seller-reviews', $item))
+            ->assertOk()
+            ->assertJsonCount(1, 'reviews')
+            ->assertJsonPath('reviews.0.comment', 'Excellent quality kraft sheets and prompt dispatch!');
+
+        $item->update(['status' => 'inactive']);
 
         $this->getJson(route('business.marketplace.seller-reviews', $item))
             ->assertNotFound();

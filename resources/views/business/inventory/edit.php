@@ -345,9 +345,9 @@ $canPublishNow = ! $isPermanentlySoldOut
                         <a href="<?= route('business.inventory') ?>" class="edit-btn-secondary edit-back-link">
                             Back to Inventory
                         </a>
-                        <h1>Update Inventory Details</h1>
+                        <h1><?= $isPermanentlySoldOut ? 'Inventory Details' : 'Update Inventory Details' ?></h1>
                         <p style="margin:0;font-size:13px;color:#526658;">
-                            Review the material analysis summary, confirm item details, set listing type and price per unit, then save to your inventory.
+                            <?= $isPermanentlySoldOut ? 'View the saved details for this sold-out item.' : 'Review the material analysis summary, confirm item details, set listing type and price per unit, then save to your inventory.' ?>
                         </p>
                     </div>
                     <div>
@@ -383,7 +383,7 @@ $canPublishNow = ! $isPermanentlySoldOut
                     <div class="edit-card" style="border-left:4px solid #143825;background:#f7fbf7;">
                         <div class="edit-card-header" style="background:#eef6ed;">
                             <h3>Material Analysis</h3>
-                            <span style="font-size:11.5px;color:#143825;font-weight:600;">Suggestions can be edited below</span>
+                            <span style="font-size:11.5px;color:#143825;font-weight:600;"><?= $isPermanentlySoldOut ? 'Saved analysis' : 'Suggestions can be edited below' ?></span>
                         </div>
                         <div class="edit-card-body" style="padding:16px 20px;font-size:12.5px;color:#1e293b;line-height:1.55;">
                             <div class="edit-grid-3" style="margin-bottom:10px;">
@@ -434,10 +434,14 @@ $canPublishNow = ! $isPermanentlySoldOut
                     <?php endforeach; ?>
                 </datalist>
 
+                <?php if ($isPermanentlySoldOut): ?>
+                    <fieldset disabled style="border:0;margin:0;padding:0;min-width:0;">
+                <?php else: ?>
                 <form method="POST" action="<?= route('business.inventory.update', $item) ?>" enctype="multipart/form-data">
                     <?= csrf_field() ?>
                     <?= method_field('PUT') ?>
                     <input type="hidden" name="redirect_to" value="edit">
+                <?php endif; ?>
 
                     <!-- Section 1: Material Photos -->
                     <div class="edit-card">
@@ -603,11 +607,15 @@ $canPublishNow = ! $isPermanentlySoldOut
                         </div>
                     </div>
 
+                <?php if ($isPermanentlySoldOut): ?>
+                    </fieldset>
+                <?php else: ?>
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
                         <a href="<?= route('business.inventory') ?>" class="edit-btn-secondary">Cancel</a>
                         <button type="submit" class="edit-btn-primary">Save Item</button>
                     </div>
                 </form>
+                <?php endif; ?>
 
                 <!-- Section 4: Separate Explicit Action — Publish to Marketplace -->
                 <div class="edit-card">
@@ -746,6 +754,7 @@ $canPublishNow = ! $isPermanentlySoldOut
         if (!grid) return;
 
         grid.innerHTML = '';
+        var readOnly = <?= json_encode($isPermanentlySoldOut) ?>;
         var labels = ['Image 1 (Cover)', 'Image 2', 'Image 3'];
         var activeCount = 0;
 
@@ -774,13 +783,22 @@ $canPublishNow = ! $isPermanentlySoldOut
 
                 var preview = document.createElement('div');
                 preview.className = 'inv-slot-preview-area';
-                preview.onclick = function() { triggerPageSlotInput(slotIndex); };
+                if (readOnly) {
+                    preview.style.cursor = 'default';
+                } else {
+                    preview.onclick = function() { triggerPageSlotInput(slotIndex); };
+                }
                 if (previewUrl) {
                     preview.innerHTML = '<img src="' + previewUrl + '" alt="' + labels[slotIndex] + '">';
                 } else {
-                    preview.innerHTML = '<span>Select Image</span>';
+                    preview.textContent = readOnly ? 'No image' : 'Select Image';
                 }
                 wrapper.appendChild(preview);
+
+                if (readOnly) {
+                    grid.appendChild(wrapper);
+                    return;
+                }
 
                 var actions = document.createElement('div');
                 actions.className = 'inv-slot-actions';

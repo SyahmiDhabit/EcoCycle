@@ -639,11 +639,10 @@ class InventoryController extends Controller
         $this->checkApproved();
         abort_unless($item->business_id === Auth::id(), 403);
 
-        // Enforce permanent Sold Out rule: sold-out non-lend surplus submissions cannot be restocked or reactivated
-        if ($item->isPermanentlySoldOut() && $request->filled('quantity') && (float) $request->input('quantity') > 0) {
+        if ($item->isPermanentlySoldOut()) {
             return back()->withErrors([
-                'quantity' => 'This item is permanently Sold Out and cannot be restocked or reactivated. Please add a new inventory item submission for new surplus stock.',
-            ])->withInput();
+                'quantity' => 'This item is permanently Sold Out and cannot be edited. Please add a new inventory item submission for new surplus stock.',
+            ]);
         }
 
         $wasPublished = $item->isPublishedToMarketplace();

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,6 +40,18 @@ class MarketplaceListing extends Model
     use HasFactory;
 
     protected $table = 'item';
+
+    public function scopeVisibleInMarketplace(Builder $query): void
+    {
+        $query->where('reusability', 'reusable')->where(function (Builder $visibility): void {
+            $visibility->where(fn (Builder $available) => $available->where('status', 'active')->where('quantity', '>', 0))
+                ->orWhere(function (Builder $soldOut): void {
+                    $soldOut->whereIn('status', ['sold', 'completed'])
+                        ->where('quantity', '<=', 0)
+                        ->where(fn (Builder $type) => $type->where('listing_type', '!=', 'lend')->orWhereNull('listing_type'));
+                });
+        });
+    }
 
     public function getStatusAttribute(): string
     {

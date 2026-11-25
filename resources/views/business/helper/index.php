@@ -126,12 +126,46 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             border-bottom: 1px solid var(--card-border);
         }
         .selected-item-thumb {
-            width: 56px;
-            height: 56px;
-            object-fit: cover;
+            display: block;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: contain;
             border: 1px solid var(--card-border);
             flex-shrink: 0;
             background: #f1f5f2;
+        }
+        .selected-item-gallery {
+            display: grid;
+            justify-items: center;
+            gap: 4px;
+            flex: 0 0 48%;
+            min-width: 0;
+        }
+        @media (max-width: 460px) {
+            .selected-item-strip {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .selected-item-gallery {
+                flex: none;
+            }
+        }
+        .selected-item-gallery-controls:not([hidden]) {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: #143825;
+        }
+        .selected-item-gallery-controls button {
+            min-width: 24px;
+            min-height: 24px;
+            padding: 0;
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            background: #fff;
+            color: inherit;
+            cursor: pointer;
         }
         .metric-badge {
             display: inline-flex;
@@ -602,7 +636,15 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
 
                     <!-- Selected Item Strip -->
                     <div id="selected-item-strip" class="selected-item-strip" style="<?= $hasSelected ? '' : 'display:none;' ?>">
-                        <img id="strip-item-img" src="<?= $hasSelected && $selectedItem->getPrimaryImage() ? e($selectedItem->getPrimaryImage()) : '/images/figma/ecocycle-leaf.svg' ?>" alt="Selected material" class="selected-item-thumb">
+                        <?php $itemPhotos = $hasSelected ? $selectedItem->getAllImages() : []; ?>
+                        <div class="selected-item-gallery" role="group" aria-label="Material photos" id="strip-item-gallery" data-photos="<?= e(json_encode($itemPhotos, JSON_INVALID_UTF8_SUBSTITUTE)) ?>">
+                            <img id="strip-item-img" src="<?= e($itemPhotos[0] ?? '/images/figma/ecocycle-leaf.svg') ?>" alt="Selected material" class="selected-item-thumb">
+                            <div id="strip-item-gallery-controls" class="selected-item-gallery-controls" <?= count($itemPhotos) < 2 ? 'hidden' : '' ?>>
+                                <button type="button" aria-label="Previous photo" onclick="slideHelperPhoto(-1)">&lsaquo;</button>
+                                <span id="strip-item-photo-count" aria-live="polite">1 / <?= count($itemPhotos) ?></span>
+                                <button type="button" aria-label="Next photo" onclick="slideHelperPhoto(1)">&rsaquo;</button>
+                            </div>
+                        </div>
                         <div style="flex:1;min-width:0;">
                             <strong id="strip-item-name" style="font-size:15px;color:#123321;display:block;"><?= $hasSelected ? e($selectedItem->name ?: $selectedItem->title) : '' ?></strong>
                             <ul class="selected-item-details">
@@ -1105,6 +1147,18 @@ function onSelectItem(itemId) {
     });
 }
 
+var helperPhotos = JSON.parse(document.getElementById('strip-item-gallery').dataset.photos);
+var helperPhotoIndex = 0;
+
+function slideHelperPhoto(direction) {
+    if (helperPhotos.length > 0) {
+        helperPhotoIndex = (helperPhotoIndex + direction + helperPhotos.length) % helperPhotos.length;
+    }
+    document.getElementById('strip-item-img').src = helperPhotos[helperPhotoIndex] || '/images/figma/ecocycle-leaf.svg';
+    document.getElementById('strip-item-gallery-controls').hidden = helperPhotos.length < 2;
+    document.getElementById('strip-item-photo-count').textContent = (helperPhotoIndex + 1) + ' / ' + helperPhotos.length;
+}
+
 function renderSelectedItemGuidance(item, a, centres) {
     var emptyBox = document.getElementById('helper-empty-state');
     if (emptyBox) emptyBox.style.display = 'none';
@@ -1115,8 +1169,9 @@ function renderSelectedItemGuidance(item, a, centres) {
     var panel = document.getElementById('guidance-display-panel');
     if (panel) panel.style.display = 'flex';
 
-    var imgEl = document.getElementById('strip-item-img');
-    if (imgEl) imgEl.src = item.image_path || '/images/figma/ecocycle-leaf.svg';
+    helperPhotos = item.images || [];
+    helperPhotoIndex = 0;
+    slideHelperPhoto(0);
 
     var catEl = document.getElementById('strip-item-category');
     if (catEl) catEl.textContent = item.category || 'Non-Reusable';

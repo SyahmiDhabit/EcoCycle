@@ -15,15 +15,13 @@ use Illuminate\Support\Facades\Auth;
 /** @var string|null $selectedCategory */
 /** @var string|null $selectedLocation */
 /** @var string|null $selectedListingType */
-/** @var string|null $selectedReusability */
 /** @var bool $myListingsOnly */
 $business = $business ?? Auth::guard()->user();
 $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
 $myListingsOnly = $myListingsOnly ?? request()->boolean('my_listings');
 $currentTab = $currentTab ?? (request('tab') ?: ($myListingsOnly ? 'my_listings' : 'reusable'));
-$reusableCount = $reusableCount ?? MarketplaceListing::where('reusability', 'reusable')->where('status', 'active')->where('quantity', '>', 0)->count();
-$nonReusableCount = $nonReusableCount ?? MarketplaceListing::where('reusability', 'not_reusable')->where('status', 'active')->where('quantity', '>', 0)->count();
-$myListingsCount = $myListingsCount ?? ($business ? $business->marketplaceListings()->where('status', 'active')->where('quantity', '>', 0)->count() : 0);
+$reusableCount = $reusableCount ?? MarketplaceListing::visibleInMarketplace()->count();
+$myListingsCount = $myListingsCount ?? ($business ? $business->marketplaceListings()->visibleInMarketplace()->count() : 0);
 $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 ?>
 <!doctype html>
@@ -31,7 +29,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= $currentTab === 'non_reusable' ? 'Non-Reusable Items' : ($myListingsOnly ? 'My Listings' : 'Reusable Materials Marketplace') ?> — EcoCycle</title>
+    <title><?= $myListingsOnly ? 'My Listings' : 'Reusable Materials Marketplace' ?> — EcoCycle</title>
     <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -121,6 +119,23 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        .listing-sold-out-ribbon {
+            position: absolute;
+            top: 25px;
+            right: -37px;
+            z-index: 3;
+            width: 152px;
+            padding: 4px 0;
+            transform: rotate(45deg);
+            background: #37443d;
+            color: #ffffff;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            pointer-events: none;
         }
         .listing-img-nav-btn {
             position: absolute;
@@ -387,6 +402,18 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             gap: 6px;
             transition: background-color 0.15s ease;
         }
+        .listing-card.is-sold-out {
+            background: #f2f4f2;
+        }
+        .listing-card.is-sold-out .qty-badge,
+        .marketplace-page .btn-claim-action:disabled {
+            background: #e8ece9;
+            border-color: #ccd4ce;
+            color: #425148;
+        }
+        .marketplace-page .btn-claim-action:disabled {
+            cursor: not-allowed;
+        }
         .btn-claim-action:hover {
             background: #0d281a;
         }
@@ -576,19 +603,13 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <!-- Page Title Header -->
             <div class="page-header">
                 <div>
-                    <h1><?= $currentTab === 'non_reusable' ? 'Non-reusable items category' : ($myListingsOnly ? 'My marketplace listings' : 'Reusable materials marketplace') ?></h1>
-                    <p><?= $currentTab === 'non_reusable' 
-                        ? 'Industrial scrap, single-use residues, and manufacturing cutoffs separated from the normal reusable marketplace. Forward items directly to <strong>EcoCycle Helper</strong> for circular upcycling advice or find matching certified recyclers.' 
-                        : 'Purchase or claim reusable materials directly from verified Malaysian SMEs.' ?></p>
+                    <h1><?= $myListingsOnly ? 'My marketplace listings' : 'Reusable materials marketplace' ?></h1>
+                    <p>Purchase or claim reusable materials directly from verified Malaysian SMEs.</p>
                 </div>
                 <nav class="marketplace-tabs" aria-label="Marketplace views">
                     <a href="/business/marketplace?tab=reusable" class="mkt-tab-btn <?= $currentTab === 'reusable' ? 'active' : '' ?>">
                         <span>Reusable Items</span>
                         <span class="mkt-tab-badge"><?= $reusableCount ?></span>
-                    </a>
-                    <a href="/business/marketplace?tab=non_reusable" class="mkt-tab-btn <?= $currentTab === 'non_reusable' ? 'active' : '' ?>">
-                        <span>Non-Reusable Items</span>
-                        <span class="mkt-tab-badge"><?= $nonReusableCount ?></span>
                     </a>
                     <a href="/business/marketplace?my_listings=1" class="mkt-tab-btn <?= $currentTab === 'my_listings' ? 'active' : '' ?>">
                         <span>My Listings</span>
@@ -612,26 +633,11 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                 </div>
             <?php } ?>
 
-            <?php if ($currentTab === 'non_reusable') { ?>
-                <!-- Non-Reusable Dedicated Banner with Direct Helper Link -->
-                <div style="background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #b45309;border-radius:0;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-                    <div>
-                        <strong style="color:#92400e;font-size:13.5px;display:block;">Non-Reusable Scrap &amp; Waste Category</strong>
-                        <span style="color:#78350f;font-size:12.5px;">These materials are separated from the standard reusable marketplace. Click <strong>"Ask Helper"</strong> on any item to receive recycling recommendations or locate certified recycling facilities via GPS.</span>
-                    </div>
-                    <a href="/business/helper" class="btn-search" style="text-decoration:none;font-size:12.5px;padding:8px 16px;">
-                        <span>Open EcoCycle Helper &rarr;</span>
-                    </a>
-                </div>
-            <?php } ?>
-
             <!-- Filter Card -->
             <section class="filter-card">
                 <form method="GET" action="/business/marketplace">
                     <?php if ($myListingsOnly) { ?>
                         <input type="hidden" name="my_listings" value="1">
-                    <?php } elseif ($currentTab === 'non_reusable') { ?>
-                        <input type="hidden" name="tab" value="non_reusable">
                     <?php } ?>
 
                     <div class="filter-row-top">
@@ -666,17 +672,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             </select>
                         </div>
 
-                        <?php if ($myListingsOnly) { ?>
-                        <div class="filter-field">
-                            <label for="mkt-reusability">Reusability</label>
-                            <select id="mkt-reusability" name="reusability">
-                                <option value="">All Reusability</option>
-                                <option value="reusable" <?= request('reusability') === 'reusable' ? 'selected' : '' ?>>Reusable (Circular)</option>
-                                <option value="not_reusable" <?= request('reusability') === 'not_reusable' ? 'selected' : '' ?>>Non-Reusable (Scrap)</option>
-                            </select>
-                        </div>
-                        <?php } ?>
-
                         <div class="filter-field">
                             <label for="mkt-loc">Location</label>
                             <select id="mkt-loc" name="location">
@@ -687,12 +682,21 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                             </select>
                         </div>
 
+                        <div class="filter-field">
+                            <label for="mkt-stock-status">Stock Status</label>
+                            <select id="mkt-stock-status" name="stock_status">
+                                <option value="">All Stock</option>
+                                <option value="in_stock" <?= $selectedStockStatus === 'in_stock' ? 'selected' : '' ?>>In Stock</option>
+                                <option value="out_of_stock" <?= $selectedStockStatus === 'out_of_stock' ? 'selected' : '' ?>>Out of Stock</option>
+                            </select>
+                        </div>
+
                         <div class="marketplace-filter-actions">
                             <button type="submit" class="btn-search" style="height:40px;padding:0 14px;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                 <span>Filter</span>
                             </button>
-                            <?php if (request()->hasAny(['q', 'category', 'location', 'listing_type', 'reusability'])) { ?>
+                            <?php if (request()->hasAny(['q', 'category', 'location', 'listing_type', 'stock_status'])) { ?>
                                 <a href="<?= $myListingsOnly ? '/business/marketplace?my_listings=1' : '/business/marketplace' ?>" class="btn-back-directory" style="height:40px;padding:0 12px;display:grid;place-items:center;" title="Reset filters">
                                     Reset
                                 </a>
@@ -706,7 +710,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             <div class="section-header-row" style="margin-top:20px;">
                 <div class="section-header-title">
                     <h2><?= $myListingsOnly ? 'Your Published Listings' : 'Live Material Listings' ?></h2>
-                    <p><?= $listings->count() ?> listing(s) available in this view</p>
+                    <p><?= $listings->count() ?> listing(s) in this view</p>
                 </div>
             </div>
 
@@ -733,6 +737,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         <?php
                         $isOwner = $item->business_id === $business->id;
                         $listingType = $item->listing_type ?: ($item->is_free ? 'free' : 'buy');
+                        $isSoldOut = (float) $item->quantity <= 0;
                         $isReusable = ($item->reusability === 'reusable');
                         $images = $item->getAllImages();
                         $imgCount = count($images);
@@ -740,7 +745,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         $listingRating = $listingRatings[(int) $item->id] ?? null;
                         $pickupAddr = trim((string) ($item->pickup_address ?: implode(', ', array_filter([$item->business?->registered_address, $item->location_city, $item->location_state]))));
                         ?>
-                        <article class="listing-card" id="<?= $cardId ?>"
+                        <article class="listing-card<?= $isSoldOut ? ' is-sold-out' : '' ?>" id="<?= $cardId ?>"
                             onclick="openListingDetailModal(<?= $item->id ?>)"
                             style="cursor: pointer;"
                             data-title="<?= e($item->title) ?>"
@@ -761,6 +766,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                         >
                             <!-- Multi-Image Carousel / Gallery Area -->
                             <div class="listing-img-container" id="gallery-container-<?= $item->id ?>">
+                                <?php if ($isSoldOut) { ?>
+                                    <span class="listing-sold-out-ribbon" aria-hidden="true">Sold Out</span>
+                                <?php } ?>
                                 <?php if ($imgCount > 0) { ?>
                                     <img src="<?= e($images[0]) ?>" alt="<?= e($item->title) ?>" class="listing-img-slide" id="img-display-<?= $item->id ?>" loading="lazy">
                                     
@@ -838,7 +846,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                             <span class="price-unit">/ <?= e($item->unit) ?></span>
                                         <?php } ?>
                                     </div>
-                                    <span class="qty-badge"><?= (float) $item->quantity ?><?= (float) $item->original_quantity > 0 ? ' / '.(float) $item->original_quantity : '' ?> <?= e($item->unit) ?> left</span>
+                                    <span class="qty-badge"><?php if ($isSoldOut) { ?>Sold Out<?php } else { ?><?= (float) $item->quantity ?><?= (float) $item->original_quantity > 0 ? ' / '.(float) $item->original_quantity : '' ?> <?= e($item->unit) ?> left<?php } ?></span>
                                 </div>
 
                                 <?php if (! empty($item->description)) { ?>
@@ -850,7 +858,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
                                         Quick View
                                     </button>
 
-                                    <?php if ($isOwner) { ?>
+                                    <?php if ($isSoldOut) { ?>
+                                        <button type="button" class="btn-claim-action" disabled>Out of Stock</button>
+                                    <?php } elseif ($isOwner) { ?>
                                         <div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation();">
                                             <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:4px 8px;border-radius:0;border:1px solid #bbf7d0;">Your Listing</span>
                                             <form method="POST" action="/business/marketplace/<?= $item->id ?>" onsubmit="return confirm('Are you sure you want to remove this listing?');" style="margin:0;" onclick="event.stopPropagation();">
@@ -1578,7 +1588,12 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         document.getElementById('modal-detail-desc').textContent = card.dataset.desc || 'No additional terms specified.';
 
         var actionBtn = document.getElementById('modal-detail-action-btn');
-        if (card.dataset.owner === '1') {
+        var isSoldOut = Number(card.dataset.qty) <= 0;
+        actionBtn.disabled = isSoldOut;
+        if (isSoldOut) {
+            actionBtn.style.display = 'inline-flex';
+            actionBtn.textContent = 'Out of Stock';
+        } else if (card.dataset.owner === '1') {
             actionBtn.style.display = 'none';
         } else {
             actionBtn.style.display = 'inline-flex';
@@ -1700,7 +1715,7 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
 
     function openExchangeOrderModal(listingId) {
         var card = document.getElementById('listing-card-' + listingId);
-        if (!card) return;
+        if (!card || Number(card.dataset.qty) <= 0) return;
 
         var title = card.dataset.title;
         var company = card.dataset.company;

@@ -23,6 +23,11 @@
             gap: 16px;
             margin-top: 16px;
         }
+        @media (min-width: 1000px) {
+            .report-metric-row {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
         .report-metric-box {
             background: var(--surface-subtle);
             border: 1px solid var(--card-border);
@@ -131,10 +136,42 @@
         .report-filters p { flex-basis: 100%; margin: 0; }
         .report-filter-error { color: #991b1b; }
         .analytics-chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .report-chart-wide { grid-column: 1 / -1; }
         .report-chart-description, .report-chart-empty { color: var(--text-secondary); }
         .report-canvas { display: none; height: 270px; position: relative; }
         .report-canvas.is-rendered { display: block; }
+        .report-side-legend-chart:has(.is-rendered) {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) fit-content(45%);
+            column-gap: 18px;
+            align-content: start;
+        }
+        .report-side-legend-chart > :is(h2, p) { grid-column: 1 / -1; }
+        .report-side-legend {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0;
+            align-self: center;
+            display: grid;
+            gap: 10px;
+        }
+        .report-side-legend li {
+            display: grid;
+            grid-template-columns: 10px 1fr auto;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .report-side-legend li span { overflow-wrap: anywhere; }
+        .report-side-legend i {
+            width: 10px;
+            height: 10px;
+            border-radius: 50% !important;
+            background: var(--legend-color);
+        }
+        @media (max-width: 480px) {
+            .report-side-legend-chart:has(.is-rendered) { grid-template-columns: minmax(0, 1fr); }
+            .report-side-legend { justify-self: end; }
+        }
         .report-chart-data { margin-top: 12px; }
         .report-chart-data summary { cursor: pointer; color: #14532d; }
         .report-chart-data dl { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; }
@@ -179,8 +216,8 @@
 
             <form class="report-section-card report-filters" method="get">
                 <label>Period
-                    <select id="report-period" name="period" aria-describedby="report-period-description">
-                        <?php foreach (['week' => 'This Week', 'month' => 'This Month', 'quarter' => 'Last 3 Months', 'year' => 'This Year', 'custom' => 'Custom Date Range'] as $key => $label): ?>
+                    <select id="report-period" name="period">
+                        <?php foreach (['day' => 'Today', 'week' => 'This Week', 'month' => 'This Month', 'quarter' => 'Last 3 Months', 'year' => 'This Year', 'custom' => 'Custom Date Range'] as $key => $label): ?>
                             <option value="<?= $key ?>" <?= $period === $key ? 'selected' : '' ?>><?= e($label) ?></option>
                         <?php endforeach; ?>
                     </select>
@@ -188,9 +225,8 @@
                 <label data-custom-date>From <input type="date" name="from" value="<?= $start->format('Y-m-d') ?>"></label>
                 <label data-custom-date>To <input type="date" name="to" value="<?= $end->format('Y-m-d') ?>"></label>
                 <button type="submit" class="btn-search report-action">Apply filters</button>
-                <p id="report-period-description"><?= $start->format('j M Y') ?> &ndash; <?= $end->format('j M Y') ?></p>
                 <?php if ($filterErrors->any()): ?>
-                    <p class="report-filter-error" role="alert"><?= e($filterErrors->first()) ?> Showing this month.</p>
+                    <p class="report-filter-error" role="alert"><?= e($filterErrors->first()) ?> Showing this week.</p>
                 <?php endif; ?>
             </form>
 
@@ -202,6 +238,7 @@
                         ['Total Transactions', number_format($totalTransactions), 'Orders placed in this period as buyer or seller'],
                         ['Total Revenue', 'RM '.number_format($totalSalesRevenue, 2), 'Paid sales in this period'],
                         ['Reusable Materials', number_format($reusableMaterials), 'Reusable items added in this period'],
+                        ['Non-Reusable Materials', number_format($reusability['Non-reusable']), 'Non-reusable items added in this period'],
                     ] as [$label, $value, $note]): ?>
                         <div class="report-metric-box">
                             <small><?= e($label) ?></small>
@@ -214,30 +251,52 @@
 
             <?php
                 $analyticsCharts = [
-                    ['listing-categories', 'Item listings by category', 'Marketplace listings from items added in this period.', 'pie', $listingCategories, 'Listings'],
-                    ['listing-trend', 'Monthly listing performance', 'Listed items are grouped by item creation date. Sold listings are grouped by their latest recorded order completion.', 'line', $monthly, 'Listings'],
+                    ['sales-trend', 'Sales revenue over time', 'Paid sales grouped by '.$trendInterval.'.', 'line', $salesTrend, 'RM'],
+                    ['purchase-trend', 'Total purchases over time', 'Paid purchase spending grouped by '.$trendInterval.'.', 'line', $purchaseTrend, 'RM'],
+                    ['listing-categories', 'Item listings by category', 'Marketplace listings from items added in this period.', 'bar', $listingCategories, 'Listings'],
                     ['material-reusability', 'Material reusability', 'Reusable and non-reusable inventory items added in this period.', 'doughnut', $reusability, 'Items'],
-                    ['transaction-types', 'Transaction performance', 'Orders completed in this period as buyer or seller.', 'bar', $transactionTypes, 'Completed orders'],
                 ];
             ?>
             <div class="report-chart-grid analytics-chart-grid">
                 <?php foreach ($analyticsCharts as [$chartId, $chartTitle, $description, $type, $series, $metric]): ?>
-                    <section class="report-section-card <?= $type === 'line' ? 'report-chart-wide' : '' ?>" aria-labelledby="<?= $chartId ?>">
+                    <?php
+                        $chartColors = match ($chartId) {
+                            'material-reusability' => ['Reusable' => '#14936f', 'Non-reusable' => '#a05bc4'],
+                            'listing-categories' => array_combine(array_keys($series), array_map(
+                                static fn (int $index): string => sprintf('hsl(%d, 60%%, 43%%)', (158 + 137 * $index) % 360),
+                                array_keys(array_values($series)),
+                            )),
+                            default => [],
+                        };
+                    ?>
+                    <section class="report-section-card<?= $chartColors ? ' report-side-legend-chart' : '' ?>" aria-labelledby="<?= $chartId ?>">
                         <h2 id="<?= $chartId ?>"><?= e($chartTitle) ?></h2>
                         <p class="report-chart-description"><?= e($description) ?></p>
-                        <?php if (array_sum($type === 'line' ? array_map('array_sum', $series) : $series) > 0): ?>
+                        <?php if (array_sum($series) > 0): ?>
                             <div class="report-canvas">
-                                <canvas aria-hidden="true" data-chart-type="<?= $type ?>" data-series="<?= e(json_encode($series, JSON_INVALID_UTF8_SUBSTITUTE)) ?>" data-metric="<?= e($metric) ?>"></canvas>
+                                <canvas aria-hidden="true" data-chart-type="<?= $type ?>" data-series="<?= e(json_encode($series, JSON_INVALID_UTF8_SUBSTITUTE)) ?>" data-metric="<?= e($metric) ?>" data-colors="<?= e(json_encode($chartColors)) ?>"></canvas>
                             </div>
+                            <?php if ($chartColors): ?>
+                                <ul class="report-side-legend" aria-label="<?= e($chartTitle) ?> counts">
+                                    <?php foreach ($series as $label => $value): ?>
+                                        <li>
+                                            <i aria-hidden="true" style="--legend-color:<?= e($chartColors[$label]) ?>"></i>
+                                            <span><?= e($label) ?></span>
+                                            <strong><?= number_format($value) ?></strong>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php else: ?>
                             <details class="report-chart-data" open>
                                 <summary>Chart data</summary>
                                 <dl>
                                     <?php foreach ($series as $label => $value): ?>
                                         <dt><?= e($label) ?></dt>
-                                        <dd><?= is_array($value) ? number_format($value[0]).' listed · '.number_format($value[1]).' completed' : number_format($value) ?></dd>
+                                        <dd><?= $metric === 'RM' ? 'RM '.number_format($value, 2) : number_format($value) ?></dd>
                                     <?php endforeach; ?>
                                 </dl>
                             </details>
+                            <?php endif; ?>
                         <?php else: ?>
                             <p class="report-chart-empty">No records for this period.</p>
                         <?php endif; ?>
@@ -363,20 +422,29 @@
             const series = JSON.parse(canvas.dataset.series);
             const labels = Object.keys(series);
             const values = Object.values(series);
-            const circular = type === 'pie' || type === 'doughnut';
-            const datasets = type === 'line'
-                ? ['Listed items', 'Completed listings'].map((label, index) => ({
-                    label,
-                    data: values.map(value => value[index]),
-                    borderColor: palette[index],
-                    backgroundColor: palette[index],
-                    pointRadius: 3
-                }))
-                : [{
-                    label: canvas.dataset.metric,
-                    data: values,
-                    backgroundColor: circular ? labels.map((_, index) => palette[index % palette.length]) : palette[0]
-                }];
+            const colors = JSON.parse(canvas.dataset.colors);
+            const hasSideLegend = Object.keys(colors).length > 0;
+            const isTrend = type === 'line';
+            const isBar = type === 'bar';
+            const isCurrency = canvas.dataset.metric === 'RM';
+            const color = canvas.closest('section').getAttribute('aria-labelledby') === 'purchase-trend' ? palette[1] : palette[0];
+            const formatValue = value => isCurrency
+                ? new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(value)
+                : value;
+            const datasets = [{
+                label: canvas.dataset.metric,
+                data: values,
+                ...(isTrend ? {
+                    borderColor: color,
+                    backgroundColor: color + '18',
+                    fill: 'origin',
+                    pointRadius: labels.length > 10 ? 1 : 3,
+                    pointHoverRadius: 5,
+                    tension: 0.2
+                } : {
+                    backgroundColor: labels.map((label, index) => colors[label] ?? palette[index % palette.length])
+                })
+            }];
             const chart = new Chart(canvas, {
                 type,
                 data: { labels, datasets },
@@ -384,12 +452,21 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: false,
-                    plugins: { legend: { display: circular || type === 'line', position: 'bottom' } },
-                    scales: circular ? {} : { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    indexAxis: isBar ? 'y' : 'x',
+                    interaction: isTrend ? { mode: 'index', intersect: false } : undefined,
+                    scales: isTrend ? {
+                        x: { ticks: { maxTicksLimit: 7 }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: isCurrency ? { callback: formatValue } : { precision: 0 } }
+                    } : isBar ? { x: { beginAtZero: true, ticks: { precision: 0 } } } : undefined,
+                    plugins: {
+                        legend: { display: !isTrend && !hasSideLegend, position: 'bottom' },
+                        tooltip: isTrend ? { callbacks: { label: context => formatValue(context.parsed.y) } } : undefined
+                    }
                 }
             });
             canvas.parentElement.classList.add('is-rendered');
-            canvas.parentElement.nextElementSibling.open = false;
+            const details = canvas.parentElement.nextElementSibling;
+            if (details instanceof HTMLDetailsElement) details.open = false;
             window.addEventListener('beforeprint', () => chart.resize());
             window.addEventListener('afterprint', () => chart.resize());
         }

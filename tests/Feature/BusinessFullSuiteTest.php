@@ -268,6 +268,12 @@ class BusinessFullSuiteTest extends TestCase
         $this->actingAs($business)->get('/business/reports')
             ->assertOk()
             ->assertViewHas('totalSalesRevenue', 125.0)
+            ->assertViewHas('salesTrend', fn (array $trend): bool => $trend['25 Nov 2026'] === 125.0 && $trend['24 Nov 2026'] === 0.0)
+            ->assertViewHas('purchaseTrend', fn (array $trend): bool => $trend['25 Nov 2026'] === 0.0 && $trend['24 Nov 2026'] === 0.0)
+            ->assertSee('Sales revenue over time')
+            ->assertSee('Total purchases over time')
+            ->assertViewHas('period', 'week')
+            ->assertDontSee('report-period-description')
             ->assertViewHas('totalSalesOrders', 1)
             ->assertViewHas('totalPurchasesSpent', 0.0)
             ->assertViewHas('wasteCategories', ['Mixed waste' => 2])
@@ -277,13 +283,17 @@ class BusinessFullSuiteTest extends TestCase
             ->assertViewHas('totalTransactions', 2)
             ->assertDontSee('Active Listings')
             ->assertViewHas('listingCategories', ['Wood' => 1])
-            ->assertViewHas('monthly', ['Nov 2026' => [1, 0]])
-            ->assertViewHas('transactionTypes', ['Purchase' => 1])
             ->assertDontSee('Total Waste Recovered')
             ->assertDontSee('Not yet analysed')
             ->assertSee('Your role')
             ->assertSee('>Seller</td>', false)
-            ->assertSee('Monthly listing performance');
+            ->assertDontSee('Monthly listing performance')
+            ->assertDontSee('Transaction performance');
+
+        $this->get('/business/reports?period=day')
+            ->assertOk()
+            ->assertViewHas('trendInterval', 'hour')
+            ->assertViewHas('salesTrend', fn (array $trend): bool => $trend['00:00'] === 125.0 && count($trend) === 24);
 
         $this->get('/business/reports?period=custom&from=2026-10-01&to=2026-10-31')
             ->assertOk()
@@ -295,8 +305,8 @@ class BusinessFullSuiteTest extends TestCase
 
         $this->get('/business/reports?period=custom&from=2026-11-26&to=2026-11-25')
             ->assertOk()
-            ->assertSee('Showing this month.')
-            ->assertViewHas('period', 'month');
+            ->assertSee('Showing this week.')
+            ->assertViewHas('period', 'week');
     }
 
     public function test_transaction_views_scope_rows_and_summary_to_the_selected_role(): void

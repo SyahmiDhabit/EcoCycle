@@ -66,13 +66,6 @@ class OrderTrackingController extends Controller
 
         $purchasesCount = MaterialExchange::where('requester_business_id', $business->id)->count();
         $salesCount = MaterialExchange::where('provider_business_id', $business->id)->count();
-        $inProgressCount = MaterialExchange::query()
-            ->where(function ($q) use ($business): void {
-                $q->where('provider_business_id', $business->id)
-                    ->orWhere('requester_business_id', $business->id);
-            })
-            ->whereIn('delivery_status', ['confirmed', 'preparing', 'ready_for_collection', 'in_transit'])
-            ->count();
         $deliveredCount = MaterialExchange::query()
             ->where(function ($q) use ($business): void {
                 $q->where('provider_business_id', $business->id)
@@ -88,7 +81,6 @@ class OrderTrackingController extends Controller
             'selectedDeliveryStatus' => $deliveryFilter,
             'purchasesCount' => $purchasesCount,
             'salesCount' => $salesCount,
-            'inProgressCount' => $inProgressCount,
             'deliveredCount' => $deliveredCount,
         ]);
     }

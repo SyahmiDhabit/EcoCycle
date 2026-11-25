@@ -21,7 +21,10 @@ class BusinessNotificationController extends Controller
             'read_at' => now(),
         ]);
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'unread_count' => $business->notifications()->where('is_read', false)->count(),
+        ]);
     }
 
     public function markAllAsRead(Request $request): JsonResponse

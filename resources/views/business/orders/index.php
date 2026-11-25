@@ -193,10 +193,6 @@ $activeNav = 'orders';
                     <span class="ord-kpi-label">Seller Fulfillment Orders</span>
                     <span class="ord-kpi-value"><?= (int) $salesCount ?></span>
                 </div>
-                <div class="ord-kpi-card" style="border-left:3px solid #d97706;">
-                    <span class="ord-kpi-label">In Progress</span>
-                    <span class="ord-kpi-value"><?= (int) $inProgressCount ?></span>
-                </div>
                 <div class="ord-kpi-card" style="border-left:3px solid #15803d;">
                     <span class="ord-kpi-label">Delivered / Completed</span>
                     <span class="ord-kpi-value"><?= (int) $deliveredCount ?></span>

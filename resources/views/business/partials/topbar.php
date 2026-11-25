@@ -3,7 +3,7 @@
 $business = $business ?? \Illuminate\Support\Facades\Auth::guard()->user();
 
 $realNotifications = $business?->notifications()->take(8)->get() ?? collect();
-$unreadNotificationsCount = $realNotifications->where('is_read', false)->count();
+$unreadNotificationsCount = ($business?->notifications()->where('is_read', false)->count() ?? 0);
 $activeNav = $activeNav ?? 'overview';
 ?>
 <!-- EcoCycle Clean Professional Topbar -->
@@ -27,12 +27,12 @@ $activeNav = $activeNav ?? 'overview';
     <div class="topbar-right">
         <!-- Notification Bell with Modern Dropdown -->
         <div class="topbar-dropdown-wrapper">
-            <button type="button" class="topbar-icon-btn" id="notif-toggle-btn" onclick="toggleNotificationMenu(event)" aria-label="Notifications" title="Notifications">
+            <button type="button" class="topbar-icon-btn" id="notif-toggle-btn" onclick="toggleNotificationMenu(event)" aria-label="Notifications (<?= $unreadNotificationsCount ?> unread)" title="Notifications">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
-                <span class="notification-dot" id="header-notif-dot" style="<?= $unreadNotificationsCount > 0 ? '' : 'display:none;' ?>"></span>
+                <span class="notification-dot notification-count" id="header-notif-dot" aria-hidden="true" style="<?= $unreadNotificationsCount > 0 ? '' : 'display:none;' ?>"><?= $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount ?></span>
             </button>
 
             <div class="topbar-dropdown notification-dropdown" id="notification-dropdown" style="display:none;" onclick="event.stopPropagation()">
@@ -141,8 +141,8 @@ async function openBusinessNotification(event, item) {
         }
 
         item.classList.remove('unread');
-        const remaining = document.querySelectorAll('#notif-list-body .notification-item.unread').length;
-        updateNotificationCount(remaining);
+        const { unread_count } = await response.json();
+        updateNotificationCount(unread_count);
     } catch (error) {
         console.error(error);
     } finally {
@@ -156,7 +156,12 @@ async function openBusinessNotification(event, item) {
 
 function updateNotificationCount(count) {
     var dot = document.getElementById('header-notif-dot');
-    if (dot) dot.style.display = count ? '' : 'none';
+    if (dot) {
+        dot.textContent = count > 99 ? '99+' : count;
+        dot.style.display = count ? '' : 'none';
+    }
+    var toggle = document.getElementById('notif-toggle-btn');
+    if (toggle) toggle.setAttribute('aria-label', 'Notifications (' + count + ' unread)');
 
     var badge = document.getElementById('notif-count-badge');
     if (badge) {
@@ -177,19 +182,7 @@ function markAllNotificationsAsRead(e) {
         e.preventDefault();
         e.stopPropagation();
     }
-    var dot = document.getElementById('header-notif-dot');
-    if (dot) dot.style.display = 'none';
-
-    var badge = document.getElementById('notif-count-badge');
-    if (badge) {
-        badge.textContent = '0 new';
-        badge.style.background = '#eaf0ea';
-        badge.style.color = '#617769';
-        badge.style.borderColor = '#d0ded0';
-    }
-
-    var markBtn = document.getElementById('notif-mark-all-btn');
-    if (markBtn) markBtn.style.display = 'none';
+    updateNotificationCount(0);
 
     var items = document.querySelectorAll('.notification-item.unread');
     items.forEach(function(item) {

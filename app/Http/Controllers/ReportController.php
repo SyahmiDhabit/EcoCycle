@@ -24,18 +24,19 @@ class ReportController extends Controller
         }
 
         $filters = Validator::make($request->query(), [
-            'period' => ['nullable', 'in:week,month,quarter,year,custom'],
+            'period' => ['nullable', 'in:day,week,month,quarter,year,custom'],
             'from' => ['exclude_unless:period,custom', 'required', 'date_format:Y-m-d'],
             'to' => ['exclude_unless:period,custom', 'required', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
-        $period = $filters->fails() ? 'month' : ($filters->validated()['period'] ?? 'month');
+        $period = $filters->fails() ? 'week' : ($filters->validated()['period'] ?? 'week');
         $today = CarbonImmutable::today();
         [$start, $end] = match ($period) {
-            'week' => [$today->startOfWeek(), $today],
+            'day' => [$today, $today],
+            'month' => [$today->startOfMonth(), $today],
             'quarter' => [$today->startOfMonth()->subMonths(2), $today],
             'year' => [$today->startOfYear(), $today],
             'custom' => [CarbonImmutable::parse($filters->validated()['from']), CarbonImmutable::parse($filters->validated()['to'])],
-            default => [$today->startOfMonth(), $today],
+            default => [$today->startOfWeek(), $today],
         };
         $until = $end->addDay();
         $inPeriod = static fn ($date): bool => $date !== null && $date >= $start && $date < $until;
@@ -61,27 +62,25 @@ class ReportController extends Controller
         ];
         $listingCategories = $listedCohort->countBy(fn (Item $item): string => trim((string) $item->category) ?: 'Uncategorised')->sortDesc()->all();
 
-        $completed = $exchanges->filter(fn (MaterialExchange $order): bool => $order->completed_at !== null
-            && (in_array($order->delivery_status, ['completed', 'returned'], true) || $order->status === 'completed'));
-        $transactionTypes = $completed->filter(fn (MaterialExchange $order): bool => $inPeriod($order->completed_at))
-            ->filter(fn (MaterialExchange $order): bool => in_array($order->listing_type, ['buy', 'free', 'lend'], true))
-            ->countBy(fn (MaterialExchange $order): string => match ($order->listing_type) {
-                'buy' => 'Purchase',
-                'free' => 'Free claim',
-                'lend' => 'Borrowing',
-            })->all();
-
-        $listedByMonth = $listedCohort->countBy(fn (Item $item): string => $item->created_at->format('Y-m'));
-        $soldIds = $listedItems->whereIn('status', ['sold', 'completed'])->pluck('id')->flip();
-        $completedByMonth = $completed->where('provider_business_id', $business->id)
-            ->filter(fn (MaterialExchange $order): bool => $soldIds->has($order->item_id))
-            ->sortByDesc('completed_at')->unique('item_id')
-            ->filter(fn (MaterialExchange $order): bool => $inPeriod($order->completed_at))
-            ->countBy(fn (MaterialExchange $order): string => $order->completed_at->format('Y-m'));
-        $monthly = [];
-        for ($month = $start->startOfMonth(); $month < $until; $month = $month->addMonth()) {
-            $key = $month->format('Y-m');
-            $monthly[$month->format('M Y')] = [$listedByMonth->get($key, 0), $completedByMonth->get($key, 0)];
+        $days = $start->diffInDays($end);
+        [$trendInterval, $trendFormat] = match (true) {
+            $period === 'day' => ['hour', 'H:i'],
+            $days <= 45 => ['day', 'j M Y'],
+            $days <= 120 => ['week', 'j M Y'],
+            $days <= 730 => ['month', 'M Y'],
+            default => ['year', 'Y'],
+        };
+        $intervalLabel = static fn (MaterialExchange $order): string =>
+            CarbonImmutable::instance($order->paid_at ?? $order->created_at)->startOf($trendInterval)->format($trendFormat);
+        $salesByInterval = $paidSales->groupBy($intervalLabel);
+        $purchasesByInterval = $paidPurchases->groupBy($intervalLabel);
+        $salesTrend = [];
+        $purchaseTrend = [];
+        for ($date = $start->startOf($trendInterval); $date < $until; $date = $date->addUnit($trendInterval, 1)) {
+            $label = $date->format($trendFormat);
+            $sales = $salesByInterval->get($label, collect());
+            $salesTrend[$label] = (float) $sales->sum('total_price');
+            $purchaseTrend[$label] = (float) $purchasesByInterval->get($label, collect())->sum('total_price');
         }
 
         $wasteRecords = WasteRecord::where('business_id', $business->id)
@@ -97,14 +96,15 @@ class ReportController extends Controller
             'totalItems' => $cohort->count(),
             'totalTransactions' => $periodOrders->count(),
             'totalSalesRevenue' => (float) $paidSales->sum('total_price'),
+            'salesTrend' => $salesTrend,
+            'purchaseTrend' => $purchaseTrend,
+            'trendInterval' => $trendInterval,
             'totalSalesOrders' => $paidSales->count(),
             'totalPurchasesSpent' => (float) $paidPurchases->sum('total_price'),
             'totalPurchasesOrders' => $paidPurchases->count(),
             'reusableMaterials' => $reusability['Reusable'],
             'listingCategories' => $listingCategories,
-            'monthly' => $monthly,
             'reusability' => $reusability,
-            'transactionTypes' => $transactionTypes,
             'wasteCategories' => $wasteRecords->countBy(fn (WasteRecord $record): string => trim((string) $record->waste_type) ?: 'Uncategorised')->sortDesc()->all(),
             'wasteStatuses' => $wasteRecords->countBy(fn (WasteRecord $record): string => $record->status
                 ? ucfirst(str_replace('_', ' ', $record->status))

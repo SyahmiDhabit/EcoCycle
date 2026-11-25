@@ -186,6 +186,22 @@ h1, h2, h3, h4,
     border-radius: 50%;
 }
 
+.notification-dot.notification-count {
+    top: -6px;
+    right: -6px;
+    width: auto;
+    min-width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    padding-inline: 3px;
+    background: #b91c1c;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+}
+
 /* ---------------- NOTIFICATION DROPDOWN ---------------- */
 .notification-dropdown {
     position: absolute;

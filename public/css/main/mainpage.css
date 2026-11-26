@@ -339,7 +339,6 @@ body{background:#f8fbf5;color:#123d29}
 .main-nav a.active{background:linear-gradient(135deg,#e7f5e3,#f4f9e9);color:#14532d;box-shadow:inset 0 0 0 1px rgba(45,150,88,.14)}
 .main-nav a:focus-visible{outline:3px solid #efa927;outline-offset:2px;background:#f5faef}
 .landing-section[id]{scroll-margin-top:96px}
-@media(max-width:900px) and (min-width:641px){.main-nav{gap:0}.main-nav a{padding:8px 6px;font-size:12px}.site-header .header-actions{gap:6px}.site-header .header-actions .button{padding:0 10px;font-size:12px}}
 
 /* Keep page backgrounds full-bleed while the hero content stays centred. */
 html,body{width:100%;max-width:100%;overflow-x:clip}
@@ -348,28 +347,57 @@ main{width:100%;max-width:none}
 .landing-section{width:100%;max-width:none;margin-left:0;margin-right:0}
 #home,.landing-section[id]{scroll-margin-top:96px}
 
-@media(max-width:760px){
-    .site-header{height:68px;padding:0 20px}
-    .site-header .brand{order:1}
-    .site-header .menu-toggle{display:block;order:2;margin-left:auto}
-    .site-header .main-nav,.site-header .header-actions{display:none}
-    body.menu-open .site-header{height:auto;min-height:68px;padding-bottom:16px;flex-wrap:wrap;justify-content:space-between}
-    body.menu-open .site-header .main-nav{position:static;display:flex;order:3;flex:0 0 100%;flex-direction:row;flex-wrap:wrap;align-items:center;gap:5px;padding:14px 0 0;background:transparent;border:0}
-    body.menu-open .site-header .main-nav a{font-size:14px;padding:8px 9px}
-    body.menu-open .site-header .header-actions{position:static;display:flex;order:4;flex:0 0 100%;gap:8px;padding-top:12px}
-    .hero.wrap{padding:35px 20px 40px}
+.site-header {
+    gap: clamp(14px, 1.5vw, 24px);
+    padding-inline: max(clamp(20px, 3vw, 48px), calc((100% - 1180px) / 2));
 }
+.site-header .brand, .site-header .header-actions { flex: 0 0 auto; }
+.site-header .main-nav { flex: 1 1 auto; justify-content: center; }
+.site-header :is(.main-nav a, .header-actions .button) { white-space: nowrap; }
+.site-header .header-actions { align-items: center; gap: 8px; }
 
-/* Compact navigation for tablets before the desktop links become crowded. */
-@media(min-width:761px) and (max-width:980px){
-    .site-header{height:68px;padding:0 24px}
-    .site-header .brand{order:1}
-    .site-header .menu-toggle{display:block;order:2;margin-left:auto;min-width:44px;min-height:44px}
-    .site-header .main-nav,.site-header .header-actions{display:none}
-    body.menu-open .site-header{height:auto;min-height:68px;padding-bottom:14px;flex-wrap:wrap;justify-content:space-between}
-    body.menu-open .site-header .main-nav{position:static;display:flex;order:3;flex:0 0 100%;flex-direction:row;flex-wrap:wrap;align-items:center;gap:5px;padding:12px 0 0;background:transparent;border:0}
-    body.menu-open .site-header .main-nav a{font-size:14px;padding:8px 9px}
-    body.menu-open .site-header .header-actions{position:static;display:flex;order:4;flex:0 0 100%;gap:8px;padding-top:10px}
+@media (max-width: 1160px) {
+    .site-header { height: auto; min-height: 68px; gap: 10px; padding-block: 12px; }
+    .site-header .brand { order: 1; }
+    .site-header > .site-preferences { order: 2; margin-inline-start: auto; }
+    .site-header .menu-toggle {
+        order: 3;
+        display: grid;
+        place-items: center;
+        flex: 0 0 36px;
+        min-height: 36px;
+        margin: 0;
+        padding: 0;
+        border: 1px solid #c5d4c3;
+        border-radius: 6px;
+        background: #fff;
+    }
+    .site-header .main-nav, .site-header .header-actions { display: none; }
+    body.menu-open .site-header { flex-wrap: wrap; }
+    body.menu-open .site-header .main-nav {
+        order: 4;
+        position: static;
+        display: flex;
+        flex: 0 0 100%;
+        flex-flow: row wrap;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 0 0;
+        border: 0;
+        border-top: 1px solid #dbe9d8;
+        background: transparent;
+    }
+    body.menu-open .site-header .header-actions {
+        order: 5;
+        position: static;
+        display: flex;
+        flex: 0 0 100%;
+        flex-wrap: wrap;
+    }
+}
+@media(max-width:760px){
+    .hero.wrap{padding:35px 20px 40px}
 }
 @media(max-width:380px){
     .site-header{padding-right:14px;padding-left:14px}

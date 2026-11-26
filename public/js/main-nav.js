@@ -3,6 +3,19 @@
 
     if (!nav) return;
 
+    const menuToggle = document.querySelector('.menu-toggle');
+    const setMenuOpen = (open) => {
+        document.body.classList.toggle('menu-open', open);
+        menuToggle?.setAttribute('aria-expanded', String(open));
+    };
+
+    menuToggle?.addEventListener('click', () => setMenuOpen(!document.body.classList.contains('menu-open')));
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || !document.body.classList.contains('menu-open')) return;
+        setMenuOpen(false);
+        menuToggle?.focus();
+    });
+
     const links = [...nav.querySelectorAll('a[href^="#"]')];
     const sections = links
         .map((link) => document.getElementById(link.hash.slice(1)))
@@ -63,7 +76,7 @@
             const targetId = link.hash.slice(1);
 
             activate(targetId);
-            document.body.classList.remove('menu-open');
+            setMenuOpen(false);
             navigationScroll = true;
             window.clearTimeout(navigationReleaseTimer);
             navigationReleaseTimer = window.setTimeout(() => {

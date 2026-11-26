@@ -61,6 +61,7 @@ h1, h2, h3, h4,
 
 /* ---------------- PROFESSIONAL MINIMALIST TOPBAR ---------------- */
 .topbar {
+    gap: 12px;
     background: var(--forest-bg);
     color: #fff;
     height: var(--workspace-topbar-height);
@@ -146,6 +147,7 @@ h1, h2, h3, h4,
 }
 
 .topbar-right {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -2091,6 +2093,7 @@ body.business-dashboard-page #modal-biz-avatar img {
         display: none;
     }
     .topbar {
+    gap: 12px;
         padding: 0 16px;
     }
     .marketplace-cta-card {
@@ -2125,6 +2128,7 @@ body.business-dashboard-page :is(.sidebar-close-btn, .sidebar-logout-btn) {
 
 @media (max-width: 400px) {
     .topbar {
+    gap: 12px;
         padding-inline: 12px;
     }
 

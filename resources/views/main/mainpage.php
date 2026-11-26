@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/main/mainpage.css">
+    <link rel="stylesheet" href="/css/main/mainpage.css?v=<?= filemtime(public_path('css/main/mainpage.css')) ?>">
     <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
     <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
     <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
@@ -17,7 +17,7 @@
 <body>
 <header class="site-header" id="top">
     <a class="brand" href="/" aria-label="EcoCycle home"><span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span><span>EcoCycle</span></a>
-    <nav class="main-nav" aria-label="Main navigation">
+    <nav class="main-nav" id="landing-navigation" aria-label="Main navigation">
         <a class="active" href="#home" aria-current="location">Home</a><a href="#about">About us</a><a href="#features">Features</a><a href="#how-it-works">How it works</a><a href="#marketplace">Marketplace</a><a href="#contact">Contact us</a>
     </nav>
     <div class="header-actions">
@@ -35,7 +35,7 @@
         <?php endif; ?>
     </div>
     <?php include resource_path('views/components/site-preferences.php'); ?>
-    <button class="menu-toggle" aria-label="Open navigation" onclick="document.body.classList.toggle('menu-open')">☰</button>
+    <button class="menu-toggle" type="button" aria-label="Open navigation" aria-controls="landing-navigation" aria-expanded="false">☰</button>
 </header>
 
 <main>

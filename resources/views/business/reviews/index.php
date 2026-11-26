@@ -6,14 +6,16 @@
 /** @var \Illuminate\Support\Collection<int, \App\Models\MarketplaceReview> $receivedReviews */
 /** @var float $averageSellerRating */
 $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
-$activeNav = 'reviews';
+$isSellerView = $currentTab === 'received';
+$activeNav = $isSellerView ? 'seller-reviews' : 'reviews';
+$pageTitle = $isSellerView ? 'Received Reviews' : 'Given Reviews';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Reviews &middot; EcoCycle</title>
+    <title><?= e($pageTitle) ?> &middot; EcoCycle</title>
     <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +26,12 @@ $activeNav = 'reviews';
         .rev-kpi-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 0; padding: 16px 18px; }
         .rev-kpi-label { display: block; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
         .rev-kpi-val { font-size: 24px; font-weight: 800; color: #143825; font-family: var(--font-display); }
+        .rev-rating-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px 32px; }
+        .rev-rating-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+        .rev-rating-bars li { display: grid; grid-template-columns: 3rem 1fr 3rem; gap: 8px; align-items: center; font-size: 12px; }
+        .rev-rating-bars li > strong { text-align: right; }
+        .rev-rating-track { height: 8px; background: #e4eee3; }
+        .rev-rating-fill { display: block; height: 100%; background: #176b40; }
         .rev-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; padding: 6px; width: fit-content; max-width: 100%; background: #e4eee3; border: 1px solid var(--card-border); }
         .rev-tab { padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 0; background: #ffffff; color: #334155; font-size: 12.5px; font-weight: 700; text-decoration: none; }
         .rev-tab.active { background: #176b40; border-color: #176b40; color: #ffffff; }
@@ -90,6 +98,9 @@ $activeNav = 'reviews';
             object-fit: cover;
         }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page">
     <?php include resource_path('views/business/partials/topbar.php'); ?>
@@ -100,10 +111,10 @@ $activeNav = 'reviews';
         <main class="dashboard-main-content reviews-workspace">
             <header class="page-header">
                 <div class="section-header-title">
-                    <h1>My Reviews</h1>
-                    <p>Verified buyer reviews submitted after delivery or collection, and seller ratings received by your business.</p>
+                    <h1><?= e($pageTitle) ?></h1>
+                    <p><?= $isSellerView ? 'See ratings and comments buyers left for your business.' : 'Review materials you received and see the reviews you submitted.' ?></p>
                 </div>
-                <a href="<?= route('business.orders.index') ?>" class="rev-tab">View My Purchases</a>
+                <a href="<?= e(route('business.orders.index', ['tab' => $isSellerView ? 'sales' : 'purchases'])) ?>" class="rev-tab"><?= $isSellerView ? 'View My Sales' : 'View My Purchases' ?></a>
             </header>
 
             <?php if (session('status')): ?>
@@ -119,6 +130,7 @@ $activeNav = 'reviews';
             <?php endif; ?>
 
             <div class="rev-kpi-grid">
+                <?php if (! $isSellerView): ?>
                 <div class="rev-kpi-card" style="border-left:3px solid #d97706;">
                     <span class="rev-kpi-label">Eligible Orders to Review</span>
                     <span class="rev-kpi-val"><?= $eligibleOrders->count() ?></span>
@@ -127,13 +139,37 @@ $activeNav = 'reviews';
                     <span class="rev-kpi-label">Reviews Submitted</span>
                     <span class="rev-kpi-val"><?= $submittedReviews->count() ?></span>
                 </div>
-                <div class="rev-kpi-card" style="border-left:3px solid #15803d;">
-                    <span class="rev-kpi-label">Seller Rating Received</span>
-                    <span class="rev-kpi-val"><?= $receivedReviews->isNotEmpty() ? number_format($averageSellerRating, 1).' / 5.0' : 'No ratings yet' ?></span>
-                    <span style="display:block;font-size:11.5px;color:#64748b;margin-top:2px;"><?= $receivedReviews->count() ?> verified buyer <?= $receivedReviews->count() === 1 ? 'review' : 'reviews' ?></span>
+                <?php else: ?>
+                <?php
+                $ratingCounts = array_count_values($receivedReviews->pluck('rating')->map(static fn ($rating): int => (int) $rating)->all());
+                $reviewCount = $receivedReviews->count();
+                ?>
+                <div class="rev-kpi-card rev-rating-summary" style="border-left:3px solid #15803d;">
+                    <div>
+                        <span class="rev-kpi-label">Seller Rating Received</span>
+                        <span class="rev-kpi-val"><?= $reviewCount > 0 ? number_format($averageSellerRating, 1).' / 5.0' : 'No ratings yet' ?></span>
+                        <span style="display:block;font-size:11.5px;color:#64748b;margin-top:2px;"><?= $reviewCount ?> verified buyer <?= $reviewCount === 1 ? 'review' : 'reviews' ?></span>
+                    </div>
+                    <div>
+                        <span class="rev-kpi-label" id="seller-rating-breakdown">Reviews by star rating</span>
+                        <ul class="rev-rating-bars" aria-labelledby="seller-rating-breakdown">
+                            <?php for ($stars = 5; $stars >= 0; $stars--): ?>
+                                <?php $count = $ratingCounts[$stars] ?? 0; ?>
+                                <li>
+                                    <span><?= $stars ?> <?= $stars === 1 ? 'star' : 'stars' ?></span>
+                                    <span class="rev-rating-track" aria-hidden="true">
+                                        <span class="rev-rating-fill" style="width:<?= $reviewCount > 0 ? 100 * $count / $reviewCount : 0 ?>%;"></span>
+                                    </span>
+                                    <strong><?= $count ?></strong>
+                                </li>
+                            <?php endfor; ?>
+                        </ul>
+                    </div>
                 </div>
+                <?php endif; ?>
             </div>
 
+            <?php if (! $isSellerView): ?>
             <div class="rev-tabs">
                 <a href="<?= route('business.reviews.index', ['tab' => 'eligible']) ?>" class="rev-tab <?= $currentTab === 'eligible' ? 'active' : '' ?>">
                     Orders Ready to Review (<?= $eligibleOrders->count() ?>)
@@ -141,10 +177,9 @@ $activeNav = 'reviews';
                 <a href="<?= route('business.reviews.index', ['tab' => 'submitted']) ?>" class="rev-tab <?= $currentTab === 'submitted' ? 'active' : '' ?>">
                     Submitted Reviews (<?= $submittedReviews->count() ?>)
                 </a>
-                <a href="<?= route('business.reviews.index', ['tab' => 'received']) ?>" class="rev-tab <?= $currentTab === 'received' ? 'active' : '' ?>">
-                    Reviews Received as Seller (<?= $receivedReviews->count() ?>)
-                </a>
             </div>
+
+            <?php endif; ?>
 
             <?php if ($currentTab === 'eligible'): ?>
                 <?php if ($eligibleOrders->isNotEmpty()): ?>
@@ -268,7 +303,7 @@ $activeNav = 'reviews';
                     <?php endforeach; ?>
                 <?php else: ?>
                     <div class="rev-card" style="text-align:center;padding:42px 24px;">
-                        <h4 style="margin:0 0 6px;color:#143825;">No Seller Reviews Received Yet</h4>
+                        <h4 style="margin:0 0 6px;color:#143825;">No Reviews Received Yet</h4>
                         <p style="margin:0;font-size:13px;color:#64748b;">Once buyers confirm delivery and rate your completed orders, their verified reviews will appear here and on your Marketplace listings.</p>
                     </div>
                 <?php endif; ?>

@@ -859,6 +859,9 @@ $activeNav = 'inventory';
             background: #e5efe1 !important;
         }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page">
 

@@ -2,7 +2,7 @@
 $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -125,6 +125,9 @@ $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
             font: 700 19px var(--font-display);
         }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page">
     <?php include resource_path('views/business/partials/topbar.php'); ?>

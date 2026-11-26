@@ -92,13 +92,7 @@ $activeNav = $activeNav ?? 'overview';
             </div>
         </div>
 
-        <!-- User Profile Pill (Opens Business Profile & Password Settings) -->
-        <a href="<?= route('business.profile') ?>" class="topbar-profile topbar-icon-btn" title="Manage Business Profile &amp; Password Settings" aria-label="Business profile">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <circle cx="12" cy="8" r="4"></circle>
-                <path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"></path>
-            </svg>
-        </a>
+        <?php include resource_path('views/components/site-preferences.php'); ?>
 
     </div>
 </header>

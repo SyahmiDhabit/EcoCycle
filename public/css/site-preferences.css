@@ -1,0 +1,63 @@
+.site-preferences { display: inline-flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.site-preferences :is(.site-theme-toggle, summary) {
+    display: grid;
+    place-items: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 6px;
+    background: #fff;
+    color: #14532d;
+    border: 1px solid #c5d4c3;
+    border-radius: 6px !important;
+    font: 700 12px/1 sans-serif;
+    cursor: pointer;
+    list-style: none;
+}
+.topbar-right > .site-preferences { gap: inherit; }
+.topbar-right .site-preferences :is(.site-theme-toggle, summary) {
+    box-sizing: border-box;
+    width: 36px;
+}
+.site-preferences summary::-webkit-details-marker { display: none; }
+.site-theme-toggle span { font-size: 20px; }
+.site-theme-toggle .site-theme-sun, [data-theme="dark"] .site-theme-moon { display: none; }
+[data-theme="dark"] .site-theme-toggle .site-theme-sun { display: inline; }
+.site-language { position: relative; }
+.site-language form {
+    position: absolute;
+    z-index: 20;
+    inset: calc(100% + 6px) 0 auto auto;
+    min-width: max-content;
+    display: grid;
+    padding: 4px;
+    margin: 0;
+    background: #fff;
+    border: 1px solid #c5d4c3;
+    box-shadow: 0 6px 16px #14382529;
+}
+.site-language form button {
+    padding: 8px 12px;
+    background: transparent;
+    color: #123020;
+    border: 0;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+.site-language form button:is(:hover, [aria-current="true"]) { background: #e8f1e7; }
+.site-preferences :is(button, summary):focus-visible { outline: 2px solid #168250; outline-offset: 2px; }
+@media screen {
+    html[data-theme="dark"] { filter: invert(1) hue-rotate(180deg); background: #fff; }
+    html[data-theme="dark"] :is(img, video, canvas, iframe):not(.leaflet-container *, .gm-style *) {
+        filter: invert(1) hue-rotate(180deg);
+    }
+    html[data-theme="dark"] :is(.leaflet-container, .gm-style) { filter: invert(1) hue-rotate(180deg); }
+}
+@media print { .site-preferences { display: none !important; } }
+
+.auth-header-actions, .pending-account { display: flex; align-items: center; gap: 8px; }
+.site-header > .site-preferences { margin-inline-start: auto; }
+@media (max-width: 640px) {
+    .auth-page-header { gap: 8px; }
+    .auth-header-actions .auth-page-back { padding-inline: 8px; }
+}

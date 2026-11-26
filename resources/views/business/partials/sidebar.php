@@ -13,7 +13,7 @@ $workspaceActive = $activeNav === 'overview';
 $inventoryActive = in_array($activeNav, ['inventory', 'helper', 'waste'], true);
 $marketplaceActive = in_array($activeNav, ['marketplace', 'listings'], true);
 $transactionsActive = in_array($activeNav, ['transactions', 'invoices', 'orders', 'purchases', 'sales'], true);
-$reviewsActive = $activeNav === 'reviews';
+$reviewsActive = in_array($activeNav, ['reviews', 'seller-reviews'], true);
 $accountActive = in_array($activeNav, ['reports', 'profile'], true);
 ?>
 <!-- Left Slide-Out Sidebar Backdrop -->
@@ -166,8 +166,11 @@ $accountActive = in_array($activeNav, ['reports', 'profile'], true);
                     </svg>
                 </button>
                 <div class="sidebar-submenu" id="submenu-reviews">
-                    <a href="/business/reviews" class="sidebar-sublink <?= $activeNav === 'reviews' ? 'active' : '' ?>" title="Submit verified buyer reviews and view seller ratings">
-                        <span>My Reviews</span>
+                    <a href="/business/reviews?tab=received" class="sidebar-sublink <?= $activeNav === 'seller-reviews' ? 'active' : '' ?>">
+                        <span>Received Reviews</span>
+                    </a>
+                    <a href="/business/reviews?tab=submitted" class="sidebar-sublink <?= $activeNav === 'reviews' ? 'active' : '' ?>">
+                        <span>Given Reviews</span>
                     </a>
                 </div>
             </div>

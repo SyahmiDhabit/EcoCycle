@@ -17,7 +17,7 @@ $pageDescription = match ($currentTab) {
 };
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -122,6 +122,9 @@ $pageDescription = match ($currentTab) {
             outline-offset: -2px;
         }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page">
     <?php include resource_path('views/business/partials/topbar.php'); ?>
@@ -136,7 +139,7 @@ $pageDescription = match ($currentTab) {
                     <p><?= e($pageDescription) ?></p>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="<?= route('business.reviews.index') ?>" class="ord-tab">My Reviews</a>
+                    <a href="<?= e(route('business.reviews.index', ['tab' => $currentTab === 'sales' ? 'received' : 'submitted'])) ?>" class="ord-tab"><?= $currentTab === 'sales' ? 'Received Reviews' : 'Given Reviews' ?></a>
                     <a href="<?= route('business.marketplace') ?>" class="ord-tab active">Browse Marketplace</a>
                 </div>
             </header>

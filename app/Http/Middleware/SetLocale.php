@@ -11,7 +11,7 @@ class SetLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->session()->get('locale', 'en');
+        $locale = $request->session()->get('locale', $request->cookie('ecocycle_locale', 'en'));
         App::setLocale(in_array($locale, ['en', 'ms'], true) ? $locale : 'en');
 
         return $next($request);

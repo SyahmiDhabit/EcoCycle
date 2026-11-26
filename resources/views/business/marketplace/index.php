@@ -590,6 +590,9 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
         #seller-review-list p { margin: 8px 0 0; white-space: pre-wrap; }
         #seller-review-more { margin-top: 14px; }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page marketplace-page">
     <!-- Reusable Top Navigation Bar -->

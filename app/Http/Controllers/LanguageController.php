@@ -12,6 +12,12 @@ class LanguageController extends Controller
         $validated = $request->validate(['locale' => ['required', 'in:en,ms']]);
         $request->session()->put('locale', $validated['locale']);
 
-        return redirect()->route('home');
+        $previous = $request->session()->previousUrl();
+        $returnUrl = is_string($previous) && str_starts_with($previous, $request->getSchemeAndHttpHost().'/')
+            ? $previous
+            : route('home');
+
+        return redirect()->to($returnUrl)
+            ->withCookie(cookie('ecocycle_locale', $validated['locale'], 525600));
     }
 }

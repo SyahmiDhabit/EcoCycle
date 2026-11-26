@@ -102,6 +102,9 @@ $savedImages = array_values(array_filter($imageSlots));
             .prep-grid-2, .prep-grid-3, .inv-slots-grid-3 { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page">
     <?php include resource_path('views/business/partials/topbar.php'); ?>

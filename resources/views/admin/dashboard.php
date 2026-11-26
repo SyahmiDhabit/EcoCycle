@@ -28,6 +28,9 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/admin/review.css">
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="admin-page">
 <header class="admin-header">
@@ -97,6 +100,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
             </div>
         </div>
 
+        <?php include resource_path('views/components/site-preferences.php'); ?>
         <span>Administrator · <?= e($adminName) ?></span>
         <form method="POST" action="<?= e(route('logout')) ?>">
             <?= csrf_field() ?>
@@ -434,6 +438,5 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
-<script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

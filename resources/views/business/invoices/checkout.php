@@ -24,7 +24,7 @@ $statusClass = match ($rawStatus) {
 $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -180,6 +180,9 @@ $totalDisplay = 'RM '.number_format($isFree ? 0.00 : (float) $totals['total'], 2
             outline-offset: 2px;
         }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page">
     <?php include resource_path('views/business/partials/topbar.php'); ?>

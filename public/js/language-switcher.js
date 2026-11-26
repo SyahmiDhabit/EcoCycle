@@ -1,5 +1,243 @@
 (() => {
     const translations = {
+        'All locations': 'Semua lokasi',
+        'All Locations': 'Semua lokasi',
+        'Filter businesses': 'Tapis perniagaan',
+        'Sort businesses': 'Isih perniagaan',
+        'View profile': 'Lihat profil',
+        'Verified business': 'Perniagaan disahkan',
+        'Ceramic & Porcelain': 'Seramik dan porselin',
+        'Plastic': 'Plastik',
+        'Wood': 'Kayu',
+        'Furniture & wood products': 'Perabot dan produk kayu',
+        'Other': 'Lain-lain',
+        'Food Waste': 'Sisa makanan',
+        'Paper & Cardboard': 'Kertas dan kadbod',
+        'Glass': 'Kaca',
+        'Metal': 'Logam',
+
+        'Overview · Business Directory — EcoCycle': 'Gambaran keseluruhan · Direktori perniagaan — EcoCycle',
+        'Business Profile & Security — EcoCycle': 'Profil dan keselamatan perniagaan — EcoCycle',
+        'Business directory': 'Direktori perniagaan',
+        'Company directory': 'Direktori syarikat',
+        'Find verified Malaysian SMEs and explore the materials they have available.': 'Cari PKS Malaysia yang disahkan dan lihat bahan yang mereka tawarkan.',
+        'Search approved businesses': 'Cari perniagaan yang diluluskan',
+        'Search businesses': 'Cari perniagaan',
+        'All industries': 'Semua industri',
+        'All materials': 'Semua bahan',
+        'Reset filters': 'Tetapkan semula penapis',
+        'Verified Businesses': 'Perniagaan yang disahkan',
+        'Sort: Newest registered': 'Isih: Pendaftaran terbaharu',
+        'Sort: Company Name (A-Z)': 'Isih: Nama syarikat (A–Z)',
+        'Sort: Most listings': 'Isih: Penyenaraian terbanyak',
+        'View all businesses': 'Lihat semua perniagaan',
+        'No other approved businesses found yet': 'Tiada perniagaan lain yang diluluskan ditemui',
+        'Verified EcoCycle SME': 'PKS yang disahkan oleh EcoCycle',
+        'Industry / Location': 'Industri / Lokasi',
+        'Business Phone': 'Telefon perniagaan',
+        'Available Listings': 'Penyenaraian tersedia',
+        'Surplus & Exchange Materials': 'Bahan lebihan dan pertukaran',
+        'This business has no active marketplace listings published yet.': 'Perniagaan ini belum menerbitkan sebarang penyenaraian aktif di pasaran.',
+        'Order on Marketplace →': 'Pesan di pasaran →',
+        'Free Surplus': 'Bahan lebihan percuma',
+        'List Item': 'Senarai item',
+        'Company': 'Syarikat',
+        'Company Name': 'Nama syarikat',
+        'Materials': 'Bahan',
+        'Material': 'Bahan',
+        'Profile': 'Profil',
+        'Industry': 'Industri',
+        'Dashboard': 'Papan pemuka',
+        'Reports': 'Laporan',
+        'Sign Out': 'Log keluar',
+        'Notifications': 'Notifikasi',
+        'Mark all as read': 'Tandakan semua sebagai dibaca',
+        'No notifications yet': 'Tiada notifikasi lagi',
+        'Real updates on verification, transactions, and inventory will appear here.': 'Kemas kini pengesahan, transaksi dan inventori akan dipaparkan di sini.',
+        'Recently': 'Baru-baru ini',
+        'Previous': 'Sebelumnya',
+        'Next': 'Seterusnya',
+        'Contact Email': 'Hubungi melalui e-mel',
+        'View Full Profile': 'Lihat profil penuh',
+        'Operating Facility / Registered Address': 'Fasiliti operasi / Alamat berdaftar',
+        'City': 'Bandar',
+        'State': 'Negeri',
+        'Postcode': 'Poskod',
+        'Username:': 'Nama pengguna:',
+        'Save Profile Updates': 'Simpan kemas kini profil',
+        'Update Account Password': 'Kemas kini kata laluan akaun',
+        'Show/Hide Password': 'Papar atau sembunyikan kata laluan',
+        'PNG, JPG, or WEBP up to 5 MB.': 'PNG, JPG atau WEBP sehingga 5 MB.',
+        'Verified Malaysian B2B Enterprise': 'Perniagaan B2B Malaysia yang disahkan',
+        'Companies Commission of Malaysia (SSM)': 'Suruhanjaya Syarikat Malaysia (SSM)',
+        'Your business is verified to trade on EcoCycle in Malaysia.': 'Perniagaan anda disahkan untuk berdagang di EcoCycle di Malaysia.',
+        'Status: Active / Approved': 'Status: Aktif / Diluluskan',
+        'View SSM Documents →': 'Lihat dokumen SSM →',
+        'Manufacturing & Industrial': 'Pembuatan dan perindustrian',
+        'Furniture & Wood Products': 'Perabot dan produk kayu',
+        'Plastics & Polymers Reprocessing': 'Pemprosesan semula plastik dan polimer',
+        'Metal & Fabrication': 'Logam dan fabrikasi',
+        'Textiles & Apparel': 'Tekstil dan pakaian',
+        'Food & Beverage Production': 'Pengeluaran makanan dan minuman',
+        'Electronics & Electrical Equipment': 'Peralatan elektronik dan elektrik',
+        'Construction & Demolition Resources': 'Bahan pembinaan dan perobohan',
+        'Packaging & Paper Goods': 'Pembungkusan dan produk kertas',
+        'Chemicals & Specialty Materials': 'Bahan kimia dan bahan khusus',
+        'Other Surplus Commercial': 'Lebihan komersial lain',
+        'Search scrap or facility...': 'Cari sisa atau fasiliti...',
+        'Current Status': 'Status semasa',
+        'New Status': 'Status baharu',
+        'Facility Location': 'Lokasi fasiliti',
+        'Facility Name': 'Nama fasiliti',
+        'Status Notes': 'Catatan status',
+        'Unit of Measure': 'Unit ukuran',
+        'Material Condition': 'Keadaan bahan',
+        'Description': 'Penerangan',
+        'Edit': 'Sunting',
+        'Back': 'Kembali',
+        'View Details': 'Lihat butiran',
+        'Order reference': 'Rujukan pesanan',
+        'Your role': 'Peranan anda',
+        'Counterparty': 'Rakan niaga',
+        'Amount': 'Amaun',
+        'Seller': 'Penjual',
+        'Buyer': 'Pembeli',
+        'Paid': 'Dibayar',
+        'Pending': 'Belum selesai',
+        'Completed': 'Selesai',
+        'Submitted Reviews': 'Ulasan yang dihantar',
+        'Orders Ready to Review': 'Pesanan yang boleh diulas',
+        'Eligible Orders to Review': 'Pesanan yang layak diulas',
+        'Reviews Submitted': 'Ulasan dihantar',
+        'No Reviews Received Yet': 'Belum menerima ulasan',
+        'No ratings yet': 'Belum ada penilaian',
+        'Reporting period:': 'Tempoh laporan:',
+        'Item listings by category': 'Penyenaraian item mengikut kategori',
+        'Material reusability': 'Kebolehgunaan semula bahan',
+        'Chart data': 'Data carta',
+        'Purchase spending': 'Perbelanjaan pembelian',
+        'Sales revenue': 'Hasil jualan',
+        'No records for this period.': 'Tiada rekod bagi tempoh ini.',
+        'No buyer reviews in this period.': 'Tiada ulasan pembeli dalam tempoh ini.',
+        'Number of reviews at each star rating.': 'Bilangan ulasan bagi setiap penilaian bintang.',
+
+        'Application Status': 'Status permohonan',
+        'Admin Dashboard': 'Papan pemuka pentadbir',
+        'Open navigation': 'Buka navigasi',
+        'Overview': 'Gambaran keseluruhan',
+        'Workspace': 'Ruang kerja',
+        'Business Workspace': 'Ruang kerja perniagaan',
+        'Inventory': 'Inventori',
+        'Inventory Items': 'Item inventori',
+        'Add New Item': 'Tambah item baharu',
+        'Waste Monitoring': 'Pemantauan sisa',
+        'Browse Marketplace': 'Layari pasaran',
+        'My Listings': 'Penyenaraian saya',
+        'Transactions': 'Transaksi',
+        'Payment History': 'Sejarah pembayaran',
+        'Receipts': 'Resit',
+        'My Purchases': 'Pembelian saya',
+        'My Sales': 'Jualan saya',
+        'Reviews': 'Ulasan',
+        'Given Reviews': 'Ulasan yang diberi',
+        'Received Reviews': 'Ulasan yang diterima',
+        'Reports & Profile': 'Laporan dan profil',
+        'Business Profile': 'Profil perniagaan',
+        'Business Profile & Security': 'Profil dan keselamatan perniagaan',
+        'Manage corporate branding, verified SSM registration, facility address, and secure account credentials.': 'Urus penjenamaan syarikat, pendaftaran SSM, alamat fasiliti dan keselamatan akaun.',
+        'Company Profile & Branding': 'Profil dan penjenamaan syarikat',
+        'Information displayed to partners across the marketplace and directory.': 'Maklumat yang dipaparkan kepada rakan niaga dalam pasaran dan direktori.',
+        'Active Profile': 'Profil aktif',
+        'Change Company Logo': 'Tukar logo syarikat',
+        'Registered Business Name': 'Nama perniagaan berdaftar',
+        'SSM Registration No.': 'No. pendaftaran SSM',
+        'Industry Sector': 'Sektor industri',
+        'Corporate Contact Phone': 'Telefon perniagaan',
+        'Registered Company Address': 'Alamat syarikat berdaftar',
+        'Account Security & Password': 'Keselamatan akaun dan kata laluan',
+        'Update your password to keep your company account secure.': 'Kemas kini kata laluan untuk melindungi akaun syarikat anda.',
+        'Password Security Requirements:': 'Syarat keselamatan kata laluan',
+        'Minimum of 8 characters in length.': 'Sekurang-kurangnya 8 aksara.',
+        'Must contain letters and at least one number.': 'Mesti mengandungi huruf dan sekurang-kurangnya satu nombor.',
+        'Do not reuse your previous password.': 'Gunakan kata laluan yang berbeza daripada kata laluan sebelumnya.',
+        'Current Password': 'Kata laluan semasa',
+        'New Password': 'Kata laluan baharu',
+        'Confirm New Password': 'Sahkan kata laluan baharu',
+        'Update Password': 'Kemas kini kata laluan',
+        'Save Changes': 'Simpan perubahan',
+        'Inventory management': 'Pengurusan inventori',
+        'Track materials, upload photos, and manage reusable listings or recycling recommendations.': 'Jejak bahan, muat naik foto dan urus penyenaraian atau cadangan kitar semula.',
+        'Add New Inventory Item': 'Tambah item inventori baharu',
+        'Reusable materials marketplace': 'Pasaran bahan boleh guna semula',
+        'Purchase or claim reusable materials directly from verified Malaysian SMEs.': 'Beli atau tuntut bahan boleh guna semula daripada PKS Malaysia yang disahkan.',
+        'Reusable Items': 'Item boleh guna semula',
+        'Non-Reusable Items': 'Item tidak boleh guna semula',
+        'Search Materials': 'Cari bahan',
+        'Material Name': 'Nama bahan',
+        'Category': 'Kategori',
+        'Quantity': 'Kuantiti',
+        'Location': 'Lokasi',
+        'Status': 'Status',
+        'Actions': 'Tindakan',
+        'All Categories': 'Semua kategori',
+        'All Statuses': 'Semua status',
+        'All Delivery Statuses': 'Semua status penghantaran',
+        'Filter': 'Tapis',
+        'Reset': 'Tetapkan semula',
+        'Save': 'Simpan',
+        'Cancel': 'Batal',
+        'Close': 'Tutup',
+        'Delete': 'Padam',
+        'View Report': 'Lihat laporan',
+        'Update Status': 'Kemas kini status',
+        'Log Scrap Entry': 'Rekod sisa',
+        'Wastage Monitoring & Scrap Recovery': 'Pemantauan dan pemulihan sisa',
+        'Wastage Item Report': 'Laporan item sisa',
+        'Back to Waste Monitoring': 'Kembali ke pemantauan sisa',
+        'Waste record': 'Rekod sisa',
+        'Tracking History': 'Sejarah penjejakan',
+        'In Storage': 'Dalam simpanan',
+        'Pickup Scheduled': 'Kutipan dijadualkan',
+        'Received by Facility': 'Diterima oleh fasiliti',
+        'Recycled / Repurposed': 'Dikitar semula / Diguna semula',
+        'Composted': 'Dikompos',
+        'Facility Payment (RM)': 'Bayaran fasiliti (RM)',
+        'Generate Waste Report': 'Jana laporan sisa',
+        'Save to Waste Monitoring': 'Simpan ke pemantauan sisa',
+        'Reanalyze': 'Analisis semula',
+        'Non-Reusable Item:': 'Item tidak boleh guna semula:',
+        'Material Analysis & Disposal Guidance': 'Analisis bahan dan panduan pelupusan',
+        'Google Maps GPS Locator': 'Pencari lokasi Google Maps',
+        'Get Directions on Google Maps': 'Dapatkan arah di Google Maps',
+        'Track orders for materials from your listings.': 'Jejak pesanan bagi bahan yang anda senaraikan.',
+        'Track materials you bought, claimed or borrowed.': 'Jejak bahan yang anda beli, tuntut atau pinjam.',
+        'Manage Order': 'Urus pesanan',
+        'Track Order': 'Jejak pesanan',
+        'View My Purchases': 'Lihat pembelian saya',
+        'View My Sales': 'Lihat jualan saya',
+        'Reviews by star rating': 'Ulasan mengikut penilaian bintang',
+        'Seller Rating Received': 'Penilaian diterima sebagai penjual',
+        'Business Analytics': 'Analitik perniagaan',
+        'Dashboard summary': 'Ringkasan papan pemuka',
+        'Total Items': 'Jumlah item',
+        'Total Transactions': 'Jumlah transaksi',
+        'Total Revenue': 'Jumlah hasil jualan',
+        'Total Purchases': 'Jumlah pembelian',
+        'Period': 'Tempoh',
+        'Today': 'Hari ini',
+        'This Week': 'Minggu ini',
+        'This Month': 'Bulan ini',
+        'Last 3 Months': '3 bulan terakhir',
+        'This Year': 'Tahun ini',
+        'Custom Date Range': 'Julat tarikh tersuai',
+        'Apply filters': 'Gunakan penapis',
+        'Sales and purchases over time': 'Trend jualan dan pembelian',
+        'Paid sales vs purchases': 'Jualan dan pembelian berbayar',
+        'Buyer ratings received': 'Penilaian yang diterima daripada pembeli',
+        'Waste records by status': 'Rekod sisa mengikut status',
+        'Recent activity': 'Aktiviti terkini',
+        'Marketplace transactions': 'Transaksi pasaran',
+        'Print / Save as PDF': 'Cetak / Simpan sebagai PDF',
         'EcoCycle — Manage smarter. Waste less.': 'EcoCycle — Urus dengan bijak. Kurangkan pembaziran.',
         'Business verification - EcoCycle': 'Pengesahan perniagaan - EcoCycle',
         'Business review - EcoCycle': 'Semakan perniagaan - EcoCycle',
@@ -146,6 +384,12 @@
 
     const attributes = {
         placeholder: {
+            'Search company name, username, or location...': 'Cari nama syarikat, nama pengguna atau lokasi...',
+            'Enter current password': 'Masukkan kata laluan semasa',
+            'At least 8 characters': 'Sekurang-kurangnya 8 aksara',
+            'Re-type new password': 'Taip semula kata laluan baharu',
+            'Lot, Street address, or Industrial Park': 'Lot, alamat jalan atau kawasan perindustrian',
+            'Search scrap or facility...': 'Cari sisa atau fasiliti...',
             'you@business.com': 'anda@perniagaan.com',
             'you@business.com or admin username': 'anda@perniagaan.com atau nama pengguna pentadbir',
             'KayuKita Manufacturing Sdn. Bhd.': 'KayuKita Manufacturing Sdn. Bhd.',
@@ -158,6 +402,10 @@
             'Explain what needs to change': 'Terangkan perubahan yang diperlukan',
         },
         'aria-label': {
+            'Toggle navigation menu': 'Buka atau tutup menu navigasi',
+            'Business Navigation Menu': 'Menu navigasi perniagaan',
+            'Delivery status': 'Status penghantaran',
+            'Show/Hide Password': 'Papar atau sembunyikan kata laluan',
             'EcoCycle home': 'Laman utama EcoCycle', 'Open navigation': 'Buka navigasi', 'Main navigation': 'Navigasi utama',
             'Show password': 'Papar kata laluan', 'Show password confirmation': 'Papar pengesahan kata laluan',
             'Hide password': 'Sembunyikan kata laluan', 'Hide password confirmation': 'Sembunyikan pengesahan kata laluan',
@@ -168,11 +416,12 @@
         const locale = document.querySelector('.language-switcher')?.dataset.locale || document.documentElement.lang || 'en';
         document.documentElement.lang = locale;
         if (locale !== 'ms') return;
+        document.title = translations[document.title] || document.title;
 
         const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
             acceptNode(node) {
                 const parent = node.parentElement;
-                if (!parent || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+                if (!parent || parent.closest('.leaflet-container, .gm-style') || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
                 return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
             },
         });
@@ -182,7 +431,24 @@
         for (const node of textNodes) {
             const original = node.nodeValue;
             const key = original.trim();
-            let translated = translations[key];
+            const [, label = key, suffix = ''] = key.match(/^(.*?)(\s*\*|\s*\(\d+\))$/) || [];
+            let translated = Object.hasOwn(translations, label) ? translations[label] + suffix : null;
+
+            if (!translated) {
+                const businesses = key.match(/^Showing (\d+) business(?:es)?$/);
+                const directoryCount = key.match(/^(\d+) business(?:es)? on record$/);
+                const registeredFacility = key.match(/^Registered facility in (.+)\.$/);
+                const listings = key.match(/^(\d+) active listing\(s\)$/);
+                const scrapLogs = key.match(/^Showing (\d+) scrap logs?$/);
+                const unread = key.match(/^(\d+) unread$/);
+
+                if (businesses) translated = `Memaparkan ${businesses[1]} perniagaan`;
+                else if (directoryCount) translated = `${directoryCount[1]} perniagaan dalam rekod`;
+                else if (registeredFacility) translated = `Fasiliti berdaftar di ${registeredFacility[1]}.`;
+                else if (listings) translated = `${listings[1]} penyenaraian aktif`;
+                else if (scrapLogs) translated = `Memaparkan ${scrapLogs[1]} rekod sisa`;
+                else if (unread) translated = `${unread[1]} belum dibaca`;
+            }
 
             if (!translated) {
                 const submitted = key.match(/^Thank you, (.+)\. Your application was submitted(?: on (.+))?\.$/);
@@ -206,6 +472,10 @@
             }
 
             if (translated && translated !== key) {
+                const option = node.parentElement.closest('option');
+                if (option && !option.hasAttribute('value')) {
+                    option.setAttribute('value', option.value);
+                }
                 const leading = original.match(/^\s*/)?.[0] || '';
                 const trailing = original.match(/\s*$/)?.[0] || '';
                 node.nodeValue = `${leading}${translated}${trailing}`;
@@ -214,8 +484,14 @@
 
         for (const [attribute, dictionary] of Object.entries(attributes)) {
             document.querySelectorAll(`[${attribute}]`).forEach((element) => {
-                const value = element.getAttribute(attribute);
-                if (dictionary[value] && dictionary[value] !== value) element.setAttribute(attribute, dictionary[value]);
+                                const value = element.getAttribute(attribute) || '';
+                const notifications = value.match(/^Notifications \((\d+) unread\)$/);
+                if (notifications) {
+                    element.setAttribute(attribute, `Notifikasi (${notifications[1]} belum dibaca)`);
+                    return;
+                }
+                const translatedValue = dictionary[value] || (attribute === 'aria-label' ? translations[value] : null);
+                if (typeof translatedValue === 'string' && translatedValue !== value) element.setAttribute(attribute, translatedValue);
             });
         }
         const metaDescription = document.querySelector('meta[name="description"]');
@@ -223,8 +499,19 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
+        if (document.documentElement.lang !== 'ms') return;
+
         translate();
-        const observer = new MutationObserver(() => translate());
+        let translationPending = false;
+        const observer = new MutationObserver(() => {
+            if (translationPending) return;
+
+            translationPending = true;
+            requestAnimationFrame(() => {
+                translate();
+                translationPending = false;
+            });
+        });
         observer.observe(document.body, {
             childList: true,
             characterData: true,

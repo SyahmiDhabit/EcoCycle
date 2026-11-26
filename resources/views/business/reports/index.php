@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,7 +25,7 @@
         }
         @media (min-width: 1000px) {
             .report-metric-row {
-                grid-template-columns: repeat(5, minmax(0, 1fr));
+                grid-template-columns: repeat(4, minmax(0, 1fr));
             }
         }
         .report-metric-box {
@@ -107,6 +107,9 @@
             margin-bottom: 24px;
         }
         .report-chart-grid > section { margin: 0; }
+        .report-rating-columns { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+        .report-rating-columns li { display: grid; grid-template-rows: auto 76px auto; justify-items: center; gap: 4px; font-size: 12px; }
+        .report-rating-column { width: min(22px, 100%); align-self: end; background: #176b40; }
         .report-bars { list-style: none; margin: 0; padding: 0; }
         .cat-bar-header { gap: 12px; }
         .cat-bar-header span:last-child { white-space: nowrap; }
@@ -136,6 +139,9 @@
         .report-filters p { flex-basis: 100%; margin: 0; }
         .report-filter-error { color: #991b1b; }
         .analytics-chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .report-print-heading { display: none; }
+        .report-period-range { color: #475569; font-size: 13px; }
+        .report-financial-trend { grid-column: 1 / -1; }
         .report-chart-description, .report-chart-empty { color: var(--text-secondary); }
         .report-canvas { display: none; height: 270px; position: relative; }
         .report-canvas.is-rendered { display: block; }
@@ -180,21 +186,33 @@
             .analytics-chart-grid { grid-template-columns: minmax(0, 1fr); }
             .report-section-card { padding: 16px; }
         }
+        @page { size: A4 portrait; margin: 14mm; }
         @media print {
-            .topbar, .dashboard-sidebar, .sidebar-backdrop, .btn-print-report, .report-filters label, .report-action {
-                display: none !important;
-            }
-            .report-chart-grid { display: block; }
-            .report-chart-grid > section { margin-bottom: 12px; break-inside: avoid; }
-            .cat-bar-fill { print-color-adjust: exact; }
-            .dashboard-layout {
-                display: block !important;
-            }
-            .dashboard-main-content {
-                padding: 0 !important;
-            }
+            body.business-dashboard-page { background: #fff; }
+            .topbar, .dashboard-sidebar, .sidebar-backdrop, .btn-print-report, .report-filters { display: none !important; }
+            .report-print-heading { display: block; color: #14532d; font-weight: 700; }
+            .reports-workspace .page-header { border-bottom: 1px solid #cbd5e1; margin: 0 0 12px; padding-bottom: 8px; }
+            .reports-workspace .page-header h1 { font-size: 23pt; }
+            .dashboard-layout { display: block !important; }
+            .dashboard-main-content.reports-workspace { width: 100%; max-width: none; margin: 0; padding: 0 !important; }
+            .report-section-card { padding: 12px; margin-bottom: 12px; }
+            .report-chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+            .report-chart-grid > section, .report-metric-box { break-inside: avoid; }
+            .report-metric-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+            .report-metric-box { padding: 8px; }
+            .report-metric-box span { font-size: 15pt; }
+            .report-canvas { height: 175px; }
+            .report-table-scroll { overflow: visible; }
+            .inventory-table thead { display: table-header-group; }
+            .inventory-table tr { break-inside: avoid; }
+            .inventory-table td, .inventory-table th { overflow-wrap: anywhere; }
+            .report-section-card { print-color-adjust: exact; }
+            .report-section-card h2, .report-section-card h4 { break-after: avoid; }
         }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page">
     <?php include resource_path('views/business/partials/topbar.php'); ?>
@@ -208,8 +226,10 @@
         <main class="dashboard-main-content reports-workspace">
             <header class="page-header">
                 <div>
+                    <div class="report-print-heading">EcoCycle · <?= e($business->business_name ?: $business->name) ?></div>
                     <h1>Business Analytics</h1>
                     <p>Inventory, Marketplace performance, and waste recovery for your business.</p>
+                    <p class="report-period-range">Reporting period: <?= e($start->format('d M Y')) ?> – <?= e($end->format('d M Y')) ?></p>
                 </div>
                 <button type="button" class="btn-search btn-print-report" onclick="window.print()">Print / Save as PDF</button>
             </header>
@@ -237,8 +257,7 @@
                         ['Total Items', number_format($totalItems), 'Inventory items added in this period'],
                         ['Total Transactions', number_format($totalTransactions), 'Orders placed in this period as buyer or seller'],
                         ['Total Revenue', 'RM '.number_format($totalSalesRevenue, 2), 'Paid sales in this period'],
-                        ['Reusable Materials', number_format($reusableMaterials), 'Reusable items added in this period'],
-                        ['Non-Reusable Materials', number_format($reusability['Non-reusable']), 'Non-reusable items added in this period'],
+                        ['Total Purchases', 'RM '.number_format($totalPurchasesSpent, 2), 'Spending on paid purchases in this period'],
                     ] as [$label, $value, $note]): ?>
                         <div class="report-metric-box">
                             <small><?= e($label) ?></small>
@@ -251,8 +270,7 @@
 
             <?php
                 $analyticsCharts = [
-                    ['sales-trend', 'Sales revenue over time', 'Paid sales grouped by '.$trendInterval.'.', 'line', $salesTrend, 'RM'],
-                    ['purchase-trend', 'Total purchases over time', 'Paid purchase spending grouped by '.$trendInterval.'.', 'line', $purchaseTrend, 'RM'],
+                    ['financial-trend', 'Sales and purchases over time', 'Paid sales and purchase spending grouped by '.$trendInterval.'.', 'line', ['Sales revenue' => $salesTrend, 'Purchase spending' => $purchaseTrend], 'RM'],
                     ['listing-categories', 'Item listings by category', 'Marketplace listings from items added in this period.', 'bar', $listingCategories, 'Listings'],
                     ['material-reusability', 'Material reusability', 'Reusable and non-reusable inventory items added in this period.', 'doughnut', $reusability, 'Items'],
                 ];
@@ -269,14 +287,28 @@
                             default => [],
                         };
                     ?>
-                    <section class="report-section-card<?= $chartColors ? ' report-side-legend-chart' : '' ?>" aria-labelledby="<?= $chartId ?>">
+                    <section class="report-section-card<?= $type === 'line' ? ' report-financial-trend' : '' ?><?= $chartColors ? ' report-side-legend-chart' : '' ?>" aria-labelledby="<?= $chartId ?>">
                         <h2 id="<?= $chartId ?>"><?= e($chartTitle) ?></h2>
                         <p class="report-chart-description"><?= e($description) ?></p>
-                        <?php if (array_sum($series) > 0): ?>
+                        <?php if ($type === 'line' ? array_sum($salesTrend) + array_sum($purchaseTrend) > 0 : array_sum($series) > 0): ?>
                             <div class="report-canvas">
                                 <canvas aria-hidden="true" data-chart-type="<?= $type ?>" data-series="<?= e(json_encode($series, JSON_INVALID_UTF8_SUBSTITUTE)) ?>" data-metric="<?= e($metric) ?>" data-colors="<?= e(json_encode($chartColors)) ?>"></canvas>
                             </div>
-                            <?php if ($chartColors): ?>
+                            <?php if ($type === 'line'): ?>
+                                <details class="report-chart-data" open>
+                                    <summary>Chart data</summary>
+                                    <div class="report-table-scroll">
+                                        <table class="inventory-table">
+                                            <thead><tr><th>Period</th><th>Sales revenue</th><th>Purchase spending</th></tr></thead>
+                                            <tbody>
+                                                <?php foreach ($salesTrend as $label => $value): ?>
+                                                    <tr><td><?= e($label) ?></td><td>RM <?= number_format($value, 2) ?></td><td>RM <?= number_format($purchaseTrend[$label], 2) ?></td></tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </details>
+                            <?php elseif ($chartColors): ?>
                                 <ul class="report-side-legend" aria-label="<?= e($chartTitle) ?> counts">
                                     <?php foreach ($series as $label => $value): ?>
                                         <li>
@@ -307,12 +339,28 @@
             <div class="report-chart-grid">
                 <?php foreach ([
                     ['payments-chart', 'Paid sales vs purchases', ['Sales' => $totalSalesRevenue, 'Purchases' => $totalPurchasesSpent], true],
-                    ['waste-category-chart', 'Waste records by category', $wasteCategories, false],
+                    ['seller-ratings-chart', 'Buyer ratings received', [], false],
                     ['waste-status-chart', 'Waste records by status', $wasteStatuses, false],
                 ] as [$chartId, $chartTitle, $series, $isMoney]): ?>
                     <section class="report-section-card" aria-labelledby="<?= $chartId ?>">
                         <h2 id="<?= $chartId ?>"><?= e($chartTitle) ?></h2>
-                        <?php if (max($series ?: [0]) > 0): ?>
+                        <?php if ($chartId === 'seller-ratings-chart'): ?>
+                            <?php if ($receivedRatings->isEmpty()): ?>
+                                <p>No buyer reviews in this period.</p>
+                            <?php else: ?>
+                                <p class="report-chart-description">Number of reviews at each star rating.</p>
+                                <ul class="report-rating-columns" aria-label="Review counts by star rating">
+                                    <?php for ($stars = 5; $stars >= 0; $stars--): ?>
+                                        <?php $count = $receivedRatings->get($stars, 0); ?>
+                                        <li>
+                                            <strong><?= $count ?></strong>
+                                            <span class="report-rating-column" aria-hidden="true" style="height:<?= 100 * $count / $receivedRatings->max() ?>%;background:<?= ['#176b40', '#0e7490', '#356e98', '#674fa0', '#a55c22', '#9a4b63'][5 - $stars] ?>;"></span>
+                                            <span><?= $stars ?><span style="color:#b77900;">★</span></span>
+                                        </li>
+                                    <?php endfor; ?>
+                                </ul>
+                            <?php endif; ?>
+                        <?php elseif (max($series ?: [0]) > 0): ?>
                             <?php $maximum = max($series); ?>
                             <ul class="report-bars">
                                 <?php foreach ($series as $label => $amount): ?>
@@ -322,7 +370,7 @@
                                             <span><?= $isMoney ? 'RM '.number_format($amount, 2) : number_format($amount) ?></span>
                                         </div>
                                         <div class="cat-bar-track" aria-hidden="true">
-                                            <div class="cat-bar-fill" style="width:<?= round($amount / $maximum * 100, 2) ?>%;"></div>
+                                            <div class="cat-bar-fill" style="background:<?= $chartId === 'waste-status-chart' ? '#674fa0' : ($label === 'Purchases' ? '#356e98' : '#176b40') ?>;width:<?= round($amount / $maximum * 100, 2) ?>%;"></div>
                                         </div>
                                     </li>
                                 <?php endforeach; ?>
@@ -338,6 +386,7 @@
                 <h2>Recent activity</h2>
                 
                 <h4 style="margin:0 0 8px;font-size:13px;color:#18422d;">Marketplace transactions</h4>
+                <p class="report-chart-description">Up to eight recent orders in each role, based on the order date.</p>
                 <?php if ($recentTransactions->isNotEmpty()): ?>
                     <div class="report-table-scroll">
                         <table class="inventory-table" style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12.5px;">
@@ -356,7 +405,7 @@
                                 <?php $isSeller = $tx->provider_business_id === $business->id; ?>
                                 <tr style="border-bottom:1px solid #eef4ed;">
                                     <td style="padding:10px 14px;font-family:monospace;"><?= e($tx->resolvedOrderReference()) ?></td>
-                                    <td style="padding:10px 14px;"><?= e($tx->listing?->title ?: 'Material') ?></td>
+                                    <td style="padding:10px 14px;"><?= e($tx->item_name ?: ($tx->listing?->title ?: 'Material')) ?></td>
                                     <td style="padding:10px 14px;"><?= $isSeller ? 'Seller' : 'Buyer' ?></td>
                                     <td style="padding:10px 14px;"><?= e(($isSeller ? $tx->requester : $tx->provider)?->business_name ?: 'Partner') ?></td>
                                     <td style="padding:10px 14px;font-weight:700;">RM <?= number_format((float)$tx->total_price, 2) ?></td>
@@ -409,7 +458,9 @@
         const custom = periodSelect.value === 'custom';
         for (const label of document.querySelectorAll('[data-custom-date]')) {
             label.hidden = !custom;
-            label.querySelector('input').disabled = !custom;
+            const input = label.querySelector('input');
+            input.disabled = !custom;
+            input.required = custom;
         }
     }
     periodSelect.addEventListener('change', updateCustomDates);
@@ -420,30 +471,29 @@
         for (const canvas of document.querySelectorAll('canvas[data-series]')) {
             const type = canvas.dataset.chartType;
             const series = JSON.parse(canvas.dataset.series);
-            const labels = Object.keys(series);
+            const isTrend = type === 'line';
+            const labels = Object.keys(isTrend ? Object.values(series)[0] : series);
             const values = Object.values(series);
             const colors = JSON.parse(canvas.dataset.colors);
             const hasSideLegend = Object.keys(colors).length > 0;
-            const isTrend = type === 'line';
             const isBar = type === 'bar';
             const isCurrency = canvas.dataset.metric === 'RM';
-            const color = canvas.closest('section').getAttribute('aria-labelledby') === 'purchase-trend' ? palette[1] : palette[0];
             const formatValue = value => isCurrency
                 ? new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(value)
                 : value;
-            const datasets = [{
+            const datasets = isTrend ? Object.entries(series).map(([label, points], index) => ({
+                label,
+                data: Object.values(points),
+                borderColor: palette[index],
+                backgroundColor: palette[index],
+                borderDash: index === 1 ? [6, 3] : [],
+                pointStyle: index === 1 ? 'rect' : 'circle',
+                pointRadius: labels.length > 10 ? 1 : 3,
+                pointHoverRadius: 5
+            })) : [{
                 label: canvas.dataset.metric,
                 data: values,
-                ...(isTrend ? {
-                    borderColor: color,
-                    backgroundColor: color + '18',
-                    fill: 'origin',
-                    pointRadius: labels.length > 10 ? 1 : 3,
-                    pointHoverRadius: 5,
-                    tension: 0.2
-                } : {
-                    backgroundColor: labels.map((label, index) => colors[label] ?? palette[index % palette.length])
-                })
+                backgroundColor: labels.map((label, index) => colors[label] ?? palette[index % palette.length])
             }];
             const chart = new Chart(canvas, {
                 type,
@@ -459,8 +509,8 @@
                         y: { beginAtZero: true, ticks: isCurrency ? { callback: formatValue } : { precision: 0 } }
                     } : isBar ? { x: { beginAtZero: true, ticks: { precision: 0 } } } : undefined,
                     plugins: {
-                        legend: { display: !isTrend && !hasSideLegend, position: 'bottom' },
-                        tooltip: isTrend ? { callbacks: { label: context => formatValue(context.parsed.y) } } : undefined
+                        legend: { display: !hasSideLegend, position: 'bottom' },
+                        tooltip: isTrend ? { callbacks: { label: context => context.dataset.label + ' · ' + formatValue(context.parsed.y) } } : undefined
                     }
                 }
             });

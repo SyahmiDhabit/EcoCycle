@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\MarketplaceReview;
 use App\Models\MaterialExchange;
 use App\Models\User;
 use App\Models\WasteRecord;
@@ -33,7 +34,7 @@ class ReportController extends Controller
         [$start, $end] = match ($period) {
             'day' => [$today, $today],
             'month' => [$today->startOfMonth(), $today],
-            'quarter' => [$today->startOfMonth()->subMonths(2), $today],
+            'quarter' => [$today->subMonthsNoOverflow(3), $today],
             'year' => [$today->startOfYear(), $today],
             'custom' => [CarbonImmutable::parse($filters->validated()['from']), CarbonImmutable::parse($filters->validated()['to'])],
             default => [$today->startOfWeek(), $today],
@@ -87,6 +88,13 @@ class ReportController extends Controller
             ->where('recorded_at', '>=', $start)->where('recorded_at', '<', $until)
             ->latest('recorded_at')->orderByDesc('id')->get();
 
+        $receivedRatings = MarketplaceReview::where('seller_business_id', $business->id)
+            ->where('created_at', '>=', $start)->where('created_at', '<', $until)
+            ->pluck('rating')->countBy();
+
+        $recentTransactionIds = $periodOrders->where('provider_business_id', $business->id)->take(8)->pluck('id')
+            ->merge($periodOrders->where('requester_business_id', $business->id)->take(8)->pluck('id'));
+
         return view('business.reports.index', [
             'business' => $business,
             'period' => $period,
@@ -102,14 +110,13 @@ class ReportController extends Controller
             'totalSalesOrders' => $paidSales->count(),
             'totalPurchasesSpent' => (float) $paidPurchases->sum('total_price'),
             'totalPurchasesOrders' => $paidPurchases->count(),
-            'reusableMaterials' => $reusability['Reusable'],
             'listingCategories' => $listingCategories,
             'reusability' => $reusability,
-            'wasteCategories' => $wasteRecords->countBy(fn (WasteRecord $record): string => trim((string) $record->waste_type) ?: 'Uncategorised')->sortDesc()->all(),
+            'receivedRatings' => $receivedRatings,
             'wasteStatuses' => $wasteRecords->countBy(fn (WasteRecord $record): string => $record->status
                 ? ucfirst(str_replace('_', ' ', $record->status))
                 : 'Unspecified')->sortDesc()->all(),
-            'recentTransactions' => $periodOrders->take(8)->load(['listing', 'provider', 'requester']),
+            'recentTransactions' => $periodOrders->whereIn('id', $recentTransactionIds)->load(['listing', 'provider', 'requester']),
             'recentWasteLogs' => $wasteRecords->take(8),
         ]);
     }

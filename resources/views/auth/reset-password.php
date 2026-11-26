@@ -17,6 +17,9 @@ $broker = $broker ?? 'business';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/auth/login.css">
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="signin-page signin-login">
     <main class="signin-shell">
@@ -72,6 +75,5 @@ $broker = $broker ?? 'business';
             <p class="signin-register-link"><a href="<?= e(route('login')) ?>"><span aria-hidden="true">&#8592;</span> Back to sign in</a></p>
         </section>
     </main>
-<script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

@@ -43,6 +43,9 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
     <link rel="stylesheet" href="/css/auth/register.css">
 
     <link rel="stylesheet" href="/css/auth/page-header.css">
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="signup-page">
     <?php $backHref = "/"; include resource_path("views/components/auth-page-header.php"); ?>
@@ -326,6 +329,5 @@ $industries = ['Agriculture & food', 'Construction & building materials', 'Furni
     }
     </script>
     <script src="/js/auth/signup.js" defer></script>
-    <script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

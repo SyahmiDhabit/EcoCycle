@@ -311,6 +311,14 @@ class BusinessFullSuiteTest extends TestCase
             ]);
         }
 
+        \App\Models\MarketplaceReview::create([
+            'item_id' => $listing->id,
+            'seller_business_id' => $business->id,
+            'reviewer_business_id' => $partner->id,
+            'rating' => 5,
+            'comment' => 'Material arrived in good condition.',
+        ]);
+
         foreach (['kg' => 'in_storage', 'litre' => 'recycled'] as $unit => $status) {
             WasteRecord::create([
                 'business_id' => $business->id,
@@ -337,13 +345,17 @@ class BusinessFullSuiteTest extends TestCase
             ->assertViewHas('totalSalesRevenue', 125.0)
             ->assertViewHas('salesTrend', fn (array $trend): bool => $trend['25 Nov 2026'] === 125.0 && $trend['24 Nov 2026'] === 0.0)
             ->assertViewHas('purchaseTrend', fn (array $trend): bool => $trend['25 Nov 2026'] === 0.0 && $trend['24 Nov 2026'] === 0.0)
-            ->assertSee('Sales revenue over time')
-            ->assertSee('Total purchases over time')
+            ->assertSee('Sales and purchases over time')
+            ->assertSee('Total Purchases')
+            ->assertDontSee('Reusable Materials</small>', false)
+            ->assertDontSee('Non-Reusable Materials</small>', false)
             ->assertViewHas('period', 'week')
-            ->assertDontSee('report-period-description')
+            ->assertSee('Reporting period:')
             ->assertViewHas('totalSalesOrders', 1)
             ->assertViewHas('totalPurchasesSpent', 0.0)
-            ->assertViewHas('wasteCategories', ['Mixed waste' => 2])
+            ->assertViewHas('receivedRatings', fn ($counts): bool => $counts->all() === [5 => 1])
+            ->assertSee('Buyer ratings received')
+            ->assertDontSee('Waste records by category')
             ->assertViewHas('wasteStatuses', fn (array $statuses): bool => $statuses['In storage'] === 1 && $statuses['Recycled'] === 1)
             ->assertSee('Waste records by status')
             ->assertDontSee('Other business record')
@@ -362,12 +374,19 @@ class BusinessFullSuiteTest extends TestCase
             ->assertViewHas('trendInterval', 'hour')
             ->assertViewHas('salesTrend', fn (array $trend): bool => $trend['00:00'] === 125.0 && count($trend) === 24);
 
+        foreach (['month' => '2026-11-01', 'quarter' => '2026-08-25', 'year' => '2026-01-01'] as $period => $start) {
+            $this->get(route('business.reports', ['period' => $period]))->assertOk()
+                ->assertViewHas('start', fn ($date): bool => $date->toDateString() === $start)
+                ->assertViewHas('totalSalesRevenue', 125.0)
+                ->assertViewHas('receivedRatings', fn ($counts): bool => $counts->get(5) === 1);
+        }
+
         $this->get('/business/reports?period=custom&from=2026-10-01&to=2026-10-31')
             ->assertOk()
             ->assertViewHas('totalItems', 0)
             ->assertViewHas('totalTransactions', 0)
             ->assertViewHas('totalSalesRevenue', 0.0)
-            ->assertViewHas('wasteCategories', [])
+            ->assertViewHas('receivedRatings', fn ($counts): bool => $counts->isEmpty())
             ->assertSee('No records for this period.');
 
         $this->get('/business/reports?period=custom&from=2026-11-26&to=2026-11-25')
@@ -421,6 +440,28 @@ class BusinessFullSuiteTest extends TestCase
         $this->get(route('business.transactions'))
             ->assertOk()->assertSee('Sold Offcuts')->assertSee('Purchased Paper')
             ->assertViewHas('pendingPaymentsCount', 1)->assertViewHas('completedExchangesCount', 1);
+    }
+
+    public function test_language_preferences_follow_the_business_and_public_pages(): void
+    {
+        $business = $this->createApprovedBusiness();
+        $profile = route('business.profile');
+
+        $this->actingAs($business)->get($profile)->assertOk()
+            ->assertSee('data-theme-toggle', false)
+            ->assertDontSee('class="topbar-profile', false);
+
+        $this->from($profile)->post(route('language.update'), ['locale' => 'ms'])
+            ->assertRedirect($profile)
+            ->assertSessionHas('locale', 'ms')
+            ->assertCookie('ecocycle_locale', 'ms');
+
+        $this->get(route('home'))->assertOk()->assertSee('<html lang="ms">', false);
+        $this->get($profile)->assertOk()->assertSee('<html lang="ms">', false);
+
+        $this->app['session']->forget('locale');
+        $this->withCookie('ecocycle_locale', 'ms')->get(route('home'))->assertOk()
+            ->assertSee('<html lang="ms">', false);
     }
 
     public function test_profile_update_and_password_change(): void
@@ -499,7 +540,8 @@ class BusinessFullSuiteTest extends TestCase
         $response->assertDontSee('href="/business/orders"', false);
         $response->assertSee('href="/business/transactions"', false);
         $response->assertSee('href="/business/invoices"', false);
-        $response->assertSee('href="/business/reviews"', false);
+        $response->assertSee('href="/business/reviews?tab=received"', false);
+        $response->assertSee('href="/business/reviews?tab=submitted"', false);
         $response->assertSee('href="/business/reports"', false);
         $response->assertSee(route('business.profile'), false);
         $response->assertSee('<span>Sign Out</span>', false);

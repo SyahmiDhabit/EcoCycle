@@ -3,5 +3,8 @@
         <span><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
         EcoCycle
     </a>
-    <a class="auth-page-back" href="<?= e($backHref) ?>">Back</a>
+    <div class="auth-header-actions">
+        <?php include resource_path('views/components/site-preferences.php'); ?>
+        <a class="auth-page-back" href="<?= e($backHref) ?>">Back</a>
+    </div>
 </header>

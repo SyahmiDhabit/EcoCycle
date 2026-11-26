@@ -28,7 +28,7 @@ $googleMapsApiKey = trim((string) ($googleMapsApiKey ?? ''));
 $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="<?= e(app()->getLocale()) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -684,6 +684,9 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
         }
         #helper-generate-waste-report:disabled { opacity: .55; cursor: not-allowed; }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="business-dashboard-page">
     <?php include resource_path('views/business/partials/topbar.php'); ?>

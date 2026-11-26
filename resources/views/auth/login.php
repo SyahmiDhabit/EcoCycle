@@ -21,6 +21,9 @@ $passwordError = $errors->first('password');
     <link rel="stylesheet" href="/css/auth/login.css">
 
     <link rel="stylesheet" href="/css/auth/page-header.css">
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="signin-page signin-login">
     <?php $backHref = "/"; include resource_path("views/components/auth-page-header.php"); ?>
@@ -81,7 +84,6 @@ $passwordError = $errors->first('password');
                 <p class="signin-register-link">New to EcoCycle? <a href="/register">Register your business <span aria-hidden="true">&#8594;</span></a></p>
         </section>
     </main>
-<script src="/js/language-switcher.js" defer></script>
 <script>
     (() => {
         const password = document.getElementById('password');

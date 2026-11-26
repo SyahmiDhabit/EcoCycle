@@ -125,6 +125,9 @@ $hasFormErrors = $errors->any();
             }
         }
     </style>
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="verification-page">
 
@@ -136,6 +139,7 @@ $hasFormErrors = $errors->any();
         </a>
 
         <div class="pending-account">
+            <?php include resource_path('views/components/site-preferences.php'); ?>
             <form method="POST" action="<?= route('logout') ?>" style="margin:0;">
                 <?= csrf_field() ?>
                 <button type="submit" class="outline-button pending-logout" title="Sign out of EcoCycle">
@@ -538,6 +542,5 @@ function toggleEditForm(show) {
     }
 }
 </script>
-<script src="/js/language-switcher.js" defer></script>
 </body>
 </html>

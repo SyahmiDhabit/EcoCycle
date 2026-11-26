@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/main/mainpage.css">
+    <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
+    <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
+    <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body>
 <header class="site-header" id="top">
@@ -31,6 +34,7 @@
             <a class="button button-dark" href="/register">Register your business</a>
         <?php endif; ?>
     </div>
+    <?php include resource_path('views/components/site-preferences.php'); ?>
     <button class="menu-toggle" aria-label="Open navigation" onclick="document.body.classList.toggle('menu-open')">☰</button>
 </header>
 

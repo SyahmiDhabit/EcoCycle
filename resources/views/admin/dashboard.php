@@ -160,13 +160,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
     </div>
 </dialog>
 <main class="admin-content admin-workspace" id="admin-overview">
-    <div class="admin-title">
-        <div>
-            <p class="admin-eyebrow">PLATFORM ADMINISTRATION</p>
-            <h1>Business applications &amp; directory review</h1>
-            <p class="admin-muted">Review submitted company profiles, credentials, and SSM documents before enabling business access.</p>
-        </div>
-    </div>
+
 
     <?php if (session('status')) { ?>
         <div class="admin-success" role="status"><?= e(session('status')) ?></div>
@@ -175,20 +169,49 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
         <div class="admin-alert" role="alert"><?= e($errors->first()) ?></div>
     <?php } ?>
 
-    <section class="admin-stats" aria-label="Application totals">
-        <article>
-            <span>Awaiting review</span>
-            <strong><?= $pendingCount ?></strong>
-        </article>
-        <article>
-            <span>Approved businesses</span>
-            <strong><?= $approvedCount ?></strong>
-        </article>
-        <article>
-            <span>Changes requested</span>
-            <strong><?= $rejectedCount ?></strong>
-        </article>
-    </section>
+    <div class="admin-dashboard-overview">
+        <header class="admin-title admin-welcome">
+            <div>
+                <h1>Welcome, Administrator</h1>
+                <p class="admin-muted">Track business registrations and review applications that need your attention.</p>
+            </div>
+            <a class="admin-primary" href="#admin-applications">View all applications</a>
+        </header>
+        <section class="admin-stats" aria-label="Application totals">
+            <article>
+                <span>Awaiting review</span>
+                <strong><?= $pendingCount ?></strong>
+            </article>
+            <article>
+                <span>Approved businesses</span>
+                <strong><?= $approvedCount ?></strong>
+            </article>
+            <article>
+                <span>Changes requested</span>
+                <strong><?= $rejectedCount ?></strong>
+            </article>
+        </section>
+
+        <section class="admin-pending-panel" aria-labelledby="admin-pending-title">
+            <h2 id="admin-pending-title">Latest registrations awaiting review</h2>
+            <?php $latestPending = $businesses->where('account_status', 'pending')->take(5); ?>
+            <?php if ($latestPending->isEmpty()) { ?>
+                <p class="admin-pending-empty">No registrations are awaiting review.</p>
+            <?php } else { ?>
+                <ul>
+                    <?php foreach ($latestPending as $pendingBusiness) { ?>
+                        <li>
+                            <div>
+                                <strong><?= e($pendingBusiness->business_name ?: $pendingBusiness->name) ?></strong>
+                                <span><?= e($pendingBusiness->created_at?->timezone('Asia/Kuala_Lumpur')->format('j M Y, g:i A')) ?> MYT</span>
+                            </div>
+                            <a class="admin-outline" href="#business-card-<?= $pendingBusiness->id ?>">Review application</a>
+                        </li>
+                    <?php } ?>
+                </ul>
+            <?php } ?>
+        </section>
+    </div>
 
     <section class="application-list" id="admin-applications">
         <h2>Submitted applications <span><?= $businesses->count() ?></span></h2>
@@ -278,11 +301,11 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                 </dl>
 
                 <div class="document-links">
-                    <a href="<?= e(route('admin.business.document', [$business, 'certificate'])) ?>">
+                    <a href="<?= e(route('admin.business.document', [$business, 'certificate'])) ?>" target="_blank" rel="noopener">
                         <img src="/images/figma/verification/file-check.svg" alt="">
                         SSM registration certificate
                     </a>
-                    <a href="<?= e(route('admin.business.document', [$business, 'profile'])) ?>">
+                    <a href="<?= e(route('admin.business.document', [$business, 'profile'])) ?>" target="_blank" rel="noopener">
                         <img src="/images/figma/verification/file-check.svg" alt="">
                         SSM company profile
                     </a>
@@ -382,10 +405,10 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
             <div style="display:flex;flex-direction:column;gap:8px;">
                 <strong style="font-size:12px;color:#123321;">Submitted SSM Documentation</strong>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <a id="modal-cert-link" href="#" class="admin-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;">
+                    <a id="modal-cert-link" href="#" target="_blank" rel="noopener" class="admin-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;">
                         <span>📄 Download SSM Certificate</span>
                     </a>
-                    <a id="modal-profile-link" href="#" class="admin-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;">
+                    <a id="modal-profile-link" href="#" target="_blank" rel="noopener" class="admin-outline" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:6px 12px;">
                         <span>📊 Download SSM Profile</span>
                     </a>
                 </div>

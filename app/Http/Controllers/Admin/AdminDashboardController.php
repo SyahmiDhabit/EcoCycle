@@ -164,6 +164,13 @@ class AdminDashboardController extends Controller
         /** @var FilesystemAdapter $disk */
         $disk = Storage::disk('local');
 
-        return $disk->download($path);
+        $mimeType = $disk->mimeType($path);
+        $canPreview = in_array($mimeType, ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'], true);
+
+        return $disk->response($path, null, [
+            'Content-Type' => $canPreview ? $mimeType : 'application/octet-stream',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ], $canPreview ? 'inline' : 'attachment');
     }
 }

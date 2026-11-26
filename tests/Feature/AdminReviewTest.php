@@ -407,4 +407,34 @@ class AdminReviewTest extends TestCase
                 && $mail->envelope()->subject === 'Update regarding your EcoCycle business registration: Application Approved';
         });
     }
+
+    public function test_admin_can_preview_both_ssm_documents(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+
+        $admin = Administrator::create([
+            'name' => 'Document Reviewer',
+            'email' => 'document-reviewer@ecocycle.test',
+            'password' => 'secret123',
+        ]);
+
+        $business = User::factory()->create([
+            'ssm_certificate_path' => 'ssm/certificate.pdf',
+            'ssm_profile_path' => 'ssm/profile.pdf',
+        ]);
+
+        $this->getJson(route('admin.business.document', [$business, 'certificate']))->assertUnauthorized();
+
+        $disk = \Illuminate\Support\Facades\Storage::disk('local');
+
+        foreach (['certificate', 'profile'] as $document) {
+            $disk->put("ssm/{$document}.pdf", "%PDF-1.4\n");
+            $this->actingAs($admin, 'admin')
+                ->get(route('admin.business.document', [$business, $document]))
+                ->assertOk()
+                ->assertHeader('Content-Type', 'application/pdf')
+                ->assertHeader('Content-Disposition', "inline; filename={$document}.pdf");
+        }
+    }
+
 }

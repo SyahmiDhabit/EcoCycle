@@ -1036,8 +1036,11 @@ $activeNav = 'inventory';
                     <div id="inventory-catalog-container" class="inventory-catalog-grid" style="display: <?= $viewMode === 'catalog' ? 'grid' : 'none' ?>;">
                         <?php foreach ($items as $item): ?>
                             <div class="catalog-card">
-                                <?php $catalogPhotos = $item->getAllImages(); ?>
+                                <?php $catalogPhotos = $item->getAllImages(); $catalogSoldOut = $item->isPermanentlySoldOut(); ?>
                                 <div class="catalog-card-header" data-photos="<?= e(json_encode($catalogPhotos, JSON_INVALID_UTF8_SUBSTITUTE)) ?>" data-photo-index="0">
+                                    <?php if ($catalogSoldOut): ?>
+                                        <span class="listing-sold-out-ribbon">Sold Out</span>
+                                    <?php endif; ?>
                                     <a href="<?= route('business.inventory.edit', $item) ?>" class="catalog-photo-link" title="Open Edit Inventory Details">
                                         <?php if ($catalogPhotos !== []): ?>
                                             <img src="<?= e($catalogPhotos[0]) ?>" alt="<?= e($item->name) ?>" class="catalog-card-img" loading="lazy">
@@ -1053,11 +1056,9 @@ $activeNav = 'inventory';
                                                 <span class="badge-not-reusable" style="font-size:11px;padding:3px 8px;">Non-Reusable</span>
                                             <?php endif; ?>
 
-                                            <?php if ($item->isPermanentlySoldOut()): ?>
-                                                <span class="status status-out-of-stock" style="font-size:11px;background:#fee2e2;color:#991b1b;border-color:#fca5a5;">Sold Out</span>
-                                            <?php elseif ($item->status === 'out_of_stock' || (float)$item->quantity <= 0): ?>
+                                            <?php if (! $catalogSoldOut && ($item->status === 'out_of_stock' || (float) $item->quantity <= 0)): ?>
                                                 <span class="status status-out-of-stock" style="font-size:11px;">Out of stock</span>
-                                            <?php else: ?>
+                                            <?php elseif (! $catalogSoldOut): ?>
                                                 <span class="status status-in-stock" style="font-size:11px;">In stock</span>
                                             <?php endif; ?>
                                         </div>

@@ -120,23 +120,6 @@ $activeNav = $myListingsOnly ? 'listings' : 'marketplace';
             height: 100%;
             object-fit: cover;
         }
-        .listing-sold-out-ribbon {
-            position: absolute;
-            top: 25px;
-            right: -37px;
-            z-index: 3;
-            width: 152px;
-            padding: 4px 0;
-            transform: rotate(45deg);
-            background: #37443d;
-            color: #ffffff;
-            text-align: center;
-            text-transform: uppercase;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            pointer-events: none;
-        }
         .listing-img-nav-btn {
             position: absolute;
             top: 50%;

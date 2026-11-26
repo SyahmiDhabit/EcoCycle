@@ -27,17 +27,24 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/admin/review.css">
+    <link rel="stylesheet" href="/css/admin/review.css?v=<?= filemtime(public_path('css/admin/review.css')) ?>">
     <link rel="stylesheet" href="/css/site-preferences.css?v=<?= filemtime(public_path('css/site-preferences.css')) ?>">
     <script src="/js/site-theme.js?v=<?= filemtime(public_path('js/site-theme.js')) ?>"></script>
     <script src="/js/language-switcher.js?v=<?= filemtime(public_path('js/language-switcher.js')) ?>" defer></script>
 </head>
 <body class="admin-page">
-<header class="admin-header">
-    <a class="admin-brand" href="/" aria-label="EcoCycle home">
-        <span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
-        <span>EcoCycle</span>
-    </a>
+<header class="admin-header admin-workspace-header">
+    <div class="admin-header-start">
+        <button type="button" class="admin-menu-button" id="admin-menu-toggle" aria-label="Open admin menu" aria-controls="admin-navigation" aria-haspopup="dialog">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+        <a class="admin-brand" href="/admin/dashboard" aria-label="EcoCycle admin dashboard">
+            <span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+            <span>EcoCycle</span>
+        </a>
+    </div>
     <div class="admin-header-actions">
         <!-- Admin In-System Notifications Bell -->
         <div class="admin-notif-wrap" id="admin-notif-container">
@@ -101,14 +108,29 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
         </div>
 
         <?php include resource_path('views/components/site-preferences.php'); ?>
-        <span>Administrator · <?= e($adminName) ?></span>
+    </div>
+</header>
+<dialog class="admin-navigation" id="admin-navigation" aria-labelledby="admin-navigation-title">
+    <div class="admin-navigation-heading">
+        <strong id="admin-navigation-title">Admin workspace</strong>
+        <form method="dialog">
+            <button type="submit" class="admin-menu-button" aria-label="Close admin menu" autofocus>&times;</button>
+        </form>
+    </div>
+    <nav aria-labelledby="admin-navigation-title">
+        <a href="#admin-overview">Dashboard overview</a>
+        <a href="#admin-applications">Business applications</a>
+        <button type="button" id="admin-menu-notifications">Notifications</button>
+    </nav>
+    <div class="admin-navigation-account">
+        <p><span>Administrator</span> · <?= e($adminName) ?></p>
         <form method="POST" action="<?= e(route('logout')) ?>">
             <?= csrf_field() ?>
             <button class="admin-outline" type="submit">Sign out</button>
         </form>
     </div>
-</header>
-<main class="admin-content">
+</dialog>
+<main class="admin-content admin-workspace" id="admin-overview">
     <div class="admin-title">
         <div>
             <p class="admin-eyebrow">PLATFORM ADMINISTRATION</p>
@@ -139,7 +161,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
         </article>
     </section>
 
-    <section class="application-list">
+    <section class="application-list" id="admin-applications">
         <h2>Submitted applications <span><?= $businesses->count() ?></span></h2>
         <?php if ($businesses->isEmpty()) { ?>
             <p class="admin-empty">No business applications have been submitted yet.</p>
@@ -352,6 +374,22 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
 </div>
 
 <script>
+const adminNavigation = document.getElementById('admin-navigation');
+const adminMenuToggle = document.getElementById('admin-menu-toggle');
+
+adminMenuToggle.addEventListener('click', () => adminNavigation.showModal());
+adminNavigation.addEventListener('click', (event) => {
+    if (event.target === adminNavigation || event.target.closest('nav a')) {
+        adminNavigation.close();
+    }
+});
+document.getElementById('admin-menu-notifications').addEventListener('click', (event) => {
+    event.stopPropagation();
+    adminNavigation.close();
+    const notificationToggle = document.getElementById('admin-notif-toggle');
+    notificationToggle.focus();
+    document.getElementById('admin-notif-dropdown').classList.add('show');
+});
 function openBusinessModal(biz) {
     document.getElementById('modal-biz-name').textContent = biz.business_name || 'Business';
     document.getElementById('modal-biz-username').textContent = '@' + (biz.name || '');

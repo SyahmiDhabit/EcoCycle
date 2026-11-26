@@ -109,6 +109,8 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::get('/business/helper', [EcoCycleHelperController::class, 'index'])->name('business.helper');
     Route::post('/business/helper/chat', [EcoCycleHelperController::class, 'chat'])->name('business.helper.chat');
     Route::get('/business/helper/analyze/{item}', [EcoCycleHelperController::class, 'analyzeItem'])->name('business.helper.analyze');
+    Route::post('/business/helper/reanalyze/{item}', [EcoCycleHelperController::class, 'reanalyzeItem'])->name('business.helper.reanalyze');
+    Route::post('/business/helper/waste-suggestion/{item}', [EcoCycleHelperController::class, 'suggestFromWasteRecords'])->name('business.helper.waste-suggestion');
     Route::post('/business/helper/nearby-centres', [EcoCycleHelperController::class, 'nearbyCentres'])->name('business.helper.nearby');
 
     Route::post('/business/notifications/{notification}/read', [BusinessNotificationController::class, 'markAsRead'])->whereNumber('notification')->name('business.notifications.read');

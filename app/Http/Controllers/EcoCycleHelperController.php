@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Item;
 use App\Models\User;
+use App\Models\WasteRecord;
 use App\Services\EcoCycleHelperService;
 use App\Services\RecyclingCentreLocatorService;
 use Illuminate\Http\JsonResponse;
@@ -159,6 +160,62 @@ class EcoCycleHelperController extends Controller
             'nearby_centres' => $nearby,
             'verified_match_found' => ! empty($nearby),
         ]);
+    }
+
+    public function reanalyzeItem(Item $item, EcoCycleHelperService $helper): RedirectResponse
+    {
+        $this->checkApproved();
+        abort_unless($item->business_id === Auth::id(), 403);
+        abort_unless($item->reusability === 'not_reusable', 422);
+
+        $redirect = redirect()->route('business.helper', ['item_id' => $item->id]);
+
+        try {
+            $analysis = $helper->classifyMaterial(
+                $item->name ?: $item->title,
+                (string) $item->description,
+                (float) $item->quantity,
+                $item->unit,
+                $item->getAllImages(),
+                $item->condition ?? 'Used'
+            );
+        } catch (\RuntimeException $error) {
+            return $redirect->withErrors(['analysis' => $error->getMessage()]);
+        }
+
+        if (($analysis['ai_source'] ?? null) !== 'Google Gemini AI') {
+            return $redirect->withErrors(['analysis' => 'Gemini photo analysis is unavailable. The existing guidance is still saved.']);
+        }
+
+        $analysis['strategy'] = $analysis['disposal_method'];
+        $analysis['repurpose_ideas'] = $analysis['repurposing_ideas'];
+        $item->update(['ai_analysis' => $analysis]);
+
+        return $redirect->with('status', 'Photo analysis completed. The updated guidance is saved.');
+    }
+
+    public function suggestFromWasteRecords(Item $item): RedirectResponse
+    {
+        $this->checkApproved();
+        abort_unless($item->business_id === Auth::id(), 403);
+        abort_unless($item->reusability === 'not_reusable', 422);
+
+        $records = WasteRecord::where('business_id', $item->business_id);
+        $latestRecord = (clone $records)->where('inventory_item_id', $item->id)
+            ->latest('recorded_at')->latest('id')->first()
+            ?? $records->where('waste_type', $item->category)
+                ->latest('recorded_at')->latest('id')->first();
+
+        $suggestion = match ($latestRecord?->status) {
+            'in_storage' => 'Confirm which facility accepts this material before scheduling collection.',
+            'scheduled_pickup' => 'Verify the scheduled pickup and record the handover once it happens.',
+            'sent_to_facility' => 'Ask the receiving facility to confirm the recovery outcome and record it in Waste Monitoring.',
+            'recycled', 'composted' => 'Review the previously recorded recovery method for this material and confirm whether it suits the current batch.',
+            default => 'No usable waste record was found for this item or category. Log the material in Waste Monitoring to build a history.',
+        };
+
+        return redirect()->route('business.helper', ['item_id' => $item->id])
+            ->with('waste_suggestion', ['item_id' => $item->id, 'text' => $suggestion]);
     }
 
     private function closestFacilities(array $coordinates, ?Item $item, ?array $analysis): array

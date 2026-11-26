@@ -10,7 +10,7 @@ $business = $business ?? Auth::guard()->user();
 $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Business');
 
 $workspaceActive = $activeNav === 'overview';
-$inventoryActive = in_array($activeNav, ['inventory', 'helper'], true);
+$inventoryActive = in_array($activeNav, ['inventory', 'helper', 'waste'], true);
 $marketplaceActive = in_array($activeNav, ['marketplace', 'purchases', 'sales', 'listings'], true);
 $transactionsActive = in_array($activeNav, ['transactions', 'invoices', 'orders'], true);
 $reviewsActive = $activeNav === 'reviews';
@@ -88,6 +88,9 @@ $accountActive = in_array($activeNav, ['reports', 'profile'], true);
                     </a>
                     <a href="/business/helper" class="sidebar-sublink <?= $activeNav === 'helper' ? 'active' : '' ?>" title="EcoCycle Helper & Recycling Centre Locator">
                         <span>EcoCycle Helper</span>
+                    </a>
+                    <a href="<?= e(route('business.waste.index')) ?>" class="sidebar-sublink <?= $activeNav === 'waste' ? 'active' : '' ?>">
+                        <span>Waste Monitoring</span>
                     </a>
                 </div>
             </div>

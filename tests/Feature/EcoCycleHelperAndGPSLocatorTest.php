@@ -93,6 +93,65 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_helper_reanalyzes_saved_photos_and_logs_waste_separately(): void
+    {
+        $business = $this->createApprovedBusiness();
+        $photo = UploadedFile::fake()->image('paper.jpg');
+        Storage::disk('public')->putFileAs('inventory-images', $photo, 'paper.jpg');
+        $item = Item::create([
+            'business_id' => $business->id,
+            'name' => 'Paper Offcuts',
+            'description' => 'Used paper offcuts.',
+            'category' => 'Paper & Cardboard',
+            'quantity' => 17,
+            'unit' => 'kg',
+            'reusability' => 'not_reusable',
+            'condition' => 'Used',
+            'status' => 'in_stock',
+            'image_1' => '/inventory-images/paper.jpg',
+            'ai_analysis' => ['disposal_method' => 'Old guidance'],
+        ]);
+
+        config()->set('services.gemini.api_key', 'test-key');
+        Http::fake(['https://generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => json_encode([
+                'suggested_category' => 'Paper & Cardboard',
+                'suggested_reusability' => 'not_reusable',
+                'disposal_method' => 'Updated paper guidance',
+            ])]]]]]], 200)
+            ->push([], 429)]);
+
+        $page = route('business.helper', ['item_id' => $item->id]);
+        $this->actingAs($business)->get($page)->assertOk()
+            ->assertSee('Reanalyze')
+            ->assertSee('Suggest from Waste Records');
+        $this->post(route('business.helper.reanalyze', $item))->assertRedirect($page);
+        $this->assertSame('Updated paper guidance', $item->fresh()->ai_analysis['disposal_method']);
+        $this->get($page)->assertOk()
+            ->assertSee('Alternative Recovery & Repurposing Options')
+            ->assertSee('Ask a specialist recovery facility whether it can accept this material.');
+        Http::assertSent(fn ($request) => isset($request->data()['contents'][0]['parts'][1]['inline_data']));
+
+        $this->post(route('business.helper.reanalyze', $item))->assertSessionHasErrors('analysis');
+        $this->assertSame('Updated paper guidance', $item->fresh()->ai_analysis['disposal_method']);
+        $this->assertDatabaseMissing('waste_record', ['inventory_item_id' => $item->id]);
+
+        $log = route('business.waste.from-inventory', $item);
+        $this->post($log, ['log_only' => true])->assertRedirect(route('business.waste.index'));
+        $this->post($log, ['log_only' => true])->assertRedirect(route('business.waste.index'));
+        $suggestion = route('business.helper.waste-suggestion', $item);
+        $this->post($suggestion)->assertRedirect($page);
+        $this->get($page)->assertOk()
+            ->assertSee('Confirm which facility accepts this material before scheduling collection.');
+        $this->assertDatabaseCount('waste_record', 1);
+        $this->assertDatabaseHas('waste_record', [
+            'inventory_item_id' => $item->id,
+            'status' => 'in_storage',
+            'is_diverted' => false,
+        ]);
+    }
+
+
     public function test_ecocycle_helper_chat_endpoint_provides_ai_circular_responses(): void
     {
         $business = $this->createApprovedBusiness();

@@ -10,9 +10,37 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
+        .waste-workspace {
+            padding-inline: max(clamp(20px, 4vw, 48px), calc((100% - 1180px) / 2));
+        }
+        .waste-workspace .page-header {
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            padding: 0;
+            border: 0;
+        }
+        .waste-workspace .page-header h1 {
+            color: #14532d;
+            font-size: clamp(26px, 3vw, 40px);
+        }
+        .waste-workspace :is(.btn-search, .btn-update-status, .btn-save, .btn-cancel) {
+            border-radius: 6px;
+        }
+        .waste-workspace :is(.btn-search, .btn-save) {
+            background: #176b40;
+            border-color: #176b40;
+        }
+        .waste-workspace :is(.btn-search, .btn-save):hover {
+            background: #145331;
+        }
+        .waste-workspace .directory-table th {
+            background: #eef5eb;
+            color: #14532d;
+        }
         .waste-kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
             gap: 16px;
             margin-bottom: 24px;
         }
@@ -24,6 +52,21 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+        }
+        .waste-kpi-card {
+            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
+        }
+        .waste-kpi-value + .waste-kpi-value {
+            border-top: 1px solid var(--card-border);
+            padding-top: 4px;
+        }
+        .waste-kpi-value small {
+            display: inline-block;
+            padding: 2px 7px;
+            background: #eef5eb;
+            color: #14532d;
+            font: 700 11px var(--font-main);
+            vertical-align: middle;
         }
         .waste-kpi-title {
             font-size: 11px;
@@ -69,7 +112,7 @@
         }
     </style>
 </head>
-<body class="business-dashboard-page">
+<body class="business-dashboard-page waste-page">
     <?php include resource_path('views/business/partials/topbar.php'); ?>
 
     <div class="dashboard-layout">
@@ -78,15 +121,15 @@
             include resource_path('views/business/partials/sidebar.php'); 
         ?>
 
-        <main class="dashboard-main-content">
-            <header class="section-header">
+        <main class="dashboard-main-content waste-workspace">
+            <header class="page-header">
                 <div class="section-header-title">
-                    <h2>Wastage Monitoring &amp; Scrap Recovery</h2>
+                    <h1>Wastage Monitoring &amp; Scrap Recovery</h1>
                     <p>Track, manage, and divert industrial scrap and non-reusable byproducts away from landfills toward licensed Malaysian circular recyclers.</p>
                 </div>
                 <div>
                     <button type="button" class="btn-search" onclick="openAddWasteModal()">
-                        <span>+ Log Scrap Entry</span>
+                        <span>Log Scrap Entry</span>
                     </button>
                 </div>
             </header>
@@ -98,26 +141,47 @@
             <?php endif; ?>
 
             <!-- KPI Metric Cards -->
+            <?php $formatWasteQuantity = static fn (float $quantity): string => rtrim(rtrim(number_format($quantity, 5), '0'), '.'); ?>
             <div class="waste-kpi-grid">
                 <div class="waste-kpi-card">
                     <span class="waste-kpi-title">Total Scrap Generated</span>
-                    <span class="waste-kpi-value"><?= number_format((float) $totalScrapGeneratedKg, 1) ?> <small style="font-size:14px;font-weight:600;">kg</small></span>
+                    <?php foreach ($totalsByUnit as $unit => $totals): ?>
+                        <span class="waste-kpi-value"><?= $formatWasteQuantity($totals['total']) ?> <small><?= e($unit) ?></small></span>
+                    <?php endforeach; ?>
+                    <?php if ($totalsByUnit === []): ?>
+                        <span class="waste-kpi-value">—</span>
+                    <?php endif; ?>
                     <span class="waste-kpi-sub">Total non-reusable industrial cutoffs recorded</span>
                 </div>
                 <div class="waste-kpi-card" style="border-left:3px solid #176b40;">
                     <span class="waste-kpi-title" style="color:#15803d;">Diverted to Recyclers</span>
-                    <span class="waste-kpi-value" style="color:#15803d;"><?= number_format((float) $totalDivertedKg, 1) ?> <small style="font-size:14px;font-weight:600;">kg</small></span>
-                    <span class="waste-kpi-sub">Processed through secondary recovery facilities</span>
+                    <?php foreach ($totalsByUnit as $unit => $totals): ?>
+                        <span class="waste-kpi-value" style="color:#15803d;"><?= $formatWasteQuantity($totals['diverted']) ?> <small><?= e($unit) ?></small></span>
+                    <?php endforeach; ?>
+                    <?php if ($totalsByUnit === []): ?>
+                        <span class="waste-kpi-value" style="color:#15803d;">—</span>
+                    <?php endif; ?>
+                    <span class="waste-kpi-sub">Sent to a facility, recycled, or composted</span>
                 </div>
                 <div class="waste-kpi-card" style="border-left:3px solid #a16207;">
                     <span class="waste-kpi-title" style="color:#a16207;">Pending In Storage / Pickup</span>
-                    <span class="waste-kpi-value" style="color:#a16207;"><?= number_format((float) $totalPendingKg, 1) ?> <small style="font-size:14px;font-weight:600;">kg</small></span>
-                    <span class="waste-kpi-sub">Awaiting scheduled circular logistics</span>
+                    <?php foreach ($totalsByUnit as $unit => $totals): ?>
+                        <span class="waste-kpi-value" style="color:#a16207;"><?= $formatWasteQuantity($totals['pending']) ?> <small><?= e($unit) ?></small></span>
+                    <?php endforeach; ?>
+                    <?php if ($totalsByUnit === []): ?>
+                        <span class="waste-kpi-value" style="color:#a16207;">—</span>
+                    <?php endif; ?>
+                    <span class="waste-kpi-sub">In storage or awaiting pickup, grouped by unit</span>
                 </div>
                 <div class="waste-kpi-card" style="border-left:3px solid #1d4ed8;">
                     <span class="waste-kpi-title" style="color:#1d4ed8;">Landfill Diversion Rate</span>
-                    <span class="waste-kpi-value" style="color:#1d4ed8;"><?= $diversionRate ?>%</span>
-                    <span class="waste-kpi-sub">Proportion of scrap successfully recovered</span>
+                    <?php foreach ($totalsByUnit as $unit => $totals): ?>
+                        <span class="waste-kpi-value" style="color:#1d4ed8;"><?= $totals['total'] > 0 ? round(100 * $totals['diverted'] / $totals['total'], 1).'%' : '—' ?> <small><?= e($unit) ?> basis</small></span>
+                    <?php endforeach; ?>
+                    <?php if ($totalsByUnit === []): ?>
+                        <span class="waste-kpi-value" style="color:#1d4ed8;">—</span>
+                    <?php endif; ?>
+                    <span class="waste-kpi-sub">Diverted quantity divided by total recorded, per unit</span>
                 </div>
             </div>
 

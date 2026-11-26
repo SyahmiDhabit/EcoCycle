@@ -1232,11 +1232,11 @@ $activeNav = 'inventory';
                 <div class="add-grid-2" style="margin-bottom:18px;">
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="add_name" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Name <span style="color:#b91c1c;">*</span></label>
-                        <input id="add_name" name="name" type="text" required placeholder="e.g. Pine Timber Planks, Industrial HDPE Offcuts" class="add-input-field" onblur="checkAutoTriggerNonReusable()">
+                        <input id="add_name" name="name" type="text" required placeholder="e.g. Pine Timber Planks, Industrial HDPE Offcuts" class="add-input-field" onchange="refreshNonReusableAnalysis()">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="add_category_input" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Category <span style="color:#b91c1c;">*</span></label>
-                        <select id="add_category_input" name="category" required class="add-input-field">
+                        <select id="add_category_input" onchange="refreshNonReusableAnalysis()" name="category" required class="add-input-field">
                             <option value="">Select Category...</option>
                             <?php foreach (\App\Models\Item::ALLOWED_CATEGORIES as $catOption): ?>
                                 <option value="<?= e($catOption) ?>" <?= old('category') === $catOption ? 'selected' : '' ?>><?= e($catOption) ?></option>
@@ -1248,18 +1248,18 @@ $activeNav = 'inventory';
                 <!-- 3. Description -->
                 <div class="form-group" style="margin-bottom:18px;">
                     <label for="add_description" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Description <span style="color:#b91c1c;">*</span></label>
-                    <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, condition, or source..." class="add-input-field" style="resize:vertical;" onblur="checkAutoTriggerNonReusable()"></textarea>
+                    <textarea id="add_description" name="description" rows="3" required placeholder="Describe material specifications, dimensions, condition, or source..." class="add-input-field" style="resize:vertical;" onchange="refreshNonReusableAnalysis()"></textarea>
                 </div>
 
                 <!-- 4. Quantity, Unit of Measurement & Material Condition -->
                 <div class="add-grid-3" style="margin-bottom:20px;">
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="add_quantity" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Quantity <span style="color:#b91c1c;">*</span></label>
-                        <input id="add_quantity" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50" class="add-input-field">
+                        <input id="add_quantity" onchange="refreshNonReusableAnalysis()" name="quantity" type="number" step="0.01" min="0.01" required placeholder="e.g. 50" class="add-input-field">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="add_unit" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Unit of Measurement <span style="color:#b91c1c;">*</span></label>
-                        <select id="add_unit" name="unit" required class="add-input-field">
+                        <select id="add_unit" onchange="refreshNonReusableAnalysis()" name="unit" required class="add-input-field">
                             <option value="">Select unit...</option>
                             <?php foreach (\App\Models\Item::ALLOWED_UNITS as $unitVal => $unitLabel): ?>
                                 <option value="<?= e($unitVal) ?>"><?= e($unitLabel) ?></option>
@@ -1268,7 +1268,7 @@ $activeNav = 'inventory';
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="add_condition" style="font-size:13px;font-weight:700;color:#18422d;margin-bottom:6px;display:block;">Material Condition <span style="color:#b91c1c;">*</span></label>
-                        <select id="add_condition" name="condition" required class="add-input-field">
+                        <select id="add_condition" onchange="refreshNonReusableAnalysis()" name="condition" required class="add-input-field">
                             <?php foreach (\App\Models\Item::ALLOWED_CONDITIONS as $condOpt): ?>
                                 <option value="<?= e($condOpt) ?>" <?= $condOpt === 'Used' ? 'selected' : '' ?>><?= e($condOpt) ?></option>
                             <?php endforeach; ?>
@@ -1950,6 +1950,7 @@ function clearAddAnalysisError() {
 }
 
 var addAnalysisCompleted = false;
+var addAnalysisRevision = 0;
 
 function setAddModalStageActions(stage) {
     var btnAi = document.getElementById('btn_trigger_ai');
@@ -1996,6 +1997,7 @@ function getAddPhotoCount() {
 }
 
 function openAddModal() {
+    addAnalysisRevision++;
     addPhotoSlots = [null, null, null];
     addPhotoPreviews = [null, null, null];
     resetAddPhotoInputs();
@@ -2086,6 +2088,7 @@ function handleAddSlotFile(slotIndex, input) {
 
     // Store ONLY in this exact slot without affecting any other slot
     addPhotoSlots[slotIndex] = file;
+    refreshNonReusableAnalysis();
     var reader = new FileReader();
     reader.onload = function(e) {
         addPhotoPreviews[slotIndex] = e.target.result;
@@ -2096,6 +2099,7 @@ function handleAddSlotFile(slotIndex, input) {
 
 function clearAddPhotoSlot(slotIndex) {
     addPhotoSlots[slotIndex] = null;
+    refreshNonReusableAnalysis();
     addPhotoPreviews[slotIndex] = null;
     var inp = document.getElementById('add_slot_input_' + slotIndex);
     if (inp) inp.value = '';
@@ -2234,6 +2238,16 @@ function selectDecision(choice) {
     selectReusability(choice);
 }
 
+function refreshNonReusableAnalysis() {
+    addAnalysisRevision++;
+    addAnalysisCompleted = false;
+    ['add_ai_analysis_json', 'add_analysis_token', 'add_saved_images', 'add_saved_image_slots'].forEach(function(id) {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('add_non_reusable_guidance').style.display = 'none';
+    checkAutoTriggerNonReusable();
+}
+
 function checkAutoTriggerNonReusable() {
     var reusInput = document.getElementById('add_reusability_hidden');
     if (!reusInput || reusInput.value !== 'not_reusable') return;
@@ -2246,7 +2260,7 @@ function checkAutoTriggerNonReusable() {
     var loadingBox = document.getElementById('add_non_reusable_loading');
     var guidanceBox = document.getElementById('add_non_reusable_guidance');
 
-    if (!name || photoCount < 1) {
+    if (!name || !desc || Number(document.getElementById('add_quantity').value) < 0.01 || !document.getElementById('add_unit').value || !document.getElementById('add_category_input').value || photoCount < 1) {
         if (!addAnalysisCompleted) {
             if (promptBox) promptBox.style.display = 'block';
             if (loadingBox) loadingBox.style.display = 'none';
@@ -2267,8 +2281,8 @@ function triggerNonReusableAnalysis(force) {
 
     var name = (document.getElementById('add_name') ? document.getElementById('add_name').value : '').trim();
     var desc = (document.getElementById('add_description') ? document.getElementById('add_description').value : '').trim();
-    var qty = (document.getElementById('add_quantity') ? document.getElementById('add_quantity').value : '').trim() || '1';
-    var unit = (document.getElementById('add_unit') ? document.getElementById('add_unit').value : '').trim() || 'kg';
+    var qty = (document.getElementById('add_quantity') ? document.getElementById('add_quantity').value : '').trim();
+    var unit = (document.getElementById('add_unit') ? document.getElementById('add_unit').value : '').trim();
     var condition = (document.getElementById('add_condition') ? document.getElementById('add_condition').value : '').trim() || 'Used';
     var category = (document.getElementById('add_category_input') ? document.getElementById('add_category_input').value : '').trim();
 
@@ -2288,7 +2302,13 @@ function triggerNonReusableAnalysis(force) {
         return;
     }
 
+    if (!desc || Number(qty) < 0.01 || !unit || !category) {
+        if (force) showAddAnalysisError('Complete the material details before generating disposal guidance.');
+        return;
+    }
+
     clearAddAnalysisError();
+    var analysisRevision = addAnalysisRevision;
     isAnalyzingNonReusable = true;
 
     var promptBox = document.getElementById('add_non_reusable_prompt');
@@ -2304,7 +2324,7 @@ function triggerNonReusableAnalysis(force) {
     var formData = new FormData();
     formData.append('_token', '<?= csrf_token() ?>');
     formData.append('name', name);
-    formData.append('description', desc || ('Material specifications for ' + name));
+    formData.append('description', desc);
     formData.append('quantity', qty);
     formData.append('unit', unit);
     formData.append('condition', condition);
@@ -2347,6 +2367,11 @@ function triggerNonReusableAnalysis(force) {
     .then(function(data) {
         isAnalyzingNonReusable = false;
         if (loadingBox) loadingBox.style.display = 'none';
+
+        if (analysisRevision !== addAnalysisRevision) {
+            checkAutoTriggerNonReusable();
+            return;
+        }
 
         if (!data || !data.success || !data.analysis) {
             var failMsg = (data && data.message) ? data.message : 'Could not generate disposal guidance for this material.';
@@ -2421,7 +2446,7 @@ function triggerNonReusableAnalysis(force) {
         // Render Repurposing Ideas
         var repurposeBlock = document.getElementById('nr_repurpose_block');
         var repurposeList = document.getElementById('nr_guidance_repurpose');
-        var ideas = analysis.repurpose_ideas || analysis.repurposing_ideas || [];
+        var ideas = analysis.repurpose_ideas && analysis.repurpose_ideas.length ? analysis.repurpose_ideas : (analysis.repurposing_ideas || []);
         if (repurposeBlock && repurposeList) {
             if (Array.isArray(ideas) && ideas.length > 0) {
                 repurposeList.innerHTML = '';
@@ -2511,6 +2536,10 @@ function triggerNonReusableAnalysis(force) {
     .catch(function(err) {
         isAnalyzingNonReusable = false;
         if (loadingBox) loadingBox.style.display = 'none';
+        if (analysisRevision !== addAnalysisRevision) {
+            checkAutoTriggerNonReusable();
+            return;
+        }
         showAddAnalysisError(err && err.message ? err.message : 'Failed to generate disposal guidance. Please try again.');
         if (promptBox) promptBox.style.display = 'block';
     });
@@ -2581,6 +2610,15 @@ function validateInventoryAddForm(form) {
         document.getElementById('add_redirect_to').value = 'listing';
         document.getElementById('add_publish_to_marketplace').value = '0';
         return true;
+    }
+
+    if (isAnalyzingNonReusable || !addAnalysisCompleted) {
+        if (isAnalyzingNonReusable) {
+            showAddAnalysisError('Please wait for the material guidance to finish before saving.');
+        } else {
+            triggerNonReusableAnalysis(true);
+        }
+        return false;
     }
 
     // 2. Non-Reusable items: Open EcoCycle Helper after saving

@@ -48,19 +48,29 @@ class WastageMonitoringController extends Controller
 
         // Calculate KPIs
         $allRecords = WasteRecord::where('business_id', $business->id)->get();
-        $totalScrapGeneratedKg = $allRecords->sum('quantity');
-        
-        $divertedRecords = $allRecords->filter(function ($r) {
-            return $r->is_diverted || in_array($r->status, ['sent_to_facility', 'recycled', 'composted']);
-        });
-        $totalDivertedKg = $divertedRecords->sum('quantity');
+        $totalsByUnit = [];
+        foreach ($allRecords as $record) {
+            $unit = mb_strtolower(trim($record->unit));
+            [$displayUnit, $factor] = match ($unit) {
+                'g' => ['kg', 0.001],
+                't' => ['kg', 1000],
+                'ml' => ['L', 0.001],
+                'l' => ['L', 1],
+                'piece', 'pieces' => ['pcs', 1],
+                default => [$unit, 1],
+            };
 
-        $pendingRecords = $allRecords->filter(function ($r) {
-            return in_array($r->status, ['in_storage', 'scheduled_pickup']);
-        });
-        $totalPendingKg = $pendingRecords->sum('quantity');
+            $quantity = (float) $record->quantity * $factor;
+            $totalsByUnit[$displayUnit] ??= ['total' => 0, 'diverted' => 0, 'pending' => 0];
+            $totalsByUnit[$displayUnit]['total'] += $quantity;
 
-        $diversionRate = $totalScrapGeneratedKg > 0 ? round(($totalDivertedKg / $totalScrapGeneratedKg) * 100, 1) : 0;
+            if (in_array($record->status, ['sent_to_facility', 'recycled', 'composted'], true)) {
+                $totalsByUnit[$displayUnit]['diverted'] += $quantity;
+            } elseif (in_array($record->status, ['in_storage', 'scheduled_pickup'], true)) {
+                $totalsByUnit[$displayUnit]['pending'] += $quantity;
+            }
+        }
+        ksort($totalsByUnit);
         $totalSavingsRm = $allRecords->sum('cost_or_savings') ?: 0;
 
         // Categories list for filter
@@ -75,10 +85,7 @@ class WastageMonitoringController extends Controller
         return view('business.waste.index', [
             'business' => $business,
             'records' => $records,
-            'totalScrapGeneratedKg' => $totalScrapGeneratedKg,
-            'totalDivertedKg' => $totalDivertedKg,
-            'totalPendingKg' => $totalPendingKg,
-            'diversionRate' => $diversionRate,
+            'totalsByUnit' => $totalsByUnit,
             'totalSavingsRm' => $totalSavingsRm,
             'categories' => $categories,
             'notReusableInventory' => $notReusableInventory,
@@ -174,6 +181,31 @@ class WastageMonitoringController extends Controller
         /** @var User $business */
         $business = Auth::user();
         abort_unless($item->business_id === $business->id, 403);
+
+        if ($request->boolean('log_only')) {
+            abort_unless($item->reusability === 'not_reusable', 422);
+
+            $item->getConnection()->transaction(function () use ($item, $business): void {
+                $lockedItem = InventoryItem::query()->lockForUpdate()->findOrFail($item->id);
+                abort_unless($lockedItem->reusability === 'not_reusable' && $lockedItem->quantity > 0, 422);
+
+                WasteRecord::firstOrCreate([
+                    'business_id' => $business->id,
+                    'inventory_item_id' => $lockedItem->id,
+                ], [
+                    'material_name' => $lockedItem->name,
+                    'waste_type' => $lockedItem->category,
+                    'quantity' => $lockedItem->quantity,
+                    'unit' => $lockedItem->unit,
+                    'status' => 'in_storage',
+                    'disposal_method' => 'Pending',
+                    'is_diverted' => false,
+                    'recorded_at' => now()->toDateString(),
+                ]);
+            });
+
+            return redirect()->route('business.waste.index')->with('status', 'Inventory item logged in Waste Monitoring.');
+        }
 
         $qty = (float) $request->input('quantity', $item->quantity);
         $facilityName = $request->input('facility_name', 'Licensed Recovery Facility');

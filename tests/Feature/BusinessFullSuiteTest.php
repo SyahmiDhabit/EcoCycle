@@ -103,6 +103,41 @@ class BusinessFullSuiteTest extends TestCase
         ]);
     }
 
+    public function test_waste_monitoring_calculates_diversion_by_compatible_unit(): void
+    {
+        $business = $this->createApprovedBusiness();
+
+        foreach ([
+            [17, 'kg', 'in_storage', false],
+            [3000, 'g', 'recycled', true],
+            [250, 'mL', 'scheduled_pickup', true],
+            [0.75, 'L', 'sent_to_facility', true],
+            [2, 'pcs', 'in_storage', false],
+        ] as [$quantity, $unit, $status, $diverted]) {
+            WasteRecord::create([
+                'business_id' => $business->id,
+                'material_name' => 'Scrap batch',
+                'waste_type' => 'Other',
+                'quantity' => $quantity,
+                'unit' => $unit,
+                'status' => $status,
+                'is_diverted' => $diverted,
+                'disposal_method' => 'Recovery',
+                'recorded_at' => now()->toDateString(),
+            ]);
+        }
+
+        $this->actingAs($business)->get(route('business.waste.index'))->assertOk()
+            ->assertViewHas('totalsByUnit', [
+                'L' => ['total' => 1.0, 'diverted' => 0.75, 'pending' => 0.25],
+                'kg' => ['total' => 20.0, 'diverted' => 3.0, 'pending' => 17.0],
+                'pcs' => ['total' => 2.0, 'diverted' => 0, 'pending' => 2.0],
+            ])
+            ->assertSee('75%')
+            ->assertSee('15%');
+    }
+
+
     public function test_transactions_flow_request_payment_and_mark_paid(): void
     {
         $seller = $this->createApprovedBusiness('Seller Timber Hub');

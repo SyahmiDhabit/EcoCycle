@@ -100,17 +100,25 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             font-weight: 600;
             cursor: pointer;
         }
-        .helper-workspace .item-select-bar button[type="submit"] {
+        .helper-workspace :is(.item-select-bar, [data-helper-action]) button[type="submit"] {
             cursor: pointer;
         }
-        .helper-workspace .item-select-bar button[type="submit"]:hover {
+        .helper-workspace :is(.item-select-bar, [data-helper-action]) button[type="submit"]:enabled:hover {
             background: #14533a;
             border-color: #14533a;
         }
-        .helper-workspace .item-select-bar button[type="submit"]:active {
+        .helper-workspace :is(.item-select-bar, [data-helper-action]) button[type="submit"]:enabled:active {
             background: #0d3525;
             border-color: #0d3525;
             transform: translateY(1px);
+        }
+        .helper-workspace [data-helper-action] button:disabled {
+            background: #456353;
+            border-color: #456353;
+            cursor: not-allowed;
+        }
+        .helper-workspace [data-helper-action] button[aria-busy="true"] {
+            cursor: progress;
         }
         .helper-welcome-box {
             padding: 36px 24px;
@@ -607,6 +615,10 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                 </div>
             <?php endif; ?>
 
+            <?php if ($errors->has('analysis')): ?>
+                <p class="locator-notice" role="alert"><?= e($errors->first('analysis')) ?></p>
+            <?php endif; ?>
+
             <!-- Page Header -->
             <div class="page-header">
                 <div>
@@ -682,6 +694,23 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
 
                     <!-- Carried-Forward Analysis & Guidance Details (Direct display, NO CHATBOT) -->
                     <div id="guidance-display-panel" class="guidance-body" style="<?= $hasSelected ? '' : 'display:none;' ?>">
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <form method="POST" data-helper-action="<?= e(route('business.helper.reanalyze', ['item' => '__item__'])) ?>" action="<?= e(route('business.helper.reanalyze', ['item' => $selectedItem?->id ?? '__item__'])) ?>">
+                                <?= csrf_field() ?>
+                                <button class="btn-directions" type="submit" data-pending-label="Analyzing…">Reanalyze</button>
+                            </form>
+                            <form method="POST" data-helper-action="<?= e(route('business.helper.waste-suggestion', ['item' => '__item__'])) ?>" action="<?= e(route('business.helper.waste-suggestion', ['item' => $selectedItem?->id ?? '__item__'])) ?>">
+                                <?= csrf_field() ?>
+                                <button class="btn-directions" type="submit" data-pending-label="Checking records…">Suggest from Waste Records</button>
+                            </form>
+                        </div>
+                        <?php $wasteSuggestion = session('waste_suggestion'); ?>
+                        <?php if (($wasteSuggestion['item_id'] ?? null) === ($selectedItem?->id ?? 0)): ?>
+                            <div class="guidance-section" id="helper-waste-suggestion" role="status">
+                                <h3 class="guidance-section-title">Waste Monitoring Suggestion</h3>
+                                <p><?= e($wasteSuggestion['text']) ?></p>
+                            </div>
+                        <?php endif; ?>
                         <p id="helper-guidance-source" <?= ($initialAnalysis['ai_source'] ?? null) === 'EcoCycle Expert Engine' ? '' : 'hidden' ?>>EcoCycle guidance based on the saved material details.</p>
                         <!-- 1. Strategy & Recommended Handling -->
                         <div class="guidance-section" style="border-left:4px solid #143825;">
@@ -711,13 +740,14 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                         </div>
 
                         <!-- 3. Alternative Recovery & Repurposing Options -->
-                        <div class="guidance-section" id="guidance-repurpose-box" style="<?= $hasSelected && !empty($initialAnalysis['repurpose_ideas']) ? '' : 'display:none;' ?>">
+                        <?php $recoveryOptions = ($initialAnalysis['repurpose_ideas'] ?? []) ?: ($initialAnalysis['repurposing_ideas'] ?? []); ?>
+                        <div class="guidance-section" id="guidance-repurpose-box" style="<?= $hasSelected && $recoveryOptions !== [] ? '' : 'display:none;' ?>">
                             <div class="guidance-section-header">
                                 <h3 class="guidance-section-title">Alternative Recovery &amp; Repurposing Options</h3>
                             </div>
                             <ul class="guidance-list" id="guidance-repurpose-ideas">
-                                <?php if ($hasSelected && !empty($initialAnalysis['repurpose_ideas'])): ?>
-                                    <?php foreach ($initialAnalysis['repurpose_ideas'] as $idea): ?>
+                                <?php if ($hasSelected): ?>
+                                    <?php foreach ($recoveryOptions as $idea): ?>
                                         <li><?= e($idea) ?></li>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
@@ -1147,6 +1177,29 @@ function onSelectItem(itemId) {
     });
 }
 
+document.querySelectorAll('[data-helper-action]').forEach(function(form) {
+    var button = form.querySelector('button[type="submit"]');
+    var label = button.textContent;
+
+    form.addEventListener('submit', function(event) {
+        if (button.disabled) {
+            event.preventDefault();
+            return;
+        }
+        button.textContent = button.dataset.pendingLabel;
+        button.setAttribute('aria-busy', 'true');
+        button.disabled = true;
+    });
+
+    window.addEventListener('pageshow', function() {
+        if (button.getAttribute('aria-busy') === 'true') {
+            button.textContent = label;
+            button.removeAttribute('aria-busy');
+            button.disabled = false;
+        }
+    });
+});
+
 var helperPhotos = JSON.parse(document.getElementById('strip-item-gallery').dataset.photos);
 var helperPhotoIndex = 0;
 
@@ -1167,7 +1220,11 @@ function renderSelectedItemGuidance(item, a, centres) {
     if (strip) strip.style.display = 'flex';
 
     var panel = document.getElementById('guidance-display-panel');
-    if (panel) panel.style.display = 'flex';
+    panel.style.display = 'flex';
+    panel.querySelectorAll('[data-helper-action]').forEach(function(form) {
+        form.action = form.dataset.helperAction.replace('__item__', String(item.id));
+    });
+    document.getElementById('helper-waste-suggestion')?.remove();
     document.getElementById('helper-guidance-source').hidden = a.ai_source !== 'EcoCycle Expert Engine';
 
     helperPhotos = item.images || [];
@@ -1209,7 +1266,7 @@ function renderSelectedItemGuidance(item, a, centres) {
     var repurposeBox = document.getElementById('guidance-repurpose-box');
     var repurposeEl = document.getElementById('guidance-repurpose-ideas');
     if (repurposeBox && repurposeEl) {
-        var ideas = a.repurpose_ideas || [];
+        var ideas = a.repurpose_ideas && a.repurpose_ideas.length ? a.repurpose_ideas : (a.repurposing_ideas || []);
         if (ideas.length > 0) {
             repurposeBox.style.display = 'block';
             repurposeEl.innerHTML = ideas.map(function(i) {

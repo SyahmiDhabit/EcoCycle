@@ -334,7 +334,7 @@ Evaluate this material thoroughly using BOTH the visual evidence from the attach
 4. For Non-Reusable materials, tailor the guidance to the material, its condition, and the quantity reported:
    - "disposal_method": Recommend a preferred handling or recovery route and explain why it fits.
    - "owner_actions": Give 5 to 7 ordered, actionable steps. Cover checking for contamination, separating incompatible materials, safe temporary storage, confirming a facility's acceptance and pickup requirements, and recording the handover. Adapt each step to the item and say what the business should verify when information is missing.
-   - "repurposing_ideas": Describe up to 3 distinct, viable recovery alternatives. For each, explain when it is suitable, what would rule it out, and what the business should ask the operator before choosing it. If recovery is unsuitable, explain why and suggest an appropriate professional disposal route.
+   - "repurposing_ideas": Always provide a non-empty list of up to 3 distinct, viable recovery alternatives. For each, explain when it is suitable, what would rule it out, and what the business should ask the operator before choosing it. If recovery is unsuitable, explain why and suggest an appropriate professional disposal route.
    - "environmental_impact" and "carbon_impact": Explain expected impacts qualitatively using the material and the recommended route. Do not invent numerical savings, emissions, or statistics.
    - "improper_disposal_risks": Describe material-specific risks and any checks the business should make with a qualified operator. If the waste may be hazardous or its composition is uncertain, prioritize professional assessment and avoid suggesting on-site treatment.
 
@@ -452,6 +452,14 @@ PROMPT;
             default => 'buy',
         };
 
+        $repurposingIdeas = array_values(array_filter(
+            (array) ($decoded['repurposing_ideas'] ?? []),
+            static fn (mixed $idea): bool => is_string($idea) && trim($idea) !== ''
+        ));
+        if ($repurposingIdeas === []) {
+            $repurposingIdeas[] = 'Ask a specialist recovery facility whether it can accept this material. If recovery is unsuitable, request an appropriate disposal referral.';
+        }
+
         $listingTypeLabel = match ($suggestedListingType) {
             'free' => 'Free',
             'lend' => 'Lend',
@@ -473,7 +481,7 @@ PROMPT;
             'recommended_actions' => (array) ($decoded['recommended_actions'] ?? []),
             'other_recommendations' => (string) ($decoded['other_recommendations'] ?? 'Store cleanly and confirm specifications before listing or disposal.'),
             'recycling_recommendations' => $decoded['recycling_recommendations'] ?? 'Recycle with certified recovery partners.',
-            'repurposing_ideas' => (array) ($decoded['repurposing_ideas'] ?? []),
+            'repurposing_ideas' => $repurposingIdeas,
             'disposal_method' => $decoded['disposal_method'] ?? 'Divert from landfill into certified circular channels.',
             'environmental_impact' => (string) ($decoded['environmental_impact'] ?? 'Proper material recovery helps reduce landfill volume and limits soil or water pollution.'),
             'carbon_impact' => (string) ($decoded['carbon_impact'] ?? 'Recovering and recycling secondary materials generally lowers lifecycle greenhouse gas emissions compared to producing virgin materials, though exact emissions depend on transport and processing methods.'),

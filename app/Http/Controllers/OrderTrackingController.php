@@ -64,24 +64,11 @@ class OrderTrackingController extends Controller
 
         $orders = $query->paginate(15)->withQueryString();
 
-        $purchasesCount = MaterialExchange::where('requester_business_id', $business->id)->count();
-        $salesCount = MaterialExchange::where('provider_business_id', $business->id)->count();
-        $deliveredCount = MaterialExchange::query()
-            ->where(function ($q) use ($business): void {
-                $q->where('provider_business_id', $business->id)
-                    ->orWhere('requester_business_id', $business->id);
-            })
-            ->whereIn('delivery_status', ['delivered', 'completed', 'returned'])
-            ->count();
-
         return view('business.orders.index', [
             'business' => $business,
             'orders' => $orders,
             'currentTab' => $tab,
             'selectedDeliveryStatus' => $deliveryFilter,
-            'purchasesCount' => $purchasesCount,
-            'salesCount' => $salesCount,
-            'deliveredCount' => $deliveredCount,
         ]);
     }
 

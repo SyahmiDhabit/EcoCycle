@@ -103,7 +103,7 @@ $activeNav = 'reviews';
                     <h1>My Reviews</h1>
                     <p>Verified buyer reviews submitted after delivery or collection, and seller ratings received by your business.</p>
                 </div>
-                <a href="<?= route('business.orders.index') ?>" class="rev-tab">View My Orders</a>
+                <a href="<?= route('business.orders.index') ?>" class="rev-tab">View My Purchases</a>
             </header>
 
             <?php if (session('status')): ?>

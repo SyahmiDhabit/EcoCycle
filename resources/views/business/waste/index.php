@@ -38,74 +38,6 @@
             background: #eef5eb;
             color: #14532d;
         }
-        .waste-kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        .waste-kpi-card {
-            background: #ffffff;
-            border: 1px solid var(--card-border);
-            border-radius: 0;
-            padding: 18px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .waste-kpi-card {
-            box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
-        }
-        .waste-kpi-value + .waste-kpi-value {
-            border-top: 1px solid var(--card-border);
-            padding-top: 4px;
-        }
-        .waste-kpi-value small {
-            display: inline-block;
-            padding: 2px 7px;
-            background: #eef5eb;
-            color: #14532d;
-            font: 700 11px var(--font-main);
-            vertical-align: middle;
-        }
-        .waste-kpi-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-        .waste-kpi-value {
-            font-size: 26px;
-            font-weight: 800;
-            color: var(--text-primary);
-            font-family: var(--font-display);
-        }
-        .waste-unit-chart { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0; padding: 0; list-style: none; }
-        .waste-chart-column { flex: 1 0 72px; display: grid; justify-items: center; gap: 4px; font-size: 12px; }
-        .waste-chart-column span { width: 24px; height: 60px; background: #176b40; }
-        .waste-donut-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 6px; }
-        .waste-donut {
-            flex: 0 0 64px;
-            height: 64px;
-            background: conic-gradient(var(--waste-donut-colors));
-            mask-image: radial-gradient(circle closest-side, transparent 68%, #000 70% 97%, transparent 100%);
-        }
-        .waste-donut-values { font-size: 12px; margin: 0; padding: 0; list-style: none; }
-        .waste-donut-values li::before {
-            content: '';
-            display: inline-block;
-            width: 9px;
-            height: 9px;
-            margin-right: 5px;
-            background: #176b40;
-        }
-        .waste-donut-values li + li::before { background: #ac7a24; }
-        .waste-row-actions button:disabled { opacity: .55; cursor: not-allowed; }
-        .waste-kpi-sub {
-            font-size: 11.5px;
-            color: var(--text-muted);
-        }
         .status-badge-pill {
             display: inline-flex;
             align-items: center;
@@ -236,66 +168,17 @@
                 </div>
             <?php endif; ?>
 
-            <?php if ($errors->has('facility_payment_rm')): ?>
-                <p role="alert"><?= e($errors->first('facility_payment_rm')) ?></p>
-            <?php endif; ?>
-
-            <!-- KPI Metric Cards -->
-            <?php $formatWasteQuantity = static fn (float $quantity): string => rtrim(rtrim(number_format($quantity, 5), '0'), '.'); ?>
-            <div class="waste-kpi-grid">
-                <div class="waste-kpi-card">
-                    <span class="waste-kpi-title">Scrap Recorded by Unit</span>
-                    <?php if ($totalsByUnit === []): ?>
-                        <span class="waste-kpi-sub">No waste recorded</span>
-                    <?php else: ?>
-                        <ul class="waste-unit-chart">
-                            <?php foreach ($totalsByUnit as $unit => $totals): ?>
-                                <li class="waste-chart-column">
-                                    <strong><?= $formatWasteQuantity($totals['total']) ?> <?= e($unit) ?></strong>
-                                    <?php if ($totals['total'] > 0): ?><span aria-hidden="true"></span><?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                        <span class="waste-kpi-sub">Each unit has its own scale.</span>
-                    <?php endif; ?>
-                </div>
-                <div class="waste-kpi-card" style="border-left:3px solid #176b40;">
-                    <span class="waste-kpi-title" style="color:#15803d;">Scrap Processing Outcomes</span>
-                    <?php foreach ($totalsByUnit as $unit => $totals): ?>
-                        <?php
-                        $processed = $totals['recycled'] + $totals['composted'];
-                        $recycledShare = $processed > 0 ? 100 * $totals['recycled'] / $processed : 0;
-                        $donutColors = $processed > 0 ? "#176b40 {$recycledShare}%, #ac7a24 0" : '#e4ede2, #e4ede2';
-                        ?>
-                        <div class="waste-donut-row">
-                            <div class="waste-donut" aria-hidden="true" style="--waste-donut-colors:<?= e($donutColors) ?>;"></div>
-                            <ul class="waste-donut-values">
-                                <li>Recycled / Repurposed · <?= $formatWasteQuantity($totals['recycled']) ?> <?= e($unit) ?></li>
-                                <li>Composted · <?= $formatWasteQuantity($totals['composted']) ?> <?= e($unit) ?></li>
-                            </ul>
-                        </div>
-                    <?php endforeach; ?>
-                    <?php if ($totalsByUnit === []): ?>
-                        <span class="waste-kpi-sub">No waste recorded</span>
-                    <?php endif; ?>
-                </div>
-                <div class="waste-kpi-card" style="border-left:3px solid #1d4ed8;">
-                    <span class="waste-kpi-title" style="color:#1d4ed8;">Share Received or Processed</span>
-                    <?php foreach ($totalsByUnit as $unit => $totals): ?>
-                        <span class="waste-kpi-value" style="color:#1d4ed8;"><?= $totals['total'] > 0 ? round(100 * $totals['diverted'] / $totals['total'], 1).'%' : '—' ?> <small><?= e($unit) ?> basis</small></span>
-                    <?php endforeach; ?>
-                    <?php if ($totalsByUnit === []): ?>
-                        <span class="waste-kpi-value" style="color:#1d4ed8;">—</span>
-                    <?php endif; ?>
-                    <span class="waste-kpi-sub">Percentage of recorded scrap received or processed, calculated for each unit.</span>
-                </div>
-            </div>
+            <?php foreach (['facility_payment_rm', 'inventory_item_id'] as $field): ?>
+                <?php if ($errors->has($field)): ?>
+                    <p role="alert"><?= e($errors->first($field)) ?></p>
+                <?php endif; ?>
+            <?php endforeach; ?>
 
             <!-- Filters -->
             <div style="background:#ffffff;border:1px solid var(--card-border);border-radius:0;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                 <form method="GET" action="/business/waste-monitoring" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0;">
                     <input type="text" name="search" value="<?= e($search) ?>" placeholder="Search scrap or facility..." style="height:38px;padding:0 12px;border:1px solid var(--input-border);border-radius:0;font-size:13px;min-width:200px;">
-                    
+
                     <select name="status" style="height:38px;padding:0 12px;border:1px solid var(--input-border);border-radius:0;font-size:13px;">
                         <option value="">All Statuses</option>
                         <option value="in_storage" <?= $selectedStatus === 'in_storage' ? 'selected' : '' ?>>In Storage</option>
@@ -430,13 +313,13 @@
                             <select id="w_inventory" onchange="autofillWasteFromInventory(this)">
                                 <option value="">-- Choose inventory scrap or type custom below --</option>
                                 <?php foreach ($notReusableInventory as $inv): ?>
-                                    <option value="<?= $inv->id ?>"
+                                    <option value="<?= $inv->id ?>" <?= $loggedInventoryIds->has($inv->id) ? 'disabled' : '' ?>
                                         data-name="<?= e($inv->name) ?>"
                                         data-cat="<?= e($inv->category) ?>"
                                         data-qty="<?= (float) $inv->quantity ?>"
                                         data-unit="<?= e($inv->unit) ?>"
                                     >
-                                        <?= e($inv->name) ?> (<?= (float) $inv->quantity ?> <?= e($inv->unit) ?>)
+                                        <?= e($inv->name) ?> (<?= (float) $inv->quantity ?> <?= e($inv->unit) ?>)<?= $loggedInventoryIds->has($inv->id) ? ' (Already logged)' : '' ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

@@ -9,7 +9,7 @@
 /** @var bool $canBuyerConfirmDelivery */
 /** @var bool $canSellerMarkReturned */
 $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
-$activeNav = 'orders';
+$activeNav = $isSeller ? 'sales' : 'purchases';
 $itemTitle = $exchange->item_name ?: ($exchange->item?->name ?: ($exchange->item?->title ?: 'Material #'.$exchange->item_id));
 $sellerName = $exchange->seller_business_name ?: ($exchange->provider?->business_name ?: 'Seller Business');
 $buyerName = $exchange->buyer_business_name ?: ($exchange->requester?->business_name ?: 'Buyer Business');
@@ -95,7 +95,7 @@ $itemPhoto = $exchange->item?->getPrimaryImage();
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
                     <div>
                         <a href="<?= route('business.orders.index', ['tab' => $isSeller ? 'sales' : 'purchases']) ?>" class="od-btn-secondary" style="margin-bottom:10px;">
-                            Back to My Orders
+                            <?= $isSeller ? 'Back to My Sales' : 'Back to My Purchases' ?>
                         </a>
                         <h1 class="od-title">Order <?= e($exchange->resolvedOrderReference()) ?></h1>
                         <p style="margin:0;font-size:13px;color:#475569;">

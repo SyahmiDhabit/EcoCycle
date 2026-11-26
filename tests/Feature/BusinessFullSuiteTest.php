@@ -67,6 +67,37 @@ class BusinessFullSuiteTest extends TestCase
         ]);
     }
 
+    public function test_waste_monitoring_disables_and_rejects_inventory_already_logged(): void
+    {
+        $business = $this->createApprovedBusiness();
+        $item = InventoryItem::create([
+            'business_id' => $business->id,
+            'name' => 'Paper offcuts',
+            'category' => 'Other',
+            'quantity' => 2,
+            'unit' => 'kg',
+            'reusability' => 'not_reusable',
+            'status' => 'in_stock',
+        ]);
+        $payload = [
+            'inventory_item_id' => $item->id,
+            'material_name' => $item->name,
+            'waste_type' => 'Other',
+            'quantity' => 2,
+            'unit' => 'kg',
+            'status' => 'in_storage',
+            'recorded_at' => now()->toDateString(),
+        ];
+
+        $this->actingAs($business)->post(route('business.waste.store'), $payload)
+            ->assertRedirect(route('business.waste.index'));
+        $this->get(route('business.waste.index'))->assertOk()
+            ->assertSee('value="'.$item->id.'" disabled', false)
+            ->assertSee('Already logged');
+        $this->post(route('business.waste.store'), $payload)->assertSessionHasErrors('inventory_item_id');
+        $this->assertDatabaseCount('waste_record', 1);
+    }
+
     public function test_wastage_monitoring_page_and_status_update(): void
     {
         $biz = $this->createApprovedBusiness();
@@ -105,7 +136,7 @@ class BusinessFullSuiteTest extends TestCase
         ]);
     }
 
-    public function test_waste_monitoring_calculates_diversion_by_compatible_unit(): void
+    public function test_waste_monitoring_shows_filterable_records_without_summary_cards(): void
     {
         $business = $this->createApprovedBusiness();
 
@@ -130,13 +161,14 @@ class BusinessFullSuiteTest extends TestCase
         }
 
         $this->actingAs($business)->get(route('business.waste.index'))->assertOk()
-            ->assertViewHas('totalsByUnit', [
-                'L' => ['total' => 1.25, 'diverted' => 1.0, 'recycled' => 0, 'composted' => 0.25],
-                'kg' => ['total' => 20.0, 'diverted' => 3.0, 'recycled' => 3.0, 'composted' => 0],
-                'pcs' => ['total' => 2.0, 'diverted' => 0, 'recycled' => 0, 'composted' => 0],
-            ])
-            ->assertSee('80%')
-            ->assertSee('15%');
+            ->assertSee('Scrap batch')
+            ->assertDontSee('Summary unit')
+            ->assertDontSee('Scrap Recorded by Unit')
+            ->assertDontSee('Scrap Processing Outcomes')
+            ->assertDontSee('Waste Handover Progress');
+
+        $this->get(route('business.waste.index', ['status' => 'composted']))->assertOk()
+            ->assertSee('Showing 1 scrap logs');
     }
 
 
@@ -461,10 +493,10 @@ class BusinessFullSuiteTest extends TestCase
         $response->assertSee('href="/business/inventory?add=1"', false);
         $response->assertSee('href="/business/helper"', false);
         $response->assertSee('href="/business/marketplace"', false);
-        $response->assertSee('href="/business/transactions?tab=purchases"', false);
-        $response->assertSee('href="/business/transactions?tab=sales"', false);
+        $response->assertSee('href="/business/orders?tab=purchases"', false);
+        $response->assertSee('href="/business/orders?tab=sales"', false);
         $response->assertSee('href="/business/my-listings"', false);
-        $response->assertSee('href="/business/orders"', false);
+        $response->assertDontSee('href="/business/orders"', false);
         $response->assertSee('href="/business/transactions"', false);
         $response->assertSee('href="/business/invoices"', false);
         $response->assertSee('href="/business/reviews"', false);

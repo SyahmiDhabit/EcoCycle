@@ -4,61 +4,39 @@
 /** @var string $currentTab */
 /** @var string $selectedDeliveryStatus */
 $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
-$activeNav = 'orders';
+$activeNav = $currentTab === 'all' ? 'orders' : $currentTab;
+$pageTitle = match ($currentTab) {
+    'sales' => 'My Sales',
+    'purchases' => 'My Purchases',
+    default => 'Order Tracking',
+};
+$pageDescription = match ($currentTab) {
+    'sales' => 'Track orders for materials from your listings.',
+    'purchases' => 'Track materials you bought, claimed or borrowed.',
+    default => 'Track collection, delivery and returns.',
+};
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders &amp; Delivery Tracking &middot; EcoCycle</title>
+    <title><?= e($pageTitle) ?> &middot; EcoCycle</title>
     <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/business/dashboard.css?v=<?= filemtime(public_path('css/business/dashboard.css')) ?>">
     <style>
-        .ord-kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-            gap: 14px;
-            margin-bottom: 22px;
-        }
-        .ord-kpi-card {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 0;
-            padding: 16px 18px;
-        }
-        .ord-kpi-label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-bottom: 6px;
-        }
-        .ord-kpi-value {
-            font-size: 24px;
-            font-weight: 800;
-            color: #143825;
-            font-family: var(--font-display);
-        }
         .ord-toolbar {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 18px;
             padding-bottom: 12px;
             border-bottom: 1px solid #cbd5e1;
-        }
-        .ord-tabs {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
         }
         .ord-tab {
             padding: 8px 16px;
@@ -113,12 +91,6 @@ $activeNav = 'orders';
             border: 0;
             padding: 0;
         }
-        .ord-tabs {
-            gap: 6px;
-            padding: 6px;
-            background: #e4eee3;
-            border: 1px solid var(--card-border);
-        }
         .orders-workspace .ord-tab {
             display: inline-flex;
             align-items: center;
@@ -138,10 +110,7 @@ $activeNav = 'orders';
             border: 1px solid var(--card-border);
             overflow-x: auto;
         }
-        .ord-kpi-card {
-            border-color: var(--card-border);
-        }
-        .orders-workspace :is(.ord-kpi-card, .ord-results) {
+        .orders-workspace .ord-results {
             box-shadow: 0 5px 12px rgba(20, 83, 45, .05);
         }
         .ord-results .directory-table th {
@@ -163,8 +132,8 @@ $activeNav = 'orders';
         <main class="dashboard-main-content orders-workspace">
             <header class="page-header">
                 <div class="section-header-title">
-                    <h1>My Orders &amp; Delivery Tracking</h1>
-                    <p>Track preparation, collection, transit, delivery, and returns across all Sell, Free, and Lend orders.</p>
+                    <h1><?= e($pageTitle) ?></h1>
+                    <p><?= e($pageDescription) ?></p>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a href="<?= route('business.reviews.index') ?>" class="ord-tab">My Reviews</a>
@@ -184,34 +153,7 @@ $activeNav = 'orders';
                 </div>
             <?php endif; ?>
 
-            <div class="ord-kpi-grid">
-                <div class="ord-kpi-card" style="border-left:3px solid #143825;">
-                    <span class="ord-kpi-label">My Purchases &amp; Claims</span>
-                    <span class="ord-kpi-value"><?= (int) $purchasesCount ?></span>
-                </div>
-                <div class="ord-kpi-card" style="border-left:3px solid #1d4ed8;">
-                    <span class="ord-kpi-label">Seller Fulfillment Orders</span>
-                    <span class="ord-kpi-value"><?= (int) $salesCount ?></span>
-                </div>
-                <div class="ord-kpi-card" style="border-left:3px solid #15803d;">
-                    <span class="ord-kpi-label">Delivered / Completed</span>
-                    <span class="ord-kpi-value"><?= (int) $deliveredCount ?></span>
-                </div>
-            </div>
-
             <div class="ord-toolbar">
-                <div class="ord-tabs">
-                    <a href="<?= route('business.orders.index', ['tab' => 'purchases']) ?>" class="ord-tab <?= $currentTab === 'purchases' ? 'active' : '' ?>">
-                        My Purchases (<?= (int) $purchasesCount ?>)
-                    </a>
-                    <a href="<?= route('business.orders.index', ['tab' => 'sales']) ?>" class="ord-tab <?= $currentTab === 'sales' ? 'active' : '' ?>">
-                        My Sales Fulfillment (<?= (int) $salesCount ?>)
-                    </a>
-                    <a href="<?= route('business.orders.index', ['tab' => 'all']) ?>" class="ord-tab <?= $currentTab === 'all' ? 'active' : '' ?>">
-                        All Orders
-                    </a>
-                </div>
-
                 <form method="GET" action="<?= route('business.orders.index') ?>" style="display:flex;gap:8px;align-items:center;margin:0;">
                     <input type="hidden" name="tab" value="<?= e($currentTab) ?>">
                     <select aria-label="Delivery status" name="delivery_status" onchange="this.form.submit()" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:0;font-size:12.5px;background:#ffffff;color:#0f172a;">

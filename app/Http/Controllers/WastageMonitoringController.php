@@ -46,33 +46,8 @@ class WastageMonitoringController extends Controller
 
         $records = $query->paginate(15)->withQueryString();
 
-        // Calculate KPIs
+        // Load company records for the category filter and inventory availability
         $allRecords = WasteRecord::where('business_id', $business->id)->get();
-        $totalsByUnit = [];
-        foreach ($allRecords as $record) {
-            $unit = mb_strtolower(trim($record->unit));
-            [$displayUnit, $factor] = match ($unit) {
-                'g' => ['kg', 0.001],
-                't' => ['kg', 1000],
-                'ml' => ['L', 0.001],
-                'l' => ['L', 1],
-                'piece', 'pieces' => ['pcs', 1],
-                default => [$unit, 1],
-            };
-
-            $quantity = (float) $record->quantity * $factor;
-            $totalsByUnit[$displayUnit] ??= ['total' => 0, 'diverted' => 0, 'recycled' => 0, 'composted' => 0];
-            $totalsByUnit[$displayUnit]['total'] += $quantity;
-            if ($record->isFinalized()) {
-                $totalsByUnit[$displayUnit][$record->status] += $quantity;
-            }
-
-            if (in_array($record->status, ['sent_to_facility', 'recycled', 'composted'], true)) {
-                $totalsByUnit[$displayUnit]['diverted'] += $quantity;
-            }
-        }
-        ksort($totalsByUnit);
-
         // Categories list for filter
         $categories = $allRecords->pluck('waste_type')->unique()->filter()->values();
 
@@ -85,9 +60,9 @@ class WastageMonitoringController extends Controller
         return view('business.waste.index', [
             'business' => $business,
             'records' => $records,
-            'totalsByUnit' => $totalsByUnit,
             'categories' => $categories,
             'notReusableInventory' => $notReusableInventory,
+            'loggedInventoryIds' => $allRecords->pluck('inventory_item_id')->filter()->flip(),
             'selectedStatus' => $status,
             'selectedCategory' => $type,
             'search' => $search,
@@ -124,21 +99,36 @@ class WastageMonitoringController extends Controller
 
         $isDiverted = in_array($validated['status'], ['sent_to_facility', 'recycled', 'composted']);
 
-        $record = WasteRecord::create([
-            'business_id' => $business->id,
-            'inventory_item_id' => $validated['inventory_item_id'] ?? null,
-            'material_name' => $validated['material_name'],
-            'waste_type' => $validated['waste_type'],
-            'quantity' => $validated['quantity'],
-            'unit' => $validated['unit'],
-            'status' => $validated['status'],
-            'facility_name' => $validated['facility_name'] ?? null,
-            'facility_location' => $validated['facility_location'] ?? null,
-            'is_diverted' => $isDiverted,
-            'notes' => $validated['notes'] ?? null,
-            'facility_payment_rm' => $validated['facility_payment_rm'] ?? null,
-            'recorded_at' => $validated['recorded_at'],
-        ]);
+        (new WasteRecord)->getConnection()->transaction(function () use ($validated, $business, $isDiverted): void {
+            if (isset($validated['inventory_item_id'])) {
+                $item = $business->inventoryItems()->where('reusability', 'not_reusable')
+                    ->lockForUpdate()->find($validated['inventory_item_id']);
+
+                if ($item === null || WasteRecord::where('business_id', $business->id)->where('inventory_item_id', $item->id)->exists()) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'inventory_item_id' => $item === null
+                            ? 'Choose a non-reusable item from your inventory.'
+                            : 'This item already has a record in Waste Monitoring.',
+                    ]);
+                }
+            }
+
+            WasteRecord::create([
+                'business_id' => $business->id,
+                'inventory_item_id' => $validated['inventory_item_id'] ?? null,
+                'material_name' => $validated['material_name'],
+                'waste_type' => $validated['waste_type'],
+                'quantity' => $validated['quantity'],
+                'unit' => $validated['unit'],
+                'status' => $validated['status'],
+                'facility_name' => $validated['facility_name'] ?? null,
+                'facility_location' => $validated['facility_location'] ?? null,
+                'is_diverted' => $isDiverted,
+                'notes' => $validated['notes'] ?? null,
+                'facility_payment_rm' => $validated['facility_payment_rm'] ?? null,
+                'recorded_at' => $validated['recorded_at'],
+            ]);
+        });
 
         BusinessNotification::send(
             $business->id,

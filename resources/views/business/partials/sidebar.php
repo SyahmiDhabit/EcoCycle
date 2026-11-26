@@ -11,8 +11,8 @@ $companyName = $business?->business_name ?: ($business?->name ?? 'EcoCycle Busin
 
 $workspaceActive = $activeNav === 'overview';
 $inventoryActive = in_array($activeNav, ['inventory', 'helper', 'waste'], true);
-$marketplaceActive = in_array($activeNav, ['marketplace', 'purchases', 'sales', 'listings'], true);
-$transactionsActive = in_array($activeNav, ['transactions', 'invoices', 'orders'], true);
+$marketplaceActive = in_array($activeNav, ['marketplace', 'listings'], true);
+$transactionsActive = in_array($activeNav, ['transactions', 'invoices', 'orders', 'purchases', 'sales'], true);
 $reviewsActive = $activeNav === 'reviews';
 $accountActive = in_array($activeNav, ['reports', 'profile'], true);
 ?>
@@ -114,12 +114,6 @@ $accountActive = in_array($activeNav, ['reports', 'profile'], true);
                     <a href="/business/marketplace" class="sidebar-sublink <?= $activeNav === 'marketplace' ? 'active' : '' ?>" title="Surplus Materials Marketplace">
                         <span>Browse Marketplace</span>
                     </a>
-                    <a href="/business/transactions?tab=purchases" class="sidebar-sublink <?= $activeNav === 'purchases' ? 'active' : '' ?>" title="View your purchased, claimed, and borrowed items">
-                        <span>My Purchases</span>
-                    </a>
-                    <a href="/business/transactions?tab=sales" class="sidebar-sublink <?= $activeNav === 'sales' ? 'active' : '' ?>" title="View your material sales history">
-                        <span>My Sales</span>
-                    </a>
                     <a href="/business/my-listings" class="sidebar-sublink <?= $activeNav === 'listings' ? 'active' : '' ?>" title="View your published listings">
                         <span>My Listings</span>
                     </a>
@@ -149,8 +143,11 @@ $accountActive = in_array($activeNav, ['reports', 'profile'], true);
                     <a href="/business/invoices" class="sidebar-sublink <?= $activeNav === 'invoices' ? 'active' : '' ?>" title="View and download transaction receipts">
                         <span>Receipts</span>
                     </a>
-                    <a href="/business/orders" class="sidebar-sublink <?= $activeNav === 'orders' ? 'active' : '' ?>" title="Track order fulfillment, collection, and delivery">
-                        <span>My Orders</span>
+                    <a href="/business/orders?tab=purchases" class="sidebar-sublink <?= $activeNav === 'purchases' ? 'active' : '' ?>">
+                        <span>My Purchases</span>
+                    </a>
+                    <a href="/business/orders?tab=sales" class="sidebar-sublink <?= $activeNav === 'sales' ? 'active' : '' ?>">
+                        <span>My Sales</span>
                     </a>
                 </div>
             </div>

@@ -14,13 +14,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'waste_type',
     'quantity',
     'unit',
-    'disposal_method',
     'is_diverted',
     'status',
     'facility_name',
     'facility_location',
-    'ai_recommendation',
-    'cost_or_savings',
+    'facility_payment_rm',
     'notes',
     'recorded_at',
 ])]
@@ -34,10 +32,54 @@ class WasteRecord extends Model
     {
         return [
             'quantity' => 'decimal:2',
-            'cost_or_savings' => 'decimal:2',
+            'facility_payment_rm' => 'decimal:2',
+            'tracking_history' => 'array',
             'is_diverted' => 'boolean',
             'recorded_at' => 'date',
         ];
+    }
+
+    public const STATUS_LABELS = [
+        'in_storage' => 'In Storage',
+        'scheduled_pickup' => 'Pickup Scheduled',
+        'sent_to_facility' => 'Received by Facility',
+        'recycled' => 'Recycled / Repurposed',
+        'composted' => 'Composted',
+    ];
+
+    public function isFinalized(): bool
+    {
+        return in_array($this->status, ['recycled', 'composted'], true);
+    }
+
+    public static function statusLabel(string $status): string
+    {
+        return self::STATUS_LABELS[$status] ?? ucfirst(str_replace('_', ' ', $status));
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (WasteRecord $record): void {
+            if ($record->exists && ! $record->isDirty(['status', 'facility_payment_rm'])) {
+                return;
+            }
+
+            $history = $record->tracking_history ?? [];
+            if ($record->exists && $history === []) {
+                $history[] = [
+                    'status' => $record->getOriginal('status'),
+                    'payment' => $record->getOriginal('facility_payment_rm'),
+                    'at' => null,
+                ];
+            }
+
+            $history[] = [
+                'status' => $record->status,
+                'payment' => $record->facility_payment_rm,
+                'at' => now()->toDateTimeString(),
+            ];
+            $record->tracking_history = $history;
+        });
     }
 
     public function business(): BelongsTo

@@ -66,6 +66,12 @@ class EcoCycleHelperController extends Controller
 
         $nearbyCentres = $this->closestFacilities($businessCoords, $selectedItem, $initialAnalysis);
 
+        $draft = $request->session()->get('waste_report_draft');
+        $hasWasteRecord = $selectedItem !== null && $this->hasWasteRecord($selectedItem);
+        $wasteReportFacilities = ! $hasWasteRecord && isset($draft['fields']) && $selectedItem?->id === $draft['item_id']
+            ? $this->closestFacilities($businessCoords, $selectedItem, null)
+            : [];
+
         return view('business.helper.index', [
             'business' => $business,
             'businessAddress' => $businessAddress,
@@ -75,6 +81,8 @@ class EcoCycleHelperController extends Controller
             'selectedItem' => $selectedItem,
             'initialAnalysis' => $initialAnalysis,
             'nearbyCentres' => $nearbyCentres,
+            'hasWasteRecord' => $hasWasteRecord,
+            'wasteReportFacilities' => $wasteReportFacilities,
             'verifiedMatchFound' => ! empty($nearbyCentres),
             'googleMapsApiKey' => trim((string) config('services.google_maps.api_key', '')),
             'activeNav' => 'helper',
@@ -155,6 +163,7 @@ class EcoCycleHelperController extends Controller
                 'reusability' => $item->reusability,
                 'image_path' => $item->getPrimaryImage(),
                 'images' => $item->getAllImages(),
+                'has_waste_record' => $this->hasWasteRecord($item),
             ],
             'analysis' => $analysis,
             'nearby_centres' => $nearby,
@@ -194,28 +203,94 @@ class EcoCycleHelperController extends Controller
         return $redirect->with('status', 'Photo analysis completed. The updated guidance is saved.');
     }
 
-    public function suggestFromWasteRecords(Item $item): RedirectResponse
+    public function suggestFromWasteRecords(Request $request, Item $item): RedirectResponse
     {
         $this->checkApproved();
         abort_unless($item->business_id === Auth::id(), 403);
         abort_unless($item->reusability === 'not_reusable', 422);
 
-        $records = WasteRecord::where('business_id', $item->business_id);
-        $latestRecord = (clone $records)->where('inventory_item_id', $item->id)
-            ->latest('recorded_at')->latest('id')->first()
-            ?? $records->where('waste_type', $item->category)
-                ->latest('recorded_at')->latest('id')->first();
+        if ($this->hasWasteRecord($item)) {
+            return redirect()->route('business.helper', ['item_id' => $item->id])
+                ->withErrors(['waste_report' => 'This item already has a record in Waste Monitoring.']);
+        }
 
-        $suggestion = match ($latestRecord?->status) {
-            'in_storage' => 'Confirm which facility accepts this material before scheduling collection.',
-            'scheduled_pickup' => 'Verify the scheduled pickup and record the handover once it happens.',
-            'sent_to_facility' => 'Ask the receiving facility to confirm the recovery outcome and record it in Waste Monitoring.',
-            'recycled', 'composted' => 'Review the previously recorded recovery method for this material and confirm whether it suits the current batch.',
-            default => 'No usable waste record was found for this item or category. Log the material in Waste Monitoring to build a history.',
-        };
+        $request->session()->put('waste_report_draft', [
+            'item_id' => $item->id,
+            'fields' => [
+                'Material' => $item->name,
+                'Category' => mb_substr((string) $item->category, 0, 60),
+                'Quantity' => $item->quantity.' '.$item->unit,
+                'Recorded date' => now()->format('d M Y'),
+                'Status' => WasteRecord::statusLabel('in_storage'),
+                'Recorded as diverted' => 'No',
+                'Current destination' => 'Not recorded',
+                'Current destination address' => 'Not recorded',
+                'Facility payment' => 'Not recorded',
+                'Notes' => 'None recorded',
+            ],
+            'text' => 'Confirm which facility accepts this material before scheduling collection.',
+        ]);
 
-        return redirect()->route('business.helper', ['item_id' => $item->id])
-            ->with('waste_suggestion', ['item_id' => $item->id, 'text' => $suggestion]);
+        return redirect()->route('business.helper', ['item_id' => $item->id]);
+    }
+
+    public function saveWasteReport(Request $request, Item $item): RedirectResponse
+    {
+        $this->checkApproved();
+        abort_unless($item->business_id === Auth::id(), 403);
+        abort_unless($item->reusability === 'not_reusable' && $item->quantity > 0, 422);
+
+        $draft = $request->session()->get('waste_report_draft');
+        if (($draft['item_id'] ?? null) !== $item->id || !isset($draft['fields'])) {
+            return back()->withErrors(['waste_report' => 'Generate a report before saving.']);
+        }
+
+        $validated = $request->validate(['facility_id' => ['required', 'integer']]);
+        $coordinates = RecyclingCentreLocatorService::getBusinessCoordinates($request->user());
+        $facilities = $this->closestFacilities($coordinates, $item, null);
+        $facility = collect($facilities)->firstWhere('id', (int) $validated['facility_id']);
+        if ($facility === null) {
+            return back()->withErrors(['waste_report' => 'Choose a facility from the report’s list.']);
+        }
+
+        $item->getConnection()->transaction(function () use ($item, $facility): void {
+            $lockedItem = Item::query()->lockForUpdate()->findOrFail($item->id);
+            abort_unless($lockedItem->business_id === $item->business_id && $lockedItem->reusability === 'not_reusable' && $lockedItem->quantity > 0, 422);
+
+            if ($this->hasWasteRecord($lockedItem)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'waste_report' => 'This item already has a record in Waste Monitoring.',
+                ]);
+            }
+
+            $record = new WasteRecord([
+                'business_id' => $lockedItem->business_id,
+                'inventory_item_id' => $lockedItem->id,
+                'material_name' => $lockedItem->name,
+                'waste_type' => mb_substr($lockedItem->category, 0, 60),
+                'quantity' => $lockedItem->quantity,
+                'unit' => $lockedItem->unit,
+                'status' => 'in_storage',
+                'is_diverted' => false,
+                'recorded_at' => now()->toDateString(),
+            ]);
+
+            $record->fill([
+                'facility_name' => $facility['name'],
+                'facility_location' => $facility['address'],
+            ])->save();
+        });
+
+        $request->session()->forget('waste_report_draft');
+
+        return redirect()->route('business.waste.index')->with('status', 'Waste report and planned destination saved.');
+    }
+
+    private function hasWasteRecord(Item $item): bool
+    {
+        return WasteRecord::where('business_id', $item->business_id)
+            ->where('inventory_item_id', $item->id)
+            ->exists();
     }
 
     private function closestFacilities(array $coordinates, ?Item $item, ?array $analysis): array

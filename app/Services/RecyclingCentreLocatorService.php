@@ -691,7 +691,6 @@ class RecyclingCentreLocatorService
                     $locLower = mb_strtolower($locText);
                     if ($locLower !== '' && (str_contains(mb_strtolower($centre['name']), $locLower) || str_contains($locLower, mb_strtolower($centre['name'])))) {
                         $suitabilityScore += 45;
-                        $matchedReasons[] = 'Directly recommended in AI analysis';
                         break;
                     }
                 }

@@ -105,9 +105,8 @@ class DatabaseRelationshipsTest extends TestCase
             'waste_type' => 'Wood',
             'quantity' => 15.5,
             'unit' => 'kg',
-            'disposal_method' => 'Recycled',
             'is_diverted' => true,
-            'cost_or_savings' => 150.00,
+            'facility_payment_rm' => 150.00,
             'recorded_at' => now()->toDateString(),
         ]);
 

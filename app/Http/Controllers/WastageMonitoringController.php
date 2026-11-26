@@ -61,17 +61,17 @@ class WastageMonitoringController extends Controller
             };
 
             $quantity = (float) $record->quantity * $factor;
-            $totalsByUnit[$displayUnit] ??= ['total' => 0, 'diverted' => 0, 'pending' => 0];
+            $totalsByUnit[$displayUnit] ??= ['total' => 0, 'diverted' => 0, 'recycled' => 0, 'composted' => 0];
             $totalsByUnit[$displayUnit]['total'] += $quantity;
+            if ($record->isFinalized()) {
+                $totalsByUnit[$displayUnit][$record->status] += $quantity;
+            }
 
             if (in_array($record->status, ['sent_to_facility', 'recycled', 'composted'], true)) {
                 $totalsByUnit[$displayUnit]['diverted'] += $quantity;
-            } elseif (in_array($record->status, ['in_storage', 'scheduled_pickup'], true)) {
-                $totalsByUnit[$displayUnit]['pending'] += $quantity;
             }
         }
         ksort($totalsByUnit);
-        $totalSavingsRm = $allRecords->sum('cost_or_savings') ?: 0;
 
         // Categories list for filter
         $categories = $allRecords->pluck('waste_type')->unique()->filter()->values();
@@ -86,13 +86,20 @@ class WastageMonitoringController extends Controller
             'business' => $business,
             'records' => $records,
             'totalsByUnit' => $totalsByUnit,
-            'totalSavingsRm' => $totalSavingsRm,
             'categories' => $categories,
             'notReusableInventory' => $notReusableInventory,
             'selectedStatus' => $status,
             'selectedCategory' => $type,
             'search' => $search,
         ]);
+    }
+
+    public function showReport(WasteRecord $record): View
+    {
+        $this->checkApproved();
+        abort_unless($record->business_id === Auth::id(), 403);
+
+        return view('business.waste.report', ['record' => $record, 'business' => Auth::user()]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -109,10 +116,9 @@ class WastageMonitoringController extends Controller
             'unit' => ['required', 'string', 'max:20'],
             'status' => ['required', 'in:in_storage,scheduled_pickup,sent_to_facility,recycled,composted'],
             'facility_name' => ['nullable', 'string', 'max:150'],
-            'facility_location' => ['nullable', 'string', 'max:100'],
-            'disposal_method' => ['required', 'string', 'max:60'],
-            'ai_recommendation' => ['nullable', 'string', 'max:1000'],
+            'facility_location' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'facility_payment_rm' => ['required_if:status,sent_to_facility,recycled,composted', 'nullable', 'decimal:0,2', 'between:0,99999999.99'],
             'recorded_at' => ['required', 'date'],
         ]);
 
@@ -128,10 +134,9 @@ class WastageMonitoringController extends Controller
             'status' => $validated['status'],
             'facility_name' => $validated['facility_name'] ?? null,
             'facility_location' => $validated['facility_location'] ?? null,
-            'disposal_method' => $validated['disposal_method'],
             'is_diverted' => $isDiverted,
-            'ai_recommendation' => $validated['ai_recommendation'] ?? null,
             'notes' => $validated['notes'] ?? null,
+            'facility_payment_rm' => $validated['facility_payment_rm'] ?? null,
             'recorded_at' => $validated['recorded_at'],
         ]);
 
@@ -155,24 +160,34 @@ class WastageMonitoringController extends Controller
         $validated = $request->validate([
             'status' => ['required', 'in:in_storage,scheduled_pickup,sent_to_facility,recycled,composted'],
             'facility_name' => ['nullable', 'string', 'max:150'],
-            'facility_location' => ['nullable', 'string', 'max:100'],
+            'facility_location' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'facility_payment_rm' => ['required_if:status,sent_to_facility,recycled,composted', 'nullable', 'decimal:0,2', 'between:0,99999999.99'],
         ]);
 
-        $record->status = $validated['status'];
-        if (!empty($validated['facility_name'])) {
-            $record->facility_name = $validated['facility_name'];
-        }
-        if (!empty($validated['facility_location'])) {
-            $record->facility_location = $validated['facility_location'];
-        }
-        if (!empty($validated['notes'])) {
-            $record->notes = $validated['notes'];
-        }
-        $record->is_diverted = in_array($validated['status'], ['sent_to_facility', 'recycled', 'composted']);
-        $record->save();
+        $record->getConnection()->transaction(function () use ($record, $validated): void {
+            $record = WasteRecord::query()->lockForUpdate()->findOrFail($record->id);
+            abort_if($record->isFinalized(), 409, 'Completed waste records are view-only.');
+            if (isset($validated['facility_payment_rm'])) {
+                $record->facility_payment_rm = $validated['facility_payment_rm'];
+            }
 
-        return redirect()->route('business.waste.index')->with('status', "Status updated to: {$record->status}");
+            $record->status = $validated['status'];
+            if (!empty($validated['facility_name'])) {
+                $record->facility_name = $validated['facility_name'];
+            }
+            if (!empty($validated['facility_location'])) {
+                $record->facility_location = $validated['facility_location'];
+            }
+            if (!empty($validated['notes'])) {
+                $record->notes = $validated['notes'];
+            }
+            $record->is_diverted = in_array($validated['status'], ['sent_to_facility', 'recycled', 'composted']);
+            $record->save();
+        });
+
+        return redirect()->route('business.waste.index')
+            ->with('status', 'Status updated to: '.WasteRecord::statusLabel($validated['status']));
     }
 
     public function logFromInventory(Request $request, InventoryItem $item): RedirectResponse
@@ -198,7 +213,6 @@ class WastageMonitoringController extends Controller
                     'quantity' => $lockedItem->quantity,
                     'unit' => $lockedItem->unit,
                     'status' => 'in_storage',
-                    'disposal_method' => 'Pending',
                     'is_diverted' => false,
                     'recorded_at' => now()->toDateString(),
                 ]);
@@ -210,7 +224,6 @@ class WastageMonitoringController extends Controller
         $qty = (float) $request->input('quantity', $item->quantity);
         $facilityName = $request->input('facility_name', 'Licensed Recovery Facility');
         $facilityLocation = $request->input('facility_location', $business->state ?: 'Selangor');
-        $recommendation = $request->input('ai_recommendation', 'Routed via EcoCycle AI Scrap Advisor');
 
         WasteRecord::create([
             'business_id' => $business->id,
@@ -222,9 +235,7 @@ class WastageMonitoringController extends Controller
             'status' => 'scheduled_pickup',
             'facility_name' => $facilityName,
             'facility_location' => $facilityLocation,
-            'disposal_method' => 'Circular Material Recovery / Recycling',
             'is_diverted' => true,
-            'ai_recommendation' => $recommendation,
             'notes' => 'Imported from internal inventory scrap tracker.',
             'recorded_at' => now()->toDateString(),
         ]);
@@ -246,7 +257,11 @@ class WastageMonitoringController extends Controller
         $business = Auth::user();
         abort_unless($record->business_id === $business->id, 403);
 
-        $record->delete();
+        $record->getConnection()->transaction(function () use ($record): void {
+            $record = WasteRecord::query()->lockForUpdate()->findOrFail($record->id);
+            abort_if($record->isFinalized(), 409, 'Completed waste records are view-only.');
+            $record->delete();
+        });
 
         return redirect()->route('business.waste.index')->with('status', 'Wastage record removed.');
     }

@@ -577,7 +577,7 @@ class InventoryGeminiWorkflowTest extends TestCase
         $saveResponse->assertRedirect(route('business.helper', ['item_id' => $item->id]));
         $this->get(route('business.helper', ['item_id' => $item->id]))
             ->assertOk()
-            ->assertSee('EcoCycle guidance based on the saved material details.');
+            ->assertDontSee('EcoCycle guidance based on the saved material details.');
         Http::assertSentCount(3);
         $response->assertJsonStructure([
             'success',

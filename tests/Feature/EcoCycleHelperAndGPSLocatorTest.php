@@ -89,7 +89,7 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $response->assertOk();
         $response->assertSee('Industrial Copper Scrap Wiring');
         $response->assertSee('Metals &amp; machinery', false);
-        $response->assertSee('EcoCycle guidance based on the saved material details.');
+        $response->assertDontSee('EcoCycle guidance based on the saved material details.');
         Http::assertSentCount(1);
     }
 
@@ -124,7 +124,7 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $page = route('business.helper', ['item_id' => $item->id]);
         $this->actingAs($business)->get($page)->assertOk()
             ->assertSee('Reanalyze')
-            ->assertSee('Suggest from Waste Records');
+            ->assertSee('Generate Waste Report');
         $this->post(route('business.helper.reanalyze', $item))->assertRedirect($page);
         $this->assertSame('Updated paper guidance', $item->fresh()->ai_analysis['disposal_method']);
         $this->get($page)->assertOk()
@@ -140,9 +140,46 @@ class EcoCycleHelperAndGPSLocatorTest extends TestCase
         $this->post($log, ['log_only' => true])->assertRedirect(route('business.waste.index'));
         $this->post($log, ['log_only' => true])->assertRedirect(route('business.waste.index'));
         $suggestion = route('business.helper.waste-suggestion', $item);
+        $existingRecord = \App\Models\WasteRecord::where('inventory_item_id', $item->id)->sole();
+        $this->get($page)->assertViewHas('hasWasteRecord', true);
+        $this->post($suggestion)->assertSessionHasErrors('waste_report');
+        $this->delete(route('business.waste.destroy', $existingRecord))->assertRedirect(route('business.waste.index'));
+        $this->get($page)->assertViewHas('hasWasteRecord', false);
         $this->post($suggestion)->assertRedirect($page);
-        $this->get($page)->assertOk()
-            ->assertSee('Confirm which facility accepts this material before scheduling collection.');
+        $preview = $this->get($page)->assertOk()
+            ->assertSee('Confirm which facility accepts this material before scheduling collection.')
+            ->assertSee('Waste Record Details')->assertSee('Choose a planned facility');
+        $facility = $preview->viewData('wasteReportFacilities')[0];
+        $this->from($page)->post(route('business.helper.waste-report.save', $item), ['facility_id' => -1])
+            ->assertSessionHasErrors('waste_report');
+        $this->post(route('business.helper.waste-report.save', $item), ['facility_id' => $facility['id']])
+            ->assertRedirect(route('business.waste.index'));
+        $record = \App\Models\WasteRecord::where('inventory_item_id', $item->id)->firstOrFail();
+        $this->get($page)->assertViewHas('hasWasteRecord', true);
+        $this->post($suggestion)->assertSessionHasErrors('waste_report');
+        $this->get(route('business.waste.index'))->assertOk()->assertSee('View Report');
+        $this->get(route('business.waste.report', $record))->assertOk()
+            ->assertSee($facility['name'])
+            ->assertDontSee('Saved guidance')
+            ->assertDontSee('Updated paper guidance');
+        $this->put(route('business.waste.update', $record), ['status' => 'sent_to_facility'])
+            ->assertSessionHasErrors('facility_payment_rm');
+        $this->put(route('business.waste.update', $record), ['status' => 'sent_to_facility', 'facility_payment_rm' => '30.50'])
+            ->assertRedirect(route('business.waste.index'));
+        $this->put(route('business.waste.update', $record), ['status' => 'in_storage'])
+            ->assertRedirect(route('business.waste.index'));
+        $this->get(route('business.waste.report', $record))->assertOk()
+            ->assertSee('Tracking History')
+            ->assertSee('Received by Facility')
+            ->assertSee('RM 30.50')
+            ->assertDontSee('Disposal method');
+        $this->put(route('business.waste.update', $record), ['status' => 'in_storage', 'facility_payment_rm' => '10.001'])
+            ->assertSessionHasErrors('facility_payment_rm');
+        $this->put(route('business.waste.update', $record), ['status' => 'in_storage', 'facility_payment_rm' => '0'])
+            ->assertRedirect(route('business.waste.index'));
+        $this->get(route('business.waste.report', $record))->assertOk()->assertSee('RM 0.00');
+        $this->actingAs($this->createApprovedBusiness('Other business'))
+            ->get(route('business.waste.report', $record))->assertForbidden();
         $this->assertDatabaseCount('waste_record', 1);
         $this->assertDatabaseHas('waste_record', [
             'inventory_item_id' => $item->id,

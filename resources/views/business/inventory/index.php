@@ -1764,7 +1764,6 @@ $activeNav = 'inventory';
                         </div>
                     </div>
                     <input type="hidden" id="ai_facility_location" name="facility_location" value="">
-                    <input type="hidden" id="ai_recommendation_text" name="ai_recommendation" value="">
                 </div>
             </div>
             <div class="modal-footer">
@@ -3082,7 +3081,6 @@ function openAiAdvisorModal(id, name, category, quantity, unit, notes) {
 
     document.getElementById('ai_treatment_strategy').textContent = strategy;
     document.getElementById('ai_compliance_note').textContent = compliance;
-    document.getElementById('ai_recommendation_text').value = strategy + ' | ' + compliance;
 
     var container = document.getElementById('ai_destinations_container');
     container.innerHTML = '';

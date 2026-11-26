@@ -591,6 +591,88 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
         .helper-workspace .btn-location-ref {
             min-height: 40px;
         }
+        .waste-report-preview {
+            padding: 0;
+            border-left: 3px solid #176b40;
+            background: #fff;
+        }
+        .waste-report-preview-header {
+            padding: 14px 16px;
+            background: #eef5eb;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .waste-report-preview-header h3 {
+            font-size: 15px;
+            color: #14532d;
+        }
+        .waste-report-preview-header p {
+            margin: 5px 0 0;
+            color: var(--text-secondary);
+            font-size: 12px;
+            overflow-wrap: anywhere;
+        }
+        .waste-report-preview-body {
+            padding: 16px;
+        }
+        .waste-report-preview-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+            gap: 8px;
+            margin: 8px 0 16px;
+        }
+        .waste-report-preview-fields div {
+            padding: 8px 10px;
+            background: #f4f8f3;
+            border: 1px solid var(--card-border);
+        }
+        .waste-report-preview-fields dt {
+            font-size: 12px;
+            font-weight: 700;
+            color: #14532d;
+        }
+        .waste-report-preview-fields dd {
+            margin: 2px 0 0;
+            overflow-wrap: anywhere;
+        }
+        .waste-report-preview-text {
+            margin: 0;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+        .waste-report-facility-form {
+            display: grid;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid var(--card-border);
+        }
+        .waste-report-facility-form label {
+            color: #14532d;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .waste-report-facility-form select {
+            width: 100%;
+            min-width: 0;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 0;
+            background: #fff;
+            color: var(--text-primary);
+            font: inherit;
+            font-size: 13px;
+        }
+        .waste-report-facility-form select:focus-visible {
+            outline: 2px solid #176b40;
+            outline-offset: 2px;
+        }
+        .waste-report-facility-form button {
+            justify-self: start;
+        }
         .locator-notice {
             padding: 8px 11px;
             background: #fff;
@@ -600,6 +682,7 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
             font-size: 12px;
             line-height: 1.5;
         }
+        #helper-generate-waste-report:disabled { opacity: .55; cursor: not-allowed; }
     </style>
 </head>
 <body class="business-dashboard-page">
@@ -701,17 +784,47 @@ $hasSelected = $selectedItem !== null && is_array($initialAnalysis);
                             </form>
                             <form method="POST" data-helper-action="<?= e(route('business.helper.waste-suggestion', ['item' => '__item__'])) ?>" action="<?= e(route('business.helper.waste-suggestion', ['item' => $selectedItem?->id ?? '__item__'])) ?>">
                                 <?= csrf_field() ?>
-                                <button class="btn-directions" type="submit" data-pending-label="Checking records…">Suggest from Waste Records</button>
+                                <button id="helper-generate-waste-report" class="btn-directions" type="submit" data-pending-label="Preparing report…" <?= $hasWasteRecord ? 'disabled' : '' ?>>Generate Waste Report</button>
                             </form>
                         </div>
-                        <?php $wasteSuggestion = session('waste_suggestion'); ?>
-                        <?php if (($wasteSuggestion['item_id'] ?? null) === ($selectedItem?->id ?? 0)): ?>
-                            <div class="guidance-section" id="helper-waste-suggestion" role="status">
-                                <h3 class="guidance-section-title">Waste Monitoring Suggestion</h3>
-                                <p><?= e($wasteSuggestion['text']) ?></p>
-                            </div>
+                        <p id="helper-waste-record-notice" <?= $hasWasteRecord ? '' : 'hidden' ?>>This item already has a record in Waste Monitoring.</p>
+                        <?php $wasteSuggestion = session('waste_report_draft'); ?>
+                        <?php if (! $hasWasteRecord && isset($wasteSuggestion['fields']) && $wasteSuggestion['item_id'] === $selectedItem?->id): ?>
+                            <section class="guidance-section waste-report-preview" id="helper-waste-suggestion" aria-labelledby="waste-report-preview-title">
+                                <header class="waste-report-preview-header">
+                                    <h3 class="guidance-section-title" id="waste-report-preview-title">Waste Report Preview</h3>
+                                    <p><?= e($selectedItem->name ?: $selectedItem->title) ?> · <?= e($selectedItem->category) ?> · <?= e($selectedItem->quantity) ?> <?= e($selectedItem->unit) ?></p>
+                                </header>
+                                <div class="waste-report-preview-body">
+                                    <h4>1. Waste Record Details</h4>
+                                    <dl class="waste-report-preview-fields">
+                                        <?php foreach ($wasteSuggestion['fields'] as $label => $value): ?>
+                                            <div><dt><?= e($label) ?></dt><dd><?= e($value) ?></dd></div>
+                                        <?php endforeach; ?>
+                                    </dl>
+                                    <h4>2. Next Monitoring Step</h4>
+                                    <p class="waste-report-preview-text"><?= e($wasteSuggestion['text']) ?></p>
+                                    <?php if ($errors->any()): ?>
+                                        <p role="alert"><?= e($errors->first()) ?></p>
+                                    <?php endif; ?>
+                                    <?php if ($wasteReportFacilities && (float) $selectedItem->quantity > 0): ?>
+                                        <form class="waste-report-facility-form" method="POST" action="<?= e(route('business.helper.waste-report.save', $selectedItem)) ?>">
+                                            <?= csrf_field() ?>
+                                            <label for="waste-report-facility">3. Choose a planned facility</label>
+                                            <select required name="facility_id" id="waste-report-facility">
+                                                <option value="">Choose a location</option>
+                                                <?php foreach ($wasteReportFacilities as $centre): ?>
+                                                    <option value="<?= e($centre['id']) ?>"><?= e($centre['name']) ?> · <?= e($centre['distance_km']) ?> km</option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button class="btn-directions" type="submit">Save to Waste Monitoring</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <p>A saved quantity and an available facility are required to save this report.</p>
+                                    <?php endif; ?>
+                                </div>
+                            </section>
                         <?php endif; ?>
-                        <p id="helper-guidance-source" <?= ($initialAnalysis['ai_source'] ?? null) === 'EcoCycle Expert Engine' ? '' : 'hidden' ?>>EcoCycle guidance based on the saved material details.</p>
                         <!-- 1. Strategy & Recommended Handling -->
                         <div class="guidance-section" style="border-left:4px solid #143825;">
                             <div class="guidance-section-header">
@@ -1224,8 +1337,9 @@ function renderSelectedItemGuidance(item, a, centres) {
     panel.querySelectorAll('[data-helper-action]').forEach(function(form) {
         form.action = form.dataset.helperAction.replace('__item__', String(item.id));
     });
+    document.getElementById('helper-generate-waste-report').disabled = item.has_waste_record;
+    document.getElementById('helper-waste-record-notice').hidden = !item.has_waste_record;
     document.getElementById('helper-waste-suggestion')?.remove();
-    document.getElementById('helper-guidance-source').hidden = a.ai_source !== 'EcoCycle Expert Engine';
 
     helperPhotos = item.images || [];
     helperPhotoIndex = 0;

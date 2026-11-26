@@ -63,6 +63,7 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
 
     // Waste Monitoring Routes
     Route::get('/business/waste-monitoring', [WastageMonitoringController::class, 'index'])->name('business.waste.index');
+    Route::get('/business/waste-monitoring/{record}/report', [WastageMonitoringController::class, 'showReport'])->name('business.waste.report');
     Route::post('/business/waste-monitoring', [WastageMonitoringController::class, 'store'])->name('business.waste.store');
     Route::put('/business/waste-monitoring/{record}', [WastageMonitoringController::class, 'updateStatus'])->name('business.waste.update');
     Route::post('/business/waste-monitoring/from-inventory/{item}', [WastageMonitoringController::class, 'logFromInventory'])->name('business.waste.from-inventory');
@@ -111,6 +112,7 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
     Route::get('/business/helper/analyze/{item}', [EcoCycleHelperController::class, 'analyzeItem'])->name('business.helper.analyze');
     Route::post('/business/helper/reanalyze/{item}', [EcoCycleHelperController::class, 'reanalyzeItem'])->name('business.helper.reanalyze');
     Route::post('/business/helper/waste-suggestion/{item}', [EcoCycleHelperController::class, 'suggestFromWasteRecords'])->name('business.helper.waste-suggestion');
+    Route::post('/business/helper/waste-report/{item}', [EcoCycleHelperController::class, 'saveWasteReport'])->name('business.helper.waste-report.save');
     Route::post('/business/helper/nearby-centres', [EcoCycleHelperController::class, 'nearbyCentres'])->name('business.helper.nearby');
 
     Route::post('/business/notifications/{notification}/read', [BusinessNotificationController::class, 'markAsRead'])->whereNumber('notification')->name('business.notifications.read');

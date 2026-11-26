@@ -53,7 +53,6 @@ class BusinessFullSuiteTest extends TestCase
                 'quantity' => 200,
                 'facility_name' => 'Shan Poornam Metals Sdn Bhd',
                 'facility_location' => 'Penang',
-                'ai_recommendation' => 'Secondary smelting and ingot billet casting',
             ]);
 
         $response->assertRedirect('/business/waste-monitoring');
@@ -78,7 +77,6 @@ class BusinessFullSuiteTest extends TestCase
             'quantity' => 500,
             'unit' => 'kg',
             'status' => 'in_storage',
-            'disposal_method' => 'Biomass granulation',
             'is_diverted' => false,
             'recorded_at' => now()->toDateString(),
         ]);
@@ -91,11 +89,15 @@ class BusinessFullSuiteTest extends TestCase
         $updateResponse = $this->actingAs($biz)
             ->put("/business/waste-monitoring/{$record->id}", [
                 'status' => 'recycled',
+                'facility_payment_rm' => '25.50',
                 'facility_name' => 'Merces Bio-Pelletizing Facility',
                 'facility_location' => 'Rawang, Selangor',
             ]);
 
         $updateResponse->assertRedirect('/business/waste-monitoring');
+        $this->put(route('business.waste.update', $record), ['status' => 'in_storage'])->assertConflict();
+        $this->delete(route('business.waste.destroy', $record))->assertConflict();
+        $this->get(route('business.waste.report', $record))->assertOk();
         $this->assertDatabaseHas('waste_record', [
             'id' => $record->id,
             'status' => 'recycled',
@@ -112,6 +114,7 @@ class BusinessFullSuiteTest extends TestCase
             [3000, 'g', 'recycled', true],
             [250, 'mL', 'scheduled_pickup', true],
             [0.75, 'L', 'sent_to_facility', true],
+            [250, 'mL', 'composted', true],
             [2, 'pcs', 'in_storage', false],
         ] as [$quantity, $unit, $status, $diverted]) {
             WasteRecord::create([
@@ -122,18 +125,17 @@ class BusinessFullSuiteTest extends TestCase
                 'unit' => $unit,
                 'status' => $status,
                 'is_diverted' => $diverted,
-                'disposal_method' => 'Recovery',
                 'recorded_at' => now()->toDateString(),
             ]);
         }
 
         $this->actingAs($business)->get(route('business.waste.index'))->assertOk()
             ->assertViewHas('totalsByUnit', [
-                'L' => ['total' => 1.0, 'diverted' => 0.75, 'pending' => 0.25],
-                'kg' => ['total' => 20.0, 'diverted' => 3.0, 'pending' => 17.0],
-                'pcs' => ['total' => 2.0, 'diverted' => 0, 'pending' => 2.0],
+                'L' => ['total' => 1.25, 'diverted' => 1.0, 'recycled' => 0, 'composted' => 0.25],
+                'kg' => ['total' => 20.0, 'diverted' => 3.0, 'recycled' => 3.0, 'composted' => 0],
+                'pcs' => ['total' => 2.0, 'diverted' => 0, 'recycled' => 0, 'composted' => 0],
             ])
-            ->assertSee('75%')
+            ->assertSee('80%')
             ->assertSee('15%');
     }
 
@@ -282,7 +284,6 @@ class BusinessFullSuiteTest extends TestCase
                 'business_id' => $business->id,
                 'material_name' => 'Production waste',
                 'waste_type' => 'Mixed waste',
-                'disposal_method' => 'Material recovery',
                 'quantity' => 100,
                 'unit' => $unit,
                 'status' => $status,
@@ -293,7 +294,6 @@ class BusinessFullSuiteTest extends TestCase
             'business_id' => $partner->id,
             'material_name' => 'Other business record',
             'waste_type' => 'Mixed waste',
-            'disposal_method' => 'Material recovery',
             'quantity' => 100,
             'unit' => 'kg',
             'status' => 'recycled',

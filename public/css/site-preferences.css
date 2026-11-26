@@ -19,9 +19,9 @@
     width: 36px;
 }
 .site-preferences summary::-webkit-details-marker { display: none; }
-.site-theme-toggle span { font-size: 20px; }
+.site-theme-toggle svg { display: block; }
 .site-theme-toggle .site-theme-sun, [data-theme="dark"] .site-theme-moon { display: none; }
-[data-theme="dark"] .site-theme-toggle .site-theme-sun { display: inline; }
+[data-theme="dark"] .site-theme-toggle .site-theme-sun { display: block; }
 .site-language { position: relative; }
 .site-language form {
     position: absolute;

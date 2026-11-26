@@ -120,6 +120,7 @@ Route::middleware(['auth', 'business.approved'])->group(function () {
 });
 Route::redirect('/admin', '/admin/dashboard')->name('admin.entry');
 Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->middleware('auth:admin')->name('admin.dashboard');
+Route::post('/admin/notifications/{notification}/read', [AdminDashboardController::class, 'markNotificationRead'])->whereNumber('notification')->middleware('auth:admin')->name('admin.notifications.read');
 Route::post('/admin/notifications/mark-read', [AdminDashboardController::class, 'markAllNotificationsRead'])->middleware('auth:admin')->name('admin.notifications.mark-read');
 Route::post('/admin/business/{business}/approve', [AdminDashboardController::class, 'approve'])->middleware('auth:admin')->name('admin.business.approve');
 Route::post('/admin/business/{business}/request-changes', [AdminDashboardController::class, 'requestChanges'])->middleware('auth:admin')->name('admin.business.request-changes');

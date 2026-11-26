@@ -3,7 +3,6 @@
 use App\Models\AdminNotification;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ViewErrorBag;
 
 /** @var Collection<int, User> $businesses */
@@ -13,8 +12,6 @@ use Illuminate\Support\ViewErrorBag;
 /** @var Collection<int, AdminNotification> $notifications */
 /** @var int $unreadNotificationsCount */
 /** @var ViewErrorBag $errors */
-$adminUser = Auth::guard('admin')->user();
-$adminName = $adminUser?->name ?? 'Administrator';
 $notifications = $notifications ?? collect();
 $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
 ?>
@@ -24,6 +21,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Business review - EcoCycle</title>
+    <link rel="icon" type="image/svg+xml" href="/images/figma/ecocycle-leaf.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -48,7 +46,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
     <div class="admin-header-actions">
         <!-- Admin In-System Notifications Bell -->
         <div class="admin-notif-wrap" id="admin-notif-container">
-            <button type="button" class="admin-notif-btn" id="admin-notif-toggle" onclick="toggleAdminNotifications()" aria-label="Admin Notifications" title="Platform Notifications">
+            <button type="button" class="admin-notif-btn" id="admin-notif-toggle" onclick="toggleAdminNotifications()" aria-label="Notifications (<?= $unreadNotificationsCount ?> unread)" title="Notifications" aria-expanded="false" aria-controls="admin-notif-dropdown">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
@@ -63,7 +61,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                     <h4>
                         <span>Notifications</span>
                         <?php if ($unreadNotificationsCount > 0) { ?>
-                            <span style="font-size:10px;background:#eef5ee;color:var(--green);padding:2px 6px;border-radius:10px;" id="admin-notif-header-count"><?= $unreadNotificationsCount ?> unread</span>
+                            <span class="admin-notif-count" id="admin-notif-header-count"><?= $unreadNotificationsCount ?> unread</span>
                         <?php } ?>
                     </h4>
                     <?php if ($unreadNotificationsCount > 0) { ?>
@@ -77,8 +75,13 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                             <p style="margin:0;">No notifications yet.</p>
                         </div>
                     <?php } else { ?>
-                        <?php foreach ($notifications as $notif) { ?>
-                            <a href="<?= e($notif->link ?: '/admin/dashboard') ?>" class="admin-notif-item <?= ! $notif->is_read ? 'unread' : '' ?> <?= $notif->type === 'application_resubmitted' ? 'type-resubmitted' : '' ?>">
+                        <?php foreach ($notifications as $notif) {
+                            $destination = $notif->link ?: '/admin/dashboard';
+                            if ($destination === '/admin/dashboard' && $notif->business_id) {
+                                $destination .= '#business-card-'.$notif->business_id;
+                            }
+                            ?>
+                            <a href="<?= e($destination) ?>" data-read-url="<?= e(route('admin.notifications.read', $notif->id)) ?>" class="admin-notif-item <?= ! $notif->is_read ? 'unread' : '' ?> <?= $notif->type === 'application_resubmitted' ? 'type-resubmitted' : '' ?>">
                                 <div class="admin-notif-icon">
                                     <?php if ($notif->type === 'application_resubmitted') { ?>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -112,21 +115,47 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
 </header>
 <dialog class="admin-navigation" id="admin-navigation" aria-labelledby="admin-navigation-title">
     <div class="admin-navigation-heading">
-        <strong id="admin-navigation-title">Admin workspace</strong>
+        <div class="admin-brand">
+            <span class="brand-mark"><img src="/images/figma/ecocycle-leaf.svg" alt=""></span>
+            <span>EcoCycle <small id="admin-navigation-title">Admin workspace</small></span>
+        </div>
         <form method="dialog">
             <button type="submit" class="admin-menu-button" aria-label="Close admin menu" autofocus>&times;</button>
         </form>
     </div>
     <nav aria-labelledby="admin-navigation-title">
-        <a href="#admin-overview">Dashboard overview</a>
-        <a href="#admin-applications">Business applications</a>
-        <button type="button" id="admin-menu-notifications">Notifications</button>
+        <?php
+        $adminMenuItems = [
+            ['Dashboard', '#admin-overview', 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z'],
+            ['Business Management', '#admin-applications', 'M3 21h18M5 21V7h14v14M9 7V3h6v4M9 11h1m4 0h1m-6 4h1m4 0h1'],
+            ['Inventory Management', null, 'm12 3 9 5v8l-9 5-9-5V8zM3 8l9 5 9-5m-9 5v8'],
+            ['Exchange Management', null, 'M3 7h17m-4-4 4 4-4 4m5 6H4m4-4-4 4 4 4'],
+            ['Waste Management', null, 'M3 6h18M8 6V3h8v3M6 6l1 15h10l1-15M10 10v7m4-7v7'],
+            ['Reports & Analytics', null, 'M3 3v18h18M8 16v-4m5 4V8m5 8V5'],
+            ['Settings', null, 'M4 6h16M4 12h16M4 18h16M8 4v4m8 2v4m-6 2v4'],
+        ];
+        ?>
+        <?php foreach ($adminMenuItems as [$label, $destination, $iconPath]) { ?>
+            <?php if ($destination) { ?>
+                <a class="admin-nav-item" href="<?= e($destination) ?>">
+            <?php } else { ?>
+                <span class="admin-nav-item" aria-disabled="true">
+            <?php } ?>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="<?= e($iconPath) ?>"/>
+                </svg>
+                <span><?= e($label) ?></span>
+            <?php if ($destination) { ?>
+                </a>
+            <?php } else { ?>
+                </span>
+            <?php } ?>
+        <?php } ?>
     </nav>
-    <div class="admin-navigation-account">
-        <p><span>Administrator</span> · <?= e($adminName) ?></p>
+    <div class="admin-navigation-footer">
         <form method="POST" action="<?= e(route('logout')) ?>">
             <?= csrf_field() ?>
-            <button class="admin-outline" type="submit">Sign out</button>
+            <button class="admin-navigation-logout" type="submit">Sign Out</button>
         </form>
     </div>
 </dialog>
@@ -179,7 +208,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
             ?>
             <article class="application-card" id="business-card-<?= $business->id ?>">
                 <div class="application-heading">
-                    <div style="display:flex;align-items:center;gap:14px;">
+                    <div class="application-identity">
                         <div class="business-profile-avatar">
                             <?php if ($business->profile_image) { ?>
                                 <img src="<?= e($business->profile_image_url) ?>" alt="<?= e($business->business_name) ?>">
@@ -188,13 +217,13 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                             <?php } ?>
                         </div>
                         <div>
-                            <h3 style="margin:0 0 2px;font-size:16px;color:#123321;"><?= e($business->business_name) ?></h3>
-                            <p style="margin:0;font-size:12px;color:var(--muted);">
+                            <h3><?= e($business->business_name) ?></h3>
+                            <p>
                                 @<?= e($business->name) ?> &middot; <?= e($business->email) ?> &middot; <?= e($business->business_phone) ?>
                             </p>
                         </div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="application-heading-actions">
                         <button type="button" class="btn-view-biz-profile" onclick='openBusinessModal(<?= json_encode([
                             'id' => $business->id,
                             'business_name' => $business->business_name,
@@ -213,7 +242,7 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                             'cert_url' => route('admin.business.document', [$business, 'certificate']),
                             'profile_url' => route('admin.business.document', [$business, 'profile']),
                         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
-                            👁 View Profile
+                            View Profile
                         </button>
                         <span class="application-status status-<?= e($business->account_status) ?>">
                             <?= e(ucfirst($business->account_status)) ?>
@@ -266,44 +295,39 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
                     </div>
                 <?php } ?>
 
-                <?php if ($business->account_status !== 'approved') { ?>
-                    <div class="application-actions">
+                <div class="application-actions">
+                    <?php if ($business->account_status !== 'approved') { ?>
                         <form method="POST" action="<?= e(route('admin.business.approve', $business)) ?>">
                             <?= csrf_field() ?>
                             <button class="admin-primary" type="submit">Approve business</button>
                         </form>
-                        <form class="reject-form" method="POST" action="<?= e(route('admin.business.request-changes', $business)) ?>">
-                            <?= csrf_field() ?>
-                            <label class="visually-hidden" for="review-note-<?= $business->id ?>">Reason or remarks</label>
-                            <input id="review-note-<?= $business->id ?>" name="review_note" value="<?= e(old('review_note')) ?>" placeholder="Explain remarks or reason for rejection" required maxlength="1000">
-                            <button class="admin-warning" type="submit" formaction="<?= e(route('admin.business.request-changes', $business)) ?>" name="action_type" value="request_changes" title="Request business to update details or replace documents">Request changes</button>
-                            <button class="admin-danger" type="submit" formaction="<?= e(route('admin.business.reject', $business)) ?>" name="action_type" value="reject" title="Reject business registration">Reject</button>
-                        </form>
+                    <?php } else { ?>
+                        <span class="application-approval">
+                            ✓ Verified SME &middot; Approved on <?= $business->reviewed_at ? e($business->reviewed_at->timezone('Asia/Kuala_Lumpur')->format('j M Y')) : 'Record' ?>
+                        </span>
+                    <?php } ?>
+                    <div class="application-decision-buttons" data-business-name="<?= e($business->business_name) ?>">
+                        <button class="admin-warning" type="button" data-review-url="<?= e(route('admin.business.request-changes', $business)) ?>" data-review-action="request_changes">Request changes</button>
+                        <button class="admin-danger" type="button" data-review-url="<?= e(route('admin.business.reject', $business)) ?>" data-review-action="reject">Reject</button>
                     </div>
-                <?php } else { ?>
-                    <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-weight:600;">
-                                ✓ Verified SME &middot; Approved on <?= $business->reviewed_at ? e($business->reviewed_at->timezone('Asia/Kuala_Lumpur')->format('j M Y')) : 'Record' ?>
-                            </span>
-                            <form method="POST" action="<?= e(route('admin.business.approve', $business)) ?>" style="display:inline;margin:0;">
-                                <?= csrf_field() ?>
-                                <button class="admin-outline" type="submit" style="font-size:11px;padding:4px 10px;cursor:pointer;" title="Resend approval confirmation email to business">Resend Approval Email</button>
-                            </form>
-                        </div>
-                        <form class="reject-form" style="max-width:520px;" method="POST" action="<?= e(route('admin.business.request-changes', $business)) ?>">
-                            <?= csrf_field() ?>
-                            <label class="visually-hidden" for="re-review-note-<?= $business->id ?>">Re-review note</label>
-                            <input id="re-review-note-<?= $business->id ?>" name="review_note" placeholder="Explain remarks / updates needed..." required maxlength="1000">
-                            <button class="admin-warning" type="submit" formaction="<?= e(route('admin.business.request-changes', $business)) ?>" name="action_type" value="request_changes" style="white-space:nowrap;">Request changes</button>
-                            <button class="admin-danger" type="submit" formaction="<?= e(route('admin.business.reject', $business)) ?>" name="action_type" value="reject" style="white-space:nowrap;">Reject</button>
-                        </form>
-                    </div>
-                <?php } ?>
+                </div>
             </article>
         <?php } ?>
     </section>
 </main>
+<dialog class="admin-review-dialog" id="admin-review-dialog" aria-labelledby="admin-review-title" aria-describedby="admin-review-business">
+    <h2 id="admin-review-title"></h2>
+    <p id="admin-review-business"></p>
+    <form id="admin-review-form" method="POST">
+        <?= csrf_field() ?>
+        <label for="admin-review-note">Reason or remarks</label>
+        <textarea id="admin-review-note" name="review_note" rows="4" maxlength="1000" required autofocus></textarea>
+        <div class="application-decision-buttons">
+            <button class="admin-outline" type="button" id="admin-review-cancel">Cancel</button>
+            <button type="submit" name="action_type" id="admin-review-submit"></button>
+        </div>
+    </form>
+</dialog>
 
 <!-- Full Business Profile Modal for Admin -->
 <div class="admin-modal-backdrop" id="admin-biz-modal" style="display:none;" onclick="if(event.target === this) closeBusinessModal()">
@@ -374,6 +398,25 @@ $unreadNotificationsCount = $unreadNotificationsCount ?? 0;
 </div>
 
 <script>
+const reviewDialog = document.getElementById('admin-review-dialog');
+const reviewForm = document.getElementById('admin-review-form');
+const reviewSubmit = document.getElementById('admin-review-submit');
+
+document.querySelectorAll('[data-review-url]').forEach((button) => {
+    button.addEventListener('click', () => {
+        reviewForm.reset();
+        reviewForm.action = button.dataset.reviewUrl;
+        document.getElementById('admin-review-title').textContent = button.textContent.trim();
+        document.getElementById('admin-review-business').textContent = button.parentElement.dataset.businessName;
+        reviewSubmit.value = button.dataset.reviewAction;
+        reviewSubmit.className = button.className;
+        reviewSubmit.textContent = button.textContent.trim();
+        reviewDialog.showModal();
+    });
+});
+
+document.getElementById('admin-review-cancel').addEventListener('click', () => reviewDialog.close());
+
 const adminNavigation = document.getElementById('admin-navigation');
 const adminMenuToggle = document.getElementById('admin-menu-toggle');
 
@@ -382,13 +425,6 @@ adminNavigation.addEventListener('click', (event) => {
     if (event.target === adminNavigation || event.target.closest('nav a')) {
         adminNavigation.close();
     }
-});
-document.getElementById('admin-menu-notifications').addEventListener('click', (event) => {
-    event.stopPropagation();
-    adminNavigation.close();
-    const notificationToggle = document.getElementById('admin-notif-toggle');
-    notificationToggle.focus();
-    document.getElementById('admin-notif-dropdown').classList.add('show');
 });
 function openBusinessModal(biz) {
     document.getElementById('modal-biz-name').textContent = biz.business_name || 'Business';
@@ -425,54 +461,98 @@ function closeBusinessModal() {
     if (modal) modal.style.display = 'none';
 }
 
-function toggleAdminNotifications() {
-    var dd = document.getElementById('admin-notif-dropdown');
-    if (!dd) return;
-    dd.classList.toggle('show');
+const adminNotificationBell = document.getElementById('admin-notif-toggle');
+const adminNotificationPanel = document.getElementById('admin-notif-dropdown');
+
+function setAdminNotificationsOpen(open) {
+    adminNotificationPanel.classList.toggle('show', open);
+    adminNotificationBell.setAttribute('aria-expanded', String(open));
 }
 
-document.addEventListener('click', function(e) {
-    var wrap = document.getElementById('admin-notif-container');
-    var dd = document.getElementById('admin-notif-dropdown');
-    if (wrap && dd && !wrap.contains(e.target)) {
-        dd.classList.remove('show');
+function toggleAdminNotifications() {
+    setAdminNotificationsOpen(!adminNotificationPanel.classList.contains('show'));
+}
+
+document.addEventListener('click', (event) => {
+    if (!document.getElementById('admin-notif-container').contains(event.target)) {
+        setAdminNotificationsOpen(false);
     }
 });
 
-function markAllAdminNotificationsRead() {
-    fetch('<?= route('admin.notifications.mark-read') ?>', {
+function updateAdminNotificationCount(count) {
+    const badge = document.getElementById('admin-notif-badge');
+    const headerCount = document.getElementById('admin-notif-header-count');
+    const markAll = document.getElementById('admin-notif-mark-all');
+
+    adminNotificationBell.setAttribute('aria-label', 'Notifications (' + count + ' unread)');
+    if (badge) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.hidden = count === 0;
+    }
+    if (headerCount) {
+        headerCount.textContent = count + ' unread';
+        headerCount.hidden = count === 0;
+    }
+    if (markAll) markAll.hidden = count === 0;
+}
+
+async function postAdminNotificationRead(url) {
+    const response = await fetch(url, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': '<?= csrf_token() ?>',
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-    }).then(function(res) {
-        if (res.ok) {
-            var badge = document.getElementById('admin-notif-badge');
-            if (badge) badge.style.display = 'none';
-
-            var headerCount = document.getElementById('admin-notif-header-count');
-            if (headerCount) headerCount.style.display = 'none';
-
-            var markBtn = document.getElementById('admin-notif-mark-all');
-            if (markBtn) markBtn.style.display = 'none';
-
-            var unreadItems = document.querySelectorAll('.admin-notif-item.unread');
-            unreadItems.forEach(function(item) {
-                item.classList.remove('unread');
-            });
-        }
-    }).catch(function(err) {
-        console.error('Failed to mark notifications read:', err);
+        },
     });
+
+    if (!response.ok || response.redirected) {
+        throw new Error('Unable to mark notification as read.');
+    }
+
+    return response.json();
+}
+
+document.querySelectorAll('.admin-notif-item').forEach((item) => {
+    item.addEventListener('click', async (event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault();
+        if (item.dataset.markingRead) return;
+        item.dataset.markingRead = 'true';
+
+        try {
+            if (item.classList.contains('unread')) {
+                const { unread_count } = await postAdminNotificationRead(item.dataset.readUrl);
+                item.classList.remove('unread');
+                updateAdminNotificationCount(unread_count);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            delete item.dataset.markingRead;
+        }
+
+        setAdminNotificationsOpen(false);
+        window.location.assign(item.href);
+    });
+});
+
+async function markAllAdminNotificationsRead() {
+    try {
+        await postAdminNotificationRead('<?= route('admin.notifications.mark-read') ?>');
+        updateAdminNotificationCount(0);
+        document.querySelectorAll('.admin-notif-item.unread').forEach((item) => item.classList.remove('unread'));
+    } catch (error) {
+        console.error(error);
+    }
 }
 
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeBusinessModal();
-        var dd = document.getElementById('admin-notif-dropdown');
-        if (dd) dd.classList.remove('show');
+        if (adminNotificationPanel.classList.contains('show')) {
+            setAdminNotificationsOpen(false);
+            adminNotificationBell.focus();
+        }
     }
 });
 </script>

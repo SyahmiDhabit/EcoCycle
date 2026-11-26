@@ -127,6 +127,21 @@ class AdminDashboardController extends Controller
         $mailer->decision($business, $decisionType);
     }
 
+    public function markNotificationRead(int $notification): JsonResponse
+    {
+        $entry = AdminNotification::query()->findOrFail($notification);
+
+        AdminNotification::query()->whereKey($entry->getKey())->where('is_read', false)->update([
+            'is_read' => true,
+            'read_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'unread_count' => AdminNotification::query()->where('is_read', false)->count(),
+        ]);
+    }
+
     public function markAllNotificationsRead(Request $request): JsonResponse
     {
         AdminNotification::query()

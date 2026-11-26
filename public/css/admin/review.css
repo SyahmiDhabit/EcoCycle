@@ -96,31 +96,63 @@
     color: #fff;
     font-size: 16px;
 }
+.admin-navigation-heading .admin-brand { color: inherit; }
+.admin-navigation-heading small {
+    display: block;
+    color: #bce5c8;
+    font: 500 12px var(--font-main);
+}
 .admin-navigation nav {
     display: grid;
-    gap: 5px;
-    padding: 16px;
+    align-content: start;
+    gap: 4px;
+    padding: 14px 12px;
+    overflow-y: auto;
 }
-.admin-navigation nav :is(a, button) {
-    padding: 11px 12px;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    font-weight: 600;
-    text-align: left;
+.admin-navigation .admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 9px 14px;
+    border-inline-start: 2px solid transparent;
+    color: var(--green);
+    font-size: 14px;
+    font-weight: 700;
     text-decoration: none;
+}
+.admin-navigation .admin-nav-item svg { flex-shrink: 0; }
+.admin-navigation a.admin-nav-item:is(:hover, :focus-visible) {
+    border-inline-start-color: var(--green);
+    background: #eef5ed;
+}
+.admin-navigation .admin-nav-item[aria-disabled="true"] { color: var(--muted); }
+.admin-navigation-footer {
+    margin-top: auto;
+    flex-shrink: 0;
+    padding: 14px 16px;
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+}
+.admin-navigation-logout {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    background: #fee2e2;
+    color: #b21b28;
+    font: 600 12.5px/1.4 var(--font-main);
     cursor: pointer;
 }
-.admin-navigation nav :is(a, button):hover { background: var(--paper); }
-.admin-navigation-account {
-    margin-top: auto;
-    padding: 16px 20px;
-    border-top: 1px solid var(--line);
+.admin-navigation-logout:hover {
+    border-color: #ef4444;
+    background: #fecaca;
+    color: #991b1b;
 }
-.admin-navigation-account p { margin: 0 0 12px; overflow-wrap: anywhere; }
-.admin-navigation-account button { width: 100%; }
+.admin-navigation-logout:focus-visible {
+    outline: 2px solid #b21b28;
+    outline-offset: 2px;
+}
 .admin-workspace {
     width: min(1400px, calc(100% - max(40px, 8vw)));
 }
@@ -148,5 +180,120 @@
     .admin-workspace-header .admin-notif-wrap { position: static; }
     .admin-workspace-header .admin-notif-dropdown { top: 100%; right: 12px; }
 }
-[data-theme="dark"] .admin-navigation { background: #192b21; color: #edf7ef; }
-[data-theme="dark"] .admin-navigation nav :is(a, button):hover { background: #243b2d; }
+.admin-workspace .application-list {
+    --application-tint: #edf4eb;
+    padding: 0;
+    background: var(--white);
+}
+.admin-workspace .application-list > h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 17px 22px;
+    background: var(--application-tint);
+    color: var(--green);
+    font: 800 17px/1.4 var(--font-display);
+}
+.admin-workspace .application-list > h2 span {
+    margin: 0;
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--white);
+    color: inherit;
+}
+.application-list .admin-empty { padding: 0 22px; }
+.application-list .application-card {
+    padding: 22px;
+    scroll-margin-top: 100px;
+}
+.application-identity,
+.application-heading-actions,
+.application-approval {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.application-identity { min-width: 0; overflow-wrap: anywhere; }
+.application-heading-actions { flex-wrap: wrap; }
+.application-heading-actions .btn-view-biz-profile {
+    min-height: 34px;
+    font: 700 12px var(--font-main);
+}
+.application-card .business-details {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--application-tint);
+}
+.application-card .business-details dt { font-weight: 700; }
+.application-card .business-details dd { font-size: 13px; }
+.application-card .document-links a:hover { background: var(--application-tint); }
+.application-card .application-actions {
+    align-items: center;
+    flex-wrap: wrap;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+}
+.application-approval { flex-wrap: wrap; }
+.application-card .reject-form {
+    flex: 1 1 300px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.application-card .reject-form input { flex: 1 1 200px; }
+.application-card .reject-form button { white-space: nowrap; }
+@media (max-width: 700px) {
+    .application-card .application-actions { flex-direction: row; justify-content: flex-start; }
+    .application-card .reject-form { justify-content: flex-start; }
+}
+@media (max-width: 460px) {
+    .application-card .application-heading { flex-direction: column; }
+    .application-card .reject-form { flex-direction: row; }
+}
+.application-decision-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-inline-start: auto;
+}
+.admin-review-dialog {
+    width: min(460px, calc(100% - 32px));
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--ink);
+}
+.admin-review-dialog::backdrop { background: rgb(9 30 19 / 55%); }
+.admin-review-dialog h2 { margin: 0; color: var(--green); }
+.admin-review-dialog p { margin: 4px 0 16px; overflow-wrap: anywhere; }
+.admin-review-dialog label { display: block; font-weight: 700; }
+.admin-review-dialog textarea {
+    display: block;
+    width: 100%;
+    margin: 6px 0 16px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font: inherit;
+    resize: vertical;
+}
+.admin-review-dialog .application-decision-buttons { justify-content: flex-end; }
+.admin-notif-dropdown { border-radius: 0; }
+.admin-notif-header { padding: 14px 18px; background: var(--paper); }
+.admin-notif-count {
+    padding: 2px 7px;
+    border: 1px solid #c9e2c6;
+    background: #e5f2e3;
+    color: #165b33;
+    font-size: 10px;
+}
+.admin-notif-badge[hidden] { display: none; }
+.admin-notif-list { max-height: min(340px, 60dvh); }
+.admin-notif-item { padding: 13px 18px; }
+.admin-notif-item.unread { background: #f2f8f1; }
+.admin-notif-item.unread:hover { background: #e9f3e7; }
+.admin-notif-icon { width: 30px; height: 30px; border-radius: 0; }
+.application-card:target { box-shadow: inset 3px 0 var(--green); }

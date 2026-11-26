@@ -170,7 +170,7 @@ class AdminReviewTest extends TestCase
             'account_status' => 'pending',
         ]);
 
-        AdminNotification::send(
+        $notification = AdminNotification::send(
             'new_registration',
             'New Business Registration',
             'Solar Biofuel Enterprise has registered for review.',
@@ -178,10 +178,27 @@ class AdminReviewTest extends TestCase
             $business->id
         );
 
+        $otherNotification = AdminNotification::send('application_resubmitted', 'Updated application', 'Documents updated.');
+        $readUrl = route('admin.notifications.read', $notification->id);
+
+        $this->postJson($readUrl)->assertUnauthorized();
+
+        $this->actingAs($admin, 'admin')
+            ->postJson($readUrl)
+            ->assertOk()
+            ->assertJson(['success' => true, 'unread_count' => 1]);
+
+        $this->assertTrue($notification->refresh()->is_read);
+        $this->assertNotNull($notification->read_at);
+        $this->assertFalse($otherNotification->refresh()->is_read);
+
+        $this->postJson($readUrl)->assertOk()->assertJsonPath('unread_count', 1);
+
         $this->actingAs($admin, 'admin')
             ->get(route('admin.dashboard'))
             ->assertOk()
             ->assertSee('New Business Registration')
+            ->assertSee('#business-card-'.$business->id)
             ->assertSee('Solar Biofuel Enterprise has registered for review.');
 
         $this->actingAs($admin, 'admin')
@@ -189,6 +206,7 @@ class AdminReviewTest extends TestCase
             ->assertOk()
             ->assertJson(['success' => true]);
 
+        $this->assertTrue($otherNotification->refresh()->is_read);
         $this->assertDatabaseHas('admin_notification', [
             'type' => 'new_registration',
             'business_id' => $business->id,
